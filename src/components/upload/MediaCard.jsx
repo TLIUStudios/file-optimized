@@ -100,12 +100,15 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
     };
     reader.readAsDataURL(image);
     
+    // Set default formats based on media type
     if (isGif) {
       setFormat('gif');
     } else if (isVideo) {
       setFormat('mp4');
     } else if (isAudio) {
-      setFormat(image.type.includes('wav') ? 'wav' : 'mp3');
+      setFormat('mp3');
+    } else if (isImage) {
+      setFormat('jpg'); // Default to jpg for images
     }
   }, [image, isGif, isVideo, isAudio, isImage]);
 
@@ -612,7 +615,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
           targetHeight = Math.round(maxWidth / aspectRatio);
         } else if (maxHeight && maxHeight < gifSettings.height) {
           targetHeight = maxHeight;
-          targetWidth = Math.round(maxHeight * aspectRatio);
+          targetWidth = Math.round(maxHeight / aspectRatio);
         }
       }
       
