@@ -23,10 +23,12 @@ export default function ImageComparisonModal({
   const containerRef = useRef(null);
 
   // Extract file extensions
-  const originalExtension = fileName.split('.').pop().toUpperCase();
-  const compressedExtension = compressedImage.includes('data:image/') 
-    ? compressedImage.split('data:image/')[1].split(';')[0].toUpperCase()
-    : 'WEBP';
+  const originalExtension = fileName.split('.').slice(0, -1).join('.');
+  const originalExt = fileName.split('.').pop().toUpperCase();
+  const compressedFileName = fileName.replace(/\.[^/.]+$/, '');
+  const compressedExt = compressedFileName.split('_compressed')[0] ? 
+    compressedImage.split('data:image/')[1]?.split(';')[0].toUpperCase() || 'WEBP' : 
+    'WEBP';
 
   useEffect(() => {
     const handleMouseMove = (e) => {
@@ -139,14 +141,8 @@ export default function ImageComparisonModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-[98vw] w-[98vw] h-[98vh] p-0 overflow-hidden bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 border-slate-800 [&>button]:hidden">
-        <style>{`
-          [role="dialog"] > button[type="button"] {
-            display: none !important;
-          }
-        `}</style>
-        
-        {/* Close Button - Matching Image Card Style */}
+      <DialogContent className="max-w-[98vw] w-[98vw] h-[98vh] p-0 overflow-hidden bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 border-slate-800">
+        {/* Close Button - Top Right with Red Hover */}
         <Button
           variant="ghost"
           size="icon"
@@ -195,10 +191,9 @@ export default function ImageComparisonModal({
 
             <div 
               ref={containerRef}
-              className="relative w-full h-full bg-slate-950 select-none flex items-center justify-center"
+              className="relative w-full h-full bg-slate-950 select-none flex items-center justify-center p-4"
               style={{ 
-                cursor: zoom > 1 ? (isPanning ? 'grabbing' : 'grab') : 'col-resize',
-                padding: '100px 20px'
+                cursor: zoom > 1 ? (isPanning ? 'grabbing' : 'grab') : 'col-resize'
               }}
               onMouseDown={(e) => {
                 if (zoom > 1) {
@@ -217,15 +212,19 @@ export default function ImageComparisonModal({
               }}
             >
               <div
-                className="relative w-full h-full flex items-center justify-center"
+                className="relative flex items-center justify-center"
                 style={{
                   transform: `scale(${zoom}) translate(${pan.x / zoom}px, ${pan.y / zoom}px)`,
                   transformOrigin: 'center',
-                  transition: isDragging || isPanning ? 'none' : 'transform 0.2s ease-out'
+                  transition: isDragging || isPanning ? 'none' : 'transform 0.2s ease-out',
+                  maxWidth: '100%',
+                  maxHeight: '100%',
+                  width: '100%',
+                  height: '100%'
                 }}
               >
                 {/* Compressed Image (Background - Right Side) */}
-                <div className="relative max-w-full max-h-full flex items-center justify-center">
+                <div className="relative w-full h-full flex items-center justify-center">
                   <img
                     src={compressedImage}
                     alt="Compressed"
@@ -234,7 +233,7 @@ export default function ImageComparisonModal({
                   />
                   {/* Compressed File Type Badge */}
                   <Badge className="absolute bottom-4 right-4 bg-emerald-600/95 backdrop-blur-sm text-white border border-emerald-500 text-xs px-3 py-1.5 shadow-lg font-bold">
-                    {compressedExtension}
+                    {compressedExt}
                   </Badge>
                 </div>
 
@@ -243,7 +242,7 @@ export default function ImageComparisonModal({
                   className="absolute inset-0 flex items-center justify-center overflow-hidden"
                   style={{ clipPath: `inset(0 ${100 - sliderPosition}% 0 0)` }}
                 >
-                  <div className="relative max-w-full max-h-full flex items-center justify-center">
+                  <div className="relative w-full h-full flex items-center justify-center">
                     <img
                       src={originalImage}
                       alt="Original"
@@ -252,7 +251,7 @@ export default function ImageComparisonModal({
                     />
                     {/* Original File Type Badge */}
                     <Badge className="absolute bottom-4 right-4 bg-slate-900/95 backdrop-blur-sm text-white border border-slate-700 text-xs px-3 py-1.5 shadow-lg font-bold">
-                      {originalExtension}
+                      {originalExt}
                     </Badge>
                   </div>
                 </div>

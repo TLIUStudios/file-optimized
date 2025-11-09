@@ -61,12 +61,12 @@ export default function ImageCard({ image, onRemove, onProcessed, onCompare }) {
       let width = img.width;
       let height = img.height;
 
-      // Apply resizing if specified - maintain aspect ratio
+      // Apply resizing if specified - with upscaling support
       if (maxWidth || maxHeight) {
         const aspectRatio = width / height;
         
         if (maxWidth && maxHeight) {
-          // Both limits specified - fit within bounds while maintaining aspect ratio
+          // Both limits specified - scale to fit within bounds
           const widthRatio = maxWidth / width;
           const heightRatio = maxHeight / height;
           const ratio = Math.min(widthRatio, heightRatio);
@@ -74,17 +74,13 @@ export default function ImageCard({ image, onRemove, onProcessed, onCompare }) {
           width = Math.round(width * ratio);
           height = Math.round(height * ratio);
         } else if (maxWidth) {
-          // Only width specified
-          if (width > maxWidth) {
-            width = maxWidth;
-            height = Math.round(width / aspectRatio);
-          }
+          // Only width specified - scale to exact width (upscale or downscale)
+          width = maxWidth;
+          height = Math.round(width / aspectRatio);
         } else if (maxHeight) {
-          // Only height specified
-          if (height > maxHeight) {
-            height = maxHeight;
-            width = Math.round(height * aspectRatio);
-          }
+          // Only height specified - scale to exact height (upscale or downscale)
+          height = maxHeight;
+          width = Math.round(height * aspectRatio);
         }
       }
 
@@ -137,9 +133,8 @@ export default function ImageCard({ image, onRemove, onProcessed, onCompare }) {
         attempts++;
       }
 
-      // If still larger than original, use a more aggressive format
+      // If still larger than original, try WebP with lower quality
       if (blob.size >= image.size) {
-        // Try WebP with lower quality as fallback
         const fallbackQuality = compressionMode === 'maximum' ? 0.4 : 0.6;
         blob = await new Promise((resolve) => {
           canvas.toBlob(
