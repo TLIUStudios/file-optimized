@@ -69,10 +69,7 @@ export default function Home() {
   };
 
   const handleCompare = (data) => {
-    setComparisonData({
-      ...data,
-      compressionSettings: data.compressionSettings || {}
-    });
+    setComparisonData(data);
   };
 
   const clearAll = () => {
@@ -351,7 +348,6 @@ export default function Home() {
             fileName={comparisonData.fileName}
             mediaType={comparisonData.mediaType}
             fileFormat={comparisonData.fileFormat}
-            compressionSettings={comparisonData.compressionSettings}
           />
         </Suspense>
       )}

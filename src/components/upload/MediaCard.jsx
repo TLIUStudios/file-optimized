@@ -862,25 +862,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
         compressedSize,
         fileName: `${image.name.split('.')[0]}_compressed.${outputFormat || format}`,
         mediaType: isVideo ? 'video' : isAudio ? 'audio' : 'image',
-        fileFormat: outputFormat || format,
-        compressionSettings: {
-          compressionMode,
-          quality: (isImage || isGif) ? quality : undefined,
-          format: outputFormat || format,
-          maxWidth,
-          maxHeight,
-          stripMetadata: (isImage && !isGif) ? stripMetadata : undefined,
-          noiseReduction: (isImage && !isGif) ? noiseReduction : undefined,
-          enableUpscale: (isImage && !isGif) ? enableUpscale : undefined,
-          gifOptimization: isGif ? gifOptimization : undefined,
-          videoBitrate: isVideo ? videoBitrate : undefined,
-          videoPreset: isVideo ? videoPreset : undefined,
-          frameRate: (isVideo || (isGif && format === 'mp4')) ? frameRate : undefined,
-          gopSize: isVideo ? gopSize : undefined,
-          audioBitrate: isAudio ? audioBitrate : undefined,
-          audioQuality: isAudio ? audioQuality : undefined,
-          sampleRate: isAudio ? sampleRate : undefined
-        }
+        fileFormat: outputFormat || format
       });
     }
   };
