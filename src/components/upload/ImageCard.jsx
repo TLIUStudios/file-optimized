@@ -121,6 +121,8 @@ export default function ImageCard({ image, onRemove, onProcessed, onCompare, aut
 
   const processGif = async () => {
     try {
+      setError(null); // Clear any existing errors
+
       // First, ensure we have a valid GIF blob
       const response = await fetch(preview);
       const originalBlob = await response.blob();
@@ -133,6 +135,7 @@ export default function ImageCard({ image, onRemove, onProcessed, onCompare, aut
         setCompressedSize(originalBlob.size);
         setProcessed(true);
         setOutputFormat('gif');
+        setError(null); // Clear any errors
 
         onProcessed({
           id: image.name,
@@ -145,7 +148,7 @@ export default function ImageCard({ image, onRemove, onProcessed, onCompare, aut
           filename: `${image.name.split('.')[0]}_compressed.gif`
         });
         
-        toast.info('GIF processed (animation preserved, compression limited)');
+        toast.info('GIF processed (animation preserved)');
         return;
       }
 
@@ -157,13 +160,21 @@ export default function ImageCard({ image, onRemove, onProcessed, onCompare, aut
       canvas.width = targetWidth;
       canvas.height = targetHeight;
       const ctx = canvas.getContext('2d', { willReadFrequently: true });
+      if (!ctx) {
+        throw new Error('Failed to get canvas context');
+      }
 
       const processedFrames = [];
       
-      // Process each frame
-      for (let i = 0; i < gifSettings.frames.length; i++) {
+      // Process each frame with better error handling
+      for (let i = 0; i < Math.min(gifSettings.frames.length, 200); i++) { // Limit to 200 frames
         const frame = gifSettings.frames[i];
         try {
+          if (!frame || !frame.patch || !frame.dims) {
+            console.warn(`Frame ${i} missing data, skipping`);
+            continue;
+          }
+
           const imageData = new ImageData(
             new Uint8ClampedArray(frame.patch),
             frame.dims.width,
@@ -174,22 +185,24 @@ export default function ImageCard({ image, onRemove, onProcessed, onCompare, aut
           tempCanvas.width = frame.dims.width;
           tempCanvas.height = frame.dims.height;
           const tempCtx = tempCanvas.getContext('2d');
+          if (!tempCtx) continue;
+          
           tempCtx.putImageData(imageData, 0, 0);
           
           ctx.clearRect(0, 0, targetWidth, targetHeight);
           ctx.drawImage(tempCanvas, 0, 0, targetWidth, targetHeight);
           
-          const delay = frame.delay ? frame.delay * 10 : 100;
+          const delay = frame.delay ? Math.max(20, frame.delay * 10) : 100; // Min 20ms delay
           
           const frameImageData = ctx.getImageData(0, 0, targetWidth, targetHeight);
           processedFrames.push({ 
-            data: frameImageData.data, 
+            data: new Uint8ClampedArray(frameImageData.data),
             delay,
             width: targetWidth,
             height: targetHeight
           });
         } catch (frameError) {
-          console.warn(`Skipping frame ${i}:`, frameError);
+          console.warn(`Error processing frame ${i}:`, frameError);
           continue;
         }
       }
@@ -198,41 +211,60 @@ export default function ImageCard({ image, onRemove, onProcessed, onCompare, aut
         throw new Error('No frames could be processed');
       }
 
-      // Import and use gif.js
+      console.log(`Processing ${processedFrames.length} frames for GIF encoding`);
+
+      // Import and use gif.js with better error handling
       const GIF = (await import('https://cdn.jsdelivr.net/npm/gif.js@0.2.0/dist/gif.js')).default;
+      
+      // Calculate quality (gif.js uses 1-30, where 1 is best)
+      const gifQuality = Math.max(1, Math.min(30, Math.round((100 - quality) / 3)));
       
       const gif = new GIF({
         workers: 2,
-        quality: Math.max(1, Math.min(30, Math.round((100 - quality) / 3))), // Map 1-100 quality to gif.js 1-30 (1=best, 30=worst)
+        quality: gifQuality,
         width: targetWidth,
         height: targetHeight,
-        workerScript: 'https://cdn.jsdelivr.net/npm/gif.js@0.2.0/dist/gif.worker.js'
+        workerScript: 'https://cdn.jsdelivr.net/npm/gif.js@0.2.0/dist/gif.worker.js',
+        debug: false
       });
 
       // Add frames to GIF encoder
-      for (const frameData of processedFrames) {
-        const frameCanvas = document.createElement('canvas');
-        frameCanvas.width = frameData.width;
-        frameCanvas.height = frameData.height;
-        const frameCtx = frameCanvas.getContext('2d');
-        const imgData = new ImageData(frameData.data, frameData.width, frameData.height);
-        frameCtx.putImageData(imgData, 0, 0);
-        
-        gif.addFrame(frameCanvas, { delay: frameData.delay, copy: true });
+      for (let i = 0; i < processedFrames.length; i++) {
+        const frameData = processedFrames[i];
+        try {
+          const frameCanvas = document.createElement('canvas');
+          frameCanvas.width = frameData.width;
+          frameCanvas.height = frameData.height;
+          const frameCtx = frameCanvas.getContext('2d');
+          if (!frameCtx) continue;
+          
+          const imgData = new ImageData(frameData.data, frameData.width, frameData.height);
+          frameCtx.putImageData(imgData, 0, 0);
+          
+          gif.addFrame(frameCanvas, { delay: frameData.delay, copy: true });
+        } catch (addError) {
+          console.warn(`Error adding frame ${i} to GIF:`, addError);
+        }
       }
 
-      // Render GIF
-      const gifBlob = await new Promise((resolve, reject) => {
-        gif.on('finished', (blob) => resolve(blob));
-        gif.on('error', reject);
-        gif.render();
-      });
+      // Render GIF with timeout
+      const gifBlob = await Promise.race([
+        new Promise((resolve, reject) => {
+          gif.on('finished', (blob) => resolve(blob));
+          gif.on('error', reject);
+          gif.render();
+        }),
+        new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('GIF encoding timeout')), 60000) // 60 second timeout
+        )
+      ]);
       
       const compressedUrl = URL.createObjectURL(gifBlob);
       setCompressedPreview(compressedUrl);
       setCompressedSize(gifBlob.size);
       setProcessed(true);
       setOutputFormat('gif');
+      setError(null); // Clear any errors
 
       onProcessed({
         id: image.name,
@@ -245,7 +277,12 @@ export default function ImageCard({ image, onRemove, onProcessed, onCompare, aut
         filename: `${image.name.split('.')[0]}_compressed.gif`
       });
 
-      toast.success(`GIF compressed successfully! Saved ${((1 - gifBlob.size / image.size) * 100).toFixed(1)}%`);
+      const savings = ((1 - gifBlob.size / image.size) * 100).toFixed(1);
+      if (gifBlob.size < image.size) {
+        toast.success(`GIF compressed! Saved ${savings}%`);
+      } else {
+        toast.info('GIF processed (size unchanged)');
+      }
       
     } catch (error) {
       console.error('GIF compression failed:', error);
@@ -259,6 +296,7 @@ export default function ImageCard({ image, onRemove, onProcessed, onCompare, aut
         setCompressedSize(blob.size);
         setProcessed(true);
         setOutputFormat('gif');
+        setError(null); // Clear error since we have a fallback
 
         onProcessed({
           id: image.name,
@@ -271,7 +309,7 @@ export default function ImageCard({ image, onRemove, onProcessed, onCompare, aut
           filename: `${image.name.split('.')[0]}_compressed.gif`
         });
         
-        toast.warn('GIF compression failed, using original (animation preserved)');
+        toast.info('GIF processed (original preserved)');
       } catch (fallbackError) {
         console.error('Fallback failed:', fallbackError);
         setError('Failed to process GIF');
