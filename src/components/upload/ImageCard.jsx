@@ -531,10 +531,10 @@ export default function ImageCard({ image, onRemove, onProcessed, onCompare, aut
 
   return (
     <Card className="overflow-hidden bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 shadow-lg hover:shadow-xl transition-shadow">
-      <div className="relative">
+      <div className="relative pt-10">
         {/* GIF Frame Count Badge - Above Card */}
         {isGif && gifFrameCount > 0 && (
-          <Badge className="absolute -top-8 left-4 bg-slate-900/90 text-white text-xs px-3 py-1.5 font-bold flex items-center gap-1 shadow-lg z-10 rounded-md">
+          <Badge className="absolute top-0 left-4 bg-slate-900/90 text-white text-xs px-3 py-1.5 font-bold flex items-center gap-1 shadow-lg z-10 rounded-md">
             <Film className="w-3 h-3" />
             {gifFrameCount} frames
           </Badge>
@@ -557,7 +557,6 @@ export default function ImageCard({ image, onRemove, onProcessed, onCompare, aut
               <Badge className="absolute bottom-2 right-2 bg-slate-900/95 backdrop-blur-sm text-white border border-slate-700 text-xs px-2 py-1 font-bold shadow-lg">
                 {originalExt}
               </Badge>
-              {/* Old GIF frame count badge removed from here */}
               {!isGif && (
                 <Button
                   variant="ghost"
@@ -601,7 +600,7 @@ export default function ImageCard({ image, onRemove, onProcessed, onCompare, aut
           variant="ghost"
           size="icon"
           onClick={onRemove}
-          className="absolute -top-4 right-2 bg-slate-900/90 dark:bg-slate-900/90 hover:bg-red-600 dark:hover:bg-red-600 text-white rounded-lg transition-colors z-20 shadow-lg"
+          className="absolute top-0 right-2 bg-slate-900/90 dark:bg-slate-900/90 hover:bg-red-600 dark:hover:bg-red-600 text-white rounded-lg transition-colors z-20 shadow-lg"
         >
           <X className="w-4 h-4" />
         </Button>
@@ -732,6 +731,32 @@ export default function ImageCard({ image, onRemove, onProcessed, onCompare, aut
                       <SelectItem value="webp">WebP (Best compression)</SelectItem>
                       <SelectItem value="jpg">JPG (Universal)</SelectItem>
                       <SelectItem value="png">PNG (Lossless)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+
+              {isGif && (
+                <div>
+                  <div className="flex items-center gap-2 mb-2">
+                    <label className="text-xs font-medium text-slate-700 dark:text-slate-300">
+                      Output Format
+                    </label>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Info className="w-3 h-3 text-slate-400 cursor-help" />
+                      </TooltipTrigger>
+                      <TooltipContent className="max-w-xs">
+                        <p className="text-xs">GIF format is locked to preserve animation</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </div>
+                  <Select value="gif" disabled>
+                    <SelectTrigger className="h-9">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="gif">GIF (Animation)</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>

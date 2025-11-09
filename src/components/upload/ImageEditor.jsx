@@ -1,4 +1,3 @@
-
 import { useState, useRef, useEffect } from "react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { X, RotateCw, Crop, ZoomIn, ZoomOut, Sun, Contrast, Droplet, Sparkles, Undo, Redo } from "lucide-react";
@@ -19,29 +18,38 @@ export default function ImageEditor({ isOpen, onClose, imageData, onSave }) {
   const canvasRef = useRef(null);
   const [imageDimensions, setImageDimensions] = useState({ width: 0, height: 0 });
   const [originalImage, setOriginalImage] = useState(null);
+  const [isImageLoaded, setIsImageLoaded] = useState(false);
 
   // History management for undo/redo
   const [history, setHistory] = useState([]);
   const [historyIndex, setHistoryIndex] = useState(-1);
 
   useEffect(() => {
-    if (imageData && canvasRef.current) {
+    if (imageData && isOpen) {
+      setIsImageLoaded(false);
       const img = new Image();
-      img.crossOrigin = "anonymous"; // Handle CORS for data URLs
+      img.crossOrigin = "anonymous";
+      
       img.onload = () => {
+        console.log('Image loaded successfully:', img.width, 'x', img.height);
         setOriginalImage(img);
         setImageDimensions({ width: img.width, height: img.height });
         
-        // Initial draw
-        const canvas = canvasRef.current;
-        if (canvas) {
+        // Draw initial canvas
+        if (canvasRef.current) {
+          const canvas = canvasRef.current;
           canvas.width = img.width;
           canvas.height = img.height;
           const ctx = canvas.getContext('2d');
-          ctx.drawImage(img, 0, 0); // Draw original image without transformations
+          if (ctx) {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.drawImage(img, 0, 0);
+            setIsImageLoaded(true);
+            console.log('Canvas drawn successfully');
+          }
         }
         
-        // Initialize history with default state
+        // Initialize history
         const initialState = {
           rotation: 0,
           scale: 1,
@@ -54,19 +62,29 @@ export default function ImageEditor({ isOpen, onClose, imageData, onSave }) {
         setHistory([initialState]);
         setHistoryIndex(0);
       };
+      
       img.onerror = (error) => {
         console.error('Error loading image:', error);
         toast.error('Failed to load image for editing');
       };
-      img.src = imageData;
+      
+      // Handle data URLs properly
+      if (imageData.startsWith('data:')) {
+        img.src = imageData;
+      } else if (imageData.startsWith('blob:')) {
+        img.src = imageData;
+      } else {
+        // If it's a regular URL, try to load it
+        img.src = imageData;
+      }
     }
-  }, [imageData]);
+  }, [imageData, isOpen]);
 
   useEffect(() => {
-    if (originalImage) {
+    if (originalImage && isImageLoaded) {
       drawCanvas(originalImage);
     }
-  }, [rotation, scale, brightness, contrast, saturation, blur]);
+  }, [rotation, scale, brightness, contrast, saturation, blur, isImageLoaded]);
 
   const saveToHistory = () => {
     const newState = {
@@ -123,9 +141,11 @@ export default function ImageEditor({ isOpen, onClose, imageData, onSave }) {
 
   const drawCanvas = (img) => {
     const canvas = canvasRef.current;
-    if (!canvas) return;
+    if (!canvas || !img) return;
 
     const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
     canvas.width = img.width;
     canvas.height = img.height;
 
@@ -265,7 +285,13 @@ export default function ImageEditor({ isOpen, onClose, imageData, onSave }) {
         <div className="flex flex-col lg:flex-row max-h-[calc(95vh-80px)]">
           {/* Canvas Preview */}
           <div className="flex-1 bg-slate-100 dark:bg-slate-900 p-4 flex items-center justify-center overflow-auto">
-            <div className="relative">
+            {!isImageLoaded && (
+              <div className="text-center">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-emerald-600 mx-auto mb-4"></div>
+                <p className="text-sm text-slate-500">Loading image...</p>
+              </div>
+            )}
+            <div className="relative" style={{ display: isImageLoaded ? 'block' : 'none' }}>
               <canvas
                 ref={canvasRef}
                 className="max-w-full max-h-[60vh] rounded"

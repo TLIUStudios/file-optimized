@@ -19,7 +19,9 @@ export default function UploadZone({ onFilesSelected, isDragActive, onDragStateC
     onDragStateChange(false);
 
     const files = Array.from(e.dataTransfer.files).filter(file =>
-      file.type.startsWith('image/')
+      file.type.startsWith('image/') || 
+      file.type.startsWith('video/') || 
+      file.type.startsWith('audio/')
     );
 
     if (files.length > 0) {
@@ -29,7 +31,9 @@ export default function UploadZone({ onFilesSelected, isDragActive, onDragStateC
 
   const handleFileInput = (e) => {
     const files = Array.from(e.target.files).filter(file =>
-      file.type.startsWith('image/')
+      file.type.startsWith('image/') || 
+      file.type.startsWith('video/') || 
+      file.type.startsWith('audio/')
     );
 
     if (files.length > 0) {
@@ -53,7 +57,7 @@ export default function UploadZone({ onFilesSelected, isDragActive, onDragStateC
       <input
         type="file"
         multiple
-        accept="image/*"
+        accept="image/*,video/mp4,audio/mp3,audio/wav,audio/mpeg"
         onChange={handleFileInput}
         className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
         id="file-upload"
@@ -75,10 +79,13 @@ export default function UploadZone({ onFilesSelected, isDragActive, onDragStateC
         
         <div className="text-center">
           <p className="text-lg font-semibold text-slate-900 dark:text-white mb-2">
-            {isDragActive ? "Drop your images here" : "Drop images here or click to browse"}
+            {isDragActive ? "Drop your files here" : "Drop files here or click to browse"}
           </p>
           <p className="text-sm text-slate-500 dark:text-slate-400">
-            Supports PNG, JPG, WebP, AVIF, and GIF
+            Images: PNG, JPG, WebP, AVIF, GIF
+          </p>
+          <p className="text-sm text-slate-500 dark:text-slate-400">
+            Video: MP4 • Audio: MP3, WAV
           </p>
           <p className="text-xs text-slate-400 dark:text-slate-500 mt-2">
             Unlimited uploads • All processing happens locally
