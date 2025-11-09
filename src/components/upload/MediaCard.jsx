@@ -128,11 +128,11 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
       
       // Dynamically import FFmpeg modules
       console.log('📦 Importing FFmpeg modules...');
-      const ffmpegModule = await import('https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@0.12.10/dist/esm/index.js');
-      const utilModule = await import('https://cdn.jsdelivr.net/npm/@ffmpeg/util@0.12.1/dist/esm/index.js');
+      const ffmpegModule = await import('https://unpkg.com/@ffmpeg/ffmpeg@0.12.10/dist/esm/index.js');
+      const utilModule = await import('https://unpkg.com/@ffmpeg/util@0.12.1/dist/esm/index.js');
       
       const { FFmpeg } = ffmpegModule;
-      const { fetchFile } = utilModule;
+      const { fetchFile, toBlobURL } = utilModule;
       
       console.log('✅ Modules imported successfully');
       setLoadingProgress(40);
@@ -141,7 +141,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
       const ffmpeg = new FFmpeg();
       
       // Store fetchFile for later use
-      fetchFileRef.current = fetchFile;
+      window.fetchFile = fetchFile;
       
       // Set up logging
       ffmpeg.on('log', ({ message }) => {
@@ -155,12 +155,20 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
       
       setLoadingProgress(50);
       
-      // Load core with direct URLs - single threaded for compatibility
-      console.log('🔧 Loading FFmpeg core...');
-      const coreURL = 'https://cdn.jsdelivr.net/npm/@ffmpeg/core-st@0.12.6/dist/esm/ffmpeg-core.js';
-      const wasmURL = 'https://cdn.jsdelivr.net/npm/@ffmpeg/core-st@0.12.6/dist/esm/ffmpeg-core.wasm';
+      // Load core with toBlobURL to bypass CORS
+      console.log('🔧 Loading FFmpeg core with blob URLs...');
+      const baseURL = 'https://unpkg.com/@ffmpeg/core-st@0.12.6/dist/esm';
       
-      setLoadingProgress(70);
+      setLoadingProgress(60);
+      console.log('📥 Creating blob URLs for FFmpeg files...');
+      
+      const coreURL = await toBlobURL(`${baseURL}/ffmpeg-core.js`, 'text/javascript');
+      setLoadingProgress(80);
+      
+      const wasmURL = await toBlobURL(`${baseURL}/ffmpeg-core.wasm`, 'application/wasm');
+      setLoadingProgress(90);
+      
+      console.log('✅ Blob URLs created successfully');
       
       await ffmpeg.load({
         coreURL,
@@ -289,7 +297,7 @@ Return ONLY the filename without extension, nothing else.`,
   });
 
   const convertGifToMp4 = async () => {
-    if (!ffmpegLoaded || !ffmpegRef.current || !fetchFileRef.current) {
+    if (!ffmpegLoaded || !ffmpegRef.current || !window.fetchFile) {
       toast.error('Video processor not ready');
       return;
     }
@@ -299,7 +307,7 @@ Return ONLY the filename without extension, nothing else.`,
       toast.info('Converting GIF to MP4...', { id: 'processing', duration: Infinity });
       
       const ffmpeg = ffmpegRef.current;
-      const fetchFile = fetchFileRef.current;
+      const fetchFile = window.fetchFile;
       
       console.log('📥 Fetching GIF data...');
       const gifData = await fetchFile(preview);
@@ -358,7 +366,7 @@ Return ONLY the filename without extension, nothing else.`,
   };
 
   const convertMp4ToGif = async () => {
-    if (!ffmpegLoaded || !ffmpegRef.current || !fetchFileRef.current) {
+    if (!ffmpegLoaded || !ffmpegRef.current || !window.fetchFile) {
       toast.error('Video processor not ready');
       return;
     }
@@ -368,7 +376,7 @@ Return ONLY the filename without extension, nothing else.`,
       toast.info('Converting video to GIF...', { id: 'processing', duration: Infinity });
       
       const ffmpeg = ffmpegRef.current;
-      const fetchFile = fetchFileRef.current;
+      const fetchFile = window.fetchFile;
       
       console.log('📥 Fetching video data...');
       const videoData = await fetchFile(preview);
@@ -434,7 +442,7 @@ Return ONLY the filename without extension, nothing else.`,
   };
 
   const processVideo = async () => {
-    if (!ffmpegLoaded || !ffmpegRef.current || !fetchFileRef.current) {
+    if (!ffmpegLoaded || !ffmpegRef.current || !window.fetchFile) {
       toast.error('Video processor not ready');
       return;
     }
@@ -444,7 +452,7 @@ Return ONLY the filename without extension, nothing else.`,
       toast.info('Compressing video...', { id: 'processing', duration: Infinity });
       
       const ffmpeg = ffmpegRef.current;
-      const fetchFile = fetchFileRef.current;
+      const fetchFile = window.fetchFile;
       
       console.log('📥 Fetching video data...');
       const videoData = await fetchFile(preview);
@@ -524,7 +532,7 @@ Return ONLY the filename without extension, nothing else.`,
   };
 
   const processAudio = async () => {
-    if (!ffmpegLoaded || !ffmpegRef.current || !fetchFileRef.current) {
+    if (!ffmpegLoaded || !ffmpegRef.current || !window.fetchFile) {
       toast.error('Audio processor not ready');
       return;
     }
@@ -534,7 +542,7 @@ Return ONLY the filename without extension, nothing else.`,
       toast.info('Compressing audio...', { id: 'processing', duration: Infinity });
       
       const ffmpeg = ffmpegRef.current;
-      const fetchFile = fetchFileRef.current;
+      const fetchFile = window.fetchFile;
       
       console.log('📥 Fetching audio data...');
       const audioData = await fetchFile(preview);
