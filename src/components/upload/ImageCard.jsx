@@ -644,117 +644,115 @@ export default function ImageCard({ image, onRemove, onProcessed, onCompare }) {
         )}
 
         {/* GIF Controls */}
-        {isGif && gifFrameCount > 0 && (
-          <div className="space-y-3 p-3 bg-purple-50 dark:bg-purple-950/20 border border-purple-200 dark:border-purple-800 rounded-lg">
-            <div className="flex items-center gap-2">
-              <Film className="w-4 h-4 text-purple-600 dark:text-purple-400" />
-              <h4 className="text-xs font-bold text-purple-900 dark:text-purple-100 uppercase tracking-wider">
-                GIF Animation Controls
-              </h4>
-            </div>
-            
-            {/* Frame Selection */}
-            <div>
-              <div className="flex items-center justify-between mb-2">
-                <label className="text-xs font-medium text-slate-700 dark:text-slate-300">
-                  Selected Frames ({selectedFrames.length}/{gifFrameCount})
-                </label>
-                <div className="flex gap-1">
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    onClick={selectAllFrames}
-                    className="h-6 px-2 text-[10px]"
-                    disabled={processing || selectedFrames.length === gifFrameCount}
-                  >
-                    Select All
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    onClick={deselectAllFrames}
-                    className="h-6 px-2 text-[10px]"
-                    disabled={processing || selectedFrames.length === 1}
-                  >
-                    Deselect All (Keep 1)
-                  </Button>
+        {isGif && !processed && gifFrameCount > 0 && (
+          <TooltipProvider>
+            <div className="space-y-3 p-3 bg-purple-50 dark:bg-purple-950/20 border border-purple-200 dark:border-purple-800 rounded-lg">
+              <div className="flex items-center gap-2">
+                <Film className="w-4 h-4 text-purple-600 dark:text-purple-400" />
+                <h4 className="text-xs font-bold text-purple-900 dark:text-purple-100 uppercase tracking-wider">
+                  GIF Animation Controls
+                </h4>
+              </div>
+              
+              {/* Frame Selection */}
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <label className="text-xs font-medium text-slate-700 dark:text-slate-300">
+                    Frames ({selectedFrames.length}/{gifFrameCount})
+                  </label>
+                  <div className="flex gap-1">
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={selectAllFrames}
+                      className="h-6 px-2 text-[10px]"
+                      disabled={selectedFrames.length === gifFrameCount}
+                    >
+                      All
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={deselectAllFrames}
+                      className="h-6 px-2 text-[10px]"
+                      disabled={selectedFrames.length === 1}
+                    >
+                      None
+                    </Button>
+                  </div>
+                </div>
+                <div className="flex flex-wrap gap-1 max-h-24 overflow-y-auto p-2 bg-white dark:bg-slate-900 rounded border border-slate-200 dark:border-slate-800">
+                  {Array.from({ length: gifFrameCount }, (_, i) => (
+                    <Button
+                      key={i}
+                      size="sm"
+                      variant={selectedFrames.includes(i) ? "default" : "outline"}
+                      onClick={() => toggleFrame(i)}
+                      className={cn(
+                        "h-6 w-10 text-[10px] p-0",
+                        selectedFrames.includes(i) && "bg-purple-600 hover:bg-purple-700"
+                      )}
+                    >
+                      {i + 1}
+                    </Button>
+                  ))}
                 </div>
               </div>
-              <div className="flex flex-wrap gap-1 max-h-24 overflow-y-auto p-2 bg-white dark:bg-slate-900 rounded border border-slate-200 dark:border-slate-800">
-                {Array.from({ length: gifFrameCount }, (_, i) => (
-                  <Button
-                    key={i}
-                    size="sm"
-                    variant={selectedFrames.includes(i) ? "default" : "outline"}
-                    onClick={() => toggleFrame(i)}
-                    disabled={processing}
-                    className={cn(
-                      "h-6 w-10 text-[10px] p-0",
-                      selectedFrames.includes(i) && "bg-purple-600 hover:bg-purple-700"
-                    )}
-                  >
-                    {i + 1}
-                  </Button>
-                ))}
-              </div>
-            </div>
 
-            {/* Frame Delay */}
-            <div>
-              <div className="flex items-center gap-2 mb-2">
-                <label className="text-xs font-medium text-slate-700 dark:text-slate-300">
-                  Frame Delay: {gifFrameDelay}ms
-                </label>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Info className="w-3 h-3 text-slate-400 cursor-help" />
-                  </TooltipTrigger>
-                  <TooltipContent className="max-w-xs">
-                    <p className="text-xs">Time each frame is displayed. Lower = faster animation.</p>
-                  </TooltipContent>
-                </Tooltip>
-              </div>
-              <Slider
-                value={[gifFrameDelay]}
-                onValueChange={(value) => setGifFrameDelay(value[0])}
-                min={10}
-                max={1000} // Increased max delay for more control
-                step={10}
-                className="w-full"
-                disabled={processing}
-              />
-            </div>
-
-            {/* Loop Count */}
-            <div>
-              <label className="text-xs font-medium text-slate-700 dark:text-slate-300 mb-2 block">
-                Loop Count
-              </label>
-              <div className="flex gap-2">
-                <Button
-                  size="sm"
-                  variant={gifLoopCount === 0 ? "default" : "outline"}
-                  onClick={() => setGifLoopCount(0)}
-                  disabled={processing}
-                  className={cn(
-                    "flex-1 text-xs h-8",
-                    gifLoopCount === 0 && "bg-purple-600 hover:bg-purple-700"
-                  )}
-                >
-                  Infinite
-                </Button>
-                <Input
-                  type="number"
-                  value={gifLoopCount || ''}
-                  onChange={(e) => setGifLoopCount(Math.max(0, parseInt(e.target.value) || 0))}
-                  placeholder="Custom"
-                  className="flex-1 h-8 text-xs"
-                  min="0"
-                  disabled={processing}
+              {/* Frame Delay */}
+              <div>
+                <div className="flex items-center gap-2 mb-2">
+                  <label className="text-xs font-medium text-slate-700 dark:text-slate-300">
+                    Frame Delay: {gifFrameDelay}ms
+                  </label>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Info className="w-3 h-3 text-slate-400 cursor-help" />
+                    </TooltipTrigger>
+                    <TooltipContent className="max-w-xs">
+                      <p className="text-xs">Time each frame is displayed. Lower = faster animation</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </div>
+                <Slider
+                  value={[gifFrameDelay]}
+                  onValueChange={(value) => setGifFrameDelay(value[0])}
+                  min={10}
+                  max={500}
+                  step={10}
+                  className="w-full"
                 />
               </div>
+
+              {/* Loop Count */}
+              <div>
+                <label className="text-xs font-medium text-slate-700 dark:text-slate-300 mb-2 block">
+                  Loop Count
+                </label>
+                <div className="flex gap-2">
+                  <Button
+                    size="sm"
+                    variant={gifLoopCount === 0 ? "default" : "outline"}
+                    onClick={() => setGifLoopCount(0)}
+                    className={cn(
+                      "flex-1 text-xs h-8",
+                      gifLoopCount === 0 && "bg-purple-600 hover:bg-purple-700"
+                    )}
+                  >
+                    Infinite
+                  </Button>
+                  <Input
+                    type="number"
+                    value={gifLoopCount || ''}
+                    onChange={(e) => setGifLoopCount(Math.max(0, parseInt(e.target.value) || 0))}
+                    placeholder="Custom"
+                    className="flex-1 h-8 text-xs"
+                    min="0"
+                  />
+                </div>
+              </div>
             </div>
-          </div>
+          </TooltipProvider>
         )}
 
         <Collapsible open={settingsOpen} onOpenChange={setSettingsOpen}>
