@@ -67,12 +67,12 @@ export default function ImageComparisonModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-6xl w-[95vw] max-h-[90vh] p-0 overflow-hidden bg-slate-950">
-        <DialogHeader className="p-6 pb-4 border-b border-slate-800">
-          <div className="flex items-start justify-between">
-            <div>
-              <DialogTitle className="text-white text-xl mb-2">{fileName}</DialogTitle>
-              <div className="flex items-center gap-4 text-sm">
+      <DialogContent className="max-w-7xl w-[95vw] h-[95vh] p-0 overflow-hidden bg-slate-950 flex flex-col">
+        <DialogHeader className="p-4 md:p-6 pb-3 md:pb-4 border-b border-slate-800 flex-shrink-0">
+          <div className="flex items-start justify-between gap-4">
+            <div className="flex-1 min-w-0">
+              <DialogTitle className="text-white text-base md:text-xl mb-2 truncate">{fileName}</DialogTitle>
+              <div className="flex items-center gap-2 md:gap-4 text-xs md:text-sm flex-wrap">
                 <div className="flex items-center gap-2">
                   <span className="text-slate-400">Original:</span>
                   <span className="text-white font-medium">{formatFileSize(originalSize)}</span>
@@ -82,7 +82,7 @@ export default function ImageComparisonModal({
                   <span className="text-slate-400">Compressed:</span>
                   <span className="text-emerald-400 font-medium">{formatFileSize(compressedSize)}</span>
                 </div>
-                <Badge className="bg-emerald-600 text-white">
+                <Badge className="bg-emerald-600 text-white text-xs">
                   Saved {savingsPercent}%
                 </Badge>
               </div>
@@ -91,17 +91,17 @@ export default function ImageComparisonModal({
               variant="ghost"
               size="icon"
               onClick={onClose}
-              className="text-slate-400 hover:text-white hover:bg-slate-800"
+              className="text-slate-400 hover:text-white hover:bg-slate-800 flex-shrink-0"
             >
               <X className="w-5 h-5" />
             </Button>
           </div>
         </DialogHeader>
 
-        <div className="p-6">
+        <div className="flex-1 overflow-auto p-4 md:p-6">
           <div 
             ref={containerRef}
-            className="relative w-full aspect-video bg-slate-900 rounded-xl overflow-hidden cursor-col-resize select-none"
+            className="relative w-full h-full bg-slate-900 rounded-xl overflow-hidden cursor-col-resize select-none flex items-center justify-center"
             onMouseDown={() => setIsDragging(true)}
             onTouchStart={() => setIsDragging(true)}
           >
@@ -109,28 +109,28 @@ export default function ImageComparisonModal({
             <img
               src={compressedImage}
               alt="Compressed"
-              className="absolute inset-0 w-full h-full object-contain"
+              className="max-w-full max-h-full w-auto h-auto object-contain"
               draggable="false"
             />
 
             {/* Original Image (Foreground - Left Side with clip) */}
             <div
-              className="absolute inset-0 overflow-hidden"
+              className="absolute inset-0 flex items-center justify-center overflow-hidden"
               style={{ clipPath: `inset(0 ${100 - sliderPosition}% 0 0)` }}
             >
               <img
                 src={originalImage}
                 alt="Original"
-                className="absolute inset-0 w-full h-full object-contain"
+                className="max-w-full max-h-full w-auto h-auto object-contain"
                 draggable="false"
               />
             </div>
 
             {/* Labels */}
-            <Badge className="absolute top-4 left-4 bg-slate-900/80 backdrop-blur-sm text-white border border-slate-700">
+            <Badge className="absolute top-4 left-4 bg-slate-900/80 backdrop-blur-sm text-white border border-slate-700 text-xs">
               Original
             </Badge>
-            <Badge className="absolute top-4 right-4 bg-emerald-600/80 backdrop-blur-sm text-white border border-emerald-500">
+            <Badge className="absolute top-4 right-4 bg-emerald-600/80 backdrop-blur-sm text-white border border-emerald-500 text-xs">
               Compressed
             </Badge>
 
@@ -140,32 +140,34 @@ export default function ImageComparisonModal({
               style={{ left: `${sliderPosition}%`, transform: 'translateX(-50%)' }}
             >
               {/* Slider Handle */}
-              <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-12 h-12 bg-white rounded-full shadow-2xl flex items-center justify-center cursor-col-resize">
-                <MoveHorizontal className="w-6 h-6 text-slate-900" />
+              <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-10 h-10 md:w-12 md:h-12 bg-white rounded-full shadow-2xl flex items-center justify-center cursor-col-resize">
+                <MoveHorizontal className="w-5 h-5 md:w-6 md:h-6 text-slate-900" />
               </div>
             </div>
 
             {/* Instruction */}
             {sliderPosition === 50 && !isDragging && (
-              <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-slate-900/90 backdrop-blur-sm text-white px-4 py-2 rounded-full text-sm border border-slate-700 pointer-events-none animate-pulse">
+              <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-slate-900/90 backdrop-blur-sm text-white px-3 py-2 md:px-4 rounded-full text-xs md:text-sm border border-slate-700 pointer-events-none animate-pulse">
                 ← Drag to compare →
               </div>
             )}
           </div>
+        </div>
 
-          {/* Stats */}
-          <div className="mt-6 grid grid-cols-3 gap-4">
-            <div className="bg-slate-900 rounded-lg p-4 border border-slate-800">
-              <p className="text-slate-400 text-sm mb-1">Original Size</p>
-              <p className="text-white text-xl font-bold">{formatFileSize(originalSize)}</p>
+        {/* Stats */}
+        <div className="p-4 md:p-6 pt-0 flex-shrink-0">
+          <div className="grid grid-cols-3 gap-2 md:gap-4">
+            <div className="bg-slate-900 rounded-lg p-3 md:p-4 border border-slate-800">
+              <p className="text-slate-400 text-xs md:text-sm mb-1">Original</p>
+              <p className="text-white text-base md:text-xl font-bold truncate">{formatFileSize(originalSize)}</p>
             </div>
-            <div className="bg-slate-900 rounded-lg p-4 border border-slate-800">
-              <p className="text-slate-400 text-sm mb-1">Compressed Size</p>
-              <p className="text-emerald-400 text-xl font-bold">{formatFileSize(compressedSize)}</p>
+            <div className="bg-slate-900 rounded-lg p-3 md:p-4 border border-slate-800">
+              <p className="text-slate-400 text-xs md:text-sm mb-1">Compressed</p>
+              <p className="text-emerald-400 text-base md:text-xl font-bold truncate">{formatFileSize(compressedSize)}</p>
             </div>
-            <div className="bg-slate-900 rounded-lg p-4 border border-slate-800">
-              <p className="text-slate-400 text-sm mb-1">Space Saved</p>
-              <p className="text-emerald-400 text-xl font-bold">{savingsPercent}%</p>
+            <div className="bg-slate-900 rounded-lg p-3 md:p-4 border border-slate-800">
+              <p className="text-slate-400 text-xs md:text-sm mb-1">Saved</p>
+              <p className="text-emerald-400 text-base md:text-xl font-bold">{savingsPercent}%</p>
             </div>
           </div>
         </div>
