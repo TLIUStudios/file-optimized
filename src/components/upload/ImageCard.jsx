@@ -1,10 +1,10 @@
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, lazy } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Slider } from "@/components/ui/slider";
-import { Download, X, Loader2, CheckCircle2, ArrowRight, Settings2, AlertCircle, Info } from "lucide-react";
+import { Download, X, Loader2, CheckCircle2, ArrowRight, Settings2, AlertCircle, Info, Edit2, RefreshCcw } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
@@ -16,16 +16,20 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { Switch } from "@/components/ui/switch";
+import { toast } from "@/components/ui/use-toast"; // Assuming toast is available from shadcn/ui or similar
+
+// Lazy load the editor
+const ImageEditor = lazy(() => import("./ImageEditor"));
 
 export default function ImageCard({ image, onRemove, onProcessed, onCompare }) {
   const [processing, setProcessing] = useState(false);
   const [processed, setProcessed] = useState(false);
   const [originalSize, setOriginalSize] = useState(0);
   const [compressedSize, setCompressedSize] = useState(0);
-  const [preview, setPreview] = useState(null);
+  const [preview, setPreview] = useState(null); // Current original preview (might change after editing)
   const [compressedPreview, setCompressedPreview] = useState(null);
   const [quality, setQuality] = useState(80);
-  const [format, setFormat] = useState('webp');
+  const [format, setFormat] = useState('webp'); // User's chosen format for initial compression
   const [maxWidth, setMaxWidth] = useState(null);
   const [maxHeight, setMaxHeight] = useState(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
@@ -35,6 +39,10 @@ export default function ImageCard({ image, onRemove, onProcessed, onCompare }) {
   const [compressionMode, setCompressionMode] = useState('balanced');
   const [stripMetadata, setStripMetadata] = useState(true);
   const [noiseReduction, setNoiseReduction] = useState(false);
+
+  // New states for editing and format conversion
+  const [showEditor, setShowEditor] = useState(false);
+  const [outputFormat, setOutputFormat] = useState(null); // Actual format of the compressedPreview
 
   useEffect(() => {
     const reader = new FileReader();
@@ -48,6 +56,7 @@ export default function ImageCard({ image, onRemove, onProcessed, onCompare }) {
   const processImage = async () => {
     setProcessing(true);
     setError(null);
+    setOutputFormat(null); // Reset output format on re-process
     
     try {
       const img = new Image();
@@ -156,6 +165,7 @@ export default function ImageCard({ image, onRemove, onProcessed, onCompare }) {
       setCompressedPreview(compressedUrl);
       setCompressedSize(blob.size);
       setProcessed(true);
+      setOutputFormat(format); // Set output format to the initially compressed format
 
       onProcessed({
         id: image.name,
@@ -179,7 +189,7 @@ export default function ImageCard({ image, onRemove, onProcessed, onCompare }) {
   const downloadImage = () => {
     const link = document.createElement('a');
     link.href = compressedPreview;
-    link.download = `${image.name.split('.')[0]}_compressed.${format}`;
+    link.download = `${image.name.split('.')[0]}_compressed.${outputFormat || format}`;
     link.click();
   };
 
@@ -190,8 +200,79 @@ export default function ImageCard({ image, onRemove, onProcessed, onCompare }) {
         compressed: compressedPreview,
         originalSize,
         compressedSize,
-        fileName: `${image.name.split('.')[0]}_compressed.${format}`
+        fileName: `${image.name.split('.')[0]}_compressed.${outputFormat || format}`
       });
+    }
+  };
+
+  const handleEditImage = () => {
+    setShowEditor(true);
+  };
+
+  const handleSaveEdit = (newImageUrl, newBlob) => {
+    setPreview(newImageUrl);
+    // Update the original size if needed (e.g., if cropping significantly changed content)
+    setOriginalSize(newBlob.size); 
+    // If the image was already processed, mark it as unprocessed so it needs to be re-compressed
+    if (processed) {
+      setProcessed(false);
+      setCompressedPreview(null);
+      setCompressedSize(0);
+      setError(null);
+    }
+    setShowEditor(false);
+    toast.success("Image edited successfully. Re-compress to apply changes.");
+  };
+
+  const convertFormat = async (newFormat) => {
+    if (!compressedPreview || processing) return;
+    
+    setProcessing(true);
+    setError(null);
+
+    try {
+      const img = new Image();
+      img.src = compressedPreview;
+      
+      await new Promise((resolve) => {
+        img.onload = resolve;
+      });
+
+      const canvas = document.createElement('canvas');
+      canvas.width = img.width;
+      canvas.height = img.height;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(img, 0, 0);
+
+      const mimeType = newFormat === 'jpg' ? 'image/jpeg' : `image/${newFormat}`;
+      const blob = await new Promise((resolve) => {
+        // Use the current compression quality for format conversion
+        canvas.toBlob((b) => resolve(b), mimeType, quality / 100);
+      });
+
+      const url = URL.createObjectURL(blob);
+      setCompressedPreview(url);
+      setCompressedSize(blob.size); // Update compressed size for the new format
+      setOutputFormat(newFormat); // Update the actual output format
+      
+      onProcessed({
+        id: image.name,
+        originalFile: image, // Keep original file
+        compressedBlob: blob,
+        compressedUrl: url,
+        originalSize: originalSize, // Original size remains the same
+        compressedSize: blob.size,
+        format: newFormat,
+        filename: `${image.name.split('.')[0]}.${newFormat}`
+      });
+      
+      toast.success(`Converted to ${newFormat.toUpperCase()}`);
+    } catch (error) {
+      console.error('Error converting format:', error);
+      setError('Failed to convert format');
+      toast.error('Failed to convert format');
+    } finally {
+      setProcessing(false);
     }
   };
 
@@ -207,7 +288,8 @@ export default function ImageCard({ image, onRemove, onProcessed, onCompare }) {
 
   // Extract file extensions
   const originalExt = image.name.split('.').pop().toUpperCase();
-  const compressedExt = format.toUpperCase();
+  const displayFormat = outputFormat || format;
+  const displayCompressedExt = displayFormat.toUpperCase();
 
   return (
     <Card className="overflow-hidden bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 shadow-lg hover:shadow-xl transition-shadow">
@@ -229,6 +311,17 @@ export default function ImageCard({ image, onRemove, onProcessed, onCompare }) {
               <Badge className="absolute bottom-2 right-2 bg-slate-900/95 backdrop-blur-sm text-white border border-slate-700 text-xs px-2 py-1 font-bold shadow-lg">
                 {originalExt}
               </Badge>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleEditImage();
+                }}
+                className="absolute top-2 right-2 bg-white/80 hover:bg-white dark:bg-slate-800/80 dark:hover:bg-slate-800 h-7 w-7 rounded-lg"
+              >
+                <Edit2 className="w-3 h-3" />
+              </Button>
             </div>
           )}
           {compressedPreview ? (
@@ -245,7 +338,7 @@ export default function ImageCard({ image, onRemove, onProcessed, onCompare }) {
                 Compressed
               </Badge>
               <Badge className="absolute bottom-2 right-2 bg-emerald-600/95 backdrop-blur-sm text-white border border-emerald-500 text-xs px-2 py-1 font-bold shadow-lg">
-                {compressedExt}
+                {displayCompressedExt}
               </Badge>
             </div>
           ) : (
@@ -293,6 +386,30 @@ export default function ImageCard({ image, onRemove, onProcessed, onCompare }) {
           </div>
         )}
 
+        {/* Format Converter - shown after compression */}
+        {processed && (
+          <div className="space-y-2">
+            <label className="text-xs font-medium text-slate-700 dark:text-slate-300">
+              Convert Format
+            </label>
+            <div className="flex gap-2">
+              {['webp', 'jpg', 'png'].map((fmt) => (
+                <Button
+                  key={fmt}
+                  size="sm"
+                  variant={displayFormat === fmt ? "default" : "outline"}
+                  onClick={() => convertFormat(fmt)}
+                  disabled={displayFormat === fmt || processing}
+                  className="flex-1 text-xs"
+                >
+                  {fmt.toUpperCase()}
+                  {displayFormat === fmt && processing && <Loader2 className="ml-1 h-3 w-3 animate-spin" />}
+                </Button>
+              ))}
+            </div>
+          </div>
+        )}
+
         <Collapsible open={settingsOpen} onOpenChange={setSettingsOpen}>
           <CollapsibleTrigger asChild>
             <Button variant="outline" className="w-full justify-between" size="sm">
@@ -323,7 +440,7 @@ export default function ImageCard({ image, onRemove, onProcessed, onCompare }) {
                     </TooltipContent>
                   </Tooltip>
                 </div>
-                <Select value={compressionMode} onValueChange={setCompressionMode}>
+                <Select value={compressionMode} onValueChange={setCompressionMode} disabled={processing}>
                   <SelectTrigger className="h-9">
                     <SelectValue />
                   </SelectTrigger>
@@ -354,7 +471,7 @@ export default function ImageCard({ image, onRemove, onProcessed, onCompare }) {
                     </TooltipContent>
                   </Tooltip>
                 </div>
-                <Select value={format} onValueChange={setFormat}>
+                <Select value={format} onValueChange={setFormat} disabled={processing}>
                   <SelectTrigger className="h-9">
                     <SelectValue />
                   </SelectTrigger>
@@ -388,6 +505,7 @@ export default function ImageCard({ image, onRemove, onProcessed, onCompare }) {
                   max={100}
                   step={1}
                   className="w-full"
+                  disabled={processing}
                 />
               </div>
 
@@ -413,6 +531,7 @@ export default function ImageCard({ image, onRemove, onProcessed, onCompare }) {
                     value={maxWidth || ''}
                     onChange={(e) => setMaxWidth(e.target.value ? parseInt(e.target.value) : null)}
                     className="w-full h-9 px-3 rounded-md border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 text-sm"
+                    disabled={processing}
                   />
                 </div>
                 <div>
@@ -435,6 +554,7 @@ export default function ImageCard({ image, onRemove, onProcessed, onCompare }) {
                     value={maxHeight || ''}
                     onChange={(e) => setMaxHeight(e.target.value ? parseInt(e.target.value) : null)}
                     className="w-full h-9 px-3 rounded-md border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 text-sm"
+                    disabled={processing}
                   />
                 </div>
               </div>
@@ -458,6 +578,7 @@ export default function ImageCard({ image, onRemove, onProcessed, onCompare }) {
                   <Switch
                     checked={stripMetadata}
                     onCheckedChange={setStripMetadata}
+                    disabled={processing}
                   />
                 </div>
 
@@ -478,6 +599,7 @@ export default function ImageCard({ image, onRemove, onProcessed, onCompare }) {
                   <Switch
                     checked={noiseReduction}
                     onCheckedChange={setNoiseReduction}
+                    disabled={processing}
                   />
                 </div>
               </div>
@@ -509,11 +631,13 @@ export default function ImageCard({ image, onRemove, onProcessed, onCompare }) {
                 className="flex-1"
                 disabled={processing}
               >
+                <RefreshCcw className="w-4 h-4 mr-2" />
                 Reprocess
               </Button>
               <Button
                 onClick={downloadImage}
                 className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white"
+                disabled={processing}
               >
                 <Download className="w-4 h-4 mr-2" />
                 Download
@@ -529,6 +653,16 @@ export default function ImageCard({ image, onRemove, onProcessed, onCompare }) {
           </div>
         )}
       </div>
+
+      {/* Editor Modal - Lazy load */}
+      {showEditor && (
+        <ImageEditor
+          isOpen={showEditor}
+          onClose={() => setShowEditor(false)}
+          imageData={preview}
+          onSave={handleSaveEdit}
+        />
+      )}
     </Card>
   );
 }

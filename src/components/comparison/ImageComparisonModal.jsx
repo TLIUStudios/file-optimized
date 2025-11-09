@@ -1,3 +1,4 @@
+
 import { useState, useRef, useEffect } from "react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { X, MoveHorizontal, ZoomIn, ZoomOut, Maximize2, Copy, RefreshCw, Download } from "lucide-react";
@@ -6,14 +7,14 @@ import { Badge } from "@/components/ui/badge";
 import { base44 } from "@/api/base44Client";
 import { toast } from "sonner";
 
-export default function ImageComparisonModal({ 
-  isOpen, 
-  onClose, 
-  originalImage, 
+export default function ImageComparisonModal({
+  isOpen,
+  onClose,
+  originalImage,
   compressedImage,
   originalSize,
   compressedSize,
-  fileName 
+  fileName
 }) {
   const [sliderPosition, setSliderPosition] = useState(50);
   const [isDragging, setIsDragging] = useState(false);
@@ -48,63 +49,43 @@ export default function ImageComparisonModal({
     setIsGenerating(true);
     setAiTitle("");
     setAiDescription("");
-    
+
     try {
-      // Step 1: Convert base64 to blob
-      console.log('📦 Converting image to blob...');
+      // Convert compressed image blob
       const res = await fetch(compressedImage);
       const blob = await res.blob();
-      console.log('✅ Blob created:', blob.type, blob.size, 'bytes');
-      
-      // Step 2: Upload file
-      console.log('☁️ Uploading file...');
-      const uploadRes = await base44.integrations.Core.UploadFile({ file: blob });
-      console.log('✅ Upload successful:', uploadRes);
-      
-      const fileUrl = uploadRes.file_url;
-      console.log('🔗 File URL:', fileUrl);
-      
-      // Step 3: Call AI
-      console.log('🤖 Calling AI to analyze image...');
-      const aiResponse = await base44.integrations.Core.InvokeLLM({
-        prompt: `You are analyzing an image. Please provide:
+      console.log('✅ Blob created:', blob.size, 'bytes');
 
-1. A short, descriptive title for this image (maximum 60 characters)
-2. A brief description of what's in the image (maximum 160 characters)
+      // Create a simple file object
+      const file = new File([blob], 'image.jpg', { type: blob.type });
+      console.log('📁 File created');
 
-Be specific and accurate about what you see.`,
-        file_urls: [fileUrl],
+      // Upload
+      const uploadResult = await base44.integrations.Core.UploadFile({ file });
+      console.log('☁️ Upload complete:', uploadResult.file_url);
+
+      // Generate with AI - simpler prompt
+      const aiResult = await base44.integrations.Core.InvokeLLM({
+        prompt: "Analyze this image and provide a short title (under 60 chars) and brief description (under 160 chars) of what you see.",
+        file_urls: [uploadResult.file_url],
         response_json_schema: {
           type: "object",
           properties: {
-            title: { 
-              type: "string",
-              description: "A short, descriptive title for the image"
-            },
-            description: { 
-              type: "string",
-              description: "A brief description of what's in the image"
-            }
-          },
-          required: ["title", "description"]
+            title: { type: "string" },
+            description: { type: "string" }
+          }
         }
       });
-      
-      console.log('✅ AI Response:', aiResponse);
-      
-      if (aiResponse && typeof aiResponse === 'object' && aiResponse.title && aiResponse.description) {
-        setAiTitle(aiResponse.title);
-        setAiDescription(aiResponse.description);
-        toast.success('AI metadata generated successfully!');
-        console.log('✨ Metadata set:', { title: aiResponse.title, description: aiResponse.description });
-      } else {
-        console.error('❌ Invalid AI response format:', aiResponse);
-        toast.error('AI returned an invalid response');
-      }
+
+      console.log('🤖 AI Response:', aiResult);
+
+      setAiTitle(aiResult.title || "Generated Title");
+      setAiDescription(aiResult.description || "Generated description of the image.");
+      toast.success('Metadata generated!');
+
     } catch (error) {
-      console.error('❌ Error generating metadata:', error);
-      console.error('Error details:', error.message, error.stack);
-      toast.error(`Failed to generate metadata: ${error.message}`);
+      console.error('❌ Error:', error);
+      toast.error('Could not generate metadata: ' + error.message);
     } finally {
       setIsGenerating(false);
     }
@@ -128,7 +109,7 @@ Be specific and accurate about what you see.`,
     const divisor = gcd(width, height);
     const ratioW = width / divisor;
     const ratioH = height / divisor;
-    
+
     const ratio = width / height;
     if (Math.abs(ratio - 1) < 0.01) return "1:1";
     if (Math.abs(ratio - 16/9) < 0.01) return "16:9";
@@ -136,7 +117,7 @@ Be specific and accurate about what you see.`,
     if (Math.abs(ratio - 3/2) < 0.01) return "3:2";
     if (Math.abs(ratio - 21/9) < 0.01) return "21:9";
     if (Math.abs(ratio - 9/16) < 0.01) return "9:16";
-    
+
     if (ratioW > 100 || ratioH > 100) {
       return `${ratio.toFixed(2)}:1`;
     }
@@ -153,7 +134,7 @@ Be specific and accurate about what you see.`,
           setSliderPosition(Math.max(0, Math.min(100, percentage)));
         }
       }
-      
+
       if (isPanning) {
         const deltaX = e.clientX - panStart.x;
         const deltaY = e.clientY - panStart.y;
@@ -170,7 +151,7 @@ Be specific and accurate about what you see.`,
           const percentage = (x / rect.width) * 100;
           setSliderPosition(Math.max(0, Math.min(100, percentage)));
         }
-        
+
         if (isPanning) {
           const deltaX = e.touches[0].clientX - panStart.x;
           const deltaY = e.touches[0].clientY - panStart.y;
@@ -310,7 +291,7 @@ Be specific and accurate about what you see.`,
         <div className="flex flex-col lg:flex-row h-full overflow-hidden pt-[60px]">
           {/* Left Side - Image Comparison */}
           <div className="flex-1 relative overflow-hidden flex flex-col min-h-0">
-            <div 
+            <div
               ref={containerRef}
               className="relative w-full h-full bg-slate-100 dark:bg-slate-900 select-none flex flex-col items-center justify-center overflow-hidden"
             >
@@ -383,13 +364,13 @@ Be specific and accurate about what you see.`,
                     {originalExt}
                   </Badge>
                 </div>
-                
+
                 {zoom === 1 && (
                   <div className="px-4 py-2 bg-slate-600/80 dark:bg-slate-700/80 backdrop-blur-sm rounded-lg text-white text-sm font-medium animate-pulse">
                     ← Drag to compare →
                   </div>
                 )}
-                
+
                 <div className="flex flex-col gap-1 items-end">
                   <Badge className="bg-emerald-600 text-white text-sm px-3 py-1 font-semibold w-fit">
                     Compressed
@@ -434,18 +415,18 @@ Be specific and accurate about what you see.`,
 
               <div className="space-y-2">
                 <h3 className="text-slate-900 dark:text-white font-semibold text-xs uppercase tracking-wider">Compression Details</h3>
-                
+
                 <div className="space-y-2">
                   <div className="flex items-center justify-between py-2 px-3 bg-slate-50 dark:bg-slate-950 rounded-lg border border-slate-200 dark:border-slate-800">
                     <span className="text-slate-600 dark:text-slate-400 text-xs font-medium">Compression Ratio</span>
                     <span className="text-slate-900 dark:text-white font-bold text-sm">{(compressedSize / originalSize).toFixed(3)}:1</span>
                   </div>
-                  
+
                   <div className="flex items-center justify-between py-2 px-3 bg-slate-50 dark:bg-slate-950 rounded-lg border border-slate-200 dark:border-slate-800">
                     <span className="text-slate-600 dark:text-slate-400 text-xs font-medium">Quality</span>
                     <Badge className="bg-emerald-600 text-white font-semibold text-xs">High</Badge>
                   </div>
-                  
+
                   <div className="flex items-center justify-between py-2 px-3 bg-slate-50 dark:bg-slate-950 rounded-lg border border-slate-200 dark:border-slate-800">
                     <span className="text-slate-600 dark:text-slate-400 text-xs font-medium">Processing</span>
                     <Badge className="bg-blue-600 text-white font-semibold text-xs">Browser-side</Badge>
@@ -457,7 +438,7 @@ Be specific and accurate about what you see.`,
                         <span className="text-slate-600 dark:text-slate-400 text-xs font-medium">Resolution</span>
                         <span className="text-slate-900 dark:text-white font-bold text-sm">{imageDimensions.width} × {imageDimensions.height}</span>
                       </div>
-                      
+
                       <div className="flex items-center justify-between py-2 px-3 bg-slate-50 dark:bg-slate-950 rounded-lg border border-slate-200 dark:border-slate-800">
                         <span className="text-slate-600 dark:text-slate-400 text-xs font-medium">Aspect Ratio</span>
                         <span className="text-slate-900 dark:text-white font-bold text-sm">{getAspectRatio(imageDimensions.width, imageDimensions.height)}</span>
