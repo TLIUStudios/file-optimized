@@ -1,14 +1,33 @@
-import { useState } from "react";
+import { useState, lazy, Suspense } from "react";
 import { Button } from "@/components/ui/button";
 import { Download, Trash2, Sparkles, Shield, Zap, Image as ImageIcon } from "lucide-react";
 import UploadZone from "../components/upload/UploadZone";
-import ImageCard from "../components/upload/ImageCard";
 import { motion, AnimatePresence } from "framer-motion";
+import { Skeleton } from "@/components/ui/skeleton";
+
+// Lazy load heavy components for better performance
+const ImageCard = lazy(() => import("../components/upload/ImageCard"));
+const ImageComparisonModal = lazy(() => import("../components/comparison/ImageComparisonModal"));
+
+// Loading fallback for image cards
+function ImageCardSkeleton() {
+  return (
+    <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg p-4 space-y-4">
+      <div className="grid grid-cols-2 gap-2">
+        <Skeleton className="aspect-square rounded-lg" />
+        <Skeleton className="aspect-square rounded-lg" />
+      </div>
+      <Skeleton className="h-4 w-3/4" />
+      <Skeleton className="h-10 w-full" />
+    </div>
+  );
+}
 
 export default function Home() {
   const [images, setImages] = useState([]);
   const [processedImages, setProcessedImages] = useState({});
   const [isDragActive, setIsDragActive] = useState(false);
+  const [comparisonData, setComparisonData] = useState(null);
 
   const handleFilesSelected = (files) => {
     const newImages = Array.from(files).map(file => ({
@@ -34,12 +53,17 @@ export default function Home() {
     }));
   };
 
+  const handleCompare = (data) => {
+    setComparisonData(data);
+  };
+
   const clearAll = () => {
     setImages([]);
     setProcessedImages({});
   };
 
   const downloadAll = async () => {
+    // Dynamic import for JSZip - only loaded when needed
     const JSZip = (await import('https://cdn.jsdelivr.net/npm/jszip@3.10.1/+esm')).default;
     const zip = new JSZip();
 
@@ -149,14 +173,14 @@ export default function Home() {
           {/* Stats Bar */}
           <div className="bg-white dark:bg-slate-900 rounded-2xl p-6 border border-slate-200 dark:border-slate-800 shadow-lg">
             <div className="flex flex-wrap items-center justify-between gap-4">
-              <div className="flex items-center gap-6">
+              <div className="flex items-center gap-6 flex-wrap">
                 <div>
                   <p className="text-sm text-slate-500 dark:text-slate-400">Total Images</p>
                   <p className="text-2xl font-bold text-slate-900 dark:text-white">
                     {images.length}
                   </p>
                 </div>
-                <div className="h-12 w-px bg-slate-200 dark:bg-slate-800" />
+                <div className="h-12 w-px bg-slate-200 dark:bg-slate-800 hidden sm:block" />
                 <div>
                   <p className="text-sm text-slate-500 dark:text-slate-400">Original Size</p>
                   <p className="text-2xl font-bold text-slate-900 dark:text-white">
@@ -165,14 +189,14 @@ export default function Home() {
                 </div>
                 {Object.keys(processedImages).length > 0 && (
                   <>
-                    <div className="h-12 w-px bg-slate-200 dark:bg-slate-800" />
+                    <div className="h-12 w-px bg-slate-200 dark:bg-slate-800 hidden sm:block" />
                     <div>
                       <p className="text-sm text-slate-500 dark:text-slate-400">Compressed Size</p>
                       <p className="text-2xl font-bold text-emerald-600 dark:text-emerald-400">
                         {formatFileSize(totalCompressedSize)}
                       </p>
                     </div>
-                    <div className="h-12 w-px bg-slate-200 dark:bg-slate-800" />
+                    <div className="h-12 w-px bg-slate-200 dark:bg-slate-800 hidden sm:block" />
                     <div>
                       <p className="text-sm text-slate-500 dark:text-slate-400">Total Savings</p>
                       <p className="text-2xl font-bold text-emerald-600 dark:text-emerald-400">
@@ -183,7 +207,7 @@ export default function Home() {
                 )}
               </div>
 
-              <div className="flex gap-2">
+              <div className="flex gap-2 flex-wrap">
                 {Object.keys(processedImages).length > 0 && (
                   <Button
                     onClick={downloadAll}
@@ -236,16 +260,34 @@ export default function Home() {
                   exit={{ opacity: 0, scale: 0.8 }}
                   transition={{ duration: 0.3 }}
                 >
-                  <ImageCard
-                    image={image.file}
-                    onRemove={() => removeImage(image.id)}
-                    onProcessed={(data) => handleImageProcessed(image.id, data)}
-                  />
+                  <Suspense fallback={<ImageCardSkeleton />}>
+                    <ImageCard
+                      image={image.file}
+                      onRemove={() => removeImage(image.id)}
+                      onProcessed={(data) => handleImageProcessed(image.id, data)}
+                      onCompare={handleCompare}
+                    />
+                  </Suspense>
                 </motion.div>
               ))}
             </AnimatePresence>
           </div>
         </motion.div>
+      )}
+
+      {/* Comparison Modal */}
+      {comparisonData && (
+        <Suspense fallback={null}>
+          <ImageComparisonModal
+            isOpen={!!comparisonData}
+            onClose={() => setComparisonData(null)}
+            originalImage={comparisonData.original}
+            compressedImage={comparisonData.compressed}
+            originalSize={comparisonData.originalSize}
+            compressedSize={comparisonData.compressedSize}
+            fileName={comparisonData.fileName}
+          />
+        </Suspense>
       )}
     </div>
   );

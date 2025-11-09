@@ -3,12 +3,13 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Slider } from "@/components/ui/slider";
-import { Download, X, Loader2, CheckCircle2, ArrowRight, Settings2, AlertCircle } from "lucide-react";
+import { Download, X, Loader2, CheckCircle2, ArrowRight, Settings2, AlertCircle, Eye } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import LazyImage from "./LazyImage";
 
-export default function ImageCard({ image, onRemove, onProcessed }) {
+export default function ImageCard({ image, onRemove, onProcessed, onCompare }) {
   const [processing, setProcessing] = useState(false);
   const [processed, setProcessed] = useState(false);
   const [originalSize, setOriginalSize] = useState(0);
@@ -141,6 +142,18 @@ export default function ImageCard({ image, onRemove, onProcessed }) {
     link.click();
   };
 
+  const handleCompare = () => {
+    if (processed && compressedPreview) {
+      onCompare({
+        original: preview,
+        compressed: compressedPreview,
+        originalSize,
+        compressedSize,
+        fileName: image.name
+      });
+    }
+  };
+
   const savingsPercent = processed 
     ? ((1 - compressedSize / originalSize) * 100).toFixed(1)
     : 0;
@@ -156,19 +169,45 @@ export default function ImageCard({ image, onRemove, onProcessed }) {
       <div className="relative">
         <div className="grid grid-cols-2 gap-2 p-4 bg-slate-50 dark:bg-slate-950">
           {preview && (
-            <div className="relative aspect-square rounded-lg overflow-hidden bg-slate-200 dark:bg-slate-800">
-              <img src={preview} alt="Original" className="w-full h-full object-cover" />
+            <div 
+              className="relative aspect-square rounded-lg overflow-hidden bg-slate-200 dark:bg-slate-800 cursor-pointer group"
+              onClick={processed ? handleCompare : undefined}
+            >
+              <LazyImage 
+                src={preview} 
+                alt="Original" 
+                className="w-full h-full object-cover transition-transform group-hover:scale-105" 
+              />
               <Badge className="absolute top-2 left-2 bg-slate-900/80 text-white">
                 Original
               </Badge>
+              {processed && (
+                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                  <div className="bg-white dark:bg-slate-800 rounded-full p-3">
+                    <Eye className="w-6 h-6 text-slate-900 dark:text-white" />
+                  </div>
+                </div>
+              )}
             </div>
           )}
           {compressedPreview ? (
-            <div className="relative aspect-square rounded-lg overflow-hidden bg-slate-200 dark:bg-slate-800">
-              <img src={compressedPreview} alt="Compressed" className="w-full h-full object-cover" />
+            <div 
+              className="relative aspect-square rounded-lg overflow-hidden bg-slate-200 dark:bg-slate-800 cursor-pointer group"
+              onClick={handleCompare}
+            >
+              <LazyImage 
+                src={compressedPreview} 
+                alt="Compressed" 
+                className="w-full h-full object-cover transition-transform group-hover:scale-105" 
+              />
               <Badge className="absolute top-2 left-2 bg-emerald-600 text-white">
                 Compressed
               </Badge>
+              <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                <div className="bg-white dark:bg-slate-800 rounded-full p-3">
+                  <Eye className="w-6 h-6 text-slate-900 dark:text-white" />
+                </div>
+              </div>
             </div>
           ) : (
             <div className="aspect-square rounded-lg bg-slate-200 dark:bg-slate-800 flex items-center justify-center">
@@ -325,10 +364,21 @@ export default function ImageCard({ image, onRemove, onProcessed }) {
         </div>
 
         {processed && !error && (
-          <div className="flex items-center gap-2 text-sm text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/30 p-3 rounded-lg">
-            <CheckCircle2 className="w-4 h-4" />
-            <span>Saved {formatFileSize(originalSize - compressedSize)}</span>
-          </div>
+          <>
+            <div className="flex items-center gap-2 text-sm text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/30 p-3 rounded-lg">
+              <CheckCircle2 className="w-4 h-4" />
+              <span>Saved {formatFileSize(originalSize - compressedSize)}</span>
+            </div>
+            <Button
+              onClick={handleCompare}
+              variant="outline"
+              className="w-full"
+              size="sm"
+            >
+              <Eye className="w-4 h-4 mr-2" />
+              Compare Before/After
+            </Button>
+          </>
         )}
       </div>
     </Card>
