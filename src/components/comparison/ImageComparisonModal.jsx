@@ -223,10 +223,10 @@ export default function ImageComparisonModal({
 
         const baseName = fileName.split('.')[0];
         const formats = [
-          { ext: 'avif', mime: 'image/avif' },
           { ext: 'jpg', mime: 'image/jpeg' },
           { ext: 'png', mime: 'image/png' },
-          { ext: 'webp', mime: 'image/webp' }
+          { ext: 'webp', mime: 'image/webp' },
+          { ext: 'avif', mime: 'image/avif' }
         ];
 
         for (const f of formats) {
@@ -481,14 +481,6 @@ export default function ImageComparisonModal({
                 Download
               </Button>
               <Button
-                onClick={() => downloadImage('avif')}
-                variant="ghost"
-                size="sm"
-                className="h-8 px-2 text-xs hover:bg-slate-100 dark:hover:bg-slate-700"
-              >
-                AVIF
-              </Button>
-              <Button
                 onClick={() => downloadImage('jpg')}
                 variant="ghost"
                 size="sm"
@@ -511,6 +503,14 @@ export default function ImageComparisonModal({
                 className="h-8 px-2 text-xs hover:bg-slate-100 dark:hover:bg-slate-700"
               >
                 WebP
+              </Button>
+              <Button
+                onClick={() => downloadImage('avif')}
+                variant="ghost"
+                size="sm"
+                className="h-8 px-2 text-xs hover:bg-slate-100 dark:hover:bg-slate-700"
+              >
+                AVIF
               </Button>
             </div>
             <Button

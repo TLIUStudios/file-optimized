@@ -9,7 +9,7 @@ import { toast } from "sonner";
 import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
 
 // Lazy load heavy components for better performance
-const ImageCard = lazy(() => import("../components/upload/ImageCard"));
+const MediaCard = lazy(() => import("../components/upload/MediaCard"));
 const ImageComparisonModal = lazy(() => import("../components/comparison/ImageComparisonModal"));
 
 // Loading fallback for image cards
@@ -34,11 +34,11 @@ export default function Home() {
   const [autoProcessTrigger, setAutoProcessTrigger] = useState(0);
 
   const handleFilesSelected = (files) => {
-    const newImages = Array.from(files).map(file => ({
+    const newFiles = Array.from(files).map(file => ({
       id: `${file.name}-${Date.now()}-${Math.random()}`,
       file
     }));
-    setImages(prev => [...prev, ...newImages]);
+    setImages(prev => [...prev, ...newFiles]);
   };
 
   const handleDragEnd = (result) => {
@@ -144,10 +144,10 @@ export default function Home() {
         </div>
         <h1 className="text-4xl md:text-6xl font-bold text-slate-900 dark:text-white mb-4">
           Compress & Convert
-          <span className="block text-emerald-600 dark:text-emerald-400">Your Images</span>
+          <span className="block text-emerald-600 dark:text-emerald-400">Images, Videos & Audio</span>
         </h1>
         <p className="text-lg text-slate-600 dark:text-slate-400 max-w-2xl mx-auto">
-          Fast, secure, and powerful image compression. Reduce file size by up to 90% 
+          Fast, secure, and powerful media compression. Reduce file size by up to 90% 
           while maintaining quality. All processing happens in your browser.
         </p>
 
@@ -273,7 +273,7 @@ export default function Home() {
             <input
               type="file"
               multiple
-              accept="image/*"
+              accept="image/*,video/mp4,audio/mp3,audio/wav,audio/mpeg"
               onChange={(e) => handleFilesSelected(e.target.files)}
               className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
               id="add-more"
@@ -283,7 +283,7 @@ export default function Home() {
               className="w-full h-16 border-2 border-dashed hover:border-emerald-400 dark:hover:border-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-950/20"
             >
               <Sparkles className="w-5 h-5 mr-2" />
-              Add More Images
+              Add More Files
             </Button>
           </div>
 
@@ -312,7 +312,7 @@ export default function Home() {
                           }}
                         >
                           <Suspense fallback={<ImageCardSkeleton />}>
-                            <ImageCard
+                            <MediaCard
                               image={image.file}
                               onRemove={() => removeImage(image.id)}
                               onProcessed={(data) => handleImageProcessed(image.id, data)}
