@@ -1,10 +1,12 @@
 
 import { useState, useRef, useEffect } from "react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
-import { X, MoveHorizontal, ZoomIn, ZoomOut, Maximize2 } from "lucide-react";
+import { X, MoveHorizontal, ZoomIn, ZoomOut, Maximize2, Copy, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
+import { base44 } from "@/api/base44Client";
+import { toast } from "sonner";
 
 export default function ImageComparisonModal({ 
   isOpen, 
@@ -22,22 +24,84 @@ export default function ImageComparisonModal({
   const [isPanning, setIsPanning] = useState(false);
   const [panStart, setPanStart] = useState({ x: 0, y: 0 });
   const [imageDimensions, setImageDimensions] = useState({ width: 0, height: 0 });
+  const [aiMetadata, setAiMetadata] = useState(null);
+  const [isGeneratingAI, setIsGeneratingAI] = useState(false);
   const containerRef = useRef(null);
 
   // Extract file extensions
   const originalExt = fileName.split('.').pop().toUpperCase();
   const compressedExt = compressedImage.split('data:image/')[1]?.split(';')[0].toUpperCase() || 'WEBP';
 
-  // Load image dimensions
+  // Load image dimensions and generate AI metadata
   useEffect(() => {
-    if (originalImage) {
+    if (originalImage && isOpen) {
       const img = new Image();
       img.onload = () => {
         setImageDimensions({ width: img.width, height: img.height });
       };
       img.src = originalImage;
+      
+      // Generate AI metadata on first open
+      if (!aiMetadata && !isGeneratingAI) {
+        generateAIMetadata();
+      }
     }
-  }, [originalImage]);
+    // Reset AI metadata when modal closes
+    if (!isOpen) {
+      setAiMetadata(null);
+    }
+  }, [originalImage, isOpen, aiMetadata, isGeneratingAI]);
+
+  const generateAIMetadata = async () => {
+    setIsGeneratingAI(true);
+    try {
+      // Convert base64 to blob and upload
+      const response = await fetch(originalImage);
+      const blob = await response.blob();
+      const file = new File([blob], fileName, { type: blob.type });
+      
+      const { file_url } = await base44.integrations.Core.UploadFile({ file });
+      
+      // Generate metadata using AI with the uploaded image
+      const result = await base44.integrations.Core.InvokeLLM({
+        prompt: `Analyze this image and generate SEO-optimized, playful, and engaging metadata. Be creative, fun, and descriptive. Focus on what makes the image unique and interesting.
+
+Generate the following fields:
+- Title: A catchy, SEO-friendly title (max 60 characters)
+- Description: An engaging description (max 155 characters)
+- Category: A single relevant category
+- Mood: The emotional tone/vibe of the image
+- Alt Text: Descriptive alt text for accessibility (max 125 characters)
+- Tags: 5-8 relevant SEO tags as comma-separated values`,
+        add_context_from_internet: false,
+        file_urls: [file_url],
+        response_json_schema: {
+          type: "object",
+          properties: {
+            title: { type: "string" },
+            description: { type: "string" },
+            category: { type: "string" },
+            mood: { type: "string" },
+            alt_text: { type: "string" },
+            tags: { type: "string" }
+          },
+          required: ["title", "description", "category", "mood", "alt_text", "tags"]
+        }
+      });
+      
+      setAiMetadata(result);
+    } catch (error) {
+      console.error('Error generating AI metadata:', error);
+      toast.error('Failed to generate AI metadata');
+    } finally {
+      setIsGeneratingAI(false);
+    }
+  };
+
+  const copyToClipboard = (text, label) => {
+    navigator.clipboard.writeText(text);
+    toast.success(`${label} copied to clipboard`);
+  };
 
   // Calculate aspect ratio
   const getAspectRatio = (width, height) => {
@@ -288,11 +352,11 @@ export default function ImageComparisonModal({
                 {zoom === 1 && !isPanning && (
                   <>
                     <div
-                      className="absolute top-0 bottom-0 w-0.5 bg-slate-800 dark:bg-white shadow-2xl z-10"
+                      className="absolute top-0 bottom-0 w-0.5 bg-emerald-600 dark:bg-white shadow-2xl z-10"
                       style={{ left: `${sliderPosition}%`, transform: 'translateX(-50%)' }}
                     >
                       {/* Slider Handle */}
-                      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-12 h-12 bg-white dark:bg-slate-800 rounded-full shadow-2xl flex items-center justify-center cursor-col-resize border-2 border-slate-400 dark:border-slate-300">
+                      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-12 h-12 bg-white dark:bg-slate-800 rounded-full shadow-2xl flex items-center justify-center cursor-col-resize border-2 border-emerald-500 dark:border-slate-300">
                         <MoveHorizontal className="w-5 h-5 text-slate-900 dark:text-white" />
                       </div>
                     </div>
@@ -404,6 +468,138 @@ export default function ImageComparisonModal({
                     </>
                   )}
                 </div>
+              </div>
+
+              {/* Divider */}
+              <div className="h-px bg-gradient-to-r from-transparent via-slate-400 dark:via-slate-700 to-transparent" />
+
+              {/* AI Metadata Section */}
+              <div className="space-y-2.5">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-slate-900 dark:text-white font-semibold text-xs uppercase tracking-wider">AI Generated Metadata</h3>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={generateAIMetadata}
+                    disabled={isGeneratingAI}
+                    className="h-7 px-2 text-xs text-slate-600 hover:text-emerald-600 dark:text-slate-400 dark:hover:text-emerald-400 transition-colors"
+                  >
+                    <RefreshCw className={`w-3 h-3 mr-1 ${isGeneratingAI ? 'animate-spin' : ''}`} />
+                    Regenerate
+                  </Button>
+                </div>
+
+                {isGeneratingAI && !aiMetadata ? (
+                  <div className="py-8 text-center">
+                    <RefreshCw className="w-6 h-6 animate-spin mx-auto text-emerald-600 dark:text-emerald-400 mb-2" />
+                    <p className="text-xs text-slate-600 dark:text-slate-400">Generating metadata...</p>
+                  </div>
+                ) : aiMetadata ? (
+                  <div className="space-y-2">
+                    {/* Title */}
+                    <div className="bg-white/50 dark:bg-slate-950/50 rounded-lg border border-slate-300 dark:border-slate-800 p-2.5">
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="text-slate-600 dark:text-slate-400 text-[10px] font-medium uppercase tracking-wider">Title</span>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => copyToClipboard(aiMetadata.title, 'Title')}
+                          className="h-5 w-5 p-0 text-slate-500 hover:text-emerald-600 dark:text-slate-400 dark:hover:text-emerald-400 transition-colors"
+                        >
+                          <Copy className="w-3 h-3" />
+                        </Button>
+                      </div>
+                      <p className="text-slate-900 dark:text-white text-xs font-medium">{aiMetadata.title}</p>
+                    </div>
+
+                    {/* Description */}
+                    <div className="bg-white/50 dark:bg-slate-950/50 rounded-lg border border-slate-300 dark:border-slate-800 p-2.5">
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="text-slate-600 dark:text-slate-400 text-[10px] font-medium uppercase tracking-wider">Description</span>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => copyToClipboard(aiMetadata.description, 'Description')}
+                          className="h-5 w-5 p-0 text-slate-500 hover:text-emerald-600 dark:text-slate-400 dark:hover:text-emerald-400 transition-colors"
+                        >
+                          <Copy className="w-3 h-3" />
+                        </Button>
+                      </div>
+                      <p className="text-slate-900 dark:text-white text-xs">{aiMetadata.description}</p>
+                    </div>
+
+                    {/* Category & Mood */}
+                    <div className="grid grid-cols-2 gap-2">
+                      <div className="bg-white/50 dark:bg-slate-950/50 rounded-lg border border-slate-300 dark:border-slate-800 p-2.5">
+                        <div className="flex items-center justify-between mb-1">
+                          <span className="text-slate-600 dark:text-slate-400 text-[10px] font-medium uppercase tracking-wider">Category</span>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => copyToClipboard(aiMetadata.category, 'Category')}
+                            className="h-5 w-5 p-0 text-slate-500 hover:text-emerald-600 dark:text-slate-400 dark:hover:text-emerald-400 transition-colors"
+                          >
+                            <Copy className="w-3 h-3" />
+                          </Button>
+                        </div>
+                        <p className="text-slate-900 dark:text-white text-xs font-medium">{aiMetadata.category}</p>
+                      </div>
+
+                      <div className="bg-white/50 dark:bg-slate-950/50 rounded-lg border border-slate-300 dark:border-slate-800 p-2.5">
+                        <div className="flex items-center justify-between mb-1">
+                          <span className="text-slate-600 dark:text-slate-400 text-[10px] font-medium uppercase tracking-wider">Mood</span>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => copyToClipboard(aiMetadata.mood, 'Mood')}
+                            className="h-5 w-5 p-0 text-slate-500 hover:text-emerald-600 dark:text-slate-400 dark:hover:text-emerald-400 transition-colors"
+                          >
+                            <Copy className="w-3 h-3" />
+                          </Button>
+                        </div>
+                        <p className="text-slate-900 dark:text-white text-xs font-medium">{aiMetadata.mood}</p>
+                      </div>
+                    </div>
+
+                    {/* Alt Text */}
+                    <div className="bg-white/50 dark:bg-slate-950/50 rounded-lg border border-slate-300 dark:border-slate-800 p-2.5">
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="text-slate-600 dark:text-slate-400 text-[10px] font-medium uppercase tracking-wider">Alt Text</span>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => copyToClipboard(aiMetadata.alt_text, 'Alt Text')}
+                          className="h-5 w-5 p-0 text-slate-500 hover:text-emerald-600 dark:text-slate-400 dark:hover:text-emerald-400 transition-colors"
+                        >
+                          <Copy className="w-3 h-3" />
+                        </Button>
+                      </div>
+                      <p className="text-slate-900 dark:text-white text-xs">{aiMetadata.alt_text}</p>
+                    </div>
+
+                    {/* Tags */}
+                    <div className="bg-white/50 dark:bg-slate-950/50 rounded-lg border border-slate-300 dark:border-slate-800 p-2.5">
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="text-slate-600 dark:text-slate-400 text-[10px] font-medium uppercase tracking-wider">Tags</span>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => copyToClipboard(aiMetadata.tags, 'Tags')}
+                          className="h-5 w-5 p-0 text-slate-500 hover:text-emerald-600 dark:text-slate-400 dark:hover:text-emerald-400 transition-colors"
+                        >
+                          <Copy className="w-3 h-3" />
+                        </Button>
+                      </div>
+                      <div className="flex flex-wrap gap-1">
+                        {aiMetadata.tags.split(',').map((tag, idx) => (
+                          <Badge key={idx} variant="secondary" className="text-[10px] px-2 py-0.5 bg-slate-200 text-slate-700 dark:bg-slate-700 dark:text-slate-200">
+                            {tag.trim()}
+                          </Badge>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                ) : null}
               </div>
 
               {/* Divider */}
