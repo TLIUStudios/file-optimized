@@ -4,7 +4,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Slider } from "@/components/ui/slider";
-import { Download, X, Loader2, CheckCircle2, ArrowRight, Settings2, AlertCircle, Info, Edit2, RefreshCcw, Sparkles, Film, Music, Video, Check, XCircle, Wand2 } from "lucide-react";
+import { Download, X, Loader2, CheckCircle2, ArrowRight, Settings2, AlertCircle, Info, Edit2, RefreshCcw, Sparkles, Film, Music, Video } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
@@ -17,8 +17,6 @@ import {
 } from "@/components/ui/tooltip";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
-import { base44 } from "@/api/base44Client";
-import { Input } from "@/components/ui/input";
 
 // Lazy load the editor
 const ImageEditor = lazy(() => import("./ImageEditor"));
@@ -41,14 +39,6 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
   const [noiseReduction, setNoiseReduction] = useState(false);
   const [showEditor, setShowEditor] = useState(false);
   const [outputFormat, setOutputFormat] = useState(null);
-
-  // AI Filename suggestion states
-  const [suggestedFilename, setSuggestedFilename] = useState(null);
-  const [isGeneratingName, setIsGeneratingName] = useState(false);
-  const [showNameSuggestion, setShowNameSuggestion] = useState(false);
-  const [customFilename, setCustomFilename] = useState('');
-  const [editingFilename, setEditingFilename] = useState(false);
-  const [finalFilename, setFinalFilename] = useState('');
 
   // Media type detection
   const isImage = image.type.startsWith('image/');
@@ -181,134 +171,6 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
     }
   };
 
-  const generateFilenameWithAI = async () => {
-    setIsGeneratingName(true);
-    try {
-      console.log('🤖 Generating AI filename suggestion...');
-      
-      const originalName = image.name.split('.')[0];
-      const fileExt = outputFormat || format;
-      const mediaTypeStr = isVideo ? 'video' : isAudio ? 'audio' : 'image';
-      
-      let prompt = `Generate a clean, professional filename for a compressed ${mediaTypeStr} file. 
-Original filename: "${originalName}"
-File format: ${fileExt.toUpperCase()}
-Compression applied: ${compressionMode} mode
-
-Requirements:
-- Keep it short (under 40 characters)
-- Use lowercase with hyphens (kebab-case)
-- Be descriptive but concise
-- Remove any redundant words like "compressed", "optimized", or file extensions
-- Make it SEO-friendly if applicable
-- Keep the essence of the original name if meaningful
-
-Return ONLY the filename without extension.`;
-
-      // For images, analyze the content if available
-      if (isImage && compressedPreview && !isGif) {
-        try {
-          const res = await fetch(compressedPreview);
-          const blob = await res.blob();
-          const file = new File([blob], 'temp.jpg', { type: blob.type });
-          const uploadResult = await base44.integrations.Core.UploadFile({ file });
-          
-          prompt += `\n\nAnalyze the image content and incorporate relevant keywords if it improves the filename.`;
-          
-          const aiResult = await base44.integrations.Core.InvokeLLM({
-            prompt,
-            file_urls: [uploadResult.file_url],
-            response_json_schema: {
-              type: "object",
-              properties: {
-                filename: { type: "string" }
-              }
-            }
-          });
-          
-          setSuggestedFilename(aiResult.filename);
-        } catch (error) {
-          console.warn('Failed to analyze image, using text-only suggestion:', error);
-          const aiResult = await base44.integrations.Core.InvokeLLM({
-            prompt,
-            response_json_schema: {
-              type: "object",
-              properties: {
-                filename: { type: "string" }
-              }
-            }
-          });
-          setSuggestedFilename(aiResult.filename);
-        }
-      } else {
-        // For video, audio, or if image analysis fails
-        const aiResult = await base44.integrations.Core.InvokeLLM({
-          prompt,
-          response_json_schema: {
-            type: "object",
-            properties: {
-              filename: { type: "string" }
-            }
-          }
-        });
-        setSuggestedFilename(aiResult.filename);
-      }
-      
-      setShowNameSuggestion(true);
-      toast.success('AI filename generated!');
-      console.log('✅ AI filename generated');
-    } catch (error) {
-      console.error('❌ Failed to generate AI filename:', error);
-      toast.error('Failed to generate AI filename');
-      setSuggestedFilename(null);
-    } finally {
-      setIsGeneratingName(false);
-    }
-  };
-
-  const acceptSuggestion = () => {
-    const fileExt = outputFormat || format;
-    setFinalFilename(`${suggestedFilename}.${fileExt}`);
-    setShowNameSuggestion(false);
-    toast.success('Filename accepted!');
-  };
-
-  const rejectSuggestion = () => {
-    setSuggestedFilename(null);
-    setShowNameSuggestion(false);
-    const fileExt = outputFormat || format;
-    setFinalFilename(`${image.name.split('.')[0]}_compressed.${fileExt}`);
-    toast.info('Using default filename');
-  };
-
-  const startEditingFilename = () => {
-    setCustomFilename(suggestedFilename || image.name.split('.')[0]);
-    setEditingFilename(true);
-    setShowNameSuggestion(false); // Hide suggestion when editing
-  };
-
-  const saveCustomFilename = () => {
-    if (!customFilename.trim()) {
-      toast.error('Filename cannot be empty');
-      return;
-    }
-    const fileExt = outputFormat || format;
-    setFinalFilename(`${customFilename.trim()}.${fileExt}`);
-    setSuggestedFilename(customFilename.trim()); // Update suggested as well for consistency
-    setEditingFilename(false);
-    toast.success('Custom filename saved!');
-  };
-
-  // Auto-generate filename suggestion after processing
-  useEffect(() => {
-    if (processed && !suggestedFilename && !isGeneratingName && compressedPreview) {
-      const timer = setTimeout(() => {
-        generateFilenameWithAI();
-      }, 500); // Small delay to ensure all processing steps are settled
-      return () => clearTimeout(timer);
-    }
-  }, [processed, suggestedFilename, isGeneratingName, compressedPreview, outputFormat, format]); // Added dependencies for accuracy
-
   const parseGif = async (dataUrl) => {
     try {
       const response = await fetch(dataUrl);
@@ -333,8 +195,6 @@ Return ONLY the filename without extension.`;
     setProcessing(true);
     setError(null);
     setOutputFormat(null);
-    setSuggestedFilename(null); // Reset suggestion on reprocessing
-    setFinalFilename(''); // Reset final filename on reprocessing
     
     try {
       if (isGif && format === 'mp4') {
@@ -624,7 +484,7 @@ Return ONLY the filename without extension.`;
       if (audioQuality === 'high') {
         finalBitrate = Math.max(192, audioBitrate);
       } else if (audioQuality === 'lossless' && format === 'wav') {
-        finalBitrate = 1411; // WAV lossless bitrate
+        finalBitrate = 1411;
       }
       
       console.log('⚙️ Processing audio...');
@@ -976,10 +836,8 @@ Return ONLY the filename without extension.`;
   const downloadMedia = () => {
     const link = document.createElement('a');
     link.href = compressedPreview;
-    const filename = finalFilename || `${image.name.split('.')[0]}_compressed.${outputFormat || format}`;
-    link.download = filename;
+    link.download = `${image.name.split('.')[0]}_compressed.${outputFormat || format}`;
     link.click();
-    toast.success(`Downloaded: ${filename}`);
   };
 
   const handleCompare = () => {
@@ -1008,8 +866,6 @@ Return ONLY the filename without extension.`;
       setCompressedPreview(null);
       setCompressedSize(0);
       setError(null);
-      setSuggestedFilename(null); // Reset on edit
-      setFinalFilename(''); // Reset on edit
     }
     setShowEditor(false);
     toast.success("Image edited successfully. Re-compress to apply changes.");
@@ -1025,8 +881,6 @@ Return ONLY the filename without extension.`;
         setCompressedPreview(null);
         setCompressedSize(0);
         setOutputFormat(null);
-        setSuggestedFilename(null); // Reset suggestion on format change
-        setFinalFilename(''); // Reset final filename on format change
       }
       toast.info('Format changed. Click "Compress" or "Reprocess" to apply.');
       return;
@@ -1058,8 +912,6 @@ Return ONLY the filename without extension.`;
       setCompressedPreview(url);
       setCompressedSize(blob.size);
       setOutputFormat(newFormat);
-      setSuggestedFilename(null); // Reset suggestion after format conversion
-      setFinalFilename(''); // Reset final filename after format conversion
       
       onProcessed({
         id: image.name,
@@ -1245,141 +1097,6 @@ Return ONLY the filename without extension.`;
           <div className="flex items-center gap-2 text-sm text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/30 p-3 rounded-lg">
             <Loader2 className="w-4 h-4 animate-spin flex-shrink-0" />
             <span className="text-xs">Loading {isVideo ? 'video' : isAudio ? 'audio' : 'media'} processor...</span>
-          </div>
-        )}
-
-        {processed && showNameSuggestion && suggestedFilename && !editingFilename && (
-          <div className="bg-gradient-to-r from-purple-50 to-blue-50 dark:from-purple-950/20 dark:to-blue-950/20 border border-purple-200 dark:border-purple-800 rounded-lg p-3 space-y-3">
-            <div className="flex items-start gap-2">
-              <Wand2 className="w-4 h-4 text-purple-600 dark:text-purple-400 mt-0.5 flex-shrink-0" />
-              <div className="flex-1 min-w-0">
-                <p className="text-xs font-semibold text-purple-900 dark:text-purple-100 mb-1">
-                  AI Suggested Filename
-                </p>
-                <p className="text-sm font-mono text-purple-800 dark:text-purple-200 break-all">
-                  {suggestedFilename}.{outputFormat || format}
-                </p>
-              </div>
-            </div>
-            
-            <div className="flex gap-2">
-              <Button
-                size="sm"
-                onClick={acceptSuggestion}
-                className="flex-1 bg-purple-600 hover:bg-purple-700 text-white h-8 text-xs"
-              >
-                <Check className="w-3 h-3 mr-1" />
-                Accept
-              </Button>
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={startEditingFilename}
-                className="flex-1 h-8 text-xs"
-              >
-                <Edit2 className="w-3 h-3 mr-1" />
-                Edit
-              </Button>
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={rejectSuggestion}
-                className="h-8 px-3 text-xs"
-              >
-                <XCircle className="w-3 h-3" />
-              </Button>
-            </div>
-          </div>
-        )}
-
-        {editingFilename && (
-          <div className="bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3 space-y-3">
-            <div className="flex items-center gap-2 mb-2">
-              <Edit2 className="w-4 h-4 text-blue-600 dark:text-blue-400" />
-              <p className="text-xs font-semibold text-blue-900 dark:text-blue-100">
-                Edit Filename
-              </p>
-            </div>
-            <div className="flex gap-2">
-              <Input
-                value={customFilename}
-                onChange={(e) => setCustomFilename(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && saveCustomFilename()}
-                placeholder="Enter filename"
-                className="flex-1 h-9 text-sm"
-                autoFocus
-              />
-              <Badge variant="secondary" className="flex items-center h-9 px-3">
-                .{outputFormat || format}
-              </Badge>
-            </div>
-            <div className="flex gap-2">
-              <Button
-                size="sm"
-                onClick={saveCustomFilename}
-                className="flex-1 bg-blue-600 hover:bg-blue-700 text-white h-8 text-xs"
-              >
-                <Check className="w-3 h-3 mr-1" />
-                Save
-              </Button>
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => {
-                  setEditingFilename(false);
-                  setShowNameSuggestion(true);
-                }}
-                className="flex-1 h-8 text-xs"
-              >
-                Cancel
-              </Button>
-            </div>
-          </div>
-        )}
-
-        {processed && !showNameSuggestion && !editingFilename && (finalFilename === '' || (finalFilename && !suggestedFilename)) && (
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={generateFilenameWithAI}
-            disabled={isGeneratingName}
-            className="w-full h-9 border-dashed"
-          >
-            {isGeneratingName ? (
-              <>
-                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                Generating AI name...
-              </>
-            ) : (
-              <>
-                <Wand2 className="w-4 h-4 mr-2" />
-                {suggestedFilename ? 'Regenerate' : 'Generate'} AI Filename
-              </>
-            )}
-          </Button>
-        )}
-
-        {finalFilename && !showNameSuggestion && !editingFilename && (
-          <div className="bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-800 rounded-lg p-3">
-            <div className="flex items-start gap-2">
-              <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400 mt-0.5 flex-shrink-0" />
-              <div className="flex-1 min-w-0">
-                <p className="text-xs font-semibold text-emerald-900 dark:text-emerald-100 mb-1">
-                  Download as:
-                </p>
-                <p className="text-sm font-mono text-emerald-800 dark:text-emerald-200 break-all">
-                  {finalFilename}
-                </p>
-              </div>
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={startEditingFilename}
-                className="h-6 w-6 flex-shrink-0"
-              >
-                <Edit2 className="w-3 h-3" />
-              </Button>
-            </div>
           </div>
         )}
 
