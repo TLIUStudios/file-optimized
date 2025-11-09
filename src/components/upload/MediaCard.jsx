@@ -17,7 +17,6 @@ import {
 } from "@/components/ui/tooltip";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
-import { ffmpegWorker } from "@/utils/ffmpegWorkerManager";
 
 // Lazy load the editor and download modal
 const ImageEditor = lazy(() => import("./ImageEditor"));
@@ -59,16 +58,15 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
   const [videoBitrate, setVideoBitrate] = useState(1000);
   const [audioBitrate, setAudioBitrate] = useState(128);
   const [frameRate, setFrameRate] = useState(30);
-  const [ffmpegReady, setFfmpegReady] = useState(false);
-  const [ffmpegError, setFfmpegError] = useState(null);
+  const [ffmpegLoaded, setFfmpegLoaded] = useState(false);
   const [videoPreset, setVideoPreset] = useState('medium');
   const [gopSize, setGopSize] = useState(250);
   const [sampleRate, setSampleRate] = useState(44100);
   const [audioQuality, setAudioQuality] = useState('standard');
   const [gifOptimization, setGifOptimization] = useState('balanced');
-  const [processingProgress, setProcessingProgress] = useState(0);
   
   const processMediaRef = useRef(null);
+  const ffmpegRef = useRef(null);
 
   useEffect(() => {
     const reader = new FileReader();
@@ -95,42 +93,89 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
     }
   }, [image, isGif, isVideo, isAudio]);
 
-  // Initialize FFmpeg worker for video/audio processing
+  // Load FFmpeg for video/audio processing - NEW APPROACH
   useEffect(() => {
-    if ((isVideo || isAudio || (isGif && format === 'mp4')) && !ffmpegReady && !ffmpegError) {
-      initializeFFmpeg();
+    if ((isVideo || isAudio || (isGif && format === 'mp4')) && !ffmpegLoaded) {
+      loadFFmpegAlternative();
     }
-  }, [isVideo, isAudio, isGif, format, ffmpegReady, ffmpegError]);
-
-  const initializeFFmpeg = async () => {
-    try {
-      console.log('🚀 Initializing FFmpeg...');
-      toast.info('Loading media processor...', { id: 'ffmpeg-init', duration: Infinity });
-      
-      await ffmpegWorker.initialize();
-      
-      setFfmpegReady(true);
-      setFfmpegError(null);
-      toast.success('Media processor ready!', { id: 'ffmpeg-init' });
-      console.log('✅ FFmpeg ready!');
-    } catch (error) {
-      console.error('❌ FFmpeg initialization failed:', error);
-      setFfmpegError(error.message);
-      toast.error('Failed to load media processor', { id: 'ffmpeg-init' });
-    }
-  };
-
-  const retryFFmpegInit = async () => {
-    setFfmpegError(null);
-    setFfmpegReady(false);
-    await initializeFFmpeg();
-  };
+  }, [isVideo, isAudio, isGif, format, ffmpegLoaded]);
 
   useEffect(() => {
     if (autoProcess && !processed && !processing && processMediaRef.current) {
       processMediaRef.current();
     }
   }, [autoProcess, processed, processing]);
+
+  const loadFFmpegAlternative = async () => {
+    try {
+      console.log('🚀 Loading FFmpeg with alternative approach...');
+      toast.info('Loading media processor...', { id: 'ffmpeg-load', duration: Infinity });
+      
+      // Use CDN bundle approach - simpler and more reliable
+      const script = document.createElement('script');
+      script.src = 'https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@0.12.10/dist/umd/ffmpeg.js';
+      
+      await new Promise((resolve, reject) => {
+        script.onload = resolve;
+        script.onerror = () => reject(new Error('Failed to load FFmpeg script'));
+        document.head.appendChild(script);
+      });
+      
+      console.log('✅ FFmpeg script loaded');
+      
+      // Load utilities
+      const utilScript = document.createElement('script');
+      utilScript.src = 'https://cdn.jsdelivr.net/npm/@ffmpeg/util@0.12.1/dist/umd/index.js';
+      
+      await new Promise((resolve, reject) => {
+        utilScript.onload = resolve;
+        utilScript.onerror = () => reject(new Error('Failed to load FFmpeg utilities'));
+        document.head.appendChild(utilScript);
+      });
+      
+      console.log('✅ FFmpeg utilities loaded');
+      
+      // Access from window object
+      const { FFmpeg } = window.FFmpegWASM || window;
+      const { toBlobURL } = window.FFmpegUtil || window;
+      
+      if (!FFmpeg || !toBlobURL) {
+        throw new Error('FFmpeg or toBlobURL not available on window object');
+      }
+      
+      const ffmpeg = new FFmpeg();
+      ffmpegRef.current = ffmpeg;
+      
+      ffmpeg.on('log', ({ message }) => {
+        console.log('[FFmpeg]:', message);
+      });
+      
+      ffmpeg.on('progress', ({ progress }) => {
+        const percent = Math.round(progress * 100);
+        console.log(`[FFmpeg] Progress: ${percent}%`);
+        toast.info(`Processing: ${percent}%`, { id: 'ffmpeg-progress' });
+      });
+      
+      // Use single-threaded core for better compatibility
+      const baseURL = 'https://unpkg.com/@ffmpeg/core-st@0.12.6/dist/umd';
+      
+      console.log('📦 Creating blob URLs...');
+      const coreURL = await toBlobURL(`${baseURL}/ffmpeg-core.js`, 'text/javascript');
+      const wasmURL = await toBlobURL(`${baseURL}/ffmpeg-core.wasm`, 'application/wasm');
+      
+      console.log('🔧 Loading FFmpeg core...');
+      await ffmpeg.load({ coreURL, wasmURL });
+      
+      setFfmpegLoaded(true);
+      console.log('✅ FFmpeg ready!');
+      toast.success('Media processor ready!', { id: 'ffmpeg-load' });
+    } catch (error) {
+      console.error('❌ FFmpeg load failed:', error);
+      console.error('Details:', error.message, error.stack);
+      setError('Media processor failed to load. Try refreshing the page or use a different browser.');
+      toast.error('Failed to load media processor: ' + error.message, { id: 'ffmpeg-load' });
+    }
+  };
 
   const parseGif = async (dataUrl) => {
     try {
@@ -156,7 +201,6 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
     setProcessing(true);
     setError(null);
     setOutputFormat(null);
-    setProcessingProgress(0);
     
     try {
       if (isGif && format === 'mp4') {
@@ -179,7 +223,6 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
     }
     
     setProcessing(false);
-    setProcessingProgress(0);
   };
 
   useEffect(() => {
@@ -187,7 +230,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
   });
 
   const convertGifToMp4 = async () => {
-    if (!ffmpegReady) {
+    if (!ffmpegLoaded || !ffmpegRef.current) {
       toast.error('Video processor not ready');
       return;
     }
@@ -196,23 +239,39 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
       console.log('🎬 Starting GIF to MP4 conversion...');
       toast.info('Converting GIF to MP4...', { duration: Infinity });
       
-      const response = await fetch(preview);
-      const blob = await response.blob();
+      const ffmpeg = ffmpegRef.current;
+      const { fetchFile } = window.FFmpegUtil || window; // Changed import location
       
-      const result = await ffmpegWorker.gifToMp4(blob, {
-        frameRate,
-        videoBitrate
-      }, (progress) => {
-        setProcessingProgress(progress);
-        toast.info(`Processing: ${progress}%`, { id: 'processing' });
-      });
+      console.log('📥 Fetching GIF data...');
+      const gifData = await fetchFile(preview);
       
-      const outputBlob = new Blob([result.data], { type: 'video/mp4' });
+      console.log('📝 Writing input file...');
+      await ffmpeg.writeFile('input.gif', gifData);
+      
+      console.log('⚙️ Starting conversion...');
+      await ffmpeg.exec([
+        '-i', 'input.gif',
+        '-movflags', 'faststart',
+        '-pix_fmt', 'yuv420p',
+        '-vf', `fps=${frameRate},scale=trunc(iw/2)*2:trunc(ih/2)*2`,
+        '-b:v', `${videoBitrate}k`,
+        '-c:v', 'libx264',
+        '-preset', 'medium',
+        'output.mp4'
+      ]);
+      
+      console.log('📤 Reading output file...');
+      const data = await ffmpeg.readFile('output.mp4');
+      const outputBlob = new Blob([data.buffer], { type: 'video/mp4' });
       const compressedUrl = URL.createObjectURL(outputBlob);
+      
+      console.log('🧹 Cleaning up...');
+      await ffmpeg.deleteFile('input.gif');
+      await ffmpeg.deleteFile('output.mp4');
       
       setCompressedPreview(compressedUrl);
       setCompressedSize(outputBlob.size);
-      setCompressedBlob(outputBlob);
+      setCompressedBlob(outputBlob); // ADDED
       setProcessed(true);
       setOutputFormat('mp4');
 
@@ -241,7 +300,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
   };
 
   const convertMp4ToGif = async () => {
-    if (!ffmpegReady) {
+    if (!ffmpegLoaded || !ffmpegRef.current) {
       toast.error('Video processor not ready');
       return;
     }
@@ -250,23 +309,46 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
       console.log('🎞️ Starting MP4 to GIF conversion...');
       toast.info('Converting video to GIF...', { duration: Infinity });
       
-      const response = await fetch(preview);
-      const blob = await response.blob();
+      const ffmpeg = ffmpegRef.current;
+      const { fetchFile } = window.FFmpegUtil || window; // Changed import location
       
-      const result = await ffmpegWorker.mp4ToGif(blob, {
-        frameRate,
-        maxWidth
-      }, (progress) => {
-        setProcessingProgress(progress);
-        toast.info(`Processing: ${progress}%`, { id: 'processing' });
-      });
+      console.log('📥 Fetching video data...');
+      const videoData = await fetchFile(preview);
+      await ffmpeg.writeFile('input.mp4', videoData);
       
-      const outputBlob = new Blob([result.data], { type: 'image/gif' });
+      const targetFps = Math.min(frameRate || 15, 15);
+      const scale = maxWidth ? `scale=${maxWidth}:-1:flags=lanczos` : 'scale=640:-1:flags=lanczos';
+      
+      console.log('🎨 Generating palette...');
+      await ffmpeg.exec([
+        '-i', 'input.mp4',
+        '-vf', `${scale},fps=${targetFps},palettegen=max_colors=256`,
+        '-y',
+        'palette.png'
+      ]);
+      
+      console.log('⚙️ Creating GIF...');
+      await ffmpeg.exec([
+        '-i', 'input.mp4',
+        '-i', 'palette.png',
+        '-lavfi', `${scale},fps=${targetFps}[x];[x][1:v]paletteuse=dither=bayer:bayer_scale=5`,
+        '-loop', '0',
+        '-y',
+        'output.gif'
+      ]);
+      
+      console.log('📤 Reading output...');
+      const data = await ffmpeg.readFile('output.gif');
+      const outputBlob = new Blob([data.buffer], { type: 'image/gif' });
       const compressedUrl = URL.createObjectURL(outputBlob);
+      
+      await ffmpeg.deleteFile('input.mp4');
+      await ffmpeg.deleteFile('palette.png');
+      await ffmpeg.deleteFile('output.gif');
       
       setCompressedPreview(compressedUrl);
       setCompressedSize(outputBlob.size);
-      setCompressedBlob(outputBlob);
+      setCompressedBlob(outputBlob); // ADDED
       setProcessed(true);
       setOutputFormat('gif');
 
@@ -295,7 +377,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
   };
 
   const processVideo = async () => {
-    if (!ffmpegReady) {
+    if (!ffmpegLoaded || !ffmpegRef.current) {
       toast.error('Video processor not ready');
       return;
     }
@@ -304,36 +386,59 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
       console.log('🎥 Starting video compression...');
       toast.info('Compressing video...', { duration: Infinity });
       
-      const response = await fetch(preview);
-      const blob = await response.blob();
+      const ffmpeg = ffmpegRef.current;
+      const { fetchFile } = window.FFmpegUtil || window; // Changed import location
       
-      let scaleFilter = null;
-      if (maxWidth && maxHeight) {
-        scaleFilter = `scale='min(${maxWidth},iw)':'min(${maxHeight},ih)':force_original_aspect_ratio=decrease`;
-      } else if (maxWidth) {
-        scaleFilter = `scale=${maxWidth}:-2`;
-      } else if (maxHeight) {
-        scaleFilter = `scale=-2:${maxHeight}`;
+      console.log('📥 Fetching video data...');
+      const videoData = await fetchFile(preview);
+      await ffmpeg.writeFile('input.mp4', videoData);
+      
+      const scaleFilter = maxWidth && maxHeight 
+        ? `scale='min(${maxWidth},iw)':'min(${maxHeight},ih)':force_original_aspect_ratio=decrease`
+        : maxWidth 
+        ? `scale=${maxWidth}:-2`
+        : maxHeight
+        ? `scale=-2:${maxHeight}`
+        : null;
+      
+      const args = [
+        '-i', 'input.mp4',
+        '-c:v', 'libx264',
+        '-preset', videoPreset,
+        '-crf', String(Math.round((100 - quality) / 2.5)),
+        '-g', String(gopSize),
+      ];
+      
+      if (scaleFilter) {
+        args.push('-vf', scaleFilter);
       }
       
-      const result = await ffmpegWorker.processVideo(blob, {
-        quality,
-        preset: videoPreset,
-        gopSize,
-        frameRate,
-        videoBitrate,
-        scale: scaleFilter
-      }, (progress) => {
-        setProcessingProgress(progress);
-        toast.info(`Processing: ${progress}%`, { id: 'processing' });
-      });
+      args.push(
+        '-r', String(frameRate),
+        '-b:v', `${videoBitrate}k`,
+        '-maxrate', `${videoBitrate * 1.5}k`,
+        '-bufsize', `${videoBitrate * 2}k`,
+        '-c:a', 'aac',
+        '-b:a', '128k',
+        '-movflags', '+faststart',
+        '-y',
+        'output.mp4'
+      );
       
-      const outputBlob = new Blob([result.data], { type: 'video/mp4' });
+      console.log('⚙️ Compressing with args:', args.join(' '));
+      await ffmpeg.exec(args);
+      
+      console.log('📤 Reading output...');
+      const data = await ffmpeg.readFile('output.mp4');
+      const outputBlob = new Blob([data.buffer], { type: 'video/mp4' });
       const compressedUrl = URL.createObjectURL(outputBlob);
+      
+      await ffmpeg.deleteFile('input.mp4');
+      await ffmpeg.deleteFile('output.mp4');
       
       setCompressedPreview(compressedUrl);
       setCompressedSize(outputBlob.size);
-      setCompressedBlob(outputBlob);
+      setCompressedBlob(outputBlob); // ADDED
       setProcessed(true);
       setOutputFormat('mp4');
 
@@ -363,7 +468,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
   };
 
   const processAudio = async () => {
-    if (!ffmpegReady) {
+    if (!ffmpegLoaded || !ffmpegRef.current) {
       toast.error('Audio processor not ready');
       return;
     }
@@ -372,11 +477,16 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
       console.log('🎵 Starting audio compression...');
       toast.info('Compressing audio...', { duration: Infinity });
       
-      const response = await fetch(preview);
-      const blob = await response.blob();
+      const ffmpeg = ffmpegRef.current;
+      const { fetchFile } = window.FFmpegUtil || window; // Changed import location
       
+      console.log('📥 Fetching audio data...');
+      const audioData = await fetchFile(preview);
       const inputExt = image.name.split('.').pop().toLowerCase();
+      await ffmpeg.writeFile(`input.${inputExt}`, audioData);
+      
       const outputExt = format === 'wav' ? 'wav' : 'mp3';
+      const codec = format === 'wav' ? 'pcm_s16le' : 'libmp3lame';
       
       let finalBitrate = audioBitrate;
       if (audioQuality === 'high') {
@@ -385,23 +495,28 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
         finalBitrate = 1411;
       }
       
-      const result = await ffmpegWorker.processAudio(blob, {
-        inputFormat: inputExt,
-        outputFormat: outputExt,
-        audioBitrate: finalBitrate,
-        sampleRate
-      }, (progress) => {
-        setProcessingProgress(progress);
-        toast.info(`Processing: ${progress}%`, { id: 'processing' });
-      });
+      console.log('⚙️ Processing audio...');
+      await ffmpeg.exec([
+        '-i', `input.${inputExt}`,
+        '-c:a', codec,
+        '-b:a', `${finalBitrate}k`,
+        '-ar', String(sampleRate),
+        '-y',
+        `output.${outputExt}`
+      ]);
       
+      console.log('📤 Reading output...');
+      const data = await ffmpeg.readFile(`output.${outputExt}`);
       const mimeType = format === 'wav' ? 'audio/wav' : 'audio/mpeg';
-      const outputBlob = new Blob([result.data], { type: mimeType });
+      const outputBlob = new Blob([data.buffer], { type: mimeType });
       const compressedUrl = URL.createObjectURL(outputBlob);
+      
+      await ffmpeg.deleteFile(`input.${inputExt}`);
+      await ffmpeg.deleteFile(`output.${outputExt}`);
       
       setCompressedPreview(compressedUrl);
       setCompressedSize(outputBlob.size);
-      setCompressedBlob(outputBlob);
+      setCompressedBlob(outputBlob); // ADDED
       setProcessed(true);
       setOutputFormat(format);
 
@@ -441,7 +556,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
         const compressedUrl = URL.createObjectURL(originalBlob);
         setCompressedPreview(compressedUrl);
         setCompressedSize(originalBlob.size);
-        setCompressedBlob(originalBlob);
+        setCompressedBlob(originalBlob); // ADDED
         setProcessed(true);
         setOutputFormat('gif');
 
@@ -582,7 +697,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
       const compressedUrl = URL.createObjectURL(gifBlob);
       setCompressedPreview(compressedUrl);
       setCompressedSize(gifBlob.size);
-      setCompressedBlob(gifBlob);
+      setCompressedBlob(gifBlob); // ADDED
       setProcessed(true);
       setOutputFormat('gif');
 
@@ -631,22 +746,23 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
     let width = img.width;
     let height = img.height;
 
-    if (maxWidth || maxHeight || enableUpscale) {
+    if (maxWidth || maxHeight || enableUpscale) { // Added enableUpscale
       const aspectRatio = width / height;
       
       if (maxWidth && maxHeight) {
-        const widthRatio = maxWidth / width;
-        const heightRatio = maxHeight / height;
+        // Changed Math.min to (enableUpscale ? Math.max : Math.min)
+        const widthRatio = maxWidth / img.width;
+        const heightRatio = maxHeight / img.height;
         const ratio = enableUpscale ? Math.max(widthRatio, heightRatio) : Math.min(widthRatio, heightRatio);
         
-        width = Math.round(width * ratio);
-        height = Math.round(height * ratio);
+        width = Math.round(img.width * ratio);
+        height = Math.round(img.height * ratio);
       } else if (maxWidth) {
         width = maxWidth;
-        height = Math.round(width / aspectRatio);
+        height = Math.round(maxWidth / aspectRatio);
       } else if (maxHeight) {
         height = maxHeight;
-        width = Math.round(height * aspectRatio);
+        width = Math.round(maxHeight * aspectRatio);
       }
     }
 
@@ -655,7 +771,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
 
     const ctx = canvas.getContext('2d');
     
-    if (noiseReduction || enableUpscale) {
+    if (noiseReduction || enableUpscale) { // Added enableUpscale
       ctx.imageSmoothingEnabled = true;
       ctx.imageSmoothingQuality = 'high';
     }
@@ -685,6 +801,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
         );
       });
 
+      // Changed condition: now it's `enableUpscale || blob.size < image.size`
       if (enableUpscale || blob.size < image.size || attempts === maxAttempts - 1) {
         break;
       }
@@ -693,7 +810,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
       attempts++;
     }
 
-    if (!enableUpscale && blob.size >= image.size) {
+    if (!enableUpscale && blob.size >= image.size) { // Only show error if not upscaling and size increased
       const fallbackQuality = compressionMode === 'maximum' ? 0.4 : 0.6;
       blob = await new Promise((resolve) => {
         canvas.toBlob(
@@ -712,7 +829,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
     const compressedUrl = URL.createObjectURL(blob);
     setCompressedPreview(compressedUrl);
     setCompressedSize(blob.size);
-    setCompressedBlob(blob);
+    setCompressedBlob(blob); // ADDED
     setProcessed(true);
     setOutputFormat(format);
 
@@ -731,7 +848,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
   };
 
   const downloadMedia = () => {
-    if (compressedBlob) {
+    if (compressedBlob) { // Ensure blob exists before opening modal
       setShowDownloadModal(true);
     }
   };
@@ -807,7 +924,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
       const url = URL.createObjectURL(blob);
       setCompressedPreview(url);
       setCompressedSize(blob.size);
-      setCompressedBlob(blob);
+      setCompressedBlob(blob); // ADDED
       setOutputFormat(newFormat);
       
       onProcessed({
@@ -990,43 +1107,10 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
           </div>
         )}
 
-        {(isVideo || isAudio || (isGif && format === 'mp4')) && !ffmpegReady && !ffmpegError && (
+        {(isVideo || isAudio || (isGif && format === 'mp4')) && !ffmpegLoaded && (
           <div className="flex items-center gap-2 text-sm text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/30 p-3 rounded-lg">
             <Loader2 className="w-4 h-4 animate-spin flex-shrink-0" />
             <span className="text-xs">Loading {isVideo ? 'video' : isAudio ? 'audio' : 'media'} processor...</span>
-          </div>
-        )}
-
-        {ffmpegError && (
-          <div className="space-y-2">
-            <div className="flex items-center gap-2 text-sm text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-950/30 p-3 rounded-lg">
-              <AlertCircle className="w-4 h-4 flex-shrink-0" />
-              <span className="text-xs">Media processor failed to load</span>
-            </div>
-            <Button
-              onClick={retryFFmpegInit}
-              size="sm"
-              variant="outline"
-              className="w-full"
-            >
-              <RefreshCcw className="w-3 h-3 mr-2" />
-              Retry
-            </Button>
-          </div>
-        )}
-
-        {processing && processingProgress > 0 && (
-          <div className="space-y-2">
-            <div className="flex items-center justify-between text-xs">
-              <span className="text-slate-600 dark:text-slate-400">Processing...</span>
-              <span className="font-bold text-emerald-600">{processingProgress}%</span>
-            </div>
-            <div className="w-full bg-slate-200 dark:bg-slate-700 rounded-full h-2 overflow-hidden">
-              <div 
-                className="bg-emerald-600 h-full transition-all duration-300"
-                style={{ width: `${processingProgress}%` }}
-              />
-            </div>
           </div>
         )}
 
@@ -1431,7 +1515,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
           {!processed ? (
             <Button
               onClick={processMedia}
-              disabled={processing || ((isVideo || isAudio || (isGif && format === 'mp4')) && !ffmpegReady)}
+              disabled={processing || ((isVideo || isAudio || (isGif && format === 'mp4')) && !ffmpegLoaded)}
               className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white"
             >
               {processing ? (

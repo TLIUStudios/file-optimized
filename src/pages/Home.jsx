@@ -1,3 +1,4 @@
+
 import { useState, lazy, Suspense } from "react";
 import { Button } from "@/components/ui/button";
 import { Download, Trash2, Sparkles, Shield, Zap, Image as ImageIcon } from "lucide-react";
@@ -8,8 +9,8 @@ import { toast } from "sonner";
 import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
 
 // Lazy load heavy components for better performance
-const MediaCard = lazy(() => import("@/components/upload/MediaCard"));
-const ImageComparisonModal = lazy(() => import("@/components/comparison/ImageComparisonModal"));
+const MediaCard = lazy(() => import("../components/upload/MediaCard"));
+const ImageComparisonModal = lazy(() => import("../components/comparison/ImageComparisonModal"));
 
 // Loading fallback for image cards
 function ImageCardSkeleton() {
