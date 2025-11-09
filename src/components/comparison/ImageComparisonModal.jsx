@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
-import { X, MoveHorizontal, ZoomIn, ZoomOut, Maximize2, Copy, RefreshCw, Sparkles } from "lucide-react";
+import { X, MoveHorizontal, ZoomIn, ZoomOut, Maximize2, Copy, RefreshCw, Sparkles, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
@@ -118,6 +118,14 @@ Be specific about what you see. If it's food, mention the food. If it's a person
     toast.success(`${label} copied to clipboard!`);
   };
 
+  const downloadImage = () => {
+    const link = document.createElement('a');
+    link.href = compressedImage;
+    link.download = fileName;
+    link.click();
+    toast.success('Image downloaded!');
+  };
+
   // Calculate aspect ratio
   const getAspectRatio = (width, height) => {
     const gcd = (a, b) => b === 0 ? a : gcd(b, a % b);
@@ -144,7 +152,6 @@ Be specific about what you see. If it's food, mention the food. If it's a person
   useEffect(() => {
     const handleMouseMove = (e) => {
       if (isDragging && !isPanning) {
-        // Only update slider when dragging over the image container
         if (imageContainerRef.current) {
           const rect = imageContainerRef.current.getBoundingClientRect();
           const x = e.clientX - rect.left;
@@ -255,60 +262,67 @@ Be specific about what you see. If it's food, mention the food. If it's a person
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-[98vw] w-[98vw] h-[98vh] p-0 bg-gradient-to-br from-slate-100 via-slate-50 to-slate-100 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950 border-slate-300 dark:border-slate-800 [&>button]:hidden overflow-hidden">
-        {/* Close Button */}
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={onClose}
-          className="absolute top-4 right-4 z-[100] bg-slate-100/90 hover:bg-red-600 dark:bg-slate-900/90 dark:hover:bg-red-600 text-slate-900 hover:text-white dark:text-white rounded-lg transition-colors h-10 w-10"
-        >
-          <X className="w-5 h-5" />
-        </Button>
+      <DialogContent className="max-w-[98vw] w-[98vw] h-[98vh] p-0 bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-800 [&>button]:hidden overflow-hidden">
+        {/* Top Bar */}
+        <div className="absolute top-0 left-0 right-0 z-[100] flex items-center justify-between px-4 py-3 bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm border-b border-slate-200 dark:border-slate-800">
+          <div className="flex items-center gap-3">
+            <Button
+              variant="secondary"
+              size="icon"
+              onClick={handleZoomIn}
+              className="h-9 w-9 bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700"
+            >
+              <ZoomIn className="w-4 h-4" />
+            </Button>
+            <Button
+              variant="secondary"
+              size="icon"
+              onClick={handleZoomOut}
+              className="h-9 w-9 bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700"
+            >
+              <ZoomOut className="w-4 h-4" />
+            </Button>
+            <Button
+              variant="secondary"
+              size="icon"
+              onClick={handleResetZoom}
+              className="h-9 w-9 bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700"
+            >
+              <Maximize2 className="w-4 h-4" />
+            </Button>
+            <div className="bg-white dark:bg-slate-800 rounded-md px-3 h-9 flex items-center text-xs text-slate-900 dark:text-white font-medium border border-slate-200 dark:border-slate-700">
+              {(zoom * 100).toFixed(0)}%
+            </div>
+          </div>
 
-        <div className="flex flex-col lg:flex-row h-full overflow-hidden">
+          <div className="flex items-center gap-2">
+            <Button
+              onClick={downloadImage}
+              className="bg-emerald-600 hover:bg-emerald-700 text-white h-9 px-4"
+            >
+              <Download className="w-4 h-4 mr-2" />
+              Download
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={onClose}
+              className="h-9 w-9 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg"
+            >
+              <X className="w-5 h-5" />
+            </Button>
+          </div>
+        </div>
+
+        <div className="flex flex-col lg:flex-row h-full overflow-hidden pt-[60px]">
           {/* Left Side - Image Comparison */}
           <div className="flex-1 relative overflow-hidden flex flex-col min-h-0">
-            {/* Zoom Controls */}
-            <div className="absolute top-4 left-4 z-[50] flex gap-2">
-              <Button
-                variant="secondary"
-                size="icon"
-                onClick={handleZoomIn}
-                className="bg-slate-200/90 hover:bg-slate-300 dark:bg-slate-800/90 dark:hover:bg-slate-700 backdrop-blur-sm border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white h-9 w-9"
-                title="Zoom In"
-              >
-                <ZoomIn className="w-4 h-4" />
-              </Button>
-              <Button
-                variant="secondary"
-                size="icon"
-                onClick={handleZoomOut}
-                className="bg-slate-200/90 hover:bg-slate-300 dark:bg-slate-800/90 dark:hover:bg-slate-700 backdrop-blur-sm border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white h-9 w-9"
-                title="Zoom Out"
-              >
-                <ZoomOut className="w-4 h-4" />
-              </Button>
-              <Button
-                variant="secondary"
-                size="icon"
-                onClick={handleResetZoom}
-                className="bg-slate-200/90 hover:bg-slate-300 dark:bg-slate-800/90 dark:hover:bg-slate-700 backdrop-blur-sm border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white h-9 w-9"
-                title="Reset"
-              >
-                <Maximize2 className="w-4 h-4" />
-              </Button>
-              <div className="bg-slate-200/90 dark:bg-slate-800/90 backdrop-blur-sm border border-slate-300 dark:border-slate-700 rounded-md px-3 flex items-center text-xs text-slate-900 dark:text-white font-medium">
-                {(zoom * 100).toFixed(0)}%
-              </div>
-            </div>
-
             <div 
               ref={containerRef}
-              className="relative w-full h-full bg-slate-200 dark:bg-slate-950 select-none flex flex-col items-center justify-center overflow-hidden"
+              className="relative w-full h-full bg-slate-100 dark:bg-slate-900 select-none flex flex-col items-center justify-center overflow-hidden"
             >
-              {/* Image Container - Fixed position regardless of slider */}
-              <div className="flex-1 relative w-full flex items-center justify-center pt-16 pb-4">
+              {/* Image Container */}
+              <div className="flex-1 relative w-full flex items-center justify-center py-4">
                 <div
                   ref={imageContainerRef}
                   className="relative"
@@ -334,17 +348,16 @@ Be specific about what you see. If it's food, mention the food. If it's a person
                     }
                   }}
                 >
-                  {/* Both images in the same container */}
                   <div className="relative">
-                    {/* Compressed Image (Background) */}
+                    {/* Compressed Image */}
                     <img
                       src={compressedImage}
                       alt="Compressed"
-                      className="max-w-[85vw] lg:max-w-[60vw] max-h-[60vh] w-auto h-auto object-contain"
+                      className="max-w-[85vw] lg:max-w-[60vw] max-h-[calc(100vh-200px)] w-auto h-auto object-contain"
                       draggable="false"
                     />
 
-                    {/* Original Image (Foreground with clip) */}
+                    {/* Original Image with clip */}
                     <div
                       className="absolute inset-0 overflow-hidden"
                       style={{ clipPath: `inset(0 ${100 - sliderPosition}% 0 0)` }}
@@ -352,57 +365,53 @@ Be specific about what you see. If it's food, mention the food. If it's a person
                       <img
                         src={originalImage}
                         alt="Original"
-                        className="max-w-[85vw] lg:max-w-[60vw] max-h-[60vh] w-auto h-auto object-contain"
+                        className="max-w-[85vw] lg:max-w-[60vw] max-h-[calc(100vh-200px)] w-auto h-auto object-contain"
                         draggable="false"
                       />
                     </div>
 
-                    {/* Slider Line - White on both modes */}
+                    {/* Slider Line */}
                     {zoom === 1 && !isPanning && (
                       <div
                         className="absolute top-0 bottom-0 w-0.5 bg-white shadow-2xl z-10 pointer-events-none"
                         style={{ left: `${sliderPosition}%`, transform: 'translateX(-50%)' }}
                       >
-                        {/* Slider Handle */}
-                        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-12 h-12 bg-white dark:bg-slate-800 rounded-full shadow-2xl flex items-center justify-center cursor-col-resize border-2 border-slate-400 dark:border-slate-300 pointer-events-auto">
-                          <MoveHorizontal className="w-5 h-5 text-slate-900 dark:text-white" />
+                        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-12 h-12 bg-white dark:bg-slate-700 rounded-full shadow-2xl flex items-center justify-center cursor-col-resize border-2 border-slate-300 dark:border-slate-600 pointer-events-auto">
+                          <MoveHorizontal className="w-5 h-5 text-slate-700 dark:text-white" />
                         </div>
                       </div>
                     )}
                   </div>
                 </div>
 
-                {/* Pan instruction when zoomed */}
+                {/* Instructions */}
                 {zoom > 1 && !isPanning && (
-                  <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-slate-800/95 dark:bg-slate-900/95 backdrop-blur-sm text-white px-5 py-2.5 rounded-full text-sm border border-slate-600 dark:border-slate-700 pointer-events-none shadow-lg">
-                    Scroll to zoom • Drag to pan
+                  <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-slate-700/95 dark:bg-slate-800/95 backdrop-blur-sm text-white px-5 py-2 rounded-full text-sm shadow-lg">
+                    ← Drag to compare →
                   </div>
                 )}
               </div>
 
-              {/* Instruction - Below Image */}
-              {zoom === 1 && sliderPosition === 50 && !isDragging && (
-                <div className="py-3 bg-slate-800/95 dark:bg-slate-900/95 backdrop-blur-sm text-white px-5 py-2.5 rounded-full text-sm border border-slate-600 dark:border-slate-700 shadow-lg animate-pulse">
-                  ← Drag to compare →
-                </div>
-              )}
-
-              {/* Labels Below Image */}
-              <div className="h-16 w-full flex items-center justify-between px-6 bg-slate-100/50 dark:bg-slate-950/50 border-t border-slate-300 dark:border-slate-800">
-                <div className="flex flex-col gap-1.5">
-                  <Badge className="bg-slate-800/95 dark:bg-slate-900/95 backdrop-blur-sm text-white border border-slate-600 dark:border-slate-700 text-sm px-3 py-1.5 shadow-lg font-semibold w-fit">
+              {/* Labels */}
+              <div className="h-16 w-full flex items-center justify-between px-6 bg-slate-100/80 dark:bg-slate-900/80 backdrop-blur-sm border-t border-slate-200 dark:border-slate-800">
+                <div className="flex flex-col gap-1">
+                  <Badge className="bg-slate-700 dark:bg-slate-800 text-white text-sm px-3 py-1 font-semibold w-fit">
                     Original
                   </Badge>
-                  <Badge className="bg-slate-800/95 dark:bg-slate-900/95 backdrop-blur-sm text-white border border-slate-600 dark:border-slate-700 text-xs px-2.5 py-1 font-bold shadow-lg w-fit">
+                  <Badge className="bg-slate-700 dark:bg-slate-800 text-white text-xs px-2 py-0.5 font-bold w-fit">
                     {originalExt}
                   </Badge>
                 </div>
                 
-                <div className="flex flex-col gap-1.5 items-end">
-                  <Badge className="bg-emerald-600/95 backdrop-blur-sm text-white border border-emerald-500 text-sm px-3 py-1.5 shadow-lg font-semibold w-fit">
+                <div className="px-4 py-2 bg-slate-600/80 dark:bg-slate-700/80 backdrop-blur-sm rounded-lg text-white text-sm font-medium">
+                  ← Drag to compare →
+                </div>
+                
+                <div className="flex flex-col gap-1 items-end">
+                  <Badge className="bg-emerald-600 text-white text-sm px-3 py-1 font-semibold w-fit">
                     Compressed
                   </Badge>
-                  <Badge className="bg-emerald-600/95 backdrop-blur-sm text-white border border-emerald-500 text-xs px-2.5 py-1 font-bold shadow-lg w-fit">
+                  <Badge className="bg-emerald-600 text-white text-xs px-2 py-0.5 font-bold w-fit">
                     {compressedExt}
                   </Badge>
                 </div>
@@ -410,67 +419,70 @@ Be specific about what you see. If it's food, mention the food. If it's a person
             </div>
           </div>
 
-          {/* Right Side - Information Panel */}
-          <div className="w-full lg:w-[360px] xl:w-[400px] bg-gradient-to-b from-slate-100 to-slate-200 dark:from-slate-900 dark:to-slate-950 border-t lg:border-t-0 lg:border-l border-slate-300 dark:border-slate-800 flex flex-col overflow-y-auto min-h-0">
-            <div className="p-4 lg:p-5 space-y-4">
+          {/* Right Panel */}
+          <div className="w-full lg:w-[360px] xl:w-[400px] bg-white dark:bg-slate-900 border-t lg:border-t-0 lg:border-l border-slate-200 dark:border-slate-800 flex flex-col overflow-y-auto">
+            <div className="p-5 space-y-4">
               {/* Header */}
               <div>
-                <h2 className="text-slate-900 dark:text-white text-sm lg:text-base font-bold mb-2 break-words leading-tight line-clamp-2">{fileName}</h2>
-                <p className="text-slate-600 dark:text-slate-400 text-xs leading-relaxed">Compare quality and analyze compression efficiency</p>
+                <h2 className="text-slate-900 dark:text-white text-sm font-bold mb-1 break-words line-clamp-2">{fileName}</h2>
+                <p className="text-slate-500 dark:text-slate-400 text-xs">Compare quality and analyze compression efficiency</p>
               </div>
 
-              {/* Main Stats Cards */}
-              <div className="space-y-2.5">
-                <Card className="bg-white/50 dark:bg-slate-950/50 border-slate-300 dark:border-slate-800 p-3.5 shadow-xl">
-                  <p className="text-slate-600 dark:text-slate-400 text-[10px] font-medium uppercase tracking-wider mb-1">Original Size</p>
-                  <p className="text-slate-900 dark:text-white text-xl lg:text-2xl font-bold">{formatFileSize(originalSize)}</p>
-                </Card>
+              {/* Stats */}
+              <div className="space-y-3">
+                {/* Original Size */}
+                <div className="bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg p-4">
+                  <p className="text-slate-500 dark:text-slate-400 text-[10px] font-semibold uppercase tracking-wider mb-1">Original Size</p>
+                  <p className="text-slate-900 dark:text-white text-2xl font-bold">{formatFileSize(originalSize)}</p>
+                </div>
 
-                <Card className="bg-gradient-to-br from-emerald-600 to-emerald-700 border-emerald-500 p-3.5 shadow-xl">
-                  <p className="text-emerald-100 text-[10px] font-medium uppercase tracking-wider mb-1">Compressed Size</p>
-                  <p className="text-white text-xl lg:text-2xl font-bold mb-1.5">{formatFileSize(compressedSize)}</p>
-                  <Badge className="bg-white/20 text-white backdrop-blur-sm text-xs px-2 py-0.5 font-bold">
+                {/* Compressed Size */}
+                <div className="bg-gradient-to-br from-emerald-600 to-emerald-700 rounded-lg p-4">
+                  <p className="text-emerald-100 text-[10px] font-semibold uppercase tracking-wider mb-1">Compressed Size</p>
+                  <p className="text-white text-2xl font-bold mb-2">{formatFileSize(compressedSize)}</p>
+                  <Badge className="bg-white/20 text-white text-xs px-2 py-0.5 font-bold">
                     {savingsPercent}% smaller
                   </Badge>
-                </Card>
+                </div>
 
-                <Card className="bg-white/50 dark:bg-slate-950/50 border-slate-300 dark:border-slate-800 p-3.5 shadow-xl">
-                  <p className="text-slate-600 dark:text-slate-400 text-[10px] font-medium uppercase tracking-wider mb-1">Space Saved</p>
-                  <p className="text-emerald-600 dark:text-emerald-400 text-lg lg:text-xl font-bold">{formatFileSize(savingsAmount)}</p>
-                </Card>
+                {/* Space Saved */}
+                <div className="bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg p-4">
+                  <p className="text-slate-500 dark:text-slate-400 text-[10px] font-semibold uppercase tracking-wider mb-1">Space Saved</p>
+                  <p className="text-emerald-600 dark:text-emerald-400 text-xl font-bold">{formatFileSize(savingsAmount)}</p>
+                </div>
               </div>
 
               {/* Divider */}
-              <div className="h-px bg-gradient-to-r from-transparent via-slate-400 dark:via-slate-700 to-transparent" />
+              <div className="h-px bg-slate-200 dark:bg-slate-800" />
 
               {/* Details */}
-              <div className="space-y-2.5">
+              <div className="space-y-2">
                 <h3 className="text-slate-900 dark:text-white font-semibold text-xs uppercase tracking-wider">Compression Details</h3>
                 
                 <div className="space-y-2">
-                  <div className="flex items-center justify-between py-2 px-2.5 bg-white/50 dark:bg-slate-950/50 rounded-lg border border-slate-300 dark:border-slate-800">
+                  <div className="flex items-center justify-between py-2 px-3 bg-slate-50 dark:bg-slate-950 rounded-lg border border-slate-200 dark:border-slate-800">
                     <span className="text-slate-600 dark:text-slate-400 text-xs font-medium">Compression Ratio</span>
                     <span className="text-slate-900 dark:text-white font-bold text-sm">{(compressedSize / originalSize).toFixed(3)}:1</span>
                   </div>
                   
-                  <div className="flex items-center justify-between py-2 px-2.5 bg-white/50 dark:bg-slate-950/50 rounded-lg border border-slate-300 dark:border-slate-800">
+                  <div className="flex items-center justify-between py-2 px-3 bg-slate-50 dark:bg-slate-950 rounded-lg border border-slate-200 dark:border-slate-800">
                     <span className="text-slate-600 dark:text-slate-400 text-xs font-medium">Quality</span>
-                    <Badge className="bg-emerald-600 text-white font-semibold text-xs px-2 py-0.5">High</Badge>
+                    <Badge className="bg-emerald-600 text-white font-semibold text-xs">High</Badge>
                   </div>
                   
-                  <div className="flex items-center justify-between py-2 px-2.5 bg-white/50 dark:bg-slate-950/50 rounded-lg border border-slate-300 dark:border-slate-800">
+                  <div className="flex items-center justify-between py-2 px-3 bg-slate-50 dark:bg-slate-950 rounded-lg border border-slate-200 dark:border-slate-800">
                     <span className="text-slate-600 dark:text-slate-400 text-xs font-medium">Processing</span>
-                    <Badge className="bg-blue-600 text-white font-semibold text-xs px-2 py-0.5">Browser-side</Badge>
+                    <Badge className="bg-blue-600 text-white font-semibold text-xs">Browser-side</Badge>
                   </div>
 
                   {imageDimensions.width > 0 && (
                     <>
-                      <div className="flex items-center justify-between py-2 px-2.5 bg-white/50 dark:bg-slate-950/50 rounded-lg border border-slate-300 dark:border-slate-800">
+                      <div className="flex items-center justify-between py-2 px-3 bg-slate-50 dark:bg-slate-950 rounded-lg border border-slate-200 dark:border-slate-800">
                         <span className="text-slate-600 dark:text-slate-400 text-xs font-medium">Resolution</span>
                         <span className="text-slate-900 dark:text-white font-bold text-sm">{imageDimensions.width} × {imageDimensions.height}</span>
                       </div>
                       
-                      <div className="flex items-center justify-between py-2 px-2.5 bg-white/50 dark:bg-slate-950/50 rounded-lg border border-slate-300 dark:border-slate-800">
+                      <div className="flex items-center justify-between py-2 px-3 bg-slate-50 dark:bg-slate-950 rounded-lg border border-slate-200 dark:border-slate-800">
                         <span className="text-slate-600 dark:text-slate-400 text-xs font-medium">Aspect Ratio</span>
                         <span className="text-slate-900 dark:text-white font-bold text-sm">{getAspectRatio(imageDimensions.width, imageDimensions.height)}</span>
                       </div>
@@ -480,10 +492,10 @@ Be specific about what you see. If it's food, mention the food. If it's a person
               </div>
 
               {/* Divider */}
-              <div className="h-px bg-gradient-to-r from-transparent via-slate-400 dark:via-slate-700 to-transparent" />
+              <div className="h-px bg-slate-200 dark:bg-slate-800" />
 
-              {/* AI-Generated Metadata */}
-              <div className="space-y-2.5">
+              {/* AI Metadata */}
+              <div className="space-y-2">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <Sparkles className="w-4 h-4 text-purple-600 dark:text-purple-400" />
@@ -495,7 +507,7 @@ Be specific about what you see. If it's food, mention the food. If it's a person
                       size="sm"
                       onClick={generateAIMetadata}
                       disabled={generatingMetadata}
-                      className="h-7 px-2 text-xs hover:bg-slate-200 dark:hover:bg-slate-800"
+                      className="h-7 px-2 text-xs"
                     >
                       <RefreshCw className={`w-3 h-3 mr-1 ${generatingMetadata ? 'animate-spin' : ''}`} />
                       Regenerate
@@ -504,41 +516,41 @@ Be specific about what you see. If it's food, mention the food. If it's a person
                 </div>
 
                 {generatingMetadata && (
-                  <div className="bg-white/50 dark:bg-slate-950/50 border border-slate-300 dark:border-slate-800 rounded-lg p-4 text-center">
+                  <div className="bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg p-4 text-center">
                     <RefreshCw className="w-5 h-5 animate-spin mx-auto mb-2 text-purple-600 dark:text-purple-400" />
                     <p className="text-xs text-slate-600 dark:text-slate-400">Analyzing image with AI...</p>
                   </div>
                 )}
 
                 {aiMetadata && !generatingMetadata && (
-                  <div className="space-y-2.5">
+                  <div className="space-y-2">
                     {/* Title */}
-                    <div className="bg-white/70 dark:bg-slate-950/70 border border-slate-300 dark:border-slate-800 rounded-lg p-3.5">
+                    <div className="bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg p-3">
                       <div className="flex items-start justify-between gap-2 mb-2">
                         <span className="text-[10px] font-bold text-purple-600 dark:text-purple-400 uppercase tracking-wider">Title</span>
                         <Button
                           variant="ghost"
                           size="sm"
                           onClick={() => copyToClipboard(aiMetadata.title, 'Title')}
-                          className="h-6 w-6 p-0 hover:bg-purple-100 dark:hover:bg-purple-950 flex-shrink-0"
+                          className="h-5 w-5 p-0 hover:bg-slate-200 dark:hover:bg-slate-800"
                         >
-                          <Copy className="w-3 h-3 text-purple-600 dark:text-purple-400" />
+                          <Copy className="w-3 h-3" />
                         </Button>
                       </div>
-                      <p className="text-sm text-slate-900 dark:text-white font-semibold leading-relaxed">{aiMetadata.title}</p>
+                      <p className="text-sm text-slate-900 dark:text-white font-medium">{aiMetadata.title}</p>
                     </div>
 
                     {/* Description */}
-                    <div className="bg-white/70 dark:bg-slate-950/70 border border-slate-300 dark:border-slate-800 rounded-lg p-3.5">
+                    <div className="bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg p-3">
                       <div className="flex items-start justify-between gap-2 mb-2">
                         <span className="text-[10px] font-bold text-purple-600 dark:text-purple-400 uppercase tracking-wider">Description</span>
                         <Button
                           variant="ghost"
                           size="sm"
                           onClick={() => copyToClipboard(aiMetadata.description, 'Description')}
-                          className="h-6 w-6 p-0 hover:bg-purple-100 dark:hover:bg-purple-950 flex-shrink-0"
+                          className="h-5 w-5 p-0 hover:bg-slate-200 dark:hover:bg-slate-800"
                         >
-                          <Copy className="w-3 h-3 text-purple-600 dark:text-purple-400" />
+                          <Copy className="w-3 h-3" />
                         </Button>
                       </div>
                       <p className="text-xs text-slate-900 dark:text-white leading-relaxed">{aiMetadata.description}</p>
@@ -547,16 +559,16 @@ Be specific about what you see. If it's food, mention the food. If it's a person
                 )}
 
                 {!aiMetadata && !generatingMetadata && (
-                  <div className="bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-950/30 dark:to-purple-900/30 border border-purple-200 dark:border-purple-800 rounded-lg p-4 text-center">
-                    <Sparkles className="w-6 h-6 mx-auto mb-2 text-purple-600 dark:text-purple-400" />
-                    <p className="text-xs text-slate-700 dark:text-slate-300 mb-3 font-medium">Generate SEO-optimized title and description for this image</p>
+                  <div className="bg-purple-50 dark:bg-purple-950/20 border border-purple-200 dark:border-purple-800 rounded-lg p-4 text-center">
+                    <Sparkles className="w-5 h-5 mx-auto mb-2 text-purple-600 dark:text-purple-400" />
+                    <p className="text-xs text-slate-700 dark:text-slate-300 mb-3">Generate SEO-optimized title and description</p>
                     <Button
                       size="sm"
                       onClick={generateAIMetadata}
                       disabled={!uploadedImageUrl}
-                      className="bg-purple-600 hover:bg-purple-700 text-white text-xs h-9 px-4 shadow-lg"
+                      className="bg-purple-600 hover:bg-purple-700 text-white text-xs h-8"
                     >
-                      <Sparkles className="w-3.5 h-3.5 mr-1.5" />
+                      <Sparkles className="w-3 h-3 mr-1" />
                       Generate Metadata
                     </Button>
                     {!uploadedImageUrl && (
@@ -565,27 +577,6 @@ Be specific about what you see. If it's food, mention the food. If it's a person
                   </div>
                 )}
               </div>
-
-              {/* Divider */}
-              <div className="h-px bg-gradient-to-r from-transparent via-slate-400 dark:via-slate-700 to-transparent" />
-
-              {/* Privacy Notice */}
-              <div className="bg-white/50 dark:bg-slate-950/50 border border-slate-300 dark:border-slate-800 rounded-xl p-3.5">
-                <div className="flex items-start gap-3">
-                  <div className="w-8 h-8 rounded-lg bg-emerald-600/20 flex items-center justify-center flex-shrink-0">
-                    <span className="text-base">🔒</span>
-                  </div>
-                  <div>
-                    <h4 className="text-slate-900 dark:text-white font-semibold text-xs mb-1">100% Private</h4>
-                    <p className="text-slate-600 dark:text-slate-400 text-[10px] leading-relaxed">
-                      All processing happens locally in your browser. Your images never leave your device.
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Bottom padding */}
-              <div className="h-4" />
             </div>
           </div>
         </div>
