@@ -1,3 +1,4 @@
+
 import { useState, lazy, Suspense } from "react";
 import { Button } from "@/components/ui/button";
 import { Download, Trash2, Sparkles, Shield, Zap, Image as ImageIcon } from "lucide-react";
@@ -29,7 +30,7 @@ export default function Home() {
   const [processedImages, setProcessedImages] = useState({});
   const [isDragActive, setIsDragActive] = useState(false);
   const [comparisonData, setComparisonData] = useState(null);
-  const [isProcessingAll, setIsProcessingAll] = useState(false);
+  const [autoProcessTrigger, setAutoProcessTrigger] = useState(0);
 
   const handleFilesSelected = (files) => {
     const newImages = Array.from(files).map(file => ({
@@ -65,19 +66,15 @@ export default function Home() {
   };
 
   const processAllImages = async () => {
-    setIsProcessingAll(true);
-    toast.info(`Processing ${images.length} images...`);
-    
     const unprocessedImages = images.filter(img => !processedImages[img.id]);
     
     if (unprocessedImages.length === 0) {
       toast.success('All images are already processed!');
-      setIsProcessingAll(false);
       return;
     }
     
-    toast.success(`Started processing ${unprocessedImages.length} images`);
-    setIsProcessingAll(false);
+    toast.info(`Processing ${unprocessedImages.length} images...`);
+    setAutoProcessTrigger(prev => prev + 1);
   };
 
   const downloadAll = async () => {
@@ -112,6 +109,8 @@ export default function Home() {
   const savingsPercent = totalOriginalSize > 0 
     ? ((totalSavings / totalOriginalSize) * 100).toFixed(1)
     : 0;
+  
+  const unprocessedCount = images.filter(img => !processedImages[img.id]).length;
 
   const formatFileSize = (bytes) => {
     if (bytes < 1024) return bytes + ' B';
@@ -227,10 +226,9 @@ export default function Home() {
               </div>
 
               <div className="flex gap-2 flex-wrap">
-                {Object.keys(processedImages).length < images.length && (
+                {unprocessedCount > 0 && (
                   <Button
                     onClick={processAllImages}
-                    disabled={isProcessingAll}
                     className="bg-blue-600 hover:bg-blue-700 text-white"
                   >
                     <Zap className="w-4 h-4 mr-2" />
@@ -295,6 +293,7 @@ export default function Home() {
                       onRemove={() => removeImage(image.id)}
                       onProcessed={(data) => handleImageProcessed(image.id, data)}
                       onCompare={handleCompare}
+                      autoProcess={!processedImages[image.id] && autoProcessTrigger}
                     />
                   </Suspense>
                 </motion.div>
