@@ -134,18 +134,19 @@ export default function ImageComparisonModal({
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-[98vw] w-[98vw] h-[98vh] p-0 overflow-hidden bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 border-slate-800">
+        {/* Single Close Button - Top Right Corner */}
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={onClose}
+          className="absolute top-4 right-4 z-50 bg-slate-900/90 hover:bg-red-600 text-white rounded-lg transition-colors h-10 w-10"
+        >
+          <X className="w-5 h-5" />
+        </Button>
+
         <div className="flex flex-col md:flex-row h-full">
           {/* Left Side - Image Comparison */}
           <div className="flex-1 relative overflow-hidden min-h-0">
-            {/* Close Button - Matching slider handle style */}
-            <button
-              onClick={onClose}
-              className="absolute top-4 right-4 z-30 w-12 h-12 bg-white rounded-full shadow-2xl flex items-center justify-center cursor-pointer border-2 border-slate-300 hover:bg-red-500 hover:border-red-600 transition-all group"
-              aria-label="Close"
-            >
-              <X className="w-6 h-6 text-slate-900 group-hover:text-white transition-colors" />
-            </button>
-
             {/* Zoom Controls */}
             <div className="absolute top-4 left-4 z-20 flex gap-2">
               <Button
@@ -182,7 +183,7 @@ export default function ImageComparisonModal({
 
             <div 
               ref={containerRef}
-              className="relative w-full h-full bg-slate-950 select-none"
+              className="relative w-full h-full bg-slate-950 select-none flex items-center justify-center p-4"
               style={{ 
                 cursor: zoom > 1 ? (isPanning ? 'grabbing' : 'grab') : 'col-resize'
               }}
@@ -203,7 +204,7 @@ export default function ImageComparisonModal({
               }}
             >
               <div
-                className="absolute inset-0 flex items-center justify-center"
+                className="relative w-full h-full flex items-center justify-center"
                 style={{
                   transform: `scale(${zoom}) translate(${pan.x / zoom}px, ${pan.y / zoom}px)`,
                   transformOrigin: 'center',
@@ -239,7 +240,7 @@ export default function ImageComparisonModal({
                     className="absolute top-0 bottom-0 w-0.5 bg-white/80 shadow-2xl z-10"
                     style={{ left: `${sliderPosition}%`, transform: 'translateX(-50%)' }}
                   >
-                    {/* Slider Handle - Same style as close button */}
+                    {/* Slider Handle */}
                     <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-12 h-12 bg-white rounded-full shadow-2xl flex items-center justify-center cursor-col-resize border-2 border-slate-300">
                       <MoveHorizontal className="w-6 h-6 text-slate-900" />
                     </div>
