@@ -76,9 +76,12 @@ export default function Layout({ children }) {
       </main>
       
       <footer className="border-t border-slate-200 dark:border-slate-800 mt-20">
-        <div className="container mx-auto px-4 py-8 text-center">
+        <div className="container mx-auto px-4 py-8 text-center space-y-2">
           <p className="text-sm text-slate-500 dark:text-slate-400">
             🔒 All processing happens locally in your browser. Your images never leave your device.
+          </p>
+          <p className="text-sm text-slate-500 dark:text-slate-400">
+            © <a href="https://www.tliu.co/" target="_blank" rel="noopener noreferrer" className="hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors">TLIU Studios</a> 2025, All Rights Reserved.
           </p>
         </div>
       </footer>

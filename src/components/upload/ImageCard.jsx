@@ -375,8 +375,7 @@ export default function ImageCard({ image, onRemove, onProcessed, onCompare }) {
               className="w-full"
               size="sm"
             >
-              <Eye className="w-4 h-4 mr-2" />
-              Compare Before/After
+              <Eye className="w-4 h-4" />
             </Button>
           </>
         )}

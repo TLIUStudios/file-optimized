@@ -131,180 +131,195 @@ export default function ImageComparisonModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-[98vw] w-[98vw] h-[98vh] p-0 overflow-hidden bg-slate-950 flex flex-col border-slate-800">
-        {/* Header */}
-        <div className="p-4 md:p-6 pb-3 md:pb-4 border-b border-slate-800 flex-shrink-0 relative">
-          <div className="flex items-start justify-between gap-4">
-            <div className="flex-1 min-w-0 pr-12">
-              <h2 className="text-white text-base md:text-xl mb-2 truncate font-semibold">{fileName}</h2>
-              <div className="flex items-center gap-2 md:gap-4 text-xs md:text-sm flex-wrap">
-                <div className="flex items-center gap-2">
-                  <span className="text-slate-400">Original:</span>
-                  <span className="text-white font-medium">{formatFileSize(originalSize)}</span>
-                </div>
-                <div className="h-4 w-px bg-slate-700" />
-                <div className="flex items-center gap-2">
-                  <span className="text-slate-400">Compressed:</span>
-                  <span className="text-emerald-400 font-medium">{formatFileSize(compressedSize)}</span>
-                </div>
-                <Badge className="bg-emerald-600 text-white text-xs">
-                  Saved {savingsPercent}%
-                </Badge>
-              </div>
-            </div>
+      <DialogContent className="max-w-[98vw] w-[98vw] h-[98vh] p-0 overflow-hidden bg-slate-950 border-slate-800">
+        <div className="flex h-full">
+          {/* Left Side - Image Comparison */}
+          <div className="flex-1 relative overflow-hidden">
+            {/* Close Button */}
             <Button
               variant="ghost"
               size="icon"
               onClick={onClose}
-              className="text-slate-400 hover:text-white hover:bg-slate-800 flex-shrink-0 absolute top-4 right-4"
+              className="absolute top-4 right-4 z-30 text-slate-400 hover:text-white hover:bg-slate-800/80 backdrop-blur-sm"
             >
               <X className="w-5 h-5" />
             </Button>
-          </div>
-        </div>
 
-        <div className="flex-1 overflow-hidden p-3 md:p-4 relative">
-          {/* Zoom Controls */}
-          <div className="absolute top-6 right-6 z-20 flex flex-col gap-2">
-            <Button
-              variant="secondary"
-              size="icon"
-              onClick={handleZoomIn}
-              className="bg-slate-800/90 hover:bg-slate-700 backdrop-blur-sm border border-slate-700"
-              title="Zoom In"
-            >
-              <ZoomIn className="w-4 h-4 text-white" />
-            </Button>
-            <Button
-              variant="secondary"
-              size="icon"
-              onClick={handleZoomOut}
-              className="bg-slate-800/90 hover:bg-slate-700 backdrop-blur-sm border border-slate-700"
-              title="Zoom Out"
-            >
-              <ZoomOut className="w-4 h-4 text-white" />
-            </Button>
-            <Button
-              variant="secondary"
-              size="icon"
-              onClick={handleResetZoom}
-              className="bg-slate-800/90 hover:bg-slate-700 backdrop-blur-sm border border-slate-700"
-              title="Reset Zoom"
-            >
-              <Maximize2 className="w-4 h-4 text-white" />
-            </Button>
-            <div className="bg-slate-800/90 backdrop-blur-sm border border-slate-700 rounded-md px-2 py-1 text-xs text-white text-center">
-              {(zoom * 100).toFixed(0)}%
+            {/* Zoom Controls */}
+            <div className="absolute top-4 right-16 z-20 flex gap-2">
+              <Button
+                variant="secondary"
+                size="icon"
+                onClick={handleZoomIn}
+                className="bg-slate-800/90 hover:bg-slate-700 backdrop-blur-sm border border-slate-700"
+                title="Zoom In"
+              >
+                <ZoomIn className="w-4 h-4 text-white" />
+              </Button>
+              <Button
+                variant="secondary"
+                size="icon"
+                onClick={handleZoomOut}
+                className="bg-slate-800/90 hover:bg-slate-700 backdrop-blur-sm border border-slate-700"
+                title="Zoom Out"
+              >
+                <ZoomOut className="w-4 h-4 text-white" />
+              </Button>
+              <Button
+                variant="secondary"
+                size="icon"
+                onClick={handleResetZoom}
+                className="bg-slate-800/90 hover:bg-slate-700 backdrop-blur-sm border border-slate-700"
+                title="Reset Zoom"
+              >
+                <Maximize2 className="w-4 h-4 text-white" />
+              </Button>
+              <div className="bg-slate-800/90 backdrop-blur-sm border border-slate-700 rounded-md px-3 py-2 text-xs text-white flex items-center">
+                {(zoom * 100).toFixed(0)}%
+              </div>
             </div>
-          </div>
 
-          <div 
-            ref={containerRef}
-            className="relative w-full h-full bg-slate-900 rounded-xl overflow-hidden select-none"
-            style={{ 
-              cursor: zoom > 1 ? (isPanning ? 'grabbing' : 'grab') : 'col-resize'
-            }}
-            onMouseDown={(e) => {
-              if (zoom > 1) {
-                handlePanStart(e);
-              } else {
-                setIsDragging(true);
-              }
-            }}
-            onTouchStart={(e) => {
-              if (zoom > 1 && e.touches.length === 1) {
-                setIsPanning(true);
-                setPanStart({ x: e.touches[0].clientX, y: e.touches[0].clientY });
-              } else if (e.touches.length === 1) {
-                setIsDragging(true);
-              }
-            }}
-          >
-            <div
-              style={{
-                transform: `scale(${zoom}) translate(${pan.x / zoom}px, ${pan.y / zoom}px)`,
-                transformOrigin: 'center',
-                transition: isDragging || isPanning ? 'none' : 'transform 0.2s ease-out',
-                width: '100%',
-                height: '100%',
-                position: 'relative'
+            <div 
+              ref={containerRef}
+              className="relative w-full h-full bg-slate-900 select-none"
+              style={{ 
+                cursor: zoom > 1 ? (isPanning ? 'grabbing' : 'grab') : 'col-resize'
+              }}
+              onMouseDown={(e) => {
+                if (zoom > 1) {
+                  handlePanStart(e);
+                } else {
+                  setIsDragging(true);
+                }
+              }}
+              onTouchStart={(e) => {
+                if (zoom > 1 && e.touches.length === 1) {
+                  setIsPanning(true);
+                  setPanStart({ x: e.touches[0].clientX, y: e.touches[0].clientY });
+                } else if (e.touches.length === 1) {
+                  setIsDragging(true);
+                }
               }}
             >
-              {/* Compressed Image (Background - Right Side) */}
-              <img
-                src={compressedImage}
-                alt="Compressed"
-                className="absolute inset-0 w-full h-full object-contain"
-                draggable="false"
-              />
-
-              {/* Original Image (Foreground - Left Side with clip) */}
               <div
-                className="absolute inset-0 overflow-hidden"
-                style={{ clipPath: `inset(0 ${100 - sliderPosition}% 0 0)` }}
+                style={{
+                  transform: `scale(${zoom}) translate(${pan.x / zoom}px, ${pan.y / zoom}px)`,
+                  transformOrigin: 'center',
+                  transition: isDragging || isPanning ? 'none' : 'transform 0.2s ease-out',
+                  width: '100%',
+                  height: '100%',
+                  position: 'relative'
+                }}
               >
+                {/* Compressed Image (Background - Right Side) */}
                 <img
-                  src={originalImage}
-                  alt="Original"
+                  src={compressedImage}
+                  alt="Compressed"
                   className="absolute inset-0 w-full h-full object-contain"
                   draggable="false"
                 />
-              </div>
-            </div>
 
-            {/* Labels */}
-            <Badge className="absolute top-4 left-4 bg-slate-900/80 backdrop-blur-sm text-white border border-slate-700 text-xs z-10">
-              Original
-            </Badge>
-            <Badge className="absolute top-4 right-20 bg-emerald-600/80 backdrop-blur-sm text-white border border-emerald-500 text-xs z-10">
-              Compressed
-            </Badge>
-
-            {/* Slider Line - only show when not zoomed/panning */}
-            {zoom === 1 && !isPanning && (
-              <>
+                {/* Original Image (Foreground - Left Side with clip) */}
                 <div
-                  className="absolute top-0 bottom-0 w-1 bg-white shadow-2xl z-10"
-                  style={{ left: `${sliderPosition}%`, transform: 'translateX(-50%)' }}
+                  className="absolute inset-0 overflow-hidden"
+                  style={{ clipPath: `inset(0 ${100 - sliderPosition}% 0 0)` }}
                 >
-                  {/* Slider Handle */}
-                  <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-10 h-10 md:w-12 md:h-12 bg-white rounded-full shadow-2xl flex items-center justify-center cursor-col-resize">
-                    <MoveHorizontal className="w-5 h-5 md:w-6 md:h-6 text-slate-900" />
+                  <img
+                    src={originalImage}
+                    alt="Original"
+                    className="absolute inset-0 w-full h-full object-contain"
+                    draggable="false"
+                  />
+                </div>
+              </div>
+
+              {/* Labels */}
+              <Badge className="absolute top-4 left-4 bg-slate-900/80 backdrop-blur-sm text-white border border-slate-700 text-xs z-10">
+                Original
+              </Badge>
+              <Badge className="absolute top-4 left-24 bg-emerald-600/80 backdrop-blur-sm text-white border border-emerald-500 text-xs z-10">
+                Compressed
+              </Badge>
+
+              {/* Slider Line - only show when not zoomed/panning */}
+              {zoom === 1 && !isPanning && (
+                <>
+                  <div
+                    className="absolute top-0 bottom-0 w-1 bg-white shadow-2xl z-10"
+                    style={{ left: `${sliderPosition}%`, transform: 'translateX(-50%)' }}
+                  >
+                    {/* Slider Handle */}
+                    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-10 h-10 md:w-12 md:h-12 bg-white rounded-full shadow-2xl flex items-center justify-center cursor-col-resize">
+                      <MoveHorizontal className="w-5 h-5 md:w-6 md:h-6 text-slate-900" />
+                    </div>
                   </div>
+
+                  {/* Instruction */}
+                  {sliderPosition === 50 && !isDragging && (
+                    <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-slate-900/90 backdrop-blur-sm text-white px-3 py-2 md:px-4 rounded-full text-xs md:text-sm border border-slate-700 pointer-events-none animate-pulse">
+                      ← Drag to compare →
+                    </div>
+                  )}
+                </>
+              )}
+
+              {/* Pan instruction when zoomed */}
+              {zoom > 1 && !isPanning && (
+                <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-slate-900/90 backdrop-blur-sm text-white px-3 py-2 md:px-4 rounded-full text-xs md:text-sm border border-slate-700 pointer-events-none">
+                  Click and drag to pan • Scroll to zoom
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Right Side - Information Panel */}
+          <div className="w-80 xl:w-96 bg-slate-900 border-l border-slate-800 flex flex-col p-6 overflow-y-auto">
+            <div className="flex-1 space-y-6">
+              <div>
+                <h2 className="text-white text-lg font-semibold mb-2 break-words">{fileName}</h2>
+                <p className="text-slate-400 text-sm">Compare the quality and file size between original and compressed versions</p>
+              </div>
+
+              <div className="space-y-4">
+                <div className="bg-slate-950 rounded-lg p-4 border border-slate-800">
+                  <p className="text-slate-400 text-xs mb-2">Original Size</p>
+                  <p className="text-white text-2xl font-bold">{formatFileSize(originalSize)}</p>
                 </div>
 
-                {/* Instruction */}
-                {sliderPosition === 50 && !isDragging && (
-                  <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-slate-900/90 backdrop-blur-sm text-white px-3 py-2 md:px-4 rounded-full text-xs md:text-sm border border-slate-700 pointer-events-none animate-pulse">
-                    ← Drag to compare →
-                  </div>
-                )}
-              </>
-            )}
+                <div className="bg-slate-950 rounded-lg p-4 border border-emerald-800/30">
+                  <p className="text-slate-400 text-xs mb-2">Compressed Size</p>
+                  <p className="text-emerald-400 text-2xl font-bold">{formatFileSize(compressedSize)}</p>
+                </div>
 
-            {/* Pan instruction when zoomed */}
-            {zoom > 1 && !isPanning && (
-              <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-slate-900/90 backdrop-blur-sm text-white px-3 py-2 md:px-4 rounded-full text-xs md:text-sm border border-slate-700 pointer-events-none">
-                Click and drag to pan • Scroll to zoom
+                <div className="bg-emerald-600 rounded-lg p-4">
+                  <p className="text-emerald-100 text-xs mb-2">Total Savings</p>
+                  <p className="text-white text-3xl font-bold">{savingsPercent}%</p>
+                  <p className="text-emerald-100 text-sm mt-2">
+                    Reduced by {formatFileSize(originalSize - compressedSize)}
+                  </p>
+                </div>
               </div>
-            )}
-          </div>
-        </div>
 
-        {/* Stats */}
-        <div className="p-3 md:p-4 flex-shrink-0">
-          <div className="grid grid-cols-3 gap-2 md:gap-4">
-            <div className="bg-slate-900 rounded-lg p-3 md:p-4 border border-slate-800">
-              <p className="text-slate-400 text-xs md:text-sm mb-1">Original</p>
-              <p className="text-white text-base md:text-xl font-bold truncate">{formatFileSize(originalSize)}</p>
+              <div className="space-y-3">
+                <div className="flex items-center justify-between py-2 border-b border-slate-800">
+                  <span className="text-slate-400 text-sm">Compression Ratio</span>
+                  <span className="text-white font-medium">{(compressedSize / originalSize).toFixed(2)}:1</span>
+                </div>
+                <div className="flex items-center justify-between py-2 border-b border-slate-800">
+                  <span className="text-slate-400 text-sm">Quality</span>
+                  <Badge className="bg-emerald-600 text-white">High</Badge>
+                </div>
+                <div className="flex items-center justify-between py-2 border-b border-slate-800">
+                  <span className="text-slate-400 text-sm">Processing</span>
+                  <Badge className="bg-blue-600 text-white">Local</Badge>
+                </div>
+              </div>
             </div>
-            <div className="bg-slate-900 rounded-lg p-3 md:p-4 border border-slate-800">
-              <p className="text-slate-400 text-xs md:text-sm mb-1">Compressed</p>
-              <p className="text-emerald-400 text-base md:text-xl font-bold truncate">{formatFileSize(compressedSize)}</p>
-            </div>
-            <div className="bg-slate-900 rounded-lg p-3 md:p-4 border border-slate-800">
-              <p className="text-slate-400 text-xs md:text-sm mb-1">Saved</p>
-              <p className="text-emerald-400 text-base md:text-xl font-bold">{savingsPercent}%</p>
+
+            <div className="mt-6 pt-6 border-t border-slate-800">
+              <p className="text-slate-500 text-xs text-center">
+                🔒 All processing happens in your browser. Your images never leave your device.
+              </p>
             </div>
           </div>
         </div>
