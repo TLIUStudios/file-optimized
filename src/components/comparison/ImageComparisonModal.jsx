@@ -3,7 +3,6 @@ import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { X, MoveHorizontal, ZoomIn, ZoomOut, Maximize2, Copy, RefreshCw, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Card } from "@/components/ui/card";
 import { base44 } from "@/api/base44Client";
 import { toast } from "sonner";
 
@@ -23,7 +22,8 @@ export default function ImageComparisonModal({
   const [isPanning, setIsPanning] = useState(false);
   const [panStart, setPanStart] = useState({ x: 0, y: 0 });
   const [imageDimensions, setImageDimensions] = useState({ width: 0, height: 0 });
-  const [aiMetadata, setAiMetadata] = useState(null);
+  const [aiTitle, setAiTitle] = useState("");
+  const [aiDescription, setAiDescription] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
   const containerRef = useRef(null);
   const imageContainerRef = useRef(null);
@@ -43,38 +43,27 @@ export default function ImageComparisonModal({
     }
   }, [originalImage]);
 
-  // Auto-generate AI metadata when modal opens
-  useEffect(() => {
-    if (isOpen && compressedImage && !aiMetadata && !isGenerating) {
-      generateMetadata();
-    }
-  }, [isOpen]);
-
   const generateMetadata = async () => {
     setIsGenerating(true);
+    setAiTitle("");
+    setAiDescription("");
+    
     try {
-      console.log('Starting metadata generation...');
+      // Convert compressed image (base64) to blob
+      const res = await fetch(compressedImage);
+      const blob = await res.blob();
       
-      // Convert compressed image to blob and upload
-      const response = await fetch(compressedImage);
-      const blob = await response.blob();
-      console.log('Blob created, uploading...');
+      // Upload the blob to get a file URL
+      const uploadRes = await base44.integrations.Core.UploadFile({ file: blob });
+      const fileUrl = uploadRes.file_url;
       
-      const uploadResult = await base44.integrations.Core.UploadFile({ file: blob });
-      console.log('Upload result:', uploadResult);
-      
-      const fileUrl = uploadResult.file_url;
-      console.log('File URL:', fileUrl);
+      // Call AI to analyze the image
+      const aiResponse = await base44.integrations.Core.InvokeLLM({
+        prompt: `Analyze this image and provide:
+1. A short, catchy title (max 60 characters)
+2. A brief description (max 160 characters)
 
-      // Generate metadata with AI
-      console.log('Calling AI to generate metadata...');
-      const result = await base44.integrations.Core.InvokeLLM({
-        prompt: `Look at this image carefully. Generate a title and description for it.
-
-Title: A short, catchy, SEO-friendly title that describes what's in the image (maximum 60 characters)
-Description: A brief, engaging description of the image (maximum 160 characters)
-
-Be specific about what you see in the image.`,
+Be specific about what you see.`,
         file_urls: [fileUrl],
         response_json_schema: {
           type: "object",
@@ -85,25 +74,20 @@ Be specific about what you see in the image.`,
           required: ["title", "description"]
         }
       });
-
-      console.log('AI result:', result);
-
-      if (result?.title && result?.description) {
-        setAiMetadata({
-          title: result.title,
-          description: result.description
-        });
-        toast.success('AI metadata generated!');
+      
+      if (aiResponse?.title && aiResponse?.description) {
+        setAiTitle(aiResponse.title);
+        setAiDescription(aiResponse.description);
+        toast.success('Metadata generated!');
       } else {
         throw new Error('Invalid AI response');
       }
     } catch (error) {
-      console.error('Error generating metadata:', error);
-      toast.error('Failed to generate metadata');
-      // Set placeholder so user can try to regenerate
-      setAiMetadata(null);
+      console.error('Generation error:', error);
+      toast.error('Failed to generate metadata. Please try again.');
+    } finally {
+      setIsGenerating(false);
     }
-    setIsGenerating(false);
   };
 
   const copyToClipboard = (text, label) => {
@@ -119,14 +103,12 @@ Be specific about what you see in the image.`,
     toast.success('Image downloaded!');
   };
 
-  // Calculate aspect ratio
   const getAspectRatio = (width, height) => {
     const gcd = (a, b) => b === 0 ? a : gcd(b, a % b);
     const divisor = gcd(width, height);
     const ratioW = width / divisor;
     const ratioH = height / divisor;
     
-    // Common aspect ratios
     const ratio = width / height;
     if (Math.abs(ratio - 1) < 0.01) return "1:1";
     if (Math.abs(ratio - 16/9) < 0.01) return "16:9";
@@ -198,7 +180,6 @@ Be specific about what you see in the image.`,
     };
   }, [isDragging, isPanning, panStart, pan]);
 
-  // Wheel zoom - only when hovering over image
   useEffect(() => {
     const handleWheel = (e) => {
       if (imageContainerRef.current?.contains(e.target)) {
@@ -313,7 +294,6 @@ Be specific about what you see in the image.`,
               ref={containerRef}
               className="relative w-full h-full bg-slate-100 dark:bg-slate-900 select-none flex flex-col items-center justify-center overflow-hidden"
             >
-              {/* Image Container */}
               <div className="flex-1 relative w-full flex items-center justify-center py-4">
                 <div
                   ref={imageContainerRef}
@@ -341,7 +321,6 @@ Be specific about what you see in the image.`,
                   }}
                 >
                   <div className="relative">
-                    {/* Compressed Image */}
                     <img
                       src={compressedImage}
                       alt="Compressed"
@@ -349,7 +328,6 @@ Be specific about what you see in the image.`,
                       draggable="false"
                     />
 
-                    {/* Original Image with clip */}
                     <div
                       className="absolute inset-0 overflow-hidden"
                       style={{ clipPath: `inset(0 ${100 - sliderPosition}% 0 0)` }}
@@ -362,7 +340,6 @@ Be specific about what you see in the image.`,
                       />
                     </div>
 
-                    {/* Slider Line */}
                     {zoom === 1 && !isPanning && (
                       <div
                         className="absolute top-0 bottom-0 w-0.5 bg-white shadow-2xl z-10 pointer-events-none"
@@ -377,7 +354,6 @@ Be specific about what you see in the image.`,
                 </div>
               </div>
 
-              {/* Labels */}
               <div className="h-16 w-full flex items-center justify-between px-6 bg-slate-100/80 dark:bg-slate-900/80 backdrop-blur-sm border-t border-slate-200 dark:border-slate-800">
                 <div className="flex flex-col gap-1">
                   <Badge className="bg-slate-700 dark:bg-slate-800 text-white text-sm px-3 py-1 font-semibold w-fit">
@@ -409,13 +385,11 @@ Be specific about what you see in the image.`,
           {/* Right Panel */}
           <div className="w-full lg:w-[360px] xl:w-[400px] bg-white dark:bg-slate-900 border-t lg:border-t-0 lg:border-l border-slate-200 dark:border-slate-800 flex flex-col overflow-y-auto">
             <div className="p-5 space-y-4">
-              {/* Header */}
               <div>
                 <h2 className="text-slate-900 dark:text-white text-sm font-bold mb-1 break-words line-clamp-2">{fileName}</h2>
                 <p className="text-slate-500 dark:text-slate-400 text-xs">Compare quality and analyze compression efficiency</p>
               </div>
 
-              {/* Stats */}
               <div className="space-y-3">
                 <div className="bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg p-4">
                   <p className="text-slate-500 dark:text-slate-400 text-[10px] font-semibold uppercase tracking-wider mb-1">Original Size</p>
@@ -436,10 +410,8 @@ Be specific about what you see in the image.`,
                 </div>
               </div>
 
-              {/* Divider */}
               <div className="h-px bg-slate-200 dark:bg-slate-800" />
 
-              {/* Details */}
               <div className="space-y-2">
                 <h3 className="text-slate-900 dark:text-white font-semibold text-xs uppercase tracking-wider">Compression Details</h3>
                 
@@ -475,14 +447,13 @@ Be specific about what you see in the image.`,
                 </div>
               </div>
 
-              {/* Divider */}
               <div className="h-px bg-slate-200 dark:bg-slate-800" />
 
-              {/* AI Generated Text Fields */}
+              {/* AI Generated */}
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
                   <h3 className="text-slate-900 dark:text-white font-semibold text-xs uppercase tracking-wider">AI Generated</h3>
-                  {aiMetadata && !isGenerating && (
+                  {(aiTitle || aiDescription) && !isGenerating && (
                     <Button
                       variant="ghost"
                       size="sm"
@@ -495,23 +466,20 @@ Be specific about what you see in the image.`,
                   )}
                 </div>
 
-                {isGenerating && (
+                {isGenerating ? (
                   <div className="bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg p-6 text-center">
                     <RefreshCw className="w-6 h-6 animate-spin mx-auto mb-2 text-slate-400" />
-                    <p className="text-xs text-slate-500 dark:text-slate-400">Analyzing image with AI...</p>
+                    <p className="text-xs text-slate-500 dark:text-slate-400">Analyzing image...</p>
                   </div>
-                )}
-
-                {!isGenerating && aiMetadata && (
+                ) : (aiTitle || aiDescription) ? (
                   <div className="space-y-2">
-                    {/* Title Field */}
                     <div className="bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg p-3">
                       <div className="flex items-center justify-between mb-2">
                         <label className="text-[10px] font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider">Title</label>
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={() => copyToClipboard(aiMetadata.title, 'Title')}
+                          onClick={() => copyToClipboard(aiTitle, 'Title')}
                           className="h-5 w-5 p-0 hover:bg-slate-200 dark:hover:bg-slate-800"
                         >
                           <Copy className="w-3 h-3" />
@@ -519,36 +487,33 @@ Be specific about what you see in the image.`,
                       </div>
                       <input
                         type="text"
-                        value={aiMetadata.title}
+                        value={aiTitle}
                         readOnly
                         className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded px-3 py-2 text-sm text-slate-900 dark:text-white"
                       />
                     </div>
 
-                    {/* Description Field */}
                     <div className="bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg p-3">
                       <div className="flex items-center justify-between mb-2">
                         <label className="text-[10px] font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider">Description</label>
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={() => copyToClipboard(aiMetadata.description, 'Description')}
+                          onClick={() => copyToClipboard(aiDescription, 'Description')}
                           className="h-5 w-5 p-0 hover:bg-slate-200 dark:hover:bg-slate-800"
                         >
                           <Copy className="w-3 h-3" />
                         </Button>
                       </div>
                       <textarea
-                        value={aiMetadata.description}
+                        value={aiDescription}
                         readOnly
                         rows={3}
                         className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded px-3 py-2 text-xs text-slate-900 dark:text-white resize-none"
                       />
                     </div>
                   </div>
-                )}
-
-                {!isGenerating && !aiMetadata && (
+                ) : (
                   <div className="bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg p-4 text-center">
                     <p className="text-xs text-slate-500 dark:text-slate-400 mb-3">Click to generate AI metadata</p>
                     <Button
