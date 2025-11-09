@@ -242,7 +242,7 @@ export default function ImageComparisonModal({
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-[98vw] w-[98vw] h-[98vh] p-0 overflow-hidden bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 border-slate-800 [&>button]:hidden">
-        {/* Close Button - Top Right with Red Hover - Only this one */}
+        {/* Close Button - Top Right with Red Hover */}
         <Button
           variant="ghost"
           size="icon"
@@ -254,8 +254,8 @@ export default function ImageComparisonModal({
 
         <div className="flex flex-col lg:flex-row h-full">
           {/* Left Side - Image Comparison */}
-          <div className="flex-1 relative overflow-hidden flex flex-col">
-            {/* Zoom Controls - Higher z-index to prevent overlap */}
+          <div className="flex-1 relative overflow-hidden flex flex-col min-h-0">
+            {/* Zoom Controls */}
             <div className="absolute top-4 left-4 z-[50] flex gap-2">
               <Button
                 variant="secondary"
@@ -291,7 +291,7 @@ export default function ImageComparisonModal({
 
             <div 
               ref={containerRef}
-              className="relative w-full h-full bg-slate-950 select-none flex flex-col items-center justify-center overflow-hidden"
+              className="relative flex-1 bg-slate-950 select-none flex flex-col overflow-hidden min-h-0"
               style={{ 
                 cursor: zoom > 1 ? (isPanning ? 'grabbing' : 'grab') : 'col-resize'
               }}
@@ -311,27 +311,22 @@ export default function ImageComparisonModal({
                 }
               }}
             >
-              {/* Image Container */}
-              <div className="flex-1 relative w-full flex items-center justify-center pb-2">
+              {/* Image Container - Takes up available space minus label height */}
+              <div className="flex-1 relative w-full flex items-center justify-center overflow-hidden min-h-0 p-4">
                 <div
-                  className="relative"
+                  className="relative w-full h-full flex items-center justify-center"
                   style={{
                     transform: `scale(${zoom}) translate(${pan.x / zoom}px, ${pan.y / zoom}px)`,
                     transformOrigin: 'center',
-                    transition: isDragging || isPanning ? 'none' : 'transform 0.2s ease-out',
-                    maxWidth: 'calc(100% - 32px)',
-                    maxHeight: 'calc(100% - 32px)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center'
+                    transition: isDragging || isPanning ? 'none' : 'transform 0.2s ease-out'
                   }}
                 >
                   {/* Compressed Image (Background - Right Side) */}
-                  <div className="relative flex items-center justify-center">
+                  <div className="relative flex items-center justify-center max-w-full max-h-full">
                     <img
                       src={compressedImage}
                       alt="Compressed"
-                      className="max-w-full max-h-[70vh] lg:max-h-[75vh] w-auto h-auto object-contain"
+                      className="max-w-full max-h-full w-auto h-auto object-contain"
                       draggable="false"
                     />
                   </div>
@@ -341,11 +336,11 @@ export default function ImageComparisonModal({
                     className="absolute inset-0 flex items-center justify-center overflow-hidden"
                     style={{ clipPath: `inset(0 ${100 - sliderPosition}% 0 0)` }}
                   >
-                    <div className="relative flex items-center justify-center">
+                    <div className="relative flex items-center justify-center max-w-full max-h-full">
                       <img
                         src={originalImage}
                         alt="Original"
-                        className="max-w-full max-h-[70vh] lg:max-h-[75vh] w-auto h-auto object-contain"
+                        className="max-w-full max-h-full w-auto h-auto object-contain"
                         draggable="false"
                       />
                     </div>
@@ -367,7 +362,7 @@ export default function ImageComparisonModal({
 
                     {/* Instruction */}
                     {sliderPosition === 50 && !isDragging && (
-                      <div className="absolute bottom-24 left-1/2 -translate-x-1/2 bg-slate-900/95 backdrop-blur-sm text-white px-5 py-2.5 rounded-full text-sm border border-slate-700 pointer-events-none animate-pulse shadow-lg">
+                      <div className="absolute bottom-8 left-1/2 -translate-x-1/2 bg-slate-900/95 backdrop-blur-sm text-white px-5 py-2.5 rounded-full text-sm border border-slate-700 pointer-events-none animate-pulse shadow-lg">
                         ← Drag to compare →
                       </div>
                     )}
@@ -376,14 +371,14 @@ export default function ImageComparisonModal({
 
                 {/* Pan instruction when zoomed */}
                 {zoom > 1 && !isPanning && (
-                  <div className="absolute bottom-24 left-1/2 -translate-x-1/2 bg-slate-900/95 backdrop-blur-sm text-white px-5 py-2.5 rounded-full text-sm border border-slate-700 pointer-events-none shadow-lg">
+                  <div className="absolute bottom-8 left-1/2 -translate-x-1/2 bg-slate-900/95 backdrop-blur-sm text-white px-5 py-2.5 rounded-full text-sm border border-slate-700 pointer-events-none shadow-lg">
                     Click and drag to pan • Scroll to zoom
                   </div>
                 )}
               </div>
 
-              {/* Labels Below Image - Far Left and Far Right */}
-              <div className="h-16 w-full flex items-center justify-between px-6 bg-slate-950/50 border-t border-slate-800">
+              {/* Labels Below Image - Fixed Height */}
+              <div className="h-20 w-full flex items-center justify-between px-6 bg-slate-950/80 border-t border-slate-800 flex-shrink-0">
                 <div className="flex flex-col gap-1.5">
                   <Badge className="bg-slate-900/95 backdrop-blur-sm text-white border border-slate-700 text-sm px-3 py-1.5 shadow-lg font-semibold w-fit">
                     Original
