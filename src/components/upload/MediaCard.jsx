@@ -55,6 +55,11 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
   const [audioBitrate, setAudioBitrate] = useState(128); // kbps
   const [frameRate, setFrameRate] = useState(30);
   const [ffmpegLoaded, setFfmpegLoaded] = useState(false);
+  const [videoPreset, setVideoPreset] = useState('medium'); // FFmpeg preset
+  const [gopSize, setGopSize] = useState(250); // Keyframe interval
+  const [sampleRate, setSampleRate] = useState(44100); // Audio sample rate
+  const [audioQuality, setAudioQuality] = useState('standard'); // Audio quality preset
+  const [gifOptimization, setGifOptimization] = useState('balanced'); // GIF optimization level
   
   const processMediaRef = useRef(null);
   const ffmpegRef = useRef(null);
@@ -223,7 +228,8 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
         '-vf', `fps=${targetFps},scale=trunc(iw/2)*2:trunc(ih/2)*2`,
         '-b:v', `${videoBitrate}k`,
         '-c:v', 'libx264',
-        '-preset', 'medium',
+        '-preset', videoPreset, // Use video preset
+        '-g', String(gopSize), // Keyframe interval
         'output.mp4'
       ]);
       
@@ -356,8 +362,9 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
       const args = [
         '-i', 'input.mp4',
         '-c:v', 'libx264',
-        '-preset', compressionMode === 'maximum' ? 'slow' : compressionMode === 'aggressive' ? 'medium' : 'fast',
+        '-preset', videoPreset, // FFmpeg preset
         '-crf', String(Math.round((100 - quality) / 2.5)),
+        '-g', String(gopSize), // Keyframe interval
       ];
       
       if (scaleFilter) {
@@ -367,6 +374,8 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
       args.push(
         '-r', String(frameRate),
         '-b:v', `${videoBitrate}k`,
+        '-maxrate', `${videoBitrate * 1.5}k`, // Max bitrate to prevent spikes
+        '-bufsize', `${videoBitrate * 2}k`, // Buffer size
         '-c:a', 'aac',
         '-b:a', '128k',
         '-movflags', '+faststart',
@@ -429,11 +438,20 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
       const outputExt = format === 'wav' ? 'wav' : 'mp3';
       const codec = format === 'wav' ? 'pcm_s16le' : 'libmp3lame';
       
+      // Adjust bitrate based on quality preset
+      let finalBitrate = audioBitrate;
+      if (audioQuality === 'high') {
+        finalBitrate = Math.max(192, audioBitrate);
+      } else if (audioQuality === 'lossless' && format === 'wav') {
+        // WAV is already lossless, ensure high bitrate for best quality if setting allows
+        finalBitrate = 1411; // CD quality bitrate for WAV
+      }
+      
       await ffmpeg.exec([
         '-i', `input.${inputExt}`,
         '-c:a', codec,
-        '-b:a', `${audioBitrate}k`,
-        '-ar', '44100',
+        '-b:a', `${finalBitrate}k`,
+        '-ar', String(sampleRate), // Audio sample rate
         '-y',
         `output.${outputExt}`
       ]);
@@ -475,7 +493,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
 
   const processGif = async () => {
     try {
-      console.log('Starting GIF compression...');
+      console.log('Starting advanced GIF compression...');
       
       const response = await fetch(preview);
       const originalBlob = await response.blob();
@@ -504,6 +522,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
         return;
       }
 
+      // Calculate optimal dimensions based on optimization level
       let targetWidth = gifSettings.width;
       let targetHeight = gifSettings.height;
       
@@ -525,8 +544,16 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
         }
       }
       
+      // Frame rate reduction based on optimization
+      let frameSkip = 1;
+      if (gifOptimization === 'aggressive') {
+        frameSkip = 2; // Keep every 2nd frame
+      } else if (gifOptimization === 'maximum') {
+        frameSkip = 3; // Keep every 3rd frame
+      }
+      
       console.log(`Target: ${targetWidth}x${targetHeight}, Original: ${gifSettings.width}x${gifSettings.height}`);
-      console.log(`Processing ${gifSettings.frames.length} frames with quality: ${quality}`);
+      console.log(`Frame skip: ${frameSkip}, Quality: ${quality}, Optimization: ${gifOptimization}`);
       
       const canvas = document.createElement('canvas');
       canvas.width = targetWidth;
@@ -535,9 +562,11 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
       if (!ctx) throw new Error('Failed to get canvas context');
 
       const processedFrames = [];
-      const maxFrames = Math.min(gifSettings.frames.length, 300);
+      const maxFrames = Math.min(gifSettings.frames.length, 400);
       
-      for (let i = 0; i < maxFrames; i++) {
+      let prevImageData = null;
+      
+      for (let i = 0; i < maxFrames; i += frameSkip) {
         const frame = gifSettings.frames[i];
         try {
           if (!frame || !frame.patch || !frame.dims) continue;
@@ -559,9 +588,21 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
           ctx.clearRect(0, 0, targetWidth, targetHeight);
           ctx.drawImage(tempCanvas, 0, 0, targetWidth, targetHeight);
           
-          const delay = frame.delay ? Math.max(20, frame.delay * 10) : 100;
+          // Adjust delay based on frame skip
+          let delay = frame.delay ? Math.max(20, frame.delay * 10 * frameSkip) : 100 * frameSkip;
           
           const frameImageData = ctx.getImageData(0, 0, targetWidth, targetHeight);
+          
+          // Frame differencing - only add if significantly different from previous
+          if (gifOptimization !== 'balanced' && prevImageData) {
+            const diff = calculateFrameDifference(prevImageData.data, frameImageData.data);
+            if (diff < 0.05) { // Less than 5% difference
+              continue; // Skip this frame
+            }
+          }
+          
+          prevImageData = frameImageData;
+          
           processedFrames.push({ 
             data: new Uint8ClampedArray(frameImageData.data),
             delay,
@@ -579,9 +620,18 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
       console.log(`Successfully processed ${processedFrames.length} frames`);
 
       const GIF = (await import('https://cdn.jsdelivr.net/npm/gif.js@0.2.0/dist/gif.js')).default;
-      const gifQuality = Math.max(1, Math.min(30, Math.round((100 - quality) / 3.5)));
       
-      console.log(`Using gif.js quality: ${gifQuality} (from slider: ${quality})`);
+      // Quality mapping based on optimization level
+      let gifQuality;
+      if (gifOptimization === 'balanced') {
+        gifQuality = Math.max(1, Math.min(30, Math.round((100 - quality) / 3.5)));
+      } else if (gifOptimization === 'aggressive') {
+        gifQuality = Math.max(5, Math.min(30, Math.round((100 - quality) / 3)));
+      } else { // maximum
+        gifQuality = Math.max(10, Math.min(30, Math.round((100 - quality) / 2.5)));
+      }
+      
+      console.log(`Using gif.js quality: ${gifQuality} (optimization: ${gifOptimization})`);
       
       const gif = new GIF({
         workers: 2,
@@ -589,8 +639,9 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
         width: targetWidth,
         height: targetHeight,
         workerScript: 'https://cdn.jsdelivr.net/npm/gif.js@0.2.0/dist/gif.worker.js',
-        dither: false,
-        transparent: null
+        dither: gifOptimization === 'maximum' ? 'FloydSteinberg' : false,
+        transparent: null,
+        repeat: 0 // Loop infinitely
       });
 
       for (let i = 0; i < processedFrames.length; i++) {
@@ -630,7 +681,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
           gif.render();
         }),
         new Promise((_, reject) => 
-          setTimeout(() => reject(new Error('GIF encoding timeout')), 90000)
+          setTimeout(() => reject(new Error('GIF encoding timeout')), 120000) // Increased timeout for potentially longer processes
         )
       ]);
       
@@ -692,6 +743,21 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
         toast.error('Failed to process GIF');
       }
     }
+  };
+
+  // Helper function to calculate frame difference for optimization
+  const calculateFrameDifference = (data1, data2) => {
+    if (!data1 || !data2 || data1.length !== data2.length) return 1; // Significant difference if data is missing or mismatched
+    let diff = 0;
+    const len = data1.length;
+    // Compare RGB channels, skip alpha
+    for (let i = 0; i < len; i += 4) {
+      diff += Math.abs(data1[i] - data2[i]); // R
+      diff += Math.abs(data1[i + 1] - data2[i + 1]); // G
+      diff += Math.abs(data1[i + 2] - data2[i + 2]); // B
+    }
+    // Normalize difference by maximum possible difference
+    return diff / (len * 0.75 * 255); // 0.75 because we compare 3 out of 4 channels
   };
 
   const processStaticImage = async () => {
@@ -841,14 +907,23 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
   const convertFormat = async (newFormat) => {
     if (!compressedPreview || processing) return;
     
-    // Handle video/audio format conversion
+    // Handle video/audio/gif format conversion by resetting and re-processing
     if (isVideo || isAudio || isGif) {
       setFormat(newFormat);
-      toast.info('Format changed. Click "Reprocess" to convert.');
+      // If we are currently showing a processed preview, and the user changes format,
+      // we need to re-process the original or current preview to the new format.
+      // This state reset will trigger a re-process when the user clicks 'Compress'/'Reprocess'.
+      if (processed) {
+        setProcessed(false);
+        setCompressedPreview(null);
+        setCompressedSize(0);
+        setOutputFormat(null);
+      }
+      toast.info('Format changed. Click "Compress" or "Reprocess" to apply.');
       return;
     }
 
-    // Handle image format conversion
+    // Handle static image format conversion
     setProcessing(true);
     setError(null);
 
@@ -1201,9 +1276,53 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
                   />
                 </div>
               )}
+              
+              {isGif && (
+                <div>
+                  <div className="flex items-center gap-2 mb-2">
+                    <label className="text-xs font-medium text-slate-700 dark:text-slate-300">
+                      GIF Optimization
+                    </label>
+                  </div>
+                  <Select value={gifOptimization} onValueChange={setGifOptimization} disabled={processing}>
+                    <SelectTrigger className="h-9">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="balanced">Balanced (Best Quality)</SelectItem>
+                      <SelectItem value="aggressive">Aggressive (Better Compression)</SelectItem>
+                      <SelectItem value="maximum">Maximum (Smallest Size)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
 
               {isVideo && (
                 <>
+                  <div>
+                    <div className="flex items-center gap-2 mb-2">
+                      <label className="text-xs font-medium text-slate-700 dark:text-slate-300">
+                        Encoding Speed
+                      </label>
+                    </div>
+                    <Select value={videoPreset} onValueChange={setVideoPreset} disabled={processing}>
+                      <SelectTrigger className="h-9">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="ultrafast">Ultra Fast (Larger File)</SelectItem>
+                        <SelectItem value="superfast">Super Fast</SelectItem>
+                        <SelectItem value="veryfast">Very Fast</SelectItem>
+                        <SelectItem value="faster">Faster</SelectItem>
+                        <SelectItem value="fast">Fast</SelectItem>
+                        <SelectItem value="medium">Medium (Balanced)</SelectItem>
+                        <SelectItem value="slow">Slow (Better Compression)</SelectItem>
+                        <SelectItem value="slower">Slower</SelectItem>
+                        <SelectItem value="veryslow">Very Slow (Best Compression)</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  
                   <div>
                     <div className="flex items-center gap-2 mb-2">
                       <label className="text-xs font-medium text-slate-700 dark:text-slate-300">
@@ -1220,6 +1339,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
                       disabled={processing}
                     />
                   </div>
+                  
                   <div>
                     <div className="flex items-center gap-2 mb-2">
                       <label className="text-xs font-medium text-slate-700 dark:text-slate-300">
@@ -1236,26 +1356,93 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
                       disabled={processing}
                     />
                   </div>
+                  
+                  <div>
+                    <div className="flex items-center gap-2 mb-2">
+                      <label className="text-xs font-medium text-slate-700 dark:text-slate-300">
+                        Keyframe Interval: {gopSize}
+                      </label>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Info className="w-3 h-3 text-slate-400 cursor-help" />
+                        </TooltipTrigger>
+                        <TooltipContent className="max-w-xs">
+                          <p className="text-xs">Lower values = better seeking, larger file. Higher values = better compression.</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </div>
+                    <Slider
+                      value={[gopSize]}
+                      onValueChange={(value) => setGopSize(value[0])}
+                      min={30}
+                      max={300}
+                      step={10}
+                      className="w-full"
+                      disabled={processing}
+                    />
+                  </div>
                 </>
               )}
 
               {isAudio && (
-                <div>
-                  <div className="flex items-center gap-2 mb-2">
-                    <label className="text-xs font-medium text-slate-700 dark:text-slate-300">
-                      Audio Bitrate: {audioBitrate} kbps
-                    </label>
+                <>
+                  <div>
+                    <div className="flex items-center gap-2 mb-2">
+                      <label className="text-xs font-medium text-slate-700 dark:text-slate-300">
+                        Audio Quality
+                      </label>
+                    </div>
+                    <Select value={audioQuality} onValueChange={setAudioQuality} disabled={processing}>
+                      <SelectTrigger className="h-9">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="standard">Standard (Good)</SelectItem>
+                        <SelectItem value="high">High (Better)</SelectItem>
+                        <SelectItem value="lossless">Lossless (Best)</SelectItem>
+                      </SelectContent>
+                    </Select>
                   </div>
-                  <Slider
-                    value={[audioBitrate]}
-                    onValueChange={(value) => setAudioBitrate(value[0])}
-                    min={64}
-                    max={320}
-                    step={16}
-                    className="w-full"
-                    disabled={processing}
-                  />
-                </div>
+                  
+                  <div>
+                    <div className="flex items-center gap-2 mb-2">
+                      <label className="text-xs font-medium text-slate-700 dark:text-slate-300">
+                        Audio Bitrate: {audioBitrate} kbps
+                      </label>
+                    </div>
+                    <Slider
+                      value={[audioBitrate]}
+                      onValueChange={(value) => setAudioBitrate(value[0])}
+                      min={64}
+                      max={320}
+                      step={16}
+                      className="w-full"
+                      disabled={processing}
+                    />
+                  </div>
+                  
+                  <div>
+                    <div className="flex items-center gap-2 mb-2">
+                      <label className="text-xs font-medium text-slate-700 dark:text-slate-300">
+                        Sample Rate: {sampleRate / 1000} kHz
+                      </label>
+                    </div>
+                    <Select 
+                      value={String(sampleRate)} 
+                      onValueChange={(value) => setSampleRate(parseInt(value))} 
+                      disabled={processing}
+                    >
+                      <SelectTrigger className="h-9">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="22050">22.05 kHz (Low)</SelectItem>
+                        <SelectItem value="44100">44.1 kHz (CD Quality)</SelectItem>
+                        <SelectItem value="48000">48 kHz (Professional)</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </>
               )}
 
               {(isImage || isVideo || isGif) && (

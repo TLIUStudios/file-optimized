@@ -179,7 +179,10 @@ export default function Home() {
             </div>
             <h3 className="font-semibold text-slate-900 dark:text-white mb-2">Multiple Formats</h3>
             <p className="text-sm text-slate-600 dark:text-slate-400">
-              Images: JPG, PNG, WebP, AVIF, GIF • Video: MP4 • Audio: MP3, WAV. Convert between any format instantly.
+              <strong>Images:</strong> JPEG, PNG, WEBP, AVIF, GIF<br/>
+              <strong>Video:</strong> MP4<br/>
+              <strong>Audio:</strong> MP3, WAV<br/>
+              <span className="text-xs">Convert between any format instantly.</span>
             </p>
           </div>
         </div>

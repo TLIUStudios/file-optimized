@@ -1,3 +1,4 @@
+
 import { useCallback } from "react";
 import { Upload, Image as ImageIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -81,14 +82,22 @@ export default function UploadZone({ onFilesSelected, isDragActive, onDragStateC
           <p className="text-lg font-semibold text-slate-900 dark:text-white mb-2">
             {isDragActive ? "Drop your files here" : "Drop files here or click to browse"}
           </p>
-          <p className="text-sm text-slate-500 dark:text-slate-400">
-            Images: PNG, JPG, WebP, AVIF, GIF
+          <div className="space-y-1 mb-2">
+            <p className="text-sm text-slate-600 dark:text-slate-400">
+              <strong>Images:</strong> JPEG, PNG, WEBP, AVIF, GIF
+            </p>
+            <p className="text-sm text-slate-600 dark:text-slate-400">
+              <strong>Video:</strong> MP4
+            </p>
+            <p className="text-sm text-slate-600 dark:text-slate-400">
+              <strong>Audio:</strong> MP3, WAV
+            </p>
+          </div>
+          <p className="text-xs text-slate-500 dark:text-slate-400 mt-3">
+            Unlimited uploads • 50MB file size limit per file (500MB on Pro Plan)
           </p>
-          <p className="text-sm text-slate-500 dark:text-slate-400">
-            Video: MP4 • Audio: MP3, WAV
-          </p>
-          <p className="text-xs text-slate-400 dark:text-slate-500 mt-2">
-            Unlimited uploads • All processing happens locally
+          <p className="text-xs text-slate-400 dark:text-slate-500">
+            All processing happens locally
           </p>
         </div>
       </div>
