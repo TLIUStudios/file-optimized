@@ -23,12 +23,8 @@ export default function ImageComparisonModal({
   const containerRef = useRef(null);
 
   // Extract file extensions
-  const originalExtension = fileName.split('.').slice(0, -1).join('.');
   const originalExt = fileName.split('.').pop().toUpperCase();
-  const compressedFileName = fileName.replace(/\.[^/.]+$/, '');
-  const compressedExt = compressedFileName.split('_compressed')[0] ? 
-    compressedImage.split('data:image/')[1]?.split(';')[0].toUpperCase() || 'WEBP' : 
-    'WEBP';
+  const compressedExt = compressedImage.split('data:image/')[1]?.split(';')[0].toUpperCase() || 'WEBP';
 
   useEffect(() => {
     const handleMouseMove = (e) => {
@@ -152,16 +148,16 @@ export default function ImageComparisonModal({
           <X className="w-5 h-5" />
         </Button>
 
-        <div className="flex flex-col md:flex-row h-full">
+        <div className="flex flex-col lg:flex-row h-full">
           {/* Left Side - Image Comparison */}
-          <div className="flex-1 relative overflow-hidden min-h-0">
-            {/* Zoom Controls */}
+          <div className="flex-1 relative overflow-hidden flex flex-col">
+            {/* Zoom Controls - Repositioned and Styled */}
             <div className="absolute top-4 left-4 z-20 flex gap-2">
               <Button
                 variant="secondary"
                 size="icon"
                 onClick={handleZoomIn}
-                className="bg-slate-800/90 hover:bg-slate-700 backdrop-blur-sm border border-slate-700 text-white"
+                className="bg-slate-800/90 hover:bg-slate-700 backdrop-blur-sm border border-slate-700 text-white h-9 w-9"
                 title="Zoom In"
               >
                 <ZoomIn className="w-4 h-4" />
@@ -170,7 +166,7 @@ export default function ImageComparisonModal({
                 variant="secondary"
                 size="icon"
                 onClick={handleZoomOut}
-                className="bg-slate-800/90 hover:bg-slate-700 backdrop-blur-sm border border-slate-700 text-white"
+                className="bg-slate-800/90 hover:bg-slate-700 backdrop-blur-sm border border-slate-700 text-white h-9 w-9"
                 title="Zoom Out"
               >
                 <ZoomOut className="w-4 h-4" />
@@ -179,19 +175,19 @@ export default function ImageComparisonModal({
                 variant="secondary"
                 size="icon"
                 onClick={handleResetZoom}
-                className="bg-slate-800/90 hover:bg-slate-700 backdrop-blur-sm border border-slate-700 text-white"
-                title="Reset Zoom"
+                className="bg-slate-800/90 hover:bg-slate-700 backdrop-blur-sm border border-slate-700 text-white h-9 w-9"
+                title="Reset"
               >
                 <Maximize2 className="w-4 h-4" />
               </Button>
-              <div className="bg-slate-800/90 backdrop-blur-sm border border-slate-700 rounded-md px-3 py-2 text-xs text-white flex items-center font-medium">
+              <div className="bg-slate-800/90 backdrop-blur-sm border border-slate-700 rounded-md px-3 flex items-center text-xs text-white font-medium">
                 {(zoom * 100).toFixed(0)}%
               </div>
             </div>
 
             <div 
               ref={containerRef}
-              className="relative w-full h-full bg-slate-950 select-none flex items-center justify-center p-4"
+              className="relative w-full h-full bg-slate-950 select-none flex items-center justify-center overflow-hidden"
               style={{ 
                 cursor: zoom > 1 ? (isPanning ? 'grabbing' : 'grab') : 'col-resize'
               }}
@@ -212,27 +208,28 @@ export default function ImageComparisonModal({
               }}
             >
               <div
-                className="relative flex items-center justify-center"
+                className="relative"
                 style={{
                   transform: `scale(${zoom}) translate(${pan.x / zoom}px, ${pan.y / zoom}px)`,
                   transformOrigin: 'center',
                   transition: isDragging || isPanning ? 'none' : 'transform 0.2s ease-out',
-                  maxWidth: '100%',
-                  maxHeight: '100%',
-                  width: '100%',
-                  height: '100%'
+                  maxWidth: 'calc(100% - 32px)',
+                  maxHeight: 'calc(100% - 32px)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center'
                 }}
               >
                 {/* Compressed Image (Background - Right Side) */}
-                <div className="relative w-full h-full flex items-center justify-center">
+                <div className="relative flex items-center justify-center">
                   <img
                     src={compressedImage}
                     alt="Compressed"
-                    className="max-w-full max-h-full w-auto h-auto object-contain"
+                    className="max-w-full max-h-[85vh] lg:max-h-[90vh] w-auto h-auto object-contain"
                     draggable="false"
                   />
                   {/* Compressed File Type Badge */}
-                  <Badge className="absolute bottom-4 right-4 bg-emerald-600/95 backdrop-blur-sm text-white border border-emerald-500 text-xs px-3 py-1.5 shadow-lg font-bold">
+                  <Badge className="absolute bottom-3 right-3 bg-emerald-600/95 backdrop-blur-sm text-white border border-emerald-500 text-xs px-2.5 py-1 shadow-lg font-bold">
                     {compressedExt}
                   </Badge>
                 </div>
@@ -242,15 +239,15 @@ export default function ImageComparisonModal({
                   className="absolute inset-0 flex items-center justify-center overflow-hidden"
                   style={{ clipPath: `inset(0 ${100 - sliderPosition}% 0 0)` }}
                 >
-                  <div className="relative w-full h-full flex items-center justify-center">
+                  <div className="relative flex items-center justify-center">
                     <img
                       src={originalImage}
                       alt="Original"
-                      className="max-w-full max-h-full w-auto h-auto object-contain"
+                      className="max-w-full max-h-[85vh] lg:max-h-[90vh] w-auto h-auto object-contain"
                       draggable="false"
                     />
                     {/* Original File Type Badge */}
-                    <Badge className="absolute bottom-4 right-4 bg-slate-900/95 backdrop-blur-sm text-white border border-slate-700 text-xs px-3 py-1.5 shadow-lg font-bold">
+                    <Badge className="absolute bottom-3 right-3 bg-slate-900/95 backdrop-blur-sm text-white border border-slate-700 text-xs px-2.5 py-1 shadow-lg font-bold">
                       {originalExt}
                     </Badge>
                   </div>
@@ -261,26 +258,26 @@ export default function ImageComparisonModal({
               {zoom === 1 && !isPanning && (
                 <>
                   <div
-                    className="absolute top-0 bottom-0 w-0.5 bg-white/80 shadow-2xl z-10"
+                    className="absolute top-0 bottom-0 w-0.5 bg-white shadow-2xl z-10"
                     style={{ left: `${sliderPosition}%`, transform: 'translateX(-50%)' }}
                   >
                     {/* Slider Handle */}
                     <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-12 h-12 bg-white rounded-full shadow-2xl flex items-center justify-center cursor-col-resize border-2 border-slate-300">
-                      <MoveHorizontal className="w-6 h-6 text-slate-900" />
+                      <MoveHorizontal className="w-5 h-5 text-slate-900" />
                     </div>
                   </div>
 
                   {/* Labels */}
-                  <Badge className="absolute top-1/2 left-8 -translate-y-1/2 bg-slate-900/95 backdrop-blur-sm text-white border border-slate-700 text-sm px-4 py-2 z-10 shadow-lg">
+                  <Badge className="absolute top-6 left-6 bg-slate-900/95 backdrop-blur-sm text-white border border-slate-700 text-sm px-3 py-1.5 z-10 shadow-lg font-semibold">
                     Original
                   </Badge>
-                  <Badge className="absolute top-1/2 right-8 md:right-auto md:left-[calc(50%+2rem)] -translate-y-1/2 bg-emerald-600/95 backdrop-blur-sm text-white border border-emerald-500 text-sm px-4 py-2 z-10 shadow-lg">
+                  <Badge className="absolute top-6 right-6 lg:right-auto lg:left-[calc(50%+1.5rem)] bg-emerald-600/95 backdrop-blur-sm text-white border border-emerald-500 text-sm px-3 py-1.5 z-10 shadow-lg font-semibold">
                     Compressed
                   </Badge>
 
                   {/* Instruction */}
                   {sliderPosition === 50 && !isDragging && (
-                    <div className="absolute bottom-8 left-1/2 -translate-x-1/2 bg-slate-900/95 backdrop-blur-sm text-white px-6 py-3 rounded-full text-sm border border-slate-700 pointer-events-none animate-pulse shadow-lg">
+                    <div className="absolute bottom-6 left-1/2 -translate-x-1/2 bg-slate-900/95 backdrop-blur-sm text-white px-5 py-2.5 rounded-full text-sm border border-slate-700 pointer-events-none animate-pulse shadow-lg">
                       ← Drag to compare →
                     </div>
                   )}
@@ -289,7 +286,7 @@ export default function ImageComparisonModal({
 
               {/* Pan instruction when zoomed */}
               {zoom > 1 && !isPanning && (
-                <div className="absolute bottom-8 left-1/2 -translate-x-1/2 bg-slate-900/95 backdrop-blur-sm text-white px-6 py-3 rounded-full text-sm border border-slate-700 pointer-events-none shadow-lg">
+                <div className="absolute bottom-6 left-1/2 -translate-x-1/2 bg-slate-900/95 backdrop-blur-sm text-white px-5 py-2.5 rounded-full text-sm border border-slate-700 pointer-events-none shadow-lg">
                   Click and drag to pan • Scroll to zoom
                 </div>
               )}
@@ -297,34 +294,32 @@ export default function ImageComparisonModal({
           </div>
 
           {/* Right Side - Information Panel */}
-          <div className="w-full md:w-80 lg:w-96 bg-gradient-to-b from-slate-900 to-slate-950 border-t md:border-t-0 md:border-l border-slate-800 flex flex-col overflow-y-auto max-h-[40vh] md:max-h-full">
-            <div className="p-6 lg:p-8 space-y-6 lg:space-y-8">
+          <div className="w-full lg:w-[380px] xl:w-[420px] bg-gradient-to-b from-slate-900 to-slate-950 border-t lg:border-t-0 lg:border-l border-slate-800 flex flex-col overflow-y-auto max-h-[45vh] lg:max-h-full">
+            <div className="p-5 lg:p-6 space-y-5">
               {/* Header */}
               <div>
-                <h2 className="text-white text-lg lg:text-xl font-bold mb-3 break-words leading-tight">{fileName}</h2>
-                <p className="text-slate-400 text-sm leading-relaxed">Compare quality and analyze compression efficiency</p>
+                <h2 className="text-white text-base lg:text-lg font-bold mb-2 break-words leading-tight line-clamp-2">{fileName}</h2>
+                <p className="text-slate-400 text-xs lg:text-sm leading-relaxed">Compare quality and analyze compression efficiency</p>
               </div>
 
               {/* Main Stats Cards */}
-              <div className="space-y-4">
-                <Card className="bg-slate-950 border-slate-800 p-5 shadow-xl">
-                  <p className="text-slate-400 text-xs font-medium uppercase tracking-wider mb-2">Original Size</p>
-                  <p className="text-white text-3xl font-bold">{formatFileSize(originalSize)}</p>
+              <div className="space-y-3">
+                <Card className="bg-slate-950/50 border-slate-800 p-4 shadow-xl">
+                  <p className="text-slate-400 text-[10px] lg:text-xs font-medium uppercase tracking-wider mb-1.5">Original Size</p>
+                  <p className="text-white text-2xl lg:text-3xl font-bold">{formatFileSize(originalSize)}</p>
                 </Card>
 
-                <Card className="bg-gradient-to-br from-emerald-600 to-emerald-700 border-emerald-500 p-5 shadow-xl">
-                  <p className="text-emerald-100 text-xs font-medium uppercase tracking-wider mb-2">Compressed Size</p>
-                  <p className="text-white text-3xl font-bold mb-2">{formatFileSize(compressedSize)}</p>
-                  <div className="flex items-baseline gap-2">
-                    <Badge className="bg-white/20 text-white backdrop-blur-sm text-base px-3 py-1 font-bold">
-                      {savingsPercent}% smaller
-                    </Badge>
-                  </div>
+                <Card className="bg-gradient-to-br from-emerald-600 to-emerald-700 border-emerald-500 p-4 shadow-xl">
+                  <p className="text-emerald-100 text-[10px] lg:text-xs font-medium uppercase tracking-wider mb-1.5">Compressed Size</p>
+                  <p className="text-white text-2xl lg:text-3xl font-bold mb-2">{formatFileSize(compressedSize)}</p>
+                  <Badge className="bg-white/20 text-white backdrop-blur-sm text-sm px-2.5 py-0.5 font-bold">
+                    {savingsPercent}% smaller
+                  </Badge>
                 </Card>
 
-                <Card className="bg-slate-950 border-slate-800 p-5 shadow-xl">
-                  <p className="text-slate-400 text-xs font-medium uppercase tracking-wider mb-2">Space Saved</p>
-                  <p className="text-emerald-400 text-2xl font-bold">{formatFileSize(savingsAmount)}</p>
+                <Card className="bg-slate-950/50 border-slate-800 p-4 shadow-xl">
+                  <p className="text-slate-400 text-[10px] lg:text-xs font-medium uppercase tracking-wider mb-1.5">Space Saved</p>
+                  <p className="text-emerald-400 text-xl lg:text-2xl font-bold">{formatFileSize(savingsAmount)}</p>
                 </Card>
               </div>
 
@@ -332,39 +327,39 @@ export default function ImageComparisonModal({
               <div className="h-px bg-gradient-to-r from-transparent via-slate-700 to-transparent" />
 
               {/* Details */}
-              <div className="space-y-4">
-                <h3 className="text-white font-semibold text-sm uppercase tracking-wider">Compression Details</h3>
+              <div className="space-y-3">
+                <h3 className="text-white font-semibold text-xs uppercase tracking-wider">Compression Details</h3>
                 
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between py-3 px-4 bg-slate-950 rounded-lg border border-slate-800">
-                    <span className="text-slate-400 text-sm font-medium">Compression Ratio</span>
-                    <span className="text-white font-bold">{(compressedSize / originalSize).toFixed(3)}:1</span>
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between py-2.5 px-3 bg-slate-950/50 rounded-lg border border-slate-800">
+                    <span className="text-slate-400 text-xs font-medium">Compression Ratio</span>
+                    <span className="text-white font-bold text-sm">{(compressedSize / originalSize).toFixed(3)}:1</span>
                   </div>
                   
-                  <div className="flex items-center justify-between py-3 px-4 bg-slate-950 rounded-lg border border-slate-800">
-                    <span className="text-slate-400 text-sm font-medium">Quality</span>
-                    <Badge className="bg-emerald-600 text-white font-semibold">High</Badge>
+                  <div className="flex items-center justify-between py-2.5 px-3 bg-slate-950/50 rounded-lg border border-slate-800">
+                    <span className="text-slate-400 text-xs font-medium">Quality</span>
+                    <Badge className="bg-emerald-600 text-white font-semibold text-xs">High</Badge>
                   </div>
                   
-                  <div className="flex items-center justify-between py-3 px-4 bg-slate-950 rounded-lg border border-slate-800">
-                    <span className="text-slate-400 text-sm font-medium">Processing</span>
-                    <Badge className="bg-blue-600 text-white font-semibold">Browser-side</Badge>
+                  <div className="flex items-center justify-between py-2.5 px-3 bg-slate-950/50 rounded-lg border border-slate-800">
+                    <span className="text-slate-400 text-xs font-medium">Processing</span>
+                    <Badge className="bg-blue-600 text-white font-semibold text-xs">Browser-side</Badge>
                   </div>
                 </div>
               </div>
 
               {/* Divider */}
-              <div className="h-px bg-gradient-to-r from-transparent via-slate-700 to-transparent hidden md:block" />
+              <div className="h-px bg-gradient-to-r from-transparent via-slate-700 to-transparent hidden lg:block" />
 
               {/* Privacy Notice */}
-              <div className="bg-slate-950 border border-slate-800 rounded-xl p-5 hidden md:block">
+              <div className="bg-slate-950/50 border border-slate-800 rounded-xl p-4 hidden lg:block">
                 <div className="flex items-start gap-3">
-                  <div className="w-10 h-10 rounded-lg bg-emerald-600/20 flex items-center justify-center flex-shrink-0">
-                    <span className="text-xl">🔒</span>
+                  <div className="w-9 h-9 rounded-lg bg-emerald-600/20 flex items-center justify-center flex-shrink-0">
+                    <span className="text-lg">🔒</span>
                   </div>
                   <div>
-                    <h4 className="text-white font-semibold text-sm mb-1">100% Private</h4>
-                    <p className="text-slate-400 text-xs leading-relaxed">
+                    <h4 className="text-white font-semibold text-xs mb-1">100% Private</h4>
+                    <p className="text-slate-400 text-[10px] leading-relaxed">
                       All processing happens locally in your browser. Your images never leave your device.
                     </p>
                   </div>
