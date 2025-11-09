@@ -137,8 +137,8 @@ export default function ImageComparisonModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-[98vw] w-[98vw] h-[98vh] p-0 overflow-hidden bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 border-slate-800">
-        {/* Close Button - Top Right with Red Hover */}
+      <DialogContent className="max-w-[98vw] w-[98vw] h-[98vh] p-0 overflow-hidden bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 border-slate-800 [&>button]:hidden">
+        {/* Close Button - Top Right with Red Hover - Only this one */}
         <Button
           variant="ghost"
           size="icon"
@@ -208,7 +208,7 @@ export default function ImageComparisonModal({
               }}
             >
               {/* Image Container */}
-              <div className="flex-1 relative w-full flex items-center justify-center">
+              <div className="flex-1 relative w-full flex items-center justify-center pb-2">
                 <div
                   className="relative"
                   style={{
@@ -227,7 +227,7 @@ export default function ImageComparisonModal({
                     <img
                       src={compressedImage}
                       alt="Compressed"
-                      className="max-w-full max-h-[75vh] lg:max-h-[80vh] w-auto h-auto object-contain"
+                      className="max-w-full max-h-[70vh] lg:max-h-[75vh] w-auto h-auto object-contain"
                       draggable="false"
                     />
                   </div>
@@ -241,7 +241,7 @@ export default function ImageComparisonModal({
                       <img
                         src={originalImage}
                         alt="Original"
-                        className="max-w-full max-h-[75vh] lg:max-h-[80vh] w-auto h-auto object-contain"
+                        className="max-w-full max-h-[70vh] lg:max-h-[75vh] w-auto h-auto object-contain"
                         draggable="false"
                       />
                     </div>
@@ -261,17 +261,9 @@ export default function ImageComparisonModal({
                       </div>
                     </div>
 
-                    {/* Labels */}
-                    <Badge className="absolute top-6 left-6 bg-slate-900/95 backdrop-blur-sm text-white border border-slate-700 text-sm px-3 py-1.5 z-10 shadow-lg font-semibold">
-                      Original
-                    </Badge>
-                    <Badge className="absolute top-6 right-6 lg:right-auto lg:left-[calc(50%+1.5rem)] bg-emerald-600/95 backdrop-blur-sm text-white border border-emerald-500 text-sm px-3 py-1.5 z-10 shadow-lg font-semibold">
-                      Compressed
-                    </Badge>
-
                     {/* Instruction */}
                     {sliderPosition === 50 && !isDragging && (
-                      <div className="absolute bottom-20 left-1/2 -translate-x-1/2 bg-slate-900/95 backdrop-blur-sm text-white px-5 py-2.5 rounded-full text-sm border border-slate-700 pointer-events-none animate-pulse shadow-lg">
+                      <div className="absolute bottom-24 left-1/2 -translate-x-1/2 bg-slate-900/95 backdrop-blur-sm text-white px-5 py-2.5 rounded-full text-sm border border-slate-700 pointer-events-none animate-pulse shadow-lg">
                         ← Drag to compare →
                       </div>
                     )}
@@ -280,58 +272,71 @@ export default function ImageComparisonModal({
 
                 {/* Pan instruction when zoomed */}
                 {zoom > 1 && !isPanning && (
-                  <div className="absolute bottom-20 left-1/2 -translate-x-1/2 bg-slate-900/95 backdrop-blur-sm text-white px-5 py-2.5 rounded-full text-sm border border-slate-700 pointer-events-none shadow-lg">
+                  <div className="absolute bottom-24 left-1/2 -translate-x-1/2 bg-slate-900/95 backdrop-blur-sm text-white px-5 py-2.5 rounded-full text-sm border border-slate-700 pointer-events-none shadow-lg">
                     Click and drag to pan • Scroll to zoom
                   </div>
                 )}
               </div>
 
-              {/* File Type Badges Below Image */}
-              <div className="h-16 w-full flex items-center justify-center gap-8 px-4 bg-slate-950/50 border-t border-slate-800">
-                <div className="flex items-center gap-3">
-                  <span className="text-slate-400 text-sm font-medium">Original:</span>
-                  <Badge className="bg-slate-900/95 backdrop-blur-sm text-white border border-slate-700 text-sm px-3 py-1.5 font-bold shadow-lg">
-                    {originalExt}
+              {/* Labels Below Image & File Type Badges */}
+              <div className="h-20 w-full flex flex-col gap-2 px-4 bg-slate-950/50 border-t border-slate-800">
+                {/* Original/Compressed Labels Row */}
+                <div className="flex items-center justify-between pt-2">
+                  <Badge className="bg-slate-900/95 backdrop-blur-sm text-white border border-slate-700 text-sm px-3 py-1.5 shadow-lg font-semibold">
+                    Original
+                  </Badge>
+                  <Badge className="bg-emerald-600/95 backdrop-blur-sm text-white border border-emerald-500 text-sm px-3 py-1.5 shadow-lg font-semibold">
+                    Compressed
                   </Badge>
                 </div>
-                <div className="h-8 w-px bg-slate-700" />
-                <div className="flex items-center gap-3">
-                  <span className="text-slate-400 text-sm font-medium">Compressed:</span>
-                  <Badge className="bg-emerald-600/95 backdrop-blur-sm text-white border border-emerald-500 text-sm px-3 py-1.5 font-bold shadow-lg">
-                    {compressedExt}
-                  </Badge>
+                
+                {/* File Type Badges Row */}
+                <div className="flex items-center justify-center gap-8 pb-2">
+                  <div className="flex items-center gap-3">
+                    <span className="text-slate-400 text-sm font-medium">Original:</span>
+                    <Badge className="bg-slate-900/95 backdrop-blur-sm text-white border border-slate-700 text-sm px-3 py-1.5 font-bold shadow-lg">
+                      {originalExt}
+                    </Badge>
+                  </div>
+                  <div className="h-8 w-px bg-slate-700" />
+                  <div className="flex items-center gap-3">
+                    <span className="text-slate-400 text-sm font-medium">Compressed:</span>
+                    <Badge className="bg-emerald-600/95 backdrop-blur-sm text-white border border-emerald-500 text-sm px-3 py-1.5 font-bold shadow-lg">
+                      {compressedExt}
+                    </Badge>
+                  </div>
                 </div>
               </div>
             </div>
           </div>
 
           {/* Right Side - Information Panel */}
-          <div className="w-full lg:w-[380px] xl:w-[420px] bg-gradient-to-b from-slate-900 to-slate-950 border-t lg:border-t-0 lg:border-l border-slate-800 flex flex-col overflow-y-auto max-h-[45vh] lg:max-h-full">
-            <div className="p-5 lg:p-6 space-y-5">
+          <div className="w-full lg:w-[360px] xl:w-[400px] bg-gradient-to-b from-slate-900 to-slate-950 border-t lg:border-t-0 lg:border-l border-slate-800 flex flex-col overflow-y-auto max-h-[45vh] lg:max-h-full">
+            <div className="p-4 lg:p-5 space-y-4">
               {/* Header */}
               <div>
-                <h2 className="text-white text-base lg:text-lg font-bold mb-2 break-words leading-tight line-clamp-2">{fileName}</h2>
-                <p className="text-slate-400 text-xs lg:text-sm leading-relaxed">Compare quality and analyze compression efficiency</p>
+                <h2 className="text-white text-sm lg:text-base font-bold mb-2 break-words leading-tight line-clamp-2">{fileName}</h2>
+                <p className="text-slate-400 text-xs leading-relaxed">Compare quality and analyze compression efficiency</p>
               </div>
 
               {/* Main Stats Cards */}
-              <div className="space-y-3">
-                <Card className="bg-slate-950/50 border-slate-800 p-4 shadow-xl">
-                  <p className="text-slate-400 text-[10px] lg:text-xs font-medium uppercase tracking-wider mb-1.5">Original Size</p>
-                  <p className="text-white text-2xl lg:text-3xl font-bold">{formatFileSize(originalSize)}</p>
+              <div className="space-y-2.5">
+                <Card className="bg-slate-950/50 border-slate-800 p-3.5 shadow-xl">
+                  <p className="text-slate-400 text-[10px] font-medium uppercase tracking-wider mb-1">Original Size</p>
+                  <p className="text-white text-xl lg:text-2xl font-bold">{formatFileSize(originalSize)}</p>
                 </Card>
 
-                <Card className="bg-gradient-to-br from-emerald-600 to-emerald-700 border-emerald-500 p-4 shadow-xl">
-                  <p className="text-emerald-100 text-[10px] lg:text-xs font-medium uppercase tracking-wider mb-1.5">Compressed Size</p>
-                  <p className="text-white text-2xl lg:text-3xl font-bold mb-2">{formatFileSize(compressedSize)}</p>
-                  <Badge className="bg-white/20 text-white backdrop-blur-sm text-sm px-2.5 py-0.5 font-bold">
+                <Card className="bg-gradient-to-br from-emerald-600 to-emerald-700 border-emerald-500 p-3.5 shadow-xl">
+                  <p className="text-emerald-100 text-[10px] font-medium uppercase tracking-wider mb-1">Compressed Size</p>
+                  <p className="text-white text-xl lg:text-2xl font-bold mb-1.5">{formatFileSize(compressedSize)}</p>
+                  <Badge className="bg-white/20 text-white backdrop-blur-sm text-xs px-2 py-0.5 font-bold">
                     {savingsPercent}% smaller
                   </Badge>
                 </Card>
 
-                <Card className="bg-slate-950/50 border-slate-800 p-4 shadow-xl">
-                  <p className="text-slate-400 text-[10px] lg:text-xs font-medium uppercase tracking-wider mb-1.5">Space Saved</p>
-                  <p className="text-emerald-400 text-xl lg:text-2xl font-bold">{formatFileSize(savingsAmount)}</p>
+                <Card className="bg-slate-950/50 border-slate-800 p-3.5 shadow-xl">
+                  <p className="text-slate-400 text-[10px] font-medium uppercase tracking-wider mb-1">Space Saved</p>
+                  <p className="text-emerald-400 text-lg lg:text-xl font-bold">{formatFileSize(savingsAmount)}</p>
                 </Card>
               </div>
 
@@ -339,23 +344,23 @@ export default function ImageComparisonModal({
               <div className="h-px bg-gradient-to-r from-transparent via-slate-700 to-transparent" />
 
               {/* Details */}
-              <div className="space-y-3">
+              <div className="space-y-2.5">
                 <h3 className="text-white font-semibold text-xs uppercase tracking-wider">Compression Details</h3>
                 
                 <div className="space-y-2">
-                  <div className="flex items-center justify-between py-2.5 px-3 bg-slate-950/50 rounded-lg border border-slate-800">
+                  <div className="flex items-center justify-between py-2 px-2.5 bg-slate-950/50 rounded-lg border border-slate-800">
                     <span className="text-slate-400 text-xs font-medium">Compression Ratio</span>
                     <span className="text-white font-bold text-sm">{(compressedSize / originalSize).toFixed(3)}:1</span>
                   </div>
                   
-                  <div className="flex items-center justify-between py-2.5 px-3 bg-slate-950/50 rounded-lg border border-slate-800">
+                  <div className="flex items-center justify-between py-2 px-2.5 bg-slate-950/50 rounded-lg border border-slate-800">
                     <span className="text-slate-400 text-xs font-medium">Quality</span>
-                    <Badge className="bg-emerald-600 text-white font-semibold text-xs">High</Badge>
+                    <Badge className="bg-emerald-600 text-white font-semibold text-xs px-2 py-0.5">High</Badge>
                   </div>
                   
-                  <div className="flex items-center justify-between py-2.5 px-3 bg-slate-950/50 rounded-lg border border-slate-800">
+                  <div className="flex items-center justify-between py-2 px-2.5 bg-slate-950/50 rounded-lg border border-slate-800">
                     <span className="text-slate-400 text-xs font-medium">Processing</span>
-                    <Badge className="bg-blue-600 text-white font-semibold text-xs">Browser-side</Badge>
+                    <Badge className="bg-blue-600 text-white font-semibold text-xs px-2 py-0.5">Browser-side</Badge>
                   </div>
                 </div>
               </div>
@@ -364,10 +369,10 @@ export default function ImageComparisonModal({
               <div className="h-px bg-gradient-to-r from-transparent via-slate-700 to-transparent hidden lg:block" />
 
               {/* Privacy Notice */}
-              <div className="bg-slate-950/50 border border-slate-800 rounded-xl p-4 hidden lg:block">
+              <div className="bg-slate-950/50 border border-slate-800 rounded-xl p-3.5 hidden lg:block">
                 <div className="flex items-start gap-3">
-                  <div className="w-9 h-9 rounded-lg bg-emerald-600/20 flex items-center justify-center flex-shrink-0">
-                    <span className="text-lg">🔒</span>
+                  <div className="w-8 h-8 rounded-lg bg-emerald-600/20 flex items-center justify-center flex-shrink-0">
+                    <span className="text-base">🔒</span>
                   </div>
                   <div>
                     <h4 className="text-white font-semibold text-xs mb-1">100% Private</h4>
