@@ -1,3 +1,4 @@
+
 import { useState, useRef, useEffect } from "react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { X, MoveHorizontal, ZoomIn, ZoomOut, Maximize2, Copy, RefreshCw, Sparkles } from "lucide-react";
@@ -285,8 +286,8 @@ export default function ImageComparisonModal({
                 }
               }}
             >
-              {/* Image Container */}
-              <div className="flex-1 relative w-full flex items-center justify-center">
+              {/* Image Container - Added padding top to avoid overlap with controls */}
+              <div className="flex-1 relative w-full flex items-center justify-center pt-16">
                 <div
                   ref={imageRef}
                   className="relative"
@@ -326,11 +327,11 @@ export default function ImageComparisonModal({
                     </div>
                   </div>
 
-                  {/* Slider Line - only show when not zoomed/panning - CONSTRAINED TO IMAGE */}
+                  {/* Slider Line - White on both modes - only show when not zoomed/panning */}
                   {zoom === 1 && !isPanning && (
                     <>
                       <div
-                        className="absolute top-0 bottom-0 w-0.5 bg-slate-800 dark:bg-white shadow-2xl z-10"
+                        className="absolute top-0 bottom-0 w-0.5 bg-white shadow-2xl z-10"
                         style={{ left: `${sliderPosition}%`, transform: 'translateX(-50%)' }}
                       >
                         {/* Slider Handle */}
