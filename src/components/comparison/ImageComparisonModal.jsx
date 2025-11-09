@@ -198,21 +198,77 @@ export default function ImageComparisonModal({
     toast.success(`${label} copied!`);
   };
 
-  const downloadImage = (format = null) => {
+  const downloadImage = async (format = null) => {
     if (!format) {
-      // Download current compressed image
-      const link = document.createElement('a');
-      link.href = compressedImage;
-      link.download = fileName;
-      link.click();
-      toast.success('Image downloaded!');
+      // Download ZIP with all formats
+      toast.info('Creating multi-format ZIP...');
+
+      try {
+        const JSZip = (await import('https://cdn.jsdelivr.net/npm/jszip@3.10.1/+esm')).default;
+        const zip = new JSZip();
+
+        const img = new Image();
+        img.src = compressedImage;
+
+        await new Promise((resolve, reject) => {
+          img.onload = resolve;
+          img.onerror = () => reject(new Error('Failed to load image for ZIP conversion.'));
+        });
+
+        const canvas = document.createElement('canvas');
+        canvas.width = img.width;
+        canvas.height = img.height;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0);
+
+        const baseName = fileName.split('.')[0];
+        const formats = [
+          { ext: 'avif', mime: 'image/avif' },
+          { ext: 'jpg', mime: 'image/jpeg' },
+          { ext: 'png', mime: 'image/png' },
+          { ext: 'webp', mime: 'image/webp' }
+        ];
+
+        for (const f of formats) {
+          const blob = await new Promise((resolve) => {
+            // Check if browser supports the format before trying to create blob
+            if (canvas.toDataURL(f.mime).startsWith(`data:${f.mime}`)) {
+              canvas.toBlob(resolve, f.mime, 0.95);
+            } else {
+              console.warn(`Browser does not support converting to ${f.ext}. Skipping.`);
+              resolve(null); // Resolve with null if not supported
+            }
+          });
+          if (blob) {
+            zip.file(`${baseName}.${f.ext}`, blob);
+          }
+        }
+
+        const content = await zip.generateAsync({ type: 'blob' });
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(content);
+        link.download = `${baseName}-all-formats.zip`;
+        link.click();
+        URL.revokeObjectURL(link.href);
+
+        toast.success('All formats downloaded!');
+      } catch (error) {
+        console.error('Error creating ZIP:', error);
+        toast.error('Failed to create multi-format ZIP: ' + error.message);
+      }
       return;
     }
 
-    // Convert and download in different format
-    const img = new Image();
-    img.src = compressedImage;
-    img.onload = () => {
+    // Download single format
+    try {
+      const img = new Image();
+      img.src = compressedImage;
+
+      await new Promise((resolve, reject) => {
+        img.onload = resolve;
+        img.onerror = () => reject(new Error('Failed to load image for conversion.'));
+      });
+
       const canvas = document.createElement('canvas');
       canvas.width = img.width;
       canvas.height = img.height;
@@ -220,24 +276,32 @@ export default function ImageComparisonModal({
       ctx.drawImage(img, 0, 0);
 
       const mimeType = format === 'jpg' ? 'image/jpeg' : `image/${format}`;
-      canvas.toBlob((blob) => {
-        if (!blob) {
-          toast.error(`Failed to create ${format.toUpperCase()} image blob.`);
-          return;
-        }
-        const url = URL.createObjectURL(blob);
-        const link = document.createElement('a');
-        link.href = url;
-        const baseName = fileName.split('.')[0];
-        link.download = `${baseName}.${format}`;
-        link.click();
-        URL.revokeObjectURL(url);
-        toast.success(`Downloaded as ${format.toUpperCase()}!`);
-      }, mimeType, 0.95);
-    };
-    img.onerror = () => {
-      toast.error('Failed to load image for conversion.');
-    };
+
+      // Check if browser supports the requested format
+      if (!canvas.toDataURL(mimeType).startsWith(`data:${mimeType}`)) {
+        throw new Error(`Browser does not support converting to ${format.toUpperCase()}.`);
+      }
+
+      const blob = await new Promise((resolve, reject) => {
+        canvas.toBlob(resolve, mimeType, 0.95);
+      });
+
+      if (!blob) {
+        toast.error(`Failed to create ${format.toUpperCase()} image blob.`);
+        return;
+      }
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      const baseName = fileName.split('.')[0];
+      link.download = `${baseName}.${format}`;
+      link.click();
+      URL.revokeObjectURL(url);
+      toast.success(`Downloaded as ${format.toUpperCase()}!`);
+    } catch (error) {
+      console.error('Error downloading single format:', error);
+      toast.error(`Failed to download as ${format.toUpperCase()}: ` + error.message);
+    }
   };
 
   const getAspectRatio = (width, height) => {
@@ -417,12 +481,20 @@ export default function ImageComparisonModal({
                 Download
               </Button>
               <Button
-                onClick={() => downloadImage('webp')}
+                onClick={() => downloadImage('avif')}
                 variant="ghost"
                 size="sm"
                 className="h-8 px-2 text-xs hover:bg-slate-100 dark:hover:bg-slate-700"
               >
-                WebP
+                AVIF
+              </Button>
+              <Button
+                onClick={() => downloadImage('jpg')}
+                variant="ghost"
+                size="sm"
+                className="h-8 px-2 text-xs hover:bg-slate-100 dark:hover:bg-slate-700"
+              >
+                JPG
               </Button>
               <Button
                 onClick={() => downloadImage('png')}
@@ -433,12 +505,12 @@ export default function ImageComparisonModal({
                 PNG
               </Button>
               <Button
-                onClick={() => downloadImage('jpg')}
+                onClick={() => downloadImage('webp')}
                 variant="ghost"
                 size="sm"
                 className="h-8 px-2 text-xs hover:bg-slate-100 dark:hover:bg-slate-700"
               >
-                JPG
+                WebP
               </Button>
             </div>
             <Button

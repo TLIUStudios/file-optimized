@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
-import { X, RotateCw, Crop, ZoomIn, ZoomOut, Sun, Contrast, Droplet, Sparkles } from "lucide-react";
+import { X, RotateCw, Crop, ZoomIn, ZoomOut, Sun, Contrast, Droplet, Sparkles, Undo, Redo } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
 import { toast } from "sonner";
@@ -19,6 +19,10 @@ export default function ImageEditor({ isOpen, onClose, imageData, onSave }) {
   const [imageDimensions, setImageDimensions] = useState({ width: 0, height: 0 });
   const [originalImage, setOriginalImage] = useState(null);
 
+  // History management for undo/redo
+  const [history, setHistory] = useState([]);
+  const [historyIndex, setHistoryIndex] = useState(-1);
+
   useEffect(() => {
     if (imageData && canvasRef.current) {
       const img = new Image();
@@ -26,6 +30,19 @@ export default function ImageEditor({ isOpen, onClose, imageData, onSave }) {
         setOriginalImage(img);
         setImageDimensions({ width: img.width, height: img.height });
         drawCanvas(img);
+        
+        // Initialize history with default state
+        const initialState = {
+          rotation: 0,
+          scale: 1,
+          brightness: 100,
+          contrast: 100,
+          saturation: 100,
+          blur: 0,
+          cropArea: { x: 0, y: 0, width: 100, height: 100 }
+        };
+        setHistory([initialState]);
+        setHistoryIndex(0);
       };
       img.src = imageData;
     }
@@ -36,6 +53,59 @@ export default function ImageEditor({ isOpen, onClose, imageData, onSave }) {
       drawCanvas(originalImage);
     }
   }, [rotation, scale, brightness, contrast, saturation, blur]);
+
+  const saveToHistory = () => {
+    const newState = {
+      rotation,
+      scale,
+      brightness,
+      contrast,
+      saturation,
+      blur,
+      cropArea: { ...cropArea }
+    };
+
+    const newHistory = history.slice(0, historyIndex + 1);
+    newHistory.push(newState);
+    setHistory(newHistory);
+    setHistoryIndex(newHistory.length - 1);
+  };
+
+  const undo = () => {
+    if (historyIndex > 0) {
+      const newIndex = historyIndex - 1;
+      const state = history[newIndex];
+      
+      setRotation(state.rotation);
+      setScale(state.scale);
+      setBrightness(state.brightness);
+      setContrast(state.contrast);
+      setSaturation(state.saturation);
+      setBlur(state.blur);
+      setCropArea(state.cropArea);
+      setHistoryIndex(newIndex);
+      
+      toast.success('Undo applied');
+    }
+  };
+
+  const redo = () => {
+    if (historyIndex < history.length - 1) {
+      const newIndex = historyIndex + 1;
+      const state = history[newIndex];
+      
+      setRotation(state.rotation);
+      setScale(state.scale);
+      setBrightness(state.brightness);
+      setContrast(state.contrast);
+      setSaturation(state.saturation);
+      setBlur(state.blur);
+      setCropArea(state.cropArea);
+      setHistoryIndex(newIndex);
+      
+      toast.success('Redo applied');
+    }
+  };
 
   const drawCanvas = (img) => {
     const canvas = canvasRef.current;
@@ -74,7 +144,7 @@ export default function ImageEditor({ isOpen, onClose, imageData, onSave }) {
     let finalCanvas = canvas;
 
     // Apply crop if in crop mode
-    if (cropMode && (cropArea.width !== 100 || cropArea.height !== 100)) {
+    if (cropMode && (cropArea.width !== 100 || cropArea.height !== 100 || cropArea.x !== 0 || cropArea.y !== 0)) {
       const cropCanvas = document.createElement('canvas');
       const ctx = cropCanvas.getContext('2d');
       
@@ -100,6 +170,7 @@ export default function ImageEditor({ isOpen, onClose, imageData, onSave }) {
 
   const handleRotate = () => {
     setRotation((prev) => (prev + 90) % 360);
+    setTimeout(saveToHistory, 100);
   };
 
   const handleReset = () => {
@@ -110,6 +181,8 @@ export default function ImageEditor({ isOpen, onClose, imageData, onSave }) {
     setSaturation(100);
     setBlur(0);
     setCropMode(false);
+    setCropArea({ x: 0, y: 0, width: 100, height: 100 });
+    saveToHistory();
   };
 
   const applyFilter = (filterName) => {
@@ -135,15 +208,41 @@ export default function ImageEditor({ isOpen, onClose, imageData, onSave }) {
       default:
         handleReset();
     }
+    setTimeout(saveToHistory, 100);
   };
 
   if (!isOpen) return null;
+
+  const canUndo = historyIndex > 0;
+  const canRedo = historyIndex < history.length - 1;
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-5xl w-[95vw] max-h-[95vh] p-0 bg-slate-50 dark:bg-slate-950 overflow-hidden">
         <div className="p-4 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
-          <h2 className="text-lg font-bold text-slate-900 dark:text-white">Edit Image</h2>
+          <div className="flex items-center gap-2">
+            <h2 className="text-lg font-bold text-slate-900 dark:text-white">Edit Image</h2>
+            <div className="flex items-center gap-1 ml-4">
+              <Button 
+                variant="outline" 
+                size="icon" 
+                onClick={undo}
+                disabled={!canUndo}
+                className="h-8 w-8"
+              >
+                <Undo className="w-4 h-4" />
+              </Button>
+              <Button 
+                variant="outline" 
+                size="icon" 
+                onClick={redo}
+                disabled={!canRedo}
+                className="h-8 w-8"
+              >
+                <Redo className="w-4 h-4" />
+              </Button>
+            </div>
+          </div>
           <Button variant="ghost" size="icon" onClick={onClose}>
             <X className="w-5 h-5" />
           </Button>
@@ -193,6 +292,7 @@ export default function ImageEditor({ isOpen, onClose, imageData, onSave }) {
                     <Slider
                       value={[brightness]}
                       onValueChange={(value) => setBrightness(value[0])}
+                      onValueCommit={saveToHistory}
                       min={0}
                       max={200}
                       step={1}
@@ -210,6 +310,7 @@ export default function ImageEditor({ isOpen, onClose, imageData, onSave }) {
                     <Slider
                       value={[contrast]}
                       onValueChange={(value) => setContrast(value[0])}
+                      onValueCommit={saveToHistory}
                       min={0}
                       max={200}
                       step={1}
@@ -227,6 +328,7 @@ export default function ImageEditor({ isOpen, onClose, imageData, onSave }) {
                     <Slider
                       value={[saturation]}
                       onValueChange={(value) => setSaturation(value[0])}
+                      onValueCommit={saveToHistory}
                       min={0}
                       max={200}
                       step={1}
@@ -241,6 +343,7 @@ export default function ImageEditor({ isOpen, onClose, imageData, onSave }) {
                     <Slider
                       value={[blur]}
                       onValueChange={(value) => setBlur(value[0])}
+                      onValueCommit={saveToHistory}
                       min={0}
                       max={10}
                       step={0.5}
@@ -295,7 +398,10 @@ export default function ImageEditor({ isOpen, onClose, imageData, onSave }) {
                       Rotate 90°
                     </Button>
                     <Button 
-                      onClick={() => setCropMode(!cropMode)} 
+                      onClick={() => {
+                        setCropMode(!cropMode);
+                        saveToHistory();
+                      }} 
                       variant={cropMode ? "default" : "outline"}
                       className="flex-1 gap-2"
                     >
@@ -311,6 +417,7 @@ export default function ImageEditor({ isOpen, onClose, imageData, onSave }) {
                     <Slider
                       value={[scale * 100]}
                       onValueChange={(value) => setScale(value[0] / 100)}
+                      onValueCommit={saveToHistory}
                       min={50}
                       max={200}
                       step={5}
@@ -325,6 +432,7 @@ export default function ImageEditor({ isOpen, onClose, imageData, onSave }) {
                     <Slider
                       value={[rotation]}
                       onValueChange={(value) => setRotation(value[0])}
+                      onValueCommit={saveToHistory}
                       min={0}
                       max={360}
                       step={15}
@@ -343,6 +451,7 @@ export default function ImageEditor({ isOpen, onClose, imageData, onSave }) {
                           placeholder="X%"
                           value={cropArea.x}
                           onChange={(e) => setCropArea({...cropArea, x: Math.max(0, Math.min(100, parseInt(e.target.value) || 0))})}
+                          onBlur={saveToHistory}
                           className="h-8 px-2 rounded text-xs"
                         />
                         <input
@@ -350,6 +459,7 @@ export default function ImageEditor({ isOpen, onClose, imageData, onSave }) {
                           placeholder="Y%"
                           value={cropArea.y}
                           onChange={(e) => setCropArea({...cropArea, y: Math.max(0, Math.min(100, parseInt(e.target.value) || 0))})}
+                          onBlur={saveToHistory}
                           className="h-8 px-2 rounded text-xs"
                         />
                         <input
@@ -357,6 +467,7 @@ export default function ImageEditor({ isOpen, onClose, imageData, onSave }) {
                           placeholder="W%"
                           value={cropArea.width}
                           onChange={(e) => setCropArea({...cropArea, width: Math.max(1, Math.min(100, parseInt(e.target.value) || 100))})}
+                          onBlur={saveToHistory}
                           className="h-8 px-2 rounded text-xs"
                         />
                         <input
@@ -364,6 +475,7 @@ export default function ImageEditor({ isOpen, onClose, imageData, onSave }) {
                           placeholder="H%"
                           value={cropArea.height}
                           onChange={(e) => setCropArea({...cropArea, height: Math.max(1, Math.min(100, parseInt(e.target.value) || 100))})}
+                          onBlur={saveToHistory}
                           className="h-8 px-2 rounded text-xs"
                         />
                       </div>

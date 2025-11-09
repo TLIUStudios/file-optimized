@@ -1,4 +1,3 @@
-
 import { useState, lazy, Suspense } from "react";
 import { Button } from "@/components/ui/button";
 import { Download, Trash2, Sparkles, Shield, Zap, Image as ImageIcon } from "lucide-react";
@@ -6,6 +5,7 @@ import UploadZone from "../components/upload/UploadZone";
 import { motion, AnimatePresence } from "framer-motion";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
+import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
 
 // Lazy load heavy components for better performance
 const ImageCard = lazy(() => import("../components/upload/ImageCard"));
@@ -38,6 +38,17 @@ export default function Home() {
       file
     }));
     setImages(prev => [...prev, ...newImages]);
+  };
+
+  const handleDragEnd = (result) => {
+    if (!result.destination) return;
+
+    const items = Array.from(images);
+    const [reorderedItem] = items.splice(result.source.index, 1);
+    items.splice(result.destination.index, 0, reorderedItem);
+
+    setImages(items);
+    toast.success('Images reordered!');
   };
 
   const removeImage = (id) => {
@@ -275,31 +286,48 @@ export default function Home() {
             </Button>
           </div>
 
-          {/* Images Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            <AnimatePresence mode="popLayout">
-              {images.map((image) => (
-                <motion.div
-                  key={image.id}
-                  layout
-                  initial={{ opacity: 0, scale: 0.8 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  exit={{ opacity: 0, scale: 0.8 }}
-                  transition={{ duration: 0.3 }}
+          {/* Images Grid with Drag & Drop */}
+          <DragDropContext onDragEnd={handleDragEnd}>
+            <Droppable droppableId="images" direction="horizontal">
+              {(provided) => (
+                <div
+                  {...provided.droppableProps}
+                  ref={provided.innerRef}
+                  className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
                 >
-                  <Suspense fallback={<ImageCardSkeleton />}>
-                    <ImageCard
-                      image={image.file}
-                      onRemove={() => removeImage(image.id)}
-                      onProcessed={(data) => handleImageProcessed(image.id, data)}
-                      onCompare={handleCompare}
-                      autoProcess={!processedImages[image.id] && autoProcessTrigger}
-                    />
-                  </Suspense>
-                </motion.div>
-              ))}
-            </AnimatePresence>
-          </div>
+                  {images.map((image, index) => (
+                    <Draggable key={image.id} draggableId={image.id} index={index}>
+                      {(provided, snapshot) => (
+                        <div
+                          ref={provided.innerRef}
+                          {...provided.draggableProps}
+                          {...provided.dragHandleProps}
+                          style={{
+                            ...provided.draggableProps.style,
+                            opacity: snapshot.isDragging ? 0.8 : 1,
+                            transform: snapshot.isDragging 
+                              ? `${provided.draggableProps.style?.transform} scale(1.05)`
+                              : provided.draggableProps.style?.transform
+                          }}
+                        >
+                          <Suspense fallback={<ImageCardSkeleton />}>
+                            <ImageCard
+                              image={image.file}
+                              onRemove={() => removeImage(image.id)}
+                              onProcessed={(data) => handleImageProcessed(image.id, data)}
+                              onCompare={handleCompare}
+                              autoProcess={!processedImages[image.id] && autoProcessTrigger}
+                            />
+                          </Suspense>
+                        </div>
+                      )}
+                    </Draggable>
+                  ))}
+                  {provided.placeholder}
+                </div>
+              )}
+            </Droppable>
+          </DragDropContext>
         </motion.div>
       )}
 

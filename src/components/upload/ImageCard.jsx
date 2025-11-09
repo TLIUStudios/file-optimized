@@ -516,8 +516,8 @@ export default function ImageCard({ image, onRemove, onProcessed, onCompare, aut
                 {originalExt}
               </Badge>
               {isGif && gifFrameCount > 0 && (
-                <Badge className="absolute top-2 right-2 bg-purple-600 text-white text-xs px-2 py-1 font-bold">
-                  <Film className="w-3 h-3 mr-1" />
+                <Badge className="absolute bottom-2 left-2 bg-slate-900/80 text-white text-xs px-2 py-1 font-bold flex items-center gap-1">
+                  <Film className="w-3 h-3" />
                   {gifFrameCount} frames
                 </Badge>
               )}
