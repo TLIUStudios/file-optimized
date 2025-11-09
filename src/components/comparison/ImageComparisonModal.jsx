@@ -1,10 +1,11 @@
 
 import { useState, useRef, useEffect } from "react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
-import { X, MoveHorizontal, ZoomIn, ZoomOut, Maximize2 } from "lucide-react";
+import { X, MoveHorizontal, ZoomIn, ZoomOut, Maximize2, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
+import { base44 } from "@/api/base44Client";
 
 export default function ImageComparisonModal({ 
   isOpen, 
@@ -21,11 +22,110 @@ export default function ImageComparisonModal({
   const [pan, setPan] = useState({ x: 0, y: 0 });
   const [isPanning, setIsPanning] = useState(false);
   const [panStart, setPanStart] = useState({ x: 0, y: 0 });
+  const [imageDimensions, setImageDimensions] = useState({ width: 0, height: 0 });
+  const [metadata, setMetadata] = useState({
+    title: '',
+    description: '',
+    category: '',
+    mood: '',
+    altText: '',
+    tags: ''
+  });
+  const [loadingMetadata, setLoadingMetadata] = useState({});
   const containerRef = useRef(null);
 
   // Extract file extensions
   const originalExt = fileName.split('.').pop().toUpperCase();
   const compressedExt = compressedImage.split('data:image/')[1]?.split(';')[0].toUpperCase() || 'WEBP';
+
+  // Get image dimensions and generate metadata
+  useEffect(() => {
+    if (originalImage) {
+      const img = new Image();
+      img.onload = () => {
+        setImageDimensions({ width: img.width, height: img.height });
+      };
+      img.src = originalImage;
+
+      // Generate all metadata on open
+      generateAllMetadata();
+    }
+  }, [originalImage]);
+
+  const generateAllMetadata = async () => {
+    setLoadingMetadata({
+      title: true,
+      description: true,
+      category: true,
+      mood: true,
+      altText: true,
+      tags: true
+    });
+
+    try {
+      const response = await base44.integrations.Core.InvokeLLM({
+        prompt: `Analyze this image and generate SEO-optimized metadata. Return a JSON object with:
+- title: A concise, descriptive title (max 60 characters)
+- description: A detailed description (max 160 characters)
+- category: Single category (e.g., Nature, Technology, Business, Art, Food, etc.)
+- mood: Overall mood/emotion (e.g., Peaceful, Energetic, Professional, Playful, etc.)
+- altText: Accessibility-friendly alt text (max 125 characters)
+- tags: Comma-separated relevant tags (max 10 tags)`,
+        file_urls: [originalImage],
+        response_json_schema: {
+          type: "object",
+          properties: {
+            title: { type: "string" },
+            description: { type: "string" },
+            category: { type: "string" },
+            mood: { type: "string" },
+            altText: { type: "string" },
+            tags: { type: "string" }
+          }
+        }
+      });
+
+      setMetadata(response);
+    } catch (error) {
+      console.error('Error generating metadata:', error);
+      setMetadata({
+        title: 'Error generating metadata',
+        description: 'Please try again',
+        category: 'Unknown',
+        mood: 'Unknown',
+        altText: 'Image',
+        tags: ''
+      });
+    } finally {
+      setLoadingMetadata({});
+    }
+  };
+
+  const regenerateField = async (field) => {
+    setLoadingMetadata(prev => ({ ...prev, [field]: true }));
+
+    try {
+      const prompts = {
+        title: 'Generate a concise, SEO-optimized title for this image (max 60 characters)',
+        description: 'Generate a detailed, SEO-friendly description for this image (max 160 characters)',
+        category: 'Categorize this image into one category (e.g., Nature, Technology, Business, Art, Food, etc.)',
+        mood: 'Describe the overall mood or emotion of this image (e.g., Peaceful, Energetic, Professional, Playful)',
+        altText: 'Generate accessibility-friendly alt text for this image (max 125 characters)',
+        tags: 'Generate comma-separated relevant tags for this image (max 10 tags)'
+      };
+
+      const response = await base44.integrations.Core.InvokeLLM({
+        prompt: prompts[field],
+        file_urls: [originalImage]
+      });
+
+      setMetadata(prev => ({ ...prev, [field]: response }));
+    } catch (error) {
+      console.error(`Error regenerating ${field}:`, error);
+    } finally {
+      setLoadingMetadata(prev => ({ ...prev, [field]: false }));
+    }
+  };
 
   useEffect(() => {
     const handleMouseMove = (e) => {
@@ -133,6 +233,9 @@ export default function ImageComparisonModal({
 
   const savingsPercent = ((1 - compressedSize / originalSize) * 100).toFixed(1);
   const savingsAmount = originalSize - compressedSize;
+  const aspectRatio = imageDimensions.width && imageDimensions.height 
+    ? (imageDimensions.width / imageDimensions.height).toFixed(2) 
+    : 'N/A';
 
   if (!isOpen) return null;
 
@@ -303,7 +406,7 @@ export default function ImageComparisonModal({
           </div>
 
           {/* Right Side - Information Panel */}
-          <div className="w-full lg:w-[360px] xl:w-[400px] bg-gradient-to-b from-slate-900 to-slate-950 border-t lg:border-t-0 lg:border-l border-slate-800 flex flex-col overflow-y-auto max-h-[45vh] lg:max-h-full">
+          <div className="w-full lg:w-[380px] xl:w-[420px] bg-gradient-to-b from-slate-900 to-slate-950 border-t lg:border-t-0 lg:border-l border-slate-800 flex flex-col overflow-y-auto max-h-[45vh] lg:max-h-full">
             <div className="p-4 lg:p-5 space-y-4">
               {/* Header */}
               <div>
@@ -335,7 +438,7 @@ export default function ImageComparisonModal({
               {/* Divider */}
               <div className="h-px bg-gradient-to-r from-transparent via-slate-700 to-transparent" />
 
-              {/* Details */}
+              {/* Compression Details */}
               <div className="space-y-2.5">
                 <h3 className="text-white font-semibold text-xs uppercase tracking-wider">Compression Details</h3>
                 
@@ -343,6 +446,11 @@ export default function ImageComparisonModal({
                   <div className="flex items-center justify-between py-2 px-2.5 bg-slate-950/50 rounded-lg border border-slate-800">
                     <span className="text-slate-400 text-xs font-medium">Compression Ratio</span>
                     <span className="text-white font-bold text-sm">{(compressedSize / originalSize).toFixed(3)}:1</span>
+                  </div>
+                  
+                  <div className="flex items-center justify-between py-2 px-2.5 bg-slate-950/50 rounded-lg border border-slate-800">
+                    <span className="text-slate-400 text-xs font-medium">Aspect Ratio</span>
+                    <span className="text-white font-bold text-sm">{aspectRatio} ({imageDimensions.width} × {imageDimensions.height})</span>
                   </div>
                   
                   <div className="flex items-center justify-between py-2 px-2.5 bg-slate-950/50 rounded-lg border border-slate-800">
@@ -358,10 +466,134 @@ export default function ImageComparisonModal({
               </div>
 
               {/* Divider */}
-              <div className="h-px bg-gradient-to-r from-transparent via-slate-700 to-transparent hidden lg:block" />
+              <div className="h-px bg-gradient-to-r from-transparent via-slate-700 to-transparent" />
+
+              {/* AI Generated Metadata */}
+              <div className="space-y-2.5">
+                <h3 className="text-white font-semibold text-xs uppercase tracking-wider">AI Generated Metadata</h3>
+                
+                <div className="space-y-3">
+                  {/* Title */}
+                  <div className="bg-slate-950/50 border border-slate-800 rounded-lg p-3">
+                    <div className="flex items-center justify-between mb-2">
+                      <label className="text-slate-400 text-xs font-medium">Title</label>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => regenerateField('title')}
+                        disabled={loadingMetadata.title}
+                        className="h-6 w-6 hover:bg-slate-800"
+                      >
+                        <RefreshCw className={`w-3 h-3 text-slate-400 ${loadingMetadata.title ? 'animate-spin' : ''}`} />
+                      </Button>
+                    </div>
+                    <p className="text-white text-xs leading-relaxed">
+                      {loadingMetadata.title ? 'Generating...' : metadata.title || 'Generating...'}
+                    </p>
+                  </div>
+
+                  {/* Description */}
+                  <div className="bg-slate-950/50 border border-slate-800 rounded-lg p-3">
+                    <div className="flex items-center justify-between mb-2">
+                      <label className="text-slate-400 text-xs font-medium">Description</label>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => regenerateField('description')}
+                        disabled={loadingMetadata.description}
+                        className="h-6 w-6 hover:bg-slate-800"
+                      >
+                        <RefreshCw className={`w-3 h-3 text-slate-400 ${loadingMetadata.description ? 'animate-spin' : ''}`} />
+                      </Button>
+                    </div>
+                    <p className="text-white text-xs leading-relaxed">
+                      {loadingMetadata.description ? 'Generating...' : metadata.description || 'Generating...'}
+                    </p>
+                  </div>
+
+                  {/* Category */}
+                  <div className="bg-slate-950/50 border border-slate-800 rounded-lg p-3">
+                    <div className="flex items-center justify-between mb-2">
+                      <label className="text-slate-400 text-xs font-medium">Category</label>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => regenerateField('category')}
+                        disabled={loadingMetadata.category}
+                        className="h-6 w-6 hover:bg-slate-800"
+                      >
+                        <RefreshCw className={`w-3 h-3 text-slate-400 ${loadingMetadata.category ? 'animate-spin' : ''}`} />
+                      </Button>
+                    </div>
+                    <p className="text-white text-xs leading-relaxed">
+                      {loadingMetadata.category ? 'Generating...' : metadata.category || 'Generating...'}
+                    </p>
+                  </div>
+
+                  {/* Mood */}
+                  <div className="bg-slate-950/50 border border-slate-800 rounded-lg p-3">
+                    <div className="flex items-center justify-between mb-2">
+                      <label className="text-slate-400 text-xs font-medium">Mood</label>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => regenerateField('mood')}
+                        disabled={loadingMetadata.mood}
+                        className="h-6 w-6 hover:bg-slate-800"
+                      >
+                        <RefreshCw className={`w-3 h-3 text-slate-400 ${loadingMetadata.mood ? 'animate-spin' : ''}`} />
+                      </Button>
+                    </div>
+                    <p className="text-white text-xs leading-relaxed">
+                      {loadingMetadata.mood ? 'Generating...' : metadata.mood || 'Generating...'}
+                    </p>
+                  </div>
+
+                  {/* Alt Text */}
+                  <div className="bg-slate-950/50 border border-slate-800 rounded-lg p-3">
+                    <div className="flex items-center justify-between mb-2">
+                      <label className="text-slate-400 text-xs font-medium">Alt Text</label>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => regenerateField('altText')}
+                        disabled={loadingMetadata.altText}
+                        className="h-6 w-6 hover:bg-slate-800"
+                      >
+                        <RefreshCw className={`w-3 h-3 text-slate-400 ${loadingMetadata.altText ? 'animate-spin' : ''}`} />
+                      </Button>
+                    </div>
+                    <p className="text-white text-xs leading-relaxed">
+                      {loadingMetadata.altText ? 'Generating...' : metadata.altText || 'Generating...'}
+                    </p>
+                  </div>
+
+                  {/* Tags */}
+                  <div className="bg-slate-950/50 border border-slate-800 rounded-lg p-3">
+                    <div className="flex items-center justify-between mb-2">
+                      <label className="text-slate-400 text-xs font-medium">Tags</label>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => regenerateField('tags')}
+                        disabled={loadingMetadata.tags}
+                        className="h-6 w-6 hover:bg-slate-800"
+                      >
+                        <RefreshCw className={`w-3 h-3 text-slate-400 ${loadingMetadata.tags ? 'animate-spin' : ''}`} />
+                      </Button>
+                    </div>
+                    <p className="text-white text-xs leading-relaxed">
+                      {loadingMetadata.tags ? 'Generating...' : metadata.tags || 'Generating...'}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Divider */}
+              <div className="h-px bg-gradient-to-r from-transparent via-slate-700 to-transparent" />
 
               {/* Privacy Notice */}
-              <div className="bg-slate-950/50 border border-slate-800 rounded-xl p-3.5 hidden lg:block">
+              <div className="bg-slate-950/50 border border-slate-800 rounded-xl p-3.5">
                 <div className="flex items-start gap-3">
                   <div className="w-8 h-8 rounded-lg bg-emerald-600/20 flex items-center justify-center flex-shrink-0">
                     <span className="text-base">🔒</span>
