@@ -1,6 +1,7 @@
+
 import { useState, useRef, useEffect } from "react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
-import { X, RotateCw, Crop, ZoomIn, ZoomOut, Sun, Contrast, Droplet, Sparkles, Undo, Redo } from "lucide-react";
+import { X, RotateCw, Crop, ZoomIn, ZoomOut, Sun, Contrast, Droplet, Sparkles, Undo, Redo, Scissors } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
 import { toast } from "sonner";
@@ -19,6 +20,7 @@ export default function ImageEditor({ isOpen, onClose, imageData, onSave }) {
   const [imageDimensions, setImageDimensions] = useState({ width: 0, height: 0 });
   const [originalImage, setOriginalImage] = useState(null);
   const [isImageLoaded, setIsImageLoaded] = useState(false);
+  const [isRemovingBackground, setIsRemovingBackground] = useState(false);
 
   // History management for undo/redo
   const [history, setHistory] = useState([]);
@@ -84,7 +86,7 @@ export default function ImageEditor({ isOpen, onClose, imageData, onSave }) {
     if (originalImage && isImageLoaded) {
       drawCanvas(originalImage);
     }
-  }, [rotation, scale, brightness, contrast, saturation, blur, isImageLoaded]);
+  }, [rotation, scale, brightness, contrast, saturation, blur, isImageLoaded, originalImage]); // Added originalImage to dependencies
 
   const saveToHistory = () => {
     const newState = {
@@ -169,6 +171,90 @@ export default function ImageEditor({ isOpen, onClose, imageData, onSave }) {
     ctx.drawImage(img, -img.width / 2, -img.height / 2);
     
     ctx.restore();
+  };
+
+  const removeBackground = async () => {
+    setIsRemovingBackground(true);
+    toast.info('Removing background...', { duration: Infinity, id: 'bg-remove' });
+
+    try {
+      const canvas = canvasRef.current;
+      if (!canvas) return;
+
+      const imageData = canvas.toDataURL('image/png');
+      
+      // Simple color-based background removal
+      // For better results, you'd use a library like @imgly/background-removal
+      const img = new Image();
+      img.src = imageData;
+      
+      await new Promise((resolve) => {
+        img.onload = resolve;
+      });
+
+      const tempCanvas = document.createElement('canvas');
+      tempCanvas.width = img.width;
+      tempCanvas.height = img.height;
+      const ctx = tempCanvas.getContext('2d');
+      
+      ctx.drawImage(img, 0, 0);
+      
+      const imgData = ctx.getImageData(0, 0, tempCanvas.width, tempCanvas.height);
+      const pixels = imgData.data;
+      
+      // Sample corner pixels to determine background color
+      const cornerSamples = [
+        { r: pixels[0], g: pixels[1], b: pixels[2] }, // Top-left
+        { r: pixels[(tempCanvas.width - 1) * 4], g: pixels[(tempCanvas.width - 1) * 4 + 1], b: pixels[(tempCanvas.width - 1) * 4 + 2] }, // Top-right
+        { r: pixels[(tempCanvas.height - 1) * tempCanvas.width * 4], g: pixels[(tempCanvas.height - 1) * tempCanvas.width * 4 + 1], b: pixels[(tempCanvas.height - 1) * tempCanvas.width * 4 + 2] }, // Bottom-left
+        { r: pixels[((tempCanvas.height - 1) * tempCanvas.width + (tempCanvas.width - 1)) * 4], g: pixels[((tempCanvas.height - 1) * tempCanvas.width + (tempCanvas.width - 1)) * 4 + 1], b: pixels[((tempCanvas.height - 1) * tempCanvas.width + (tempCanvas.width - 1)) * 4 + 2] } // Bottom-right
+      ];
+      
+      // Average the corner colors
+      const bgColor = {
+        r: Math.round(cornerSamples.reduce((sum, c) => sum + c.r, 0) / cornerSamples.length),
+        g: Math.round(cornerSamples.reduce((sum, c) => sum + c.g, 0) / cornerSamples.length),
+        b: Math.round(cornerSamples.reduce((sum, c) => sum + c.b, 0) / cornerSamples.length)
+      };
+      
+      const threshold = 30; // Color similarity threshold
+      
+      // Make similar pixels transparent
+      for (let i = 0; i < pixels.length; i += 4) {
+        const r = pixels[i];
+        const g = pixels[i + 1];
+        const b = pixels[i + 2];
+        
+        const colorDiff = Math.sqrt(
+          Math.pow(r - bgColor.r, 2) +
+          Math.pow(g - bgColor.g, 2) +
+          Math.pow(b - bgColor.b, 2)
+        );
+        
+        if (colorDiff < threshold) {
+          pixels[i + 3] = 0; // Set alpha to 0 (transparent)
+        }
+      }
+      
+      ctx.putImageData(imgData, 0, 0);
+      
+      // Update the original image with the transparent version
+      const newImg = new Image();
+      newImg.onload = () => {
+        setOriginalImage(newImg);
+        // drawCanvas will be triggered by originalImage dependency in useEffect
+        toast.dismiss('bg-remove');
+        toast.success('Background removed!');
+      };
+      newImg.src = tempCanvas.toDataURL('image/png');
+      
+    } catch (error) {
+      console.error('Error removing background:', error);
+      toast.dismiss('bg-remove');
+      toast.error('Failed to remove background');
+    } finally {
+      setIsRemovingBackground(false);
+    }
   };
 
   const handleSave = () => {
@@ -277,7 +363,12 @@ export default function ImageEditor({ isOpen, onClose, imageData, onSave }) {
               </Button>
             </div>
           </div>
-          <Button variant="ghost" size="icon" onClick={onClose}>
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            onClick={onClose}
+            className="hover:bg-red-100 dark:hover:bg-red-950 hover:text-red-600 dark:hover:text-red-400"
+          >
             <X className="w-5 h-5" />
           </Button>
         </div>
@@ -449,6 +540,25 @@ export default function ImageEditor({ isOpen, onClose, imageData, onSave }) {
                       {cropMode ? 'Cropping' : 'Crop'}
                     </Button>
                   </div>
+
+                  <Button 
+                    onClick={removeBackground} 
+                    variant="outline" 
+                    className="w-full gap-2"
+                    disabled={isRemovingBackground}
+                  >
+                    {isRemovingBackground ? (
+                      <>
+                        <div className="w-4 h-4 border-2 border-slate-300 border-t-slate-600 rounded-full animate-spin" />
+                        Removing...
+                      </>
+                    ) : (
+                      <>
+                        <Scissors className="w-4 h-4" />
+                        Remove Background
+                      </>
+                    )}
+                  </Button>
 
                   <div className="space-y-2">
                     <label className="text-sm font-medium text-slate-700 dark:text-slate-300">
