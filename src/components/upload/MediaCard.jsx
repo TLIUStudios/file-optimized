@@ -1,4 +1,3 @@
-
 import { useState, useEffect, lazy, useRef } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -51,15 +50,15 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
   const [gifSettings, setGifSettings] = useState({ width: 0, height: 0, frames: [] });
   
   // Video/Audio specific states
-  const [videoBitrate, setVideoBitrate] = useState(1000); // kbps
-  const [audioBitrate, setAudioBitrate] = useState(128); // kbps
+  const [videoBitrate, setVideoBitrate] = useState(1000);
+  const [audioBitrate, setAudioBitrate] = useState(128);
   const [frameRate, setFrameRate] = useState(30);
   const [ffmpegLoaded, setFfmpegLoaded] = useState(false);
-  const [videoPreset, setVideoPreset] = useState('medium'); // FFmpeg preset
-  const [gopSize, setGopSize] = useState(250); // Keyframe interval
-  const [sampleRate, setSampleRate] = useState(44100); // Audio sample rate
-  const [audioQuality, setAudioQuality] = useState('standard'); // Audio quality preset
-  const [gifOptimization, setGifOptimization] = useState('balanced'); // GIF optimization level
+  const [videoPreset, setVideoPreset] = useState('medium');
+  const [gopSize, setGopSize] = useState(250);
+  const [sampleRate, setSampleRate] = useState(44100);
+  const [audioQuality, setAudioQuality] = useState('standard');
+  const [gifOptimization, setGifOptimization] = useState('balanced');
   
   const processMediaRef = useRef(null);
   const ffmpegRef = useRef(null);
@@ -80,7 +79,6 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
     };
     reader.readAsDataURL(image);
     
-    // Set default format based on file type
     if (isGif) {
       setFormat('gif');
     } else if (isVideo) {
@@ -97,7 +95,6 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
     }
   }, [isVideo, isAudio, isGif, ffmpegLoaded]);
 
-  // Auto-process when autoProcess is triggered
   useEffect(() => {
     if (autoProcess && !processed && !processing && processMediaRef.current) {
       processMediaRef.current();
@@ -106,44 +103,40 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
 
   const loadFFmpeg = async () => {
     try {
+      console.log('🚀 Starting FFmpeg load...');
       toast.info('Loading media processor...', { duration: 3000 });
       
-      // Use UMD bundles for better browser compatibility
-      const FFmpegModule = await import('https://unpkg.com/@ffmpeg/ffmpeg@0.12.10/dist/umd/ffmpeg.js');
-      const UtilModule = await import('https://unpkg.com/@ffmpeg/util@0.12.1/dist/umd/index.js');
+      const { FFmpeg } = await import('https://unpkg.com/@ffmpeg/ffmpeg@0.12.10/dist/umd/ffmpeg.js');
+      const { fetchFile, toBlobURL } = await import('https://unpkg.com/@ffmpeg/util@0.12.1/dist/umd/index.js');
       
-      const { FFmpeg } = FFmpegModule;
-      const { toBlobURL, fetchFile } = UtilModule;
+      console.log('✅ Modules imported');
       
       const ffmpeg = new FFmpeg();
       ffmpegRef.current = ffmpeg;
       
       ffmpeg.on('log', ({ message }) => {
-        console.log('FFmpeg:', message);
+        console.log('[FFmpeg]:', message);
       });
       
       ffmpeg.on('progress', ({ progress, time }) => {
-        const percent = Math.round(progress * 100);
-        console.log(`Progress: ${percent}% (${time}ms)`);
+        console.log(`Progress: ${Math.round(progress * 100)}%`);
       });
       
-      // Use UMD core files from unpkg
       const baseURL = 'https://unpkg.com/@ffmpeg/core@0.12.6/dist/umd';
+      console.log('📦 Loading core files from:', baseURL);
       
       const coreURL = await toBlobURL(`${baseURL}/ffmpeg-core.js`, 'text/javascript');
       const wasmURL = await toBlobURL(`${baseURL}/ffmpeg-core.wasm`, 'application/wasm');
       
-      await ffmpeg.load({
-        coreURL,
-        wasmURL,
-      });
+      console.log('🔧 Loading FFmpeg core...');
+      await ffmpeg.load({ coreURL, wasmURL });
       
       setFfmpegLoaded(true);
-      console.log('✅ FFmpeg loaded successfully');
+      console.log('✅ FFmpeg loaded successfully!');
       toast.success('Media processor ready!');
     } catch (error) {
-      console.error('❌ Error loading FFmpeg:', error);
-      setError('Failed to load media processor. Please refresh and try again.');
+      console.error('❌ FFmpeg load error:', error);
+      setError('Failed to load media processor: ' + error.message);
       toast.error('Failed to load media processor');
     }
   };
@@ -165,7 +158,6 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
       });
     } catch (error) {
       console.error('Error parsing GIF:', error);
-      toast.error('Failed to parse GIF animation');
     }
   };
 
@@ -190,13 +182,13 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
       }
     } catch (error) {
       console.error('Error processing media:', error);
-      setError(`Failed to process ${isVideo ? 'video' : isAudio ? 'audio' : 'image'}. Please try again.`);
+      setError(`Failed to process ${isVideo ? 'video' : isAudio ? 'audio' : 'image'}. ${error.message}`);
+      toast.error('Processing failed: ' + error.message);
     }
     
     setProcessing(false);
   };
 
-  // Store reference to processMedia
   useEffect(() => {
     processMediaRef.current = processMedia;
   });
@@ -208,27 +200,21 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
     }
 
     try {
-      toast.info('Converting GIF to MP4...', { duration: 5000 });
+      console.log('🎬 Starting GIF to MP4 conversion...');
       const ffmpeg = ffmpegRef.current;
-      
-      // Import fetchFile from the same UMD module
       const { fetchFile } = await import('https://unpkg.com/@ffmpeg/util@0.12.1/dist/umd/index.js');
       
-      // Fetch and write the GIF file
       const gifData = await fetchFile(preview);
       await ffmpeg.writeFile('input.gif', gifData);
       
-      const targetFps = frameRate || 30;
-      
-      // Convert GIF to MP4
       await ffmpeg.exec([
         '-i', 'input.gif',
         '-movflags', 'faststart',
         '-pix_fmt', 'yuv420p',
-        '-vf', `fps=${targetFps},scale=trunc(iw/2)*2:trunc(ih/2)*2`,
+        '-vf', `fps=${frameRate},scale=trunc(iw/2)*2:trunc(ih/2)*2`,
         '-b:v', `${videoBitrate}k`,
         '-c:v', 'libx264',
-        '-preset', 'medium', // Changed from videoPreset to 'medium'
+        '-preset', 'medium',
         'output.mp4'
       ]);
       
@@ -236,7 +222,6 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
       const outputBlob = new Blob([data.buffer], { type: 'video/mp4' });
       const compressedUrl = URL.createObjectURL(outputBlob);
       
-      // Clean up
       await ffmpeg.deleteFile('input.gif');
       await ffmpeg.deleteFile('output.mp4');
       
@@ -244,7 +229,6 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
       setCompressedSize(outputBlob.size);
       setProcessed(true);
       setOutputFormat('mp4');
-      setError(null);
 
       onProcessed({
         id: image.name,
@@ -255,15 +239,14 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
         compressedSize: outputBlob.size,
         format: 'mp4',
         filename: `${image.name.split('.')[0]}.mp4`,
-        mediaType: 'video', // Added
-        fileFormat: 'mp4' // Added
+        mediaType: 'video',
+        fileFormat: 'mp4'
       });
 
       toast.success('GIF converted to MP4!');
     } catch (error) {
-      console.error('GIF to MP4 conversion failed:', error);
-      setError('Failed to convert GIF to MP4: ' + error.message);
-      toast.error('Conversion failed: ' + error.message);
+      console.error('GIF to MP4 failed:', error);
+      throw error;
     }
   };
 
@@ -274,9 +257,8 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
     }
 
     try {
-      toast.info('Converting MP4 to GIF...', { duration: 5000 });
+      console.log('🎞️ Starting MP4 to GIF conversion...');
       const ffmpeg = ffmpegRef.current;
-      
       const { fetchFile } = await import('https://unpkg.com/@ffmpeg/util@0.12.1/dist/umd/index.js');
       
       const videoData = await fetchFile(preview);
@@ -285,7 +267,6 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
       const targetFps = Math.min(frameRate || 15, 15);
       const scale = maxWidth ? `scale=${maxWidth}:-1:flags=lanczos` : 'scale=640:-1:flags=lanczos';
       
-      // Generate palette first
       await ffmpeg.exec([
         '-i', 'input.mp4',
         '-vf', `${scale},fps=${targetFps},palettegen=max_colors=256`,
@@ -293,7 +274,6 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
         'palette.png'
       ]);
       
-      // Use palette to create GIF
       await ffmpeg.exec([
         '-i', 'input.mp4',
         '-i', 'palette.png',
@@ -307,7 +287,6 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
       const outputBlob = new Blob([data.buffer], { type: 'image/gif' });
       const compressedUrl = URL.createObjectURL(outputBlob);
       
-      // Clean up
       await ffmpeg.deleteFile('input.mp4');
       await ffmpeg.deleteFile('palette.png');
       await ffmpeg.deleteFile('output.gif');
@@ -316,7 +295,6 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
       setCompressedSize(outputBlob.size);
       setProcessed(true);
       setOutputFormat('gif');
-      setError(null);
 
       onProcessed({
         id: image.name,
@@ -327,15 +305,14 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
         compressedSize: outputBlob.size,
         format: 'gif',
         filename: `${image.name.split('.')[0]}.gif`,
-        mediaType: 'image', // Added
-        fileFormat: 'gif' // Added
+        mediaType: 'image',
+        fileFormat: 'gif'
       });
 
       toast.success('Video converted to GIF!');
     } catch (error) {
-      console.error('MP4 to GIF conversion failed:', error);
-      setError('Failed to convert MP4 to GIF: ' + error.message);
-      toast.error('Conversion failed: ' + error.message);
+      console.error('MP4 to GIF failed:', error);
+      throw error;
     }
   };
 
@@ -346,9 +323,8 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
     }
 
     try {
-      toast.info('Compressing video...', { duration: 5000 });
+      console.log('🎥 Starting video compression...');
       const ffmpeg = ffmpegRef.current;
-      
       const { fetchFile } = await import('https://unpkg.com/@ffmpeg/util@0.12.1/dist/umd/index.js');
       
       const videoData = await fetchFile(preview);
@@ -392,7 +368,6 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
       const outputBlob = new Blob([data.buffer], { type: 'video/mp4' });
       const compressedUrl = URL.createObjectURL(outputBlob);
       
-      // Clean up
       await ffmpeg.deleteFile('input.mp4');
       await ffmpeg.deleteFile('output.mp4');
       
@@ -400,7 +375,6 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
       setCompressedSize(outputBlob.size);
       setProcessed(true);
       setOutputFormat('mp4');
-      setError(null);
 
       onProcessed({
         id: image.name,
@@ -411,16 +385,15 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
         compressedSize: outputBlob.size,
         format: 'mp4',
         filename: `${image.name.split('.')[0]}_compressed.mp4`,
-        mediaType: 'video', // Added
-        fileFormat: 'mp4' // Added
+        mediaType: 'video',
+        fileFormat: 'mp4'
       });
 
       const savings = ((1 - outputBlob.size / image.size) * 100).toFixed(1);
       toast.success(`Video compressed! Saved ${savings}%`);
     } catch (error) {
       console.error('Video compression failed:', error);
-      setError('Failed to compress video: ' + error.message);
-      toast.error('Video compression failed: ' + error.message);
+      throw error;
     }
   };
 
@@ -431,9 +404,8 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
     }
 
     try {
-      toast.info('Compressing audio...', { duration: 5000 });
+      console.log('🎵 Starting audio compression...');
       const ffmpeg = ffmpegRef.current;
-      
       const { fetchFile } = await import('https://unpkg.com/@ffmpeg/util@0.12.1/dist/umd/index.js');
       
       const audioData = await fetchFile(preview);
@@ -443,12 +415,11 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
       const outputExt = format === 'wav' ? 'wav' : 'mp3';
       const codec = format === 'wav' ? 'pcm_s16le' : 'libmp3lame';
       
-      // Adjust bitrate based on quality preset
       let finalBitrate = audioBitrate;
       if (audioQuality === 'high') {
         finalBitrate = Math.max(192, audioBitrate);
       } else if (audioQuality === 'lossless' && format === 'wav') {
-        finalBitrate = 1411; // CD quality bitrate for WAV
+        finalBitrate = 1411;
       }
       
       await ffmpeg.exec([
@@ -465,7 +436,6 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
       const outputBlob = new Blob([data.buffer], { type: mimeType });
       const compressedUrl = URL.createObjectURL(outputBlob);
       
-      // Clean up
       await ffmpeg.deleteFile(`input.${inputExt}`);
       await ffmpeg.deleteFile(`output.${outputExt}`);
       
@@ -473,7 +443,6 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
       setCompressedSize(outputBlob.size);
       setProcessed(true);
       setOutputFormat(format);
-      setError(null);
 
       onProcessed({
         id: image.name,
@@ -484,34 +453,31 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
         compressedSize: outputBlob.size,
         format: format,
         filename: `${image.name.split('.')[0]}_compressed.${outputExt}`,
-        mediaType: 'audio', // Added
-        fileFormat: format // Added
+        mediaType: 'audio',
+        fileFormat: format
       });
 
       const savings = ((1 - outputBlob.size / image.size) * 100).toFixed(1);
       toast.success(`Audio compressed! Saved ${savings}%`);
     } catch (error) {
       console.error('Audio compression failed:', error);
-      setError('Failed to compress audio: ' + error.message);
-      toast.error('Audio compression failed: ' + error.message);
+      throw error;
     }
   };
 
   const processGif = async () => {
     try {
-      console.log('Starting advanced GIF compression...');
+      console.log('🎞️ Starting GIF compression...');
       
       const response = await fetch(preview);
       const originalBlob = await response.blob();
       
       if (!gifSettings.frames || gifSettings.frames.length === 0) {
-        console.warn('No GIF frames available, using passthrough');
         const compressedUrl = URL.createObjectURL(originalBlob);
         setCompressedPreview(compressedUrl);
         setCompressedSize(originalBlob.size);
         setProcessed(true);
         setOutputFormat('gif');
-        setError(null);
 
         onProcessed({
           id: image.name,
@@ -521,14 +487,15 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
           originalSize: image.size,
           compressedSize: originalBlob.size,
           format: 'gif',
-          filename: `${image.name.split('.')[0]}_compressed.gif`
+          filename: `${image.name.split('.')[0]}_compressed.gif`,
+          mediaType: 'image',
+          fileFormat: 'gif'
         });
         
         toast.info('GIF processed (animation preserved)');
         return;
       }
 
-      // Calculate optimal dimensions based on optimization level
       let targetWidth = gifSettings.width;
       let targetHeight = gifSettings.height;
       
@@ -550,94 +517,71 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
         }
       }
       
-      // Frame rate reduction based on optimization
       let frameSkip = 1;
       if (gifOptimization === 'aggressive') {
-        frameSkip = 2; // Keep every 2nd frame
+        frameSkip = 2;
       } else if (gifOptimization === 'maximum') {
-        frameSkip = 3; // Keep every 3rd frame
+        frameSkip = 3;
       }
-      
-      console.log(`Target: ${targetWidth}x${targetHeight}, Original: ${gifSettings.width}x${gifSettings.height}`);
-      console.log(`Frame skip: ${frameSkip}, Quality: ${quality}, Optimization: ${gifOptimization}`);
       
       const canvas = document.createElement('canvas');
       canvas.width = targetWidth;
       canvas.height = targetHeight;
       const ctx = canvas.getContext('2d', { willReadFrequently: true });
-      if (!ctx) throw new Error('Failed to get canvas context');
 
       const processedFrames = [];
       const maxFrames = Math.min(gifSettings.frames.length, 400);
-      
       let prevImageData = null;
       
       for (let i = 0; i < maxFrames; i += frameSkip) {
         const frame = gifSettings.frames[i];
-        try {
-          if (!frame || !frame.patch || !frame.dims) continue;
+        if (!frame || !frame.patch || !frame.dims) continue;
 
-          const imageData = new ImageData(
-            new Uint8ClampedArray(frame.patch),
-            frame.dims.width,
-            frame.dims.height
-          );
-          
-          const tempCanvas = document.createElement('canvas');
-          tempCanvas.width = frame.dims.width;
-          tempCanvas.height = frame.dims.height;
-          const tempCtx = tempCanvas.getContext('2d');
-          if (!tempCtx) continue;
-          
-          tempCtx.putImageData(imageData, 0, 0);
-          
-          ctx.clearRect(0, 0, targetWidth, targetHeight);
-          ctx.drawImage(tempCanvas, 0, 0, targetWidth, targetHeight);
-          
-          // Adjust delay based on frame skip
-          let delay = frame.delay ? Math.max(20, frame.delay * 10 * frameSkip) : 100 * frameSkip;
-          
-          const frameImageData = ctx.getImageData(0, 0, targetWidth, targetHeight);
-          
-          // Frame differencing - only add if significantly different from previous
-          if (gifOptimization !== 'balanced' && prevImageData) {
-            const diff = calculateFrameDifference(prevImageData.data, frameImageData.data);
-            if (diff < 0.05) { // Less than 5% difference
-              continue; // Skip this frame
-            }
-          }
-          
-          prevImageData = frameImageData;
-          
-          processedFrames.push({ 
-            data: new Uint8ClampedArray(frameImageData.data),
-            delay,
-            width: targetWidth,
-            height: targetHeight
-          });
-        } catch (frameError) {
-          console.warn(`Error processing frame ${i}:`, frameError);
-          continue;
+        const imageData = new ImageData(
+          new Uint8ClampedArray(frame.patch),
+          frame.dims.width,
+          frame.dims.height
+        );
+        
+        const tempCanvas = document.createElement('canvas');
+        tempCanvas.width = frame.dims.width;
+        tempCanvas.height = frame.dims.height;
+        const tempCtx = tempCanvas.getContext('2d');
+        if (!tempCtx) continue;
+        
+        tempCtx.putImageData(imageData, 0, 0);
+        ctx.clearRect(0, 0, targetWidth, targetHeight);
+        ctx.drawImage(tempCanvas, 0, 0, targetWidth, targetHeight);
+        
+        let delay = frame.delay ? Math.max(20, frame.delay * 10 * frameSkip) : 100 * frameSkip;
+        const frameImageData = ctx.getImageData(0, 0, targetWidth, targetHeight);
+        
+        if (gifOptimization !== 'balanced' && prevImageData) {
+          const diff = calculateFrameDifference(prevImageData.data, frameImageData.data);
+          if (diff < 0.05) continue;
         }
+        
+        prevImageData = frameImageData;
+        processedFrames.push({ 
+          data: new Uint8ClampedArray(frameImageData.data),
+          delay,
+          width: targetWidth,
+          height: targetHeight
+        });
       }
 
-      if (processedFrames.length === 0) throw new Error('No frames could be processed');
-
-      console.log(`Successfully processed ${processedFrames.length} frames`);
+      if (processedFrames.length === 0) throw new Error('No frames processed');
 
       const GIF = (await import('https://cdn.jsdelivr.net/npm/gif.js@0.2.0/dist/gif.js')).default;
       
-      // Quality mapping based on optimization level
       let gifQuality;
       if (gifOptimization === 'balanced') {
         gifQuality = Math.max(1, Math.min(30, Math.round((100 - quality) / 3.5)));
       } else if (gifOptimization === 'aggressive') {
         gifQuality = Math.max(5, Math.min(30, Math.round((100 - quality) / 3)));
-      } else { // maximum
+      } else {
         gifQuality = Math.max(10, Math.min(30, Math.round((100 - quality) / 2.5)));
       }
-      
-      console.log(`Using gif.js quality: ${gifQuality} (optimization: ${gifOptimization})`);
       
       const gif = new GIF({
         workers: 2,
@@ -647,56 +591,33 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
         workerScript: 'https://cdn.jsdelivr.net/npm/gif.js@0.2.0/dist/gif.worker.js',
         dither: gifOptimization === 'maximum' ? 'FloydSteinberg' : false,
         transparent: null,
-        repeat: 0 // Loop infinitely
+        repeat: 0
       });
 
-      for (let i = 0; i < processedFrames.length; i++) {
-        const frameData = processedFrames[i];
-        try {
-          const frameCanvas = document.createElement('canvas');
-          frameCanvas.width = frameData.width;
-          frameCanvas.height = frameData.height;
-          const frameCtx = frameCanvas.getContext('2d');
-          if (!frameCtx) continue;
-          
-          const imgData = new ImageData(frameData.data, frameData.width, frameData.height);
-          frameCtx.putImageData(imgData, 0, 0);
-          
-          gif.addFrame(frameCanvas, { 
-            delay: frameData.delay, 
-            copy: true,
-            dispose: 2
-          });
-        } catch (addError) {
-          console.warn(`Error adding frame ${i} to GIF:`, addError);
-        }
+      for (const frameData of processedFrames) {
+        const frameCanvas = document.createElement('canvas');
+        frameCanvas.width = frameData.width;
+        frameCanvas.height = frameData.height;
+        const frameCtx = frameCanvas.getContext('2d');
+        if (!frameCtx) continue;
+        
+        const imgData = new ImageData(frameData.data, frameData.width, frameData.height);
+        frameCtx.putImageData(imgData, 0, 0);
+        
+        gif.addFrame(frameCanvas, { delay: frameData.delay, copy: true, dispose: 2 });
       }
 
-      console.log('Starting GIF encoding...');
-
-      const gifBlob = await Promise.race([
-        new Promise((resolve, reject) => {
-          gif.on('finished', (blob) => {
-            console.log('GIF encoding finished, blob size:', blob.size);
-            resolve(blob);
-          });
-          gif.on('progress', (p) => {
-            console.log(`Encoding progress: ${(p * 100).toFixed(1)}%`);
-          });
-          gif.on('error', reject);
-          gif.render();
-        }),
-        new Promise((_, reject) => 
-          setTimeout(() => reject(new Error('GIF encoding timeout')), 120000) // Increased timeout for potentially longer processes
-        )
-      ]);
+      const gifBlob = await new Promise((resolve, reject) => {
+        gif.on('finished', resolve);
+        gif.on('error', reject);
+        gif.render();
+      });
       
       const compressedUrl = URL.createObjectURL(gifBlob);
       setCompressedPreview(compressedUrl);
       setCompressedSize(gifBlob.size);
       setProcessed(true);
       setOutputFormat('gif');
-      setError(null);
 
       onProcessed({
         id: image.name,
@@ -706,64 +627,29 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
         originalSize: image.size,
         compressedSize: gifBlob.size,
         format: 'gif',
-        filename: `${image.name.split('.')[0]}_compressed.gif`
+        filename: `${image.name.split('.')[0]}_compressed.gif`,
+        mediaType: 'image',
+        fileFormat: 'gif'
       });
 
       const savings = ((1 - gifBlob.size / image.size) * 100).toFixed(1);
-      const savedBytes = image.size - gifBlob.size;
-      
-      if (savedBytes > 0) {
+      if (gifBlob.size < image.size) {
         toast.success(`GIF compressed! Saved ${savings}%`);
       } else {
         toast.info('GIF processed');
       }
-      
     } catch (error) {
       console.error('GIF compression failed:', error);
-      
-      try {
-        const response = await fetch(preview);
-        const blob = await response.blob();
-        const compressedUrl = URL.createObjectURL(blob);
-        setCompressedPreview(compressedUrl);
-        setCompressedSize(blob.size);
-        setProcessed(true);
-        setOutputFormat('gif');
-        setError(null);
-
-        onProcessed({
-          id: image.name,
-          originalFile: image,
-          compressedBlob: blob,
-          compressedUrl,
-          originalSize: image.size,
-          compressedSize: blob.size,
-          format: 'gif',
-          filename: `${image.name.split('.')[0]}_compressed.gif`
-        });
-        
-        toast.info('GIF processed (original preserved)');
-      } catch (fallbackError) {
-        console.error('Fallback failed:', fallbackError);
-        setError('Failed to process GIF');
-        toast.error('Failed to process GIF');
-      }
+      throw error;
     }
   };
 
-  // Helper function to calculate frame difference for optimization
   const calculateFrameDifference = (data1, data2) => {
-    if (!data1 || !data2 || data1.length !== data2.length) return 1; // Significant difference if data is missing or mismatched
     let diff = 0;
-    const len = data1.length;
-    // Compare RGB channels, skip alpha
-    for (let i = 0; i < len; i += 4) {
-      diff += Math.abs(data1[i] - data2[i]); // R
-      diff += Math.abs(data1[i + 1] - data2[i + 1]); // G
-      diff += Math.abs(data1[i + 2] - data2[i + 2]); // B
+    for (let i = 0; i < data1.length; i += 4) {
+      diff += Math.abs(data1[i] - data2[i]) + Math.abs(data1[i+1] - data2[i+1]) + Math.abs(data1[i+2] - data2[i+2]);
     }
-    // Normalize difference by maximum possible difference
-    return diff / (len * 0.75 * 255); // 0.75 because we compare 3 out of 4 channels
+    return diff / (data1.length * 255);
   };
 
   const processStaticImage = async () => {
@@ -870,7 +756,9 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
       originalSize: image.size,
       compressedSize: blob.size,
       format,
-      filename: `${image.name.split('.')[0]}.${format}`
+      filename: `${image.name.split('.')[0]}.${format}`,
+      mediaType: 'image',
+      fileFormat: format
     });
   };
 
@@ -888,7 +776,9 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
         compressed: compressedPreview,
         originalSize,
         compressedSize,
-        fileName: `${image.name.split('.')[0]}_compressed.${outputFormat || format}`
+        fileName: `${image.name.split('.')[0]}_compressed.${outputFormat || format}`,
+        mediaType: isVideo ? 'video' : isAudio ? 'audio' : 'image',
+        fileFormat: outputFormat || format
       });
     }
   };
@@ -913,12 +803,8 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
   const convertFormat = async (newFormat) => {
     if (!compressedPreview || processing) return;
     
-    // Handle video/audio/gif format conversion by resetting and re-processing
     if (isVideo || isAudio || isGif) {
       setFormat(newFormat);
-      // If we are currently showing a processed preview, and the user changes format,
-      // we need to re-process the original or current preview to the new format.
-      // This state reset will trigger a re-process when the user clicks 'Compress'/'Reprocess'.
       if (processed) {
         setProcessed(false);
         setCompressedPreview(null);
@@ -929,7 +815,6 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
       return;
     }
 
-    // Handle static image format conversion
     setProcessing(true);
     setError(null);
 
@@ -965,7 +850,9 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
         originalSize: originalSize,
         compressedSize: blob.size,
         format: newFormat,
-        filename: `${image.name.split('.')[0]}.${newFormat}`
+        filename: `${image.name.split('.')[0]}.${newFormat}`,
+        mediaType: 'image',
+        fileFormat: newFormat
       });
       
       toast.success(`Converted to ${newFormat.toUpperCase()}`);
@@ -992,7 +879,6 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
   const displayFormat = outputFormat || format;
   const displayCompressedExt = displayFormat.toUpperCase();
 
-  // Define available formats based on media type
   let availableFormats = [];
   if (isImage && !isGif) {
     availableFormats = ['jpg', 'png', 'webp', 'avif'];
@@ -1016,7 +902,6 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
               className="relative aspect-square rounded-lg overflow-hidden bg-slate-200 dark:bg-slate-800 cursor-pointer group"
               onClick={(isImage || isGif) && processed ? handleCompare : undefined}
             >
-              {/* Frame Count Badge - Above Original Preview */}
               {(isGif || isVideo) && gifFrameCount > 0 && (
                 <Badge className="absolute -top-8 left-0 bg-slate-900/90 text-white text-xs px-3 py-1.5 font-bold flex items-center gap-1 shadow-lg z-10 rounded-md">
                   <Film className="w-3 h-3" />
@@ -1031,10 +916,11 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
                   className="w-full h-full object-cover transition-transform group-hover:scale-105" 
                 />
               ) : isVideo ? (
-                <video src={preview} className="w-full h-full object-cover" muted />
+                <video src={preview} className="w-full h-full object-cover" controls muted />
               ) : isAudio ? (
-                <div className="w-full h-full flex items-center justify-center">
-                  <Music className="w-16 h-16 text-slate-400" />
+                <div className="w-full h-full flex flex-col items-center justify-center p-4">
+                  <Music className="w-16 h-16 text-slate-400 mb-2" />
+                  <audio src={preview} controls className="w-full" />
                 </div>
               ) : null}
               <Badge className="absolute top-2 left-2 bg-slate-900/80 text-white">
@@ -1063,7 +949,6 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
               className="relative aspect-square rounded-lg overflow-hidden bg-slate-200 dark:bg-slate-800 cursor-pointer group"
               onClick={(isImage || isGif) ? handleCompare : undefined}
             >
-              {/* Frame Count Badge - Above Compressed Preview */}
               {(isGif || isVideo) && gifFrameCount > 0 && (
                 <Badge className="absolute -top-8 left-0 bg-slate-900/90 text-white text-xs px-3 py-1.5 font-bold flex items-center gap-1 shadow-lg z-10 rounded-md">
                   <Film className="w-3 h-3" />
@@ -1080,8 +965,9 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
               ) : isVideo ? (
                 <video src={compressedPreview} className="w-full h-full object-cover" controls muted />
               ) : isAudio ? (
-                <div className="w-full h-full flex items-center justify-center">
-                  <Music className="w-16 h-16 text-emerald-500" />
+                <div className="w-full h-full flex flex-col items-center justify-center p-4">
+                  <Music className="w-16 h-16 text-emerald-500 mb-2" />
+                  <audio src={compressedPreview} controls className="w-full" />
                 </div>
               ) : null}
               <Badge className="absolute top-2 left-2 bg-emerald-600 text-white">
@@ -1562,10 +1448,6 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
             <CheckCircle2 className="w-4 h-4" />
             <span>Saved {formatFileSize(originalSize - compressedSize)}</span>
           </div>
-        )}
-
-        {isAudio && compressedPreview && (
-          <audio src={compressedPreview} controls className="w-full" />
         )}
       </div>
 
