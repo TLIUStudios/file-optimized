@@ -1,4 +1,3 @@
-
 import { useState, useRef, useEffect } from "react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { X, MoveHorizontal, ZoomIn, ZoomOut, Maximize2, Copy, RefreshCw, Sparkles } from "lucide-react";
@@ -49,29 +48,23 @@ export default function ImageComparisonModal({
     if (isOpen && originalImage && !aiMetadata && !generatingMetadata) {
       generateAIMetadata();
     }
-  }, [isOpen, originalImage, aiMetadata, generatingMetadata]); // Add aiMetadata and generatingMetadata to dependencies
+  }, [isOpen, originalImage]);
 
   const generateAIMetadata = async () => {
     setGeneratingMetadata(true);
     try {
-      // Upload the image first to get a proper URL
-      const blob = await fetch(originalImage).then(r => r.blob());
-      const file = new File([blob], fileName, { type: blob.type });
-      
-      const { file_url } = await base44.integrations.Core.UploadFile({ file });
-      
       const response = await base44.integrations.Core.InvokeLLM({
-        prompt: `Analyze this image and generate SEO-optimized, playful metadata. Be creative and engaging while staying accurate to what you see in the image. Keep the title under 60 characters, description under 160 characters, and alt text under 125 characters. Provide 5-8 relevant tags.`,
-        file_urls: [file_url],
+        prompt: `Analyze this image and generate SEO-optimized, playful metadata. Be creative and engaging while staying accurate to what you see in the image.`,
+        file_urls: [originalImage],
         response_json_schema: {
           type: "object",
           properties: {
-            title: { type: "string" },
-            description: { type: "string" },
-            category: { type: "string" },
-            mood: { type: "string" },
-            alt_text: { type: "string" },
-            tags: { type: "array", items: { type: "string" } }
+            title: { type: "string", description: "A catchy, SEO-friendly title (max 60 chars)" },
+            description: { type: "string", description: "An engaging description (max 160 chars)" },
+            category: { type: "string", description: "Main category (e.g., Nature, Technology, People, Food, etc.)" },
+            mood: { type: "string", description: "The mood/feeling of the image (e.g., Energetic, Calm, Professional, etc.)" },
+            alt_text: { type: "string", description: "Descriptive alt text for accessibility (max 125 chars)" },
+            tags: { type: "array", items: { type: "string" }, description: "5-8 relevant tags/keywords" }
           }
         }
       });
@@ -111,30 +104,12 @@ export default function ImageComparisonModal({
     return `${ratioW}:${ratioH}`;
   };
 
-  // Check if mouse is over the image (within imageRef bounds)
-  const isMouseOverImage = (e) => {
-    if (!imageRef.current) return false;
-    const rect = imageRef.current.getBoundingClientRect();
-    const clientX = e.clientX || (e.touches && e.touches[0] && e.touches[0].clientX);
-    const clientY = e.clientY || (e.touches && e.touches[0] && e.touches[0].clientY);
-
-    if (clientX === undefined || clientY === undefined) return false;
-
-    return (
-      clientX >= rect.left &&
-      clientX <= rect.right &&
-      clientY >= rect.top &&
-      clientY <= rect.bottom
-    );
-  };
-
   useEffect(() => {
     const handleMouseMove = (e) => {
-      if (isDragging && !isPanning && imageRef.current) {
-        // Slider position should be relative to the image itself.
-        const imageRect = imageRef.current.getBoundingClientRect();
-        const x = e.clientX - imageRect.left;
-        const percentage = (x / imageRect.width) * 100;
+      if (isDragging && !isPanning && containerRef.current) {
+        const rect = containerRef.current.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const percentage = (x / rect.width) * 100;
         setSliderPosition(Math.max(0, Math.min(100, percentage)));
       }
       
@@ -148,13 +123,10 @@ export default function ImageComparisonModal({
 
     const handleTouchMove = (e) => {
       if (e.touches.length === 1) {
-        if (isDragging && !isPanning && imageRef.current) {
-          const imageRect = imageRef.current.getBoundingClientRect();
-          const touch = e.touches[0];
-          
-          // Slider position should be relative to the image itself.
-          const x = touch.clientX - imageRect.left;
-          const percentage = (x / imageRect.width) * 100;
+        if (isDragging && !isPanning && containerRef.current) {
+          const rect = containerRef.current.getBoundingClientRect();
+          const x = e.touches[0].clientX - rect.left;
+          const percentage = (x / rect.width) * 100;
           setSliderPosition(Math.max(0, Math.min(100, percentage)));
         }
         
@@ -190,8 +162,7 @@ export default function ImageComparisonModal({
   // Wheel zoom
   useEffect(() => {
     const handleWheel = (e) => {
-      // Only zoom if mouse is over the image area or the comparison container
-      if (containerRef.current?.contains(e.target) || imageRef.current?.contains(e.target)) {
+      if (containerRef.current?.contains(e.target)) {
         e.preventDefault();
         const delta = e.deltaY > 0 ? -0.1 : 0.1;
         setZoom(prev => Math.max(0.5, Math.min(3, prev + delta)));
@@ -224,22 +195,10 @@ export default function ImageComparisonModal({
   };
 
   const handlePanStart = (e) => {
-    // Only pan with left mouse button (button 0)
     if (zoom > 1 && e.button === 0) {
       setIsPanning(true);
       setPanStart({ x: e.clientX, y: e.clientY });
-      e.preventDefault(); // Prevent default browser drag behavior
-    }
-  };
-
-  const handleImageMouseDown = (e) => {
-    if (zoom > 1) {
-      handlePanStart(e);
-    } else {
-      // Only start dragging if clicking on the image area (not the whole container)
-      if (isMouseOverImage(e)) {
-        setIsDragging(true);
-      }
+      e.preventDefault();
     }
   };
 
@@ -308,12 +267,26 @@ export default function ImageComparisonModal({
               ref={containerRef}
               className="relative w-full h-full bg-slate-200 dark:bg-slate-950 select-none flex flex-col items-center justify-center overflow-hidden"
               style={{ 
-                cursor: zoom > 1 ? (isPanning ? 'grabbing' : 'grab') : 'default' // Changed 'col-resize' to 'default'
+                cursor: zoom > 1 ? (isPanning ? 'grabbing' : 'grab') : 'col-resize'
               }}
-              // Removed onMouseDown from containerRef
+              onMouseDown={(e) => {
+                if (zoom > 1) {
+                  handlePanStart(e);
+                } else {
+                  setIsDragging(true);
+                }
+              }}
+              onTouchStart={(e) => {
+                if (zoom > 1 && e.touches.length === 1) {
+                  setIsPanning(true);
+                  setPanStart({ x: e.touches[0].clientX, y: e.touches[0].clientY });
+                } else if (e.touches.length === 1) {
+                  setIsDragging(true);
+                }
+              }}
             >
               {/* Image Container */}
-              <div className="flex-1 relative w-full flex items-center justify-center pb-2">
+              <div className="flex-1 relative w-full flex items-center justify-center">
                 <div
                   ref={imageRef}
                   className="relative"
@@ -325,26 +298,7 @@ export default function ImageComparisonModal({
                     maxHeight: 'calc(100% - 32px)',
                     display: 'flex',
                     alignItems: 'center',
-                    justifyContent: 'center',
-                    cursor: zoom === 1 ? 'col-resize' : (isPanning ? 'grabbing' : 'grab') // Cursor on image
-                  }}
-                  onMouseDown={handleImageMouseDown}
-                  onTouchStart={(e) => {
-                    if (zoom > 1 && e.touches.length === 1) {
-                      setIsPanning(true);
-                      setPanStart({ x: e.touches[0].clientX, y: e.touches[0].clientY });
-                    } else if (e.touches.length === 1 && imageRef.current) {
-                      const imageRect = imageRef.current.getBoundingClientRect();
-                      const touch = e.touches[0];
-                      if (
-                        touch.clientX >= imageRect.left &&
-                        touch.clientX <= imageRect.right &&
-                        touch.clientY >= imageRect.top &&
-                        touch.clientY <= imageRect.bottom
-                      ) {
-                        setIsDragging(true);
-                      }
-                    }
+                    justifyContent: 'center'
                   }}
                 >
                   {/* Compressed Image (Background - Right Side) */}
@@ -376,11 +330,11 @@ export default function ImageComparisonModal({
                   {zoom === 1 && !isPanning && (
                     <>
                       <div
-                        className="absolute top-0 bottom-0 w-0.5 bg-slate-800 dark:bg-white shadow-2xl z-10 pointer-events-none" // Added pointer-events-none
+                        className="absolute top-0 bottom-0 w-0.5 bg-slate-800 dark:bg-white shadow-2xl z-10"
                         style={{ left: `${sliderPosition}%`, transform: 'translateX(-50%)' }}
                       >
                         {/* Slider Handle */}
-                        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-12 h-12 bg-white dark:bg-slate-800 rounded-full shadow-2xl flex items-center justify-center cursor-col-resize border-2 border-slate-400 dark:border-slate-300 pointer-events-auto"> {/* Added pointer-events-auto */}
+                        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-12 h-12 bg-white dark:bg-slate-800 rounded-full shadow-2xl flex items-center justify-center cursor-col-resize border-2 border-slate-400 dark:border-slate-300">
                           <MoveHorizontal className="w-5 h-5 text-slate-900 dark:text-white" />
                         </div>
                       </div>
@@ -398,7 +352,7 @@ export default function ImageComparisonModal({
 
               {/* Instruction - Below Image */}
               {zoom === 1 && sliderPosition === 50 && !isDragging && (
-                <div className="pb-3 bg-slate-800/95 dark:bg-slate-900/95 backdrop-blur-sm text-white px-5 py-2.5 rounded-full text-sm border border-slate-600 dark:border-slate-700 shadow-lg animate-pulse">
+                <div className="py-3 bg-slate-800/95 dark:bg-slate-900/95 backdrop-blur-sm text-white px-5 py-2.5 rounded-full text-sm border border-slate-600 dark:border-slate-700 shadow-lg animate-pulse">
                   ← Drag to compare →
                 </div>
               )}
