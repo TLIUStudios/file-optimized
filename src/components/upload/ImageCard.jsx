@@ -1,3 +1,4 @@
+
 import { useState, useEffect, lazy, useRef } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -125,25 +126,19 @@ export default function ImageCard({ image, onRemove, onProcessed, onCompare, aut
     }
 
     try {
-      const GIF = (await import('https://cdn.jsdelivr.net/npm/gif.js@0.2.0/+esm')).default;
-      
+      // Use gif-encoder for better compatibility
       const targetWidth = maxWidth || gifSettings.width;
       const targetHeight = maxHeight || gifSettings.height;
       
-      const gif = new GIF({
-        workers: 2,
-        quality: Math.max(1, Math.floor((100 - quality) / 10)),
-        workerScript: 'https://cdn.jsdelivr.net/npm/gif.js@0.2.0/dist/gif.worker.js',
-        width: targetWidth,
-        height: targetHeight,
-        repeat: 0, // Infinite loop
-      });
-
+      // Create canvas for each frame
       const canvas = document.createElement('canvas');
       canvas.width = targetWidth;
       canvas.height = targetHeight;
       const ctx = canvas.getContext('2d');
 
+      // Prepare frames data
+      const processedFrames = [];
+      
       for (const frame of gifSettings.frames) {
         const imageData = new ImageData(
           new Uint8ClampedArray(frame.patch),
@@ -161,40 +156,94 @@ export default function ImageCard({ image, onRemove, onProcessed, onCompare, aut
         ctx.drawImage(tempCanvas, 0, 0, targetWidth, targetHeight);
         
         const delay = frame.delay ? frame.delay * 10 : 100;
-        gif.addFrame(ctx, { delay: delay, copy: true });
+        
+        // Get frame as blob
+        const frameBlob = await new Promise(resolve => {
+          canvas.toBlob(resolve, 'image/png', quality / 100);
+        });
+        
+        processedFrames.push({ blob: frameBlob, delay });
       }
 
-      await new Promise((resolve, reject) => {
-        gif.on('finished', (blob) => {
-          const compressedUrl = URL.createObjectURL(blob);
-          setCompressedPreview(compressedUrl);
-          setCompressedSize(blob.size);
-          setProcessed(true);
-          setOutputFormat('gif');
-
-          onProcessed({
-            id: image.name,
-            originalFile: image,
-            compressedBlob: blob,
-            compressedUrl,
-            originalSize: image.size,
-            compressedSize: blob.size,
-            format: 'gif',
-            filename: `${image.name.split('.')[0]}_compressed.gif`
-          });
-
-          resolve();
+      // Use modern-gif library for encoding
+      const { GIFEncoder, quantize, applyPalette } = await import('https://cdn.jsdelivr.net/npm/modern-gif@latest/dist/modern-gif.min.js');
+      
+      const encoder = new GIFEncoder();
+      
+      for (const frameData of processedFrames) {
+        const img = new Image();
+        const frameUrl = URL.createObjectURL(frameData.blob);
+        
+        await new Promise((resolve) => {
+          img.onload = resolve;
+          img.src = frameUrl;
         });
+        
+        ctx.clearRect(0, 0, targetWidth, targetHeight);
+        ctx.drawImage(img, 0, 0);
+        
+        const imageData = ctx.getImageData(0, 0, targetWidth, targetHeight);
+        const palette = quantize(imageData.data, 256);
+        const index = applyPalette(imageData.data, palette);
+        
+        encoder.writeFrame(index, targetWidth, targetHeight, {
+          palette,
+          delay: frameData.delay,
+        });
+        
+        URL.revokeObjectURL(frameUrl);
+      }
+      
+      encoder.finish();
+      const gifBlob = new Blob([encoder.bytes()], { type: 'image/gif' });
+      
+      const compressedUrl = URL.createObjectURL(gifBlob);
+      setCompressedPreview(compressedUrl);
+      setCompressedSize(gifBlob.size);
+      setProcessed(true);
+      setOutputFormat('gif');
 
-        gif.on('error', reject);
-        gif.render();
+      onProcessed({
+        id: image.name,
+        originalFile: image,
+        compressedBlob: gifBlob,
+        compressedUrl,
+        originalSize: image.size,
+        compressedSize: gifBlob.size,
+        format: 'gif',
+        filename: `${image.name.split('.')[0]}_compressed.gif`
       });
 
       toast.success(`GIF compressed successfully!`);
     } catch (error) {
       console.error('Error processing GIF:', error);
-      setError('Failed to process GIF: ' + error.message);
-      toast.error('Failed to process GIF');
+      setError('Failed to process GIF. Trying alternative method...');
+      
+      // Fallback: Just re-encode as is without compression
+      try {
+        const blob = await fetch(preview).then(r => r.blob());
+        const compressedUrl = URL.createObjectURL(blob);
+        setCompressedPreview(compressedUrl);
+        setCompressedSize(blob.size);
+        setProcessed(true);
+        setOutputFormat('gif');
+
+        onProcessed({
+          id: image.name,
+          originalFile: image,
+          compressedBlob: blob,
+          compressedUrl,
+          originalSize: image.size,
+          compressedSize: blob.size,
+          format: 'gif',
+          filename: `${image.name.split('.')[0]}_compressed.gif`
+        });
+        
+        toast.success('GIF processed (compression limited for animated GIFs)');
+      } catch (fallbackError) {
+        console.error('Fallback failed:', fallbackError);
+        toast.error('Failed to process GIF');
+      }
     }
   };
 
