@@ -1,0 +1,289 @@
+import React, { useState, useEffect } from "react";
+import { Card } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Slider } from "@/components/ui/slider";
+import { Download, X, Loader2, CheckCircle2, ArrowRight, Settings2 } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { Badge } from "@/components/ui/badge";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+
+export default function ImageCard({ image, onRemove, onProcessed }) {
+  const [processing, setProcessing] = useState(false);
+  const [processed, setProcessed] = useState(false);
+  const [originalSize, setOriginalSize] = useState(0);
+  const [compressedSize, setCompressedSize] = useState(0);
+  const [preview, setPreview] = useState(null);
+  const [compressedPreview, setCompressedPreview] = useState(null);
+  const [quality, setQuality] = useState(80);
+  const [format, setFormat] = useState('webp');
+  const [maxWidth, setMaxWidth] = useState(null);
+  const [maxHeight, setMaxHeight] = useState(null);
+  const [settingsOpen, setSettingsOpen] = useState(false);
+
+  useEffect(() => {
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setPreview(reader.result);
+      setOriginalSize(image.size);
+    };
+    reader.readAsDataURL(image);
+  }, [image]);
+
+  const processImage = async () => {
+    setProcessing(true);
+    
+    try {
+      const img = new Image();
+      img.src = preview;
+      
+      await new Promise((resolve) => {
+        img.onload = resolve;
+      });
+
+      const canvas = document.createElement('canvas');
+      let width = img.width;
+      let height = img.height;
+
+      // Apply resizing if specified
+      if (maxWidth && width > maxWidth) {
+        height = (height * maxWidth) / width;
+        width = maxWidth;
+      }
+      if (maxHeight && height > maxHeight) {
+        width = (width * maxHeight) / height;
+        height = maxHeight;
+      }
+
+      canvas.width = width;
+      canvas.height = height;
+
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(img, 0, 0, width, height);
+
+      // Convert to desired format
+      const mimeType = format === 'jpg' ? 'image/jpeg' : `image/${format}`;
+      const qualityValue = quality / 100;
+
+      const blob = await new Promise((resolve) => {
+        canvas.toBlob(
+          (blob) => resolve(blob),
+          mimeType,
+          qualityValue
+        );
+      });
+
+      const compressedUrl = URL.createObjectURL(blob);
+      setCompressedPreview(compressedUrl);
+      setCompressedSize(blob.size);
+      setProcessed(true);
+
+      onProcessed({
+        id: image.name,
+        originalFile: image,
+        compressedBlob: blob,
+        compressedUrl,
+        originalSize: image.size,
+        compressedSize: blob.size,
+        format,
+        filename: `${image.name.split('.')[0]}.${format}`
+      });
+
+    } catch (error) {
+      console.error('Error processing image:', error);
+    }
+    
+    setProcessing(false);
+  };
+
+  const downloadImage = () => {
+    const link = document.createElement('a');
+    link.href = compressedPreview;
+    link.download = `${image.name.split('.')[0]}_compressed.${format}`;
+    link.click();
+  };
+
+  const savingsPercent = processed 
+    ? ((1 - compressedSize / originalSize) * 100).toFixed(1)
+    : 0;
+
+  const formatFileSize = (bytes) => {
+    if (bytes < 1024) return bytes + ' B';
+    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+    return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+  };
+
+  return (
+    <Card className="overflow-hidden bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 shadow-lg hover:shadow-xl transition-shadow">
+      <div className="relative">
+        <div className="grid grid-cols-2 gap-2 p-4 bg-slate-50 dark:bg-slate-950">
+          {preview && (
+            <div className="relative aspect-square rounded-lg overflow-hidden bg-slate-200 dark:bg-slate-800">
+              <img src={preview} alt="Original" className="w-full h-full object-cover" />
+              <Badge className="absolute top-2 left-2 bg-slate-900/80 text-white">
+                Original
+              </Badge>
+            </div>
+          )}
+          {compressedPreview ? (
+            <div className="relative aspect-square rounded-lg overflow-hidden bg-slate-200 dark:bg-slate-800">
+              <img src={compressedPreview} alt="Compressed" className="w-full h-full object-cover" />
+              <Badge className="absolute top-2 left-2 bg-emerald-600 text-white">
+                Compressed
+              </Badge>
+            </div>
+          ) : (
+            <div className="aspect-square rounded-lg bg-slate-200 dark:bg-slate-800 flex items-center justify-center">
+              <p className="text-sm text-slate-400">Preview after compression</p>
+            </div>
+          )}
+        </div>
+
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={onRemove}
+          className="absolute top-2 right-2 bg-white/90 dark:bg-slate-900/90 hover:bg-red-50 dark:hover:bg-red-950"
+        >
+          <X className="w-4 h-4 text-slate-600 dark:text-slate-400" />
+        </Button>
+      </div>
+
+      <div className="p-4 space-y-4">
+        <div>
+          <p className="font-medium text-sm text-slate-900 dark:text-white truncate" title={image.name}>
+            {image.name}
+          </p>
+          <div className="flex items-center gap-2 mt-1 text-xs text-slate-500 dark:text-slate-400">
+            <span>{formatFileSize(originalSize)}</span>
+            {processed && (
+              <>
+                <ArrowRight className="w-3 h-3" />
+                <span className="text-emerald-600 dark:text-emerald-400 font-medium">
+                  {formatFileSize(compressedSize)}
+                </span>
+                <Badge variant="secondary" className="bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-400">
+                  -{savingsPercent}%
+                </Badge>
+              </>
+            )}
+          </div>
+        </div>
+
+        <Collapsible open={settingsOpen} onOpenChange={setSettingsOpen}>
+          <CollapsibleTrigger asChild>
+            <Button variant="outline" className="w-full justify-between" size="sm">
+              <span className="flex items-center gap-2">
+                <Settings2 className="w-4 h-4" />
+                Compression Settings
+              </span>
+            </Button>
+          </CollapsibleTrigger>
+          <CollapsibleContent className="space-y-4 mt-4">
+            <div>
+              <label className="text-xs font-medium text-slate-700 dark:text-slate-300 mb-2 block">
+                Output Format
+              </label>
+              <Select value={format} onValueChange={setFormat}>
+                <SelectTrigger className="h-9">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="webp">WebP (Best compression)</SelectItem>
+                  <SelectItem value="avif">AVIF (Smallest size)</SelectItem>
+                  <SelectItem value="jpg">JPG (Universal)</SelectItem>
+                  <SelectItem value="png">PNG (Lossless)</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div>
+              <label className="text-xs font-medium text-slate-700 dark:text-slate-300 mb-2 block">
+                Quality: {quality}%
+              </label>
+              <Slider
+                value={[quality]}
+                onValueChange={(value) => setQuality(value[0])}
+                min={1}
+                max={100}
+                step={1}
+                className="w-full"
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-2">
+              <div>
+                <label className="text-xs font-medium text-slate-700 dark:text-slate-300 mb-1 block">
+                  Max Width (px)
+                </label>
+                <input
+                  type="number"
+                  placeholder="Auto"
+                  value={maxWidth || ''}
+                  onChange={(e) => setMaxWidth(e.target.value ? parseInt(e.target.value) : null)}
+                  className="w-full h-9 px-3 rounded-md border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 text-sm"
+                />
+              </div>
+              <div>
+                <label className="text-xs font-medium text-slate-700 dark:text-slate-300 mb-1 block">
+                  Max Height (px)
+                </label>
+                <input
+                  type="number"
+                  placeholder="Auto"
+                  value={maxHeight || ''}
+                  onChange={(e) => setMaxHeight(e.target.value ? parseInt(e.target.value) : null)}
+                  className="w-full h-9 px-3 rounded-md border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 text-sm"
+                />
+              </div>
+            </div>
+          </CollapsibleContent>
+        </Collapsible>
+
+        <div className="flex gap-2">
+          {!processed ? (
+            <Button
+              onClick={processImage}
+              disabled={processing}
+              className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white"
+            >
+              {processing ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Processing...
+                </>
+              ) : (
+                'Compress Image'
+              )}
+            </Button>
+          ) : (
+            <>
+              <Button
+                onClick={processImage}
+                variant="outline"
+                className="flex-1"
+                disabled={processing}
+              >
+                Reprocess
+              </Button>
+              <Button
+                onClick={downloadImage}
+                className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white"
+              >
+                <Download className="w-4 h-4 mr-2" />
+                Download
+              </Button>
+            </>
+          )}
+        </div>
+
+        {processed && (
+          <div className="flex items-center gap-2 text-sm text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/30 p-3 rounded-lg">
+            <CheckCircle2 className="w-4 h-4" />
+            <span>Saved {formatFileSize(originalSize - compressedSize)}</span>
+          </div>
+        )}
+      </div>
+    </Card>
+  );
+}
