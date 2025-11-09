@@ -43,6 +43,8 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
   const [showDownloadModal, setShowDownloadModal] = useState(false);
   const [compressedBlob, setCompressedBlob] = useState(null);
   const [enableUpscale, setEnableUpscale] = useState(false);
+  const [upscaleSettingsOpen, setUpscaleSettingsOpen] = useState(false);
+  const [upscaleMultiplier, setUpscaleMultiplier] = useState(null);
 
   // Media type detection
   const isImage = image.type.startsWith('image/');
@@ -584,9 +586,11 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
         const aspectRatio = gifSettings.width / gifSettings.height;
         
         if (maxWidth && maxHeight) {
+          // Changed Math.min to (enableUpscale ? Math.max : Math.min) - NOTE: enableUpscale is for static images, not gifs directly
+          // For GIF, we always want to downscale or maintain, not upscale beyond original.
           const widthRatio = maxWidth / gifSettings.width;
           const heightRatio = maxHeight / gifSettings.height;
-          const ratio = Math.min(widthRatio, heightRatio);
+          const ratio = Math.min(widthRatio, heightRatio); // Always min for GIF resizing
           targetWidth = Math.round(gifSettings.width * ratio);
           targetHeight = Math.round(gifSettings.height * ratio);
         } else if (maxWidth && maxWidth < gifSettings.width) {
@@ -743,31 +747,48 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
     });
 
     const canvas = document.createElement('canvas');
-    let width = img.width;
-    let height = img.height;
+    let targetWidth = img.width; // Start with original dimensions
+    let targetHeight = img.height;
 
-    if (maxWidth || maxHeight || enableUpscale) { // Added enableUpscale
-      const aspectRatio = width / height;
+    // Handle upscale multiplier first if enabled
+    if (enableUpscale && upscaleMultiplier !== null) {
+      targetWidth = Math.round(img.width * (upscaleMultiplier / 100));
+      targetHeight = Math.round(img.height * (upscaleMultiplier / 100));
+    } 
+    // Then handle explicit maxWidth/maxHeight, potentially overriding original or acting as limits
+    else if (maxWidth || maxHeight) {
+      const aspectRatio = img.width / img.height; // Always use original aspect ratio for calculation
       
       if (maxWidth && maxHeight) {
-        // Changed Math.min to (enableUpscale ? Math.max : Math.min)
         const widthRatio = maxWidth / img.width;
         const heightRatio = maxHeight / img.height;
         const ratio = enableUpscale ? Math.max(widthRatio, heightRatio) : Math.min(widthRatio, heightRatio);
         
-        width = Math.round(img.width * ratio);
-        height = Math.round(img.height * ratio);
+        targetWidth = Math.round(img.width * ratio);
+        targetHeight = Math.round(img.height * ratio);
       } else if (maxWidth) {
-        width = maxWidth;
-        height = Math.round(maxWidth / aspectRatio);
+        if (enableUpscale || maxWidth < img.width) { // Only set maxWidth if upscaling allowed or downscaling
+          targetWidth = maxWidth;
+          targetHeight = Math.round(maxWidth / aspectRatio);
+        } else {
+          // If not upscaling and maxWidth is larger than original, keep original width
+          targetWidth = img.width;
+          targetHeight = img.height;
+        }
       } else if (maxHeight) {
-        height = maxHeight;
-        width = Math.round(maxHeight * aspectRatio);
+        if (enableUpscale || maxHeight < img.height) { // Only set maxHeight if upscaling allowed or downscaling
+          targetHeight = maxHeight;
+          targetWidth = Math.round(maxHeight * aspectRatio);
+        } else {
+          // If not upscaling and maxHeight is larger than original, keep original height
+          targetWidth = img.width;
+          targetHeight = img.height;
+        }
       }
     }
 
-    canvas.width = width;
-    canvas.height = height;
+    canvas.width = targetWidth;
+    canvas.height = targetHeight;
 
     const ctx = canvas.getContext('2d');
     
@@ -776,7 +797,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
       ctx.imageSmoothingQuality = 'high';
     }
     
-    ctx.drawImage(img, 0, 0, width, height);
+    ctx.drawImage(img, 0, 0, targetWidth, targetHeight);
 
     const mimeType = format === 'jpg' ? 'image/jpeg' : `image/${format}`;
     
@@ -1422,64 +1443,39 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
                 </>
               )}
 
-              {(isImage || isVideo || isGif) && (
-                <>
-                  <div className="grid grid-cols-2 gap-2">
-                    <div>
-                      <div className="flex items-center gap-1 mb-1">
-                        <label className="text-xs font-medium text-slate-700 dark:text-slate-300">
-                          Max Width (px)
-                        </label>
-                      </div>
-                      <input
-                        type="number"
-                        placeholder="Auto"
-                        value={maxWidth || ''}
-                        onChange={(e) => setMaxWidth(e.target.value ? parseInt(e.target.value) : null)}
-                        className="w-full h-9 px-3 rounded-md border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 text-sm"
-                        disabled={processing}
-                      />
+              {(isVideo || isGif) && (
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <div className="flex items-center gap-1 mb-1">
+                      <label className="text-xs font-medium text-slate-700 dark:text-slate-300">
+                        Max Width (px)
+                      </label>
                     </div>
-                    <div>
-                      <div className="flex items-center gap-1 mb-1">
-                        <label className="text-xs font-medium text-slate-700 dark:text-slate-300">
-                          Max Height (px)
-                        </label>
-                      </div>
-                      <input
-                        type="number"
-                        placeholder="Auto"
-                        value={maxHeight || ''}
-                        onChange={(e) => setMaxHeight(e.target.value ? parseInt(e.target.value) : null)}
-                        className="w-full h-9 px-3 rounded-md border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 text-sm"
-                        disabled={processing}
-                      />
-                    </div>
+                    <input
+                      type="number"
+                      placeholder="Auto"
+                      value={maxWidth || ''}
+                      onChange={(e) => setMaxWidth(e.target.value ? parseInt(e.target.value) : null)}
+                      className="w-full h-9 px-3 rounded-md border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 text-sm"
+                      disabled={processing}
+                    />
                   </div>
-                  
-                  {(isImage && !isGif) && (
-                    <div className="flex items-center justify-between pt-2 border-t border-slate-200 dark:border-slate-800">
-                      <div className="flex items-center gap-2">
-                        <label className="text-xs font-medium text-slate-700 dark:text-slate-300">
-                          Enable Upscaling
-                        </label>
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Info className="w-3 h-3 text-slate-400 cursor-help" />
-                          </TooltipTrigger>
-                          <TooltipContent className="max-w-xs">
-                            <p className="text-xs">Allow increasing image dimensions beyond original size</p>
-                          </TooltipContent>
-                        </Tooltip>
-                      </div>
-                      <Switch
-                        checked={enableUpscale}
-                        onCheckedChange={setEnableUpscale}
-                        disabled={processing}
-                      />
+                  <div>
+                    <div className="flex items-center gap-1 mb-1">
+                      <label className="text-xs font-medium text-slate-700 dark:text-slate-300">
+                        Max Height (px)
+                      </label>
                     </div>
-                  )}
-                </>
+                    <input
+                      type="number"
+                      placeholder="Auto"
+                      value={maxHeight || ''}
+                      onChange={(e) => setMaxHeight(e.target.value ? parseInt(e.target.value) : null)}
+                      className="w-full h-9 px-3 rounded-md border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 text-sm"
+                      disabled={processing}
+                    />
+                  </div>
+                </div>
               )}
 
               {(isImage && !isGif) && (
@@ -1510,6 +1506,126 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
             </TooltipProvider>
           </CollapsibleContent>
         </Collapsible>
+
+        {(isImage && !isGif) && (
+          <Collapsible open={upscaleSettingsOpen} onOpenChange={setUpscaleSettingsOpen}>
+            <CollapsibleTrigger asChild>
+              <Button variant="outline" className="w-full justify-between" size="sm">
+                <span className="flex items-center gap-2">
+                  <Sparkles className="w-4 h-4" />
+                  Upscale Settings
+                </span>
+              </Button>
+            </CollapsibleTrigger>
+            <CollapsibleContent className="space-y-4 mt-4">
+              <TooltipProvider>
+                <div className="flex items-center justify-between pb-2 border-b border-slate-200 dark:border-slate-800">
+                  <div className="flex items-center gap-2">
+                    <label className="text-xs font-medium text-slate-700 dark:text-slate-300">
+                      Enable Upscaling
+                    </label>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Info className="w-3 h-3 text-slate-400 cursor-help" />
+                      </TooltipTrigger>
+                      <TooltipContent className="max-w-xs">
+                        <p className="text-xs">Allow increasing image dimensions beyond original size</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </div>
+                  <Switch
+                    checked={enableUpscale}
+                    onCheckedChange={(checked) => {
+                      setEnableUpscale(checked);
+                      if (!checked) {
+                        setUpscaleMultiplier(null);
+                        setMaxWidth(null); // Clear custom dimensions when disabling upscale
+                        setMaxHeight(null);
+                      }
+                    }}
+                    disabled={processing}
+                  />
+                </div>
+
+                {enableUpscale && (
+                  <>
+                    <div>
+                      <label className="text-xs font-medium text-slate-700 dark:text-slate-300 mb-2 block">
+                        Upscale Multiplier
+                      </label>
+                      <div className="grid grid-cols-3 gap-2">
+                        {[100, 200, 300, 400, 500].map((multiplier) => (
+                          <Button
+                            key={multiplier}
+                            size="sm"
+                            variant={upscaleMultiplier === multiplier ? "default" : "outline"}
+                            onClick={() => {
+                              setUpscaleMultiplier(multiplier);
+                              // Clear manual dimensions when using multiplier
+                              setMaxWidth(null);
+                              setMaxHeight(null);
+                            }}
+                            disabled={processing}
+                            className={cn(
+                              "text-xs h-9",
+                              upscaleMultiplier === multiplier && "bg-emerald-600 hover:bg-emerald-700"
+                            )}
+                          >
+                            {multiplier}%
+                          </Button>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div className="pt-2 border-t border-slate-200 dark:border-slate-800">
+                      <label className="text-xs font-medium text-slate-700 dark:text-slate-300 mb-2 block">
+                        Or Set Custom Dimensions
+                      </label>
+                      <div className="grid grid-cols-2 gap-2">
+                        <div>
+                          <label className="text-[10px] text-slate-500 dark:text-slate-400 mb-1 block">
+                            Max Width (px)
+                          </label>
+                          <input
+                            type="number"
+                            placeholder="Auto"
+                            value={maxWidth || ''}
+                            onChange={(e) => {
+                              setMaxWidth(e.target.value ? parseInt(e.target.value) : null);
+                              if (e.target.value) {
+                                setUpscaleMultiplier(null); // Clear multiplier if custom dimension is set
+                              }
+                            }}
+                            className="w-full h-9 px-3 rounded-md border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 text-sm"
+                            disabled={processing}
+                          />
+                        </div>
+                        <div>
+                          <label className="text-[10px] text-slate-500 dark:text-slate-400 mb-1 block">
+                            Max Height (px)
+                          </label>
+                          <input
+                            type="number"
+                            placeholder="Auto"
+                            value={maxHeight || ''}
+                            onChange={(e) => {
+                              setMaxHeight(e.target.value ? parseInt(e.target.value) : null);
+                              if (e.target.value) {
+                                setUpscaleMultiplier(null); // Clear multiplier if custom dimension is set
+                              }
+                            }}
+                            className="w-full h-9 px-3 rounded-md border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 text-sm"
+                            disabled={processing}
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  </>
+                )}
+              </TooltipProvider>
+            </CollapsibleContent>
+          </Collapsible>
+        )}
 
         <div className="flex gap-2">
           {!processed ? (
