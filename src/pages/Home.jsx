@@ -1,4 +1,3 @@
-
 import { useState, lazy, Suspense } from "react";
 import { Button } from "@/components/ui/button";
 import { Download, Trash2, Sparkles, Shield, Zap, Image as ImageIcon } from "lucide-react";
@@ -11,7 +10,7 @@ import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
 // Lazy load heavy components for better performance
 const MediaCard = lazy(() => import("../components/upload/MediaCard"));
 const ImageComparisonModal = lazy(() => import("../components/comparison/ImageComparisonModal"));
-const BatchSettingsModal = lazy(() => import("../components/BatchSettingsModal")); // Import the new modal
+const BatchSettingsModal = lazy(() => import("../components/batch/BatchSettingsModal"));
 
 // Loading fallback for image cards
 function ImageCardSkeleton() {
@@ -81,7 +80,7 @@ export default function Home() {
   const clearAll = () => {
     setImages([]);
     setProcessedImages({});
-    setBatchSettings(null); // Reset batch settings on clearAll
+    setBatchSettings(null);
   };
 
   const processAllImages = async () => {
@@ -101,10 +100,6 @@ export default function Home() {
     toast.info(`Processing ${unprocessedImages.length} files...`);
     setAutoProcessTrigger(prev => prev + 1);
   };
-
-  // The 'applyBatchSettings' function from the outline is integrated directly into the modal's onApply prop.
-  // The 'processAllImages' function handles triggering the modal if batchSettings is not present,
-  // and the modal's onApply callback sets the batch settings and then triggers autoProcessTrigger.
 
   const downloadAll = async () => {
     if (Object.keys(processedImages).length === 0) {
@@ -394,7 +389,7 @@ export default function Home() {
                               onProcessed={(data) => handleImageProcessed(image.id, data)}
                               onCompare={handleCompare}
                               autoProcess={!processedImages[image.id] && autoProcessTrigger}
-                              batchSettings={batchSettings} // Pass batch settings to MediaCard
+                              batchSettings={batchSettings}
                             />
                           </Suspense>
                         </div>
@@ -422,7 +417,6 @@ export default function Home() {
               setAutoProcessTrigger(prev => prev + 1);
             }}
             fileCount={images.filter(img => !processedImages[img.id]).length}
-            initialSettings={batchSettings} // Pass current settings for editing if available
           />
         </Suspense>
       )}
