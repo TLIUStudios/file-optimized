@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { X, MoveHorizontal } from "lucide-react";
+import { X, MoveHorizontal, ZoomIn, ZoomOut, Maximize2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 
@@ -15,32 +15,53 @@ export default function ImageComparisonModal({
 }) {
   const [sliderPosition, setSliderPosition] = useState(50);
   const [isDragging, setIsDragging] = useState(false);
+  const [zoom, setZoom] = useState(1);
+  const [pan, setPan] = useState({ x: 0, y: 0 });
+  const [isPanning, setIsPanning] = useState(false);
+  const [panStart, setPanStart] = useState({ x: 0, y: 0 });
   const containerRef = useRef(null);
 
   useEffect(() => {
     const handleMouseMove = (e) => {
-      if (!isDragging || !containerRef.current) return;
+      if (isDragging && !isPanning && containerRef.current) {
+        const rect = containerRef.current.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const percentage = (x / rect.width) * 100;
+        setSliderPosition(Math.max(0, Math.min(100, percentage)));
+      }
       
-      const rect = containerRef.current.getBoundingClientRect();
-      const x = e.clientX - rect.left;
-      const percentage = (x / rect.width) * 100;
-      setSliderPosition(Math.max(0, Math.min(100, percentage)));
+      if (isPanning) {
+        const deltaX = e.clientX - panStart.x;
+        const deltaY = e.clientY - panStart.y;
+        setPan({ x: pan.x + deltaX, y: pan.y + deltaY });
+        setPanStart({ x: e.clientX, y: e.clientY });
+      }
     };
 
     const handleTouchMove = (e) => {
-      if (!isDragging || !containerRef.current) return;
-      
-      const rect = containerRef.current.getBoundingClientRect();
-      const x = e.touches[0].clientX - rect.left;
-      const percentage = (x / rect.width) * 100;
-      setSliderPosition(Math.max(0, Math.min(100, percentage)));
+      if (e.touches.length === 1) {
+        if (isDragging && !isPanning && containerRef.current) {
+          const rect = containerRef.current.getBoundingClientRect();
+          const x = e.touches[0].clientX - rect.left;
+          const percentage = (x / rect.width) * 100;
+          setSliderPosition(Math.max(0, Math.min(100, percentage)));
+        }
+        
+        if (isPanning) {
+          const deltaX = e.touches[0].clientX - panStart.x;
+          const deltaY = e.touches[0].clientY - panStart.y;
+          setPan({ x: pan.x + deltaX, y: pan.y + deltaY });
+          setPanStart({ x: e.touches[0].clientX, y: e.touches[0].clientY });
+        }
+      }
     };
 
     const handleMouseUp = () => {
       setIsDragging(false);
+      setIsPanning(false);
     };
 
-    if (isDragging) {
+    if (isDragging || isPanning) {
       document.addEventListener('mousemove', handleMouseMove);
       document.addEventListener('touchmove', handleTouchMove);
       document.addEventListener('mouseup', handleMouseUp);
@@ -53,7 +74,50 @@ export default function ImageComparisonModal({
       document.removeEventListener('mouseup', handleMouseUp);
       document.removeEventListener('touchend', handleMouseUp);
     };
-  }, [isDragging]);
+  }, [isDragging, isPanning, panStart, pan]);
+
+  // Wheel zoom
+  useEffect(() => {
+    const handleWheel = (e) => {
+      if (containerRef.current?.contains(e.target)) {
+        e.preventDefault();
+        const delta = e.deltaY > 0 ? -0.1 : 0.1;
+        setZoom(prev => Math.max(0.5, Math.min(3, prev + delta)));
+      }
+    };
+
+    const container = containerRef.current;
+    if (container) {
+      container.addEventListener('wheel', handleWheel, { passive: false });
+    }
+
+    return () => {
+      if (container) {
+        container.removeEventListener('wheel', handleWheel);
+      }
+    };
+  }, []);
+
+  const handleZoomIn = () => {
+    setZoom(prev => Math.min(3, prev + 0.25));
+  };
+
+  const handleZoomOut = () => {
+    setZoom(prev => Math.max(0.5, prev - 0.25));
+  };
+
+  const handleResetZoom = () => {
+    setZoom(1);
+    setPan({ x: 0, y: 0 });
+  };
+
+  const handlePanStart = (e) => {
+    if (zoom > 1 && e.button === 0) {
+      setIsPanning(true);
+      setPanStart({ x: e.clientX, y: e.clientY });
+      e.preventDefault();
+    }
+  };
 
   const formatFileSize = (bytes) => {
     if (bytes < 1024) return bytes + ' B';
@@ -98,57 +162,133 @@ export default function ImageComparisonModal({
           </div>
         </DialogHeader>
 
-        <div className="flex-1 overflow-auto p-4 md:p-6">
+        <div className="flex-1 overflow-hidden p-4 md:p-6 relative">
+          {/* Zoom Controls */}
+          <div className="absolute top-8 right-8 z-20 flex flex-col gap-2">
+            <Button
+              variant="secondary"
+              size="icon"
+              onClick={handleZoomIn}
+              className="bg-slate-800/90 hover:bg-slate-700 backdrop-blur-sm border border-slate-700"
+              title="Zoom In"
+            >
+              <ZoomIn className="w-4 h-4 text-white" />
+            </Button>
+            <Button
+              variant="secondary"
+              size="icon"
+              onClick={handleZoomOut}
+              className="bg-slate-800/90 hover:bg-slate-700 backdrop-blur-sm border border-slate-700"
+              title="Zoom Out"
+            >
+              <ZoomOut className="w-4 h-4 text-white" />
+            </Button>
+            <Button
+              variant="secondary"
+              size="icon"
+              onClick={handleResetZoom}
+              className="bg-slate-800/90 hover:bg-slate-700 backdrop-blur-sm border border-slate-700"
+              title="Reset Zoom"
+            >
+              <Maximize2 className="w-4 h-4 text-white" />
+            </Button>
+            <div className="bg-slate-800/90 backdrop-blur-sm border border-slate-700 rounded-md px-2 py-1 text-xs text-white text-center">
+              {(zoom * 100).toFixed(0)}%
+            </div>
+          </div>
+
           <div 
             ref={containerRef}
-            className="relative w-full h-full bg-slate-900 rounded-xl overflow-hidden cursor-col-resize select-none flex items-center justify-center"
-            onMouseDown={() => setIsDragging(true)}
-            onTouchStart={() => setIsDragging(true)}
+            className="relative w-full h-full bg-slate-900 rounded-xl overflow-hidden select-none flex items-center justify-center"
+            style={{ 
+              cursor: zoom > 1 ? (isPanning ? 'grabbing' : 'grab') : 'col-resize'
+            }}
+            onMouseDown={(e) => {
+              if (zoom > 1) {
+                handlePanStart(e);
+              } else {
+                setIsDragging(true);
+              }
+            }}
+            onTouchStart={(e) => {
+              if (zoom > 1 && e.touches.length === 1) {
+                setIsPanning(true);
+                setPanStart({ x: e.touches[0].clientX, y: e.touches[0].clientY });
+              } else if (e.touches.length === 1) {
+                setIsDragging(true);
+              }
+            }}
           >
-            {/* Compressed Image (Background - Right Side) */}
-            <img
-              src={compressedImage}
-              alt="Compressed"
-              className="max-w-full max-h-full w-auto h-auto object-contain"
-              draggable="false"
-            />
-
-            {/* Original Image (Foreground - Left Side with clip) */}
             <div
-              className="absolute inset-0 flex items-center justify-center overflow-hidden"
-              style={{ clipPath: `inset(0 ${100 - sliderPosition}% 0 0)` }}
+              style={{
+                transform: `scale(${zoom}) translate(${pan.x / zoom}px, ${pan.y / zoom}px)`,
+                transformOrigin: 'center',
+                transition: isDragging || isPanning ? 'none' : 'transform 0.2s ease-out',
+                width: '100%',
+                height: '100%',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center'
+              }}
             >
+              {/* Compressed Image (Background - Right Side) */}
               <img
-                src={originalImage}
-                alt="Original"
-                className="max-w-full max-h-full w-auto h-auto object-contain"
+                src={compressedImage}
+                alt="Compressed"
+                className="w-full h-full object-contain"
                 draggable="false"
+                style={{ maxWidth: '100%', maxHeight: '100%' }}
               />
-            </div>
 
-            {/* Labels */}
-            <Badge className="absolute top-4 left-4 bg-slate-900/80 backdrop-blur-sm text-white border border-slate-700 text-xs">
-              Original
-            </Badge>
-            <Badge className="absolute top-4 right-4 bg-emerald-600/80 backdrop-blur-sm text-white border border-emerald-500 text-xs">
-              Compressed
-            </Badge>
-
-            {/* Slider Line */}
-            <div
-              className="absolute top-0 bottom-0 w-1 bg-white shadow-2xl z-10"
-              style={{ left: `${sliderPosition}%`, transform: 'translateX(-50%)' }}
-            >
-              {/* Slider Handle */}
-              <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-10 h-10 md:w-12 md:h-12 bg-white rounded-full shadow-2xl flex items-center justify-center cursor-col-resize">
-                <MoveHorizontal className="w-5 h-5 md:w-6 md:h-6 text-slate-900" />
+              {/* Original Image (Foreground - Left Side with clip) */}
+              <div
+                className="absolute inset-0 flex items-center justify-center overflow-hidden"
+                style={{ clipPath: `inset(0 ${100 - sliderPosition}% 0 0)` }}
+              >
+                <img
+                  src={originalImage}
+                  alt="Original"
+                  className="w-full h-full object-contain"
+                  draggable="false"
+                  style={{ maxWidth: '100%', maxHeight: '100%' }}
+                />
               </div>
             </div>
 
-            {/* Instruction */}
-            {sliderPosition === 50 && !isDragging && (
-              <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-slate-900/90 backdrop-blur-sm text-white px-3 py-2 md:px-4 rounded-full text-xs md:text-sm border border-slate-700 pointer-events-none animate-pulse">
-                ← Drag to compare →
+            {/* Labels */}
+            <Badge className="absolute top-4 left-4 bg-slate-900/80 backdrop-blur-sm text-white border border-slate-700 text-xs z-10">
+              Original
+            </Badge>
+            <Badge className="absolute top-4 right-20 bg-emerald-600/80 backdrop-blur-sm text-white border border-emerald-500 text-xs z-10">
+              Compressed
+            </Badge>
+
+            {/* Slider Line - only show when not zoomed/panning */}
+            {zoom === 1 && !isPanning && (
+              <>
+                <div
+                  className="absolute top-0 bottom-0 w-1 bg-white shadow-2xl z-10"
+                  style={{ left: `${sliderPosition}%`, transform: 'translateX(-50%)' }}
+                >
+                  {/* Slider Handle */}
+                  <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-10 h-10 md:w-12 md:h-12 bg-white rounded-full shadow-2xl flex items-center justify-center cursor-col-resize">
+                    <MoveHorizontal className="w-5 h-5 md:w-6 md:h-6 text-slate-900" />
+                  </div>
+                </div>
+
+                {/* Instruction */}
+                {sliderPosition === 50 && !isDragging && (
+                  <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-slate-900/90 backdrop-blur-sm text-white px-3 py-2 md:px-4 rounded-full text-xs md:text-sm border border-slate-700 pointer-events-none animate-pulse">
+                    ← Drag to compare →
+                  </div>
+                )}
+              </>
+            )}
+
+            {/* Pan instruction when zoomed */}
+            {zoom > 1 && !isPanning && (
+              <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-slate-900/90 backdrop-blur-sm text-white px-3 py-2 md:px-4 rounded-full text-xs md:text-sm border border-slate-700 pointer-events-none">
+                Click and drag to pan • Scroll to zoom
               </div>
             )}
           </div>
