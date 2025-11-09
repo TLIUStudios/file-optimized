@@ -25,6 +25,7 @@ export default function ImageComparisonModal({
   const [imageDimensions, setImageDimensions] = useState({ width: 0, height: 0 });
   const [aiMetadata, setAiMetadata] = useState(null);
   const [generatingMetadata, setGeneratingMetadata] = useState(false);
+  const [uploadedImageUrl, setUploadedImageUrl] = useState(null);
   const containerRef = useRef(null);
   const imageContainerRef = useRef(null);
 
@@ -43,38 +44,60 @@ export default function ImageComparisonModal({
     }
   }, [originalImage]);
 
-  // Generate AI metadata when modal opens
+  // Upload image for AI processing
   useEffect(() => {
-    if (isOpen && originalImage && !aiMetadata && !generatingMetadata) {
-      generateAIMetadata();
+    if (isOpen && originalImage && !uploadedImageUrl) {
+      uploadImageForAI();
     }
   }, [isOpen, originalImage]);
 
+  const uploadImageForAI = async () => {
+    try {
+      // Convert base64 to blob
+      const response = await fetch(originalImage);
+      const blob = await response.blob();
+      
+      // Upload to get a proper URL
+      const { file_url } = await base44.integrations.Core.UploadFile({ file: blob });
+      setUploadedImageUrl(file_url);
+    } catch (error) {
+      console.error('Failed to upload image:', error);
+    }
+  };
+
   const generateAIMetadata = async () => {
+    if (!uploadedImageUrl) {
+      toast.error('Please wait while image is being prepared...');
+      return;
+    }
+
     setGeneratingMetadata(true);
+    setAiMetadata(null);
+    
     try {
       const response = await base44.integrations.Core.InvokeLLM({
-        prompt: `Analyze this image and generate:
-1. A catchy, SEO-friendly title (max 60 characters)
-2. An engaging, descriptive text (max 160 characters)
+        prompt: `Analyze this image and generate exactly 2 fields:
 
-Be creative, playful, and accurate to what you see in the image. Focus on making it suitable for social media and SEO.`,
-        file_urls: [originalImage],
+1. "title": A catchy, SEO-friendly title that describes what's in the image (maximum 60 characters)
+2. "description": An engaging description of the image suitable for social media and SEO (maximum 160 characters)
+
+Be specific about what you see. If it's food, mention the food. If it's a person/animal, describe them. If it's a landscape, describe the scene.`,
+        file_urls: [uploadedImageUrl],
         response_json_schema: {
           type: "object",
           properties: {
             title: { 
-              type: "string",
-              description: "A catchy, SEO-friendly title, max 60 characters"
+              type: "string"
             },
             description: { 
-              type: "string",
-              description: "An engaging description, max 160 characters"
+              type: "string"
             }
           },
           required: ["title", "description"]
         }
       });
+      
+      console.log('AI Response:', response);
       
       if (response && response.title && response.description) {
         setAiMetadata(response);
@@ -84,7 +107,7 @@ Be creative, playful, and accurate to what you see in the image. Focus on making
       }
     } catch (error) {
       console.error('Failed to generate metadata:', error);
-      toast.error('Failed to generate AI metadata. Please try again.');
+      toast.error('Failed to generate metadata. Please try again.');
       setAiMetadata(null);
     }
     setGeneratingMetadata(false);
@@ -92,7 +115,7 @@ Be creative, playful, and accurate to what you see in the image. Focus on making
 
   const copyToClipboard = (text, label) => {
     navigator.clipboard.writeText(text);
-    toast.success(`${label} copied!`);
+    toast.success(`${label} copied to clipboard!`);
   };
 
   // Calculate aspect ratio
@@ -488,34 +511,34 @@ Be creative, playful, and accurate to what you see in the image. Focus on making
                 )}
 
                 {aiMetadata && !generatingMetadata && (
-                  <div className="space-y-2">
+                  <div className="space-y-2.5">
                     {/* Title */}
-                    <div className="bg-white/50 dark:bg-slate-950/50 border border-slate-300 dark:border-slate-800 rounded-lg p-3">
+                    <div className="bg-white/70 dark:bg-slate-950/70 border border-slate-300 dark:border-slate-800 rounded-lg p-3.5">
                       <div className="flex items-start justify-between gap-2 mb-2">
-                        <span className="text-[10px] font-medium text-slate-600 dark:text-slate-400 uppercase tracking-wider">Title</span>
+                        <span className="text-[10px] font-bold text-purple-600 dark:text-purple-400 uppercase tracking-wider">Title</span>
                         <Button
                           variant="ghost"
                           size="sm"
                           onClick={() => copyToClipboard(aiMetadata.title, 'Title')}
-                          className="h-6 w-6 p-0 hover:bg-slate-200 dark:hover:bg-slate-800 flex-shrink-0"
+                          className="h-6 w-6 p-0 hover:bg-purple-100 dark:hover:bg-purple-950 flex-shrink-0"
                         >
-                          <Copy className="w-3 h-3" />
+                          <Copy className="w-3 h-3 text-purple-600 dark:text-purple-400" />
                         </Button>
                       </div>
-                      <p className="text-sm text-slate-900 dark:text-white font-medium leading-relaxed">{aiMetadata.title}</p>
+                      <p className="text-sm text-slate-900 dark:text-white font-semibold leading-relaxed">{aiMetadata.title}</p>
                     </div>
 
                     {/* Description */}
-                    <div className="bg-white/50 dark:bg-slate-950/50 border border-slate-300 dark:border-slate-800 rounded-lg p-3">
+                    <div className="bg-white/70 dark:bg-slate-950/70 border border-slate-300 dark:border-slate-800 rounded-lg p-3.5">
                       <div className="flex items-start justify-between gap-2 mb-2">
-                        <span className="text-[10px] font-medium text-slate-600 dark:text-slate-400 uppercase tracking-wider">Description</span>
+                        <span className="text-[10px] font-bold text-purple-600 dark:text-purple-400 uppercase tracking-wider">Description</span>
                         <Button
                           variant="ghost"
                           size="sm"
                           onClick={() => copyToClipboard(aiMetadata.description, 'Description')}
-                          className="h-6 w-6 p-0 hover:bg-slate-200 dark:hover:bg-slate-800 flex-shrink-0"
+                          className="h-6 w-6 p-0 hover:bg-purple-100 dark:hover:bg-purple-950 flex-shrink-0"
                         >
-                          <Copy className="w-3 h-3" />
+                          <Copy className="w-3 h-3 text-purple-600 dark:text-purple-400" />
                         </Button>
                       </div>
                       <p className="text-xs text-slate-900 dark:text-white leading-relaxed">{aiMetadata.description}</p>
@@ -524,17 +547,21 @@ Be creative, playful, and accurate to what you see in the image. Focus on making
                 )}
 
                 {!aiMetadata && !generatingMetadata && (
-                  <div className="bg-white/50 dark:bg-slate-950/50 border border-slate-300 dark:border-slate-800 rounded-lg p-4 text-center">
-                    <Sparkles className="w-5 h-5 mx-auto mb-2 text-purple-600 dark:text-purple-400" />
-                    <p className="text-xs text-slate-600 dark:text-slate-400 mb-3">Generate SEO-optimized title and description for this image</p>
+                  <div className="bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-950/30 dark:to-purple-900/30 border border-purple-200 dark:border-purple-800 rounded-lg p-4 text-center">
+                    <Sparkles className="w-6 h-6 mx-auto mb-2 text-purple-600 dark:text-purple-400" />
+                    <p className="text-xs text-slate-700 dark:text-slate-300 mb-3 font-medium">Generate SEO-optimized title and description for this image</p>
                     <Button
                       size="sm"
                       onClick={generateAIMetadata}
-                      className="bg-purple-600 hover:bg-purple-700 text-white text-xs h-8"
+                      disabled={!uploadedImageUrl}
+                      className="bg-purple-600 hover:bg-purple-700 text-white text-xs h-9 px-4 shadow-lg"
                     >
-                      <Sparkles className="w-3 h-3 mr-1" />
+                      <Sparkles className="w-3.5 h-3.5 mr-1.5" />
                       Generate Metadata
                     </Button>
+                    {!uploadedImageUrl && (
+                      <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-2">Preparing image...</p>
+                    )}
                   </div>
                 )}
               </div>
