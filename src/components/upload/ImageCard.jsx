@@ -205,6 +205,10 @@ export default function ImageCard({ image, onRemove, onProcessed, onCompare }) {
     return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
   };
 
+  // Extract file extensions
+  const originalExt = image.name.split('.').pop().toUpperCase();
+  const compressedExt = format.toUpperCase();
+
   return (
     <Card className="overflow-hidden bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 shadow-lg hover:shadow-xl transition-shadow">
       <div className="relative">
@@ -222,6 +226,9 @@ export default function ImageCard({ image, onRemove, onProcessed, onCompare }) {
               <Badge className="absolute top-2 left-2 bg-slate-900/80 text-white">
                 Original
               </Badge>
+              <Badge className="absolute bottom-2 right-2 bg-slate-900/95 backdrop-blur-sm text-white border border-slate-700 text-xs px-2 py-1 font-bold shadow-lg">
+                {originalExt}
+              </Badge>
             </div>
           )}
           {compressedPreview ? (
@@ -236,6 +243,9 @@ export default function ImageCard({ image, onRemove, onProcessed, onCompare }) {
               />
               <Badge className="absolute top-2 left-2 bg-emerald-600 text-white">
                 Compressed
+              </Badge>
+              <Badge className="absolute bottom-2 right-2 bg-emerald-600/95 backdrop-blur-sm text-white border border-emerald-500 text-xs px-2 py-1 font-bold shadow-lg">
+                {compressedExt}
               </Badge>
             </div>
           ) : (
