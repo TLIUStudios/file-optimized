@@ -3,7 +3,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Slider } from "@/components/ui/slider";
-import { Download, X, Loader2, CheckCircle2, ArrowRight, Settings2 } from "lucide-react";
+import { Download, X, Loader2, CheckCircle2, ArrowRight, Settings2, AlertCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
@@ -20,6 +20,7 @@ export default function ImageCard({ image, onRemove, onProcessed }) {
   const [maxWidth, setMaxWidth] = useState(null);
   const [maxHeight, setMaxHeight] = useState(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
     const reader = new FileReader();
@@ -32,6 +33,7 @@ export default function ImageCard({ image, onRemove, onProcessed }) {
 
   const processImage = async () => {
     setProcessing(true);
+    setError(null);
     
     try {
       const img = new Image();
@@ -63,15 +65,50 @@ export default function ImageCard({ image, onRemove, onProcessed }) {
 
       // Convert to desired format
       const mimeType = format === 'jpg' ? 'image/jpeg' : `image/${format}`;
-      const qualityValue = quality / 100;
+      let qualityValue = quality / 100;
+      let blob = null;
+      let attempts = 0;
+      const maxAttempts = 5;
 
-      const blob = await new Promise((resolve) => {
-        canvas.toBlob(
-          (blob) => resolve(blob),
-          mimeType,
-          qualityValue
-        );
-      });
+      // Try to compress, reducing quality if result is larger than original
+      while (attempts < maxAttempts) {
+        blob = await new Promise((resolve) => {
+          canvas.toBlob(
+            (b) => resolve(b),
+            mimeType,
+            qualityValue
+          );
+        });
+
+        // If compressed size is smaller or we've tried enough times, use it
+        if (blob.size < image.size || attempts === maxAttempts - 1) {
+          break;
+        }
+
+        // Reduce quality and try again
+        qualityValue -= 0.15;
+        attempts++;
+      }
+
+      // If still larger than original, use a more aggressive format
+      if (blob.size >= image.size) {
+        // Try WebP with lower quality as fallback
+        const fallbackQuality = 0.6;
+        blob = await new Promise((resolve) => {
+          canvas.toBlob(
+            (b) => resolve(b),
+            'image/webp',
+            fallbackQuality
+          );
+        });
+
+        // If still larger, show error
+        if (blob.size >= image.size) {
+          setError('Unable to reduce file size. Image may already be highly optimized.');
+          setProcessing(false);
+          return;
+        }
+      }
 
       const compressedUrl = URL.createObjectURL(blob);
       setCompressedPreview(compressedUrl);
@@ -91,6 +128,7 @@ export default function ImageCard({ image, onRemove, onProcessed }) {
 
     } catch (error) {
       console.error('Error processing image:', error);
+      setError('Failed to process image. Please try again.');
     }
     
     setProcessing(false);
@@ -134,7 +172,7 @@ export default function ImageCard({ image, onRemove, onProcessed }) {
             </div>
           ) : (
             <div className="aspect-square rounded-lg bg-slate-200 dark:bg-slate-800 flex items-center justify-center">
-              <p className="text-sm text-slate-400">Preview after compression</p>
+              <p className="text-sm text-slate-400 text-center px-2">Preview after compression</p>
             </div>
           )}
         </div>
@@ -170,6 +208,13 @@ export default function ImageCard({ image, onRemove, onProcessed }) {
           </div>
         </div>
 
+        {error && (
+          <div className="flex items-center gap-2 text-sm text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/30 p-3 rounded-lg">
+            <AlertCircle className="w-4 h-4 flex-shrink-0" />
+            <span className="text-xs">{error}</span>
+          </div>
+        )}
+
         <Collapsible open={settingsOpen} onOpenChange={setSettingsOpen}>
           <CollapsibleTrigger asChild>
             <Button variant="outline" className="w-full justify-between" size="sm">
@@ -190,7 +235,6 @@ export default function ImageCard({ image, onRemove, onProcessed }) {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="webp">WebP (Best compression)</SelectItem>
-                  <SelectItem value="avif">AVIF (Smallest size)</SelectItem>
                   <SelectItem value="jpg">JPG (Universal)</SelectItem>
                   <SelectItem value="png">PNG (Lossless)</SelectItem>
                 </SelectContent>
@@ -209,6 +253,9 @@ export default function ImageCard({ image, onRemove, onProcessed }) {
                 step={1}
                 className="w-full"
               />
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                Lower quality = smaller file size
+              </p>
             </div>
 
             <div className="grid grid-cols-2 gap-2">
@@ -277,7 +324,7 @@ export default function ImageCard({ image, onRemove, onProcessed }) {
           )}
         </div>
 
-        {processed && (
+        {processed && !error && (
           <div className="flex items-center gap-2 text-sm text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/30 p-3 rounded-lg">
             <CheckCircle2 className="w-4 h-4" />
             <span>Saved {formatFileSize(originalSize - compressedSize)}</span>
