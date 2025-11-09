@@ -17,7 +17,7 @@ import {
 } from "@/components/ui/tooltip";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
-import { ffmpegWorker } from "../../utils/ffmpegWorkerManager";
+import { ffmpegWorker } from "@/utils/ffmpegWorkerManager";
 
 // Lazy load the editor and download modal
 const ImageEditor = lazy(() => import("./ImageEditor"));
