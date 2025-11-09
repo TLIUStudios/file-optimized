@@ -1,10 +1,11 @@
-
 import { useState, useRef, useEffect } from "react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
-import { X, MoveHorizontal, ZoomIn, ZoomOut, Maximize2 } from "lucide-react";
+import { X, MoveHorizontal, ZoomIn, ZoomOut, Maximize2, Copy, RefreshCw, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
+import { base44 } from "@/api/base44Client";
+import { toast } from "sonner";
 
 export default function ImageComparisonModal({ 
   isOpen, 
@@ -22,7 +23,10 @@ export default function ImageComparisonModal({
   const [isPanning, setIsPanning] = useState(false);
   const [panStart, setPanStart] = useState({ x: 0, y: 0 });
   const [imageDimensions, setImageDimensions] = useState({ width: 0, height: 0 });
+  const [aiMetadata, setAiMetadata] = useState(null);
+  const [generatingMetadata, setGeneratingMetadata] = useState(false);
   const containerRef = useRef(null);
+  const imageRef = useRef(null);
 
   // Extract file extensions
   const originalExt = fileName.split('.').pop().toUpperCase();
@@ -38,6 +42,44 @@ export default function ImageComparisonModal({
       img.src = originalImage;
     }
   }, [originalImage]);
+
+  // Generate AI metadata when modal opens
+  useEffect(() => {
+    if (isOpen && originalImage && !aiMetadata && !generatingMetadata) {
+      generateAIMetadata();
+    }
+  }, [isOpen, originalImage]);
+
+  const generateAIMetadata = async () => {
+    setGeneratingMetadata(true);
+    try {
+      const response = await base44.integrations.Core.InvokeLLM({
+        prompt: `Analyze this image and generate SEO-optimized, playful metadata. Be creative and engaging while staying accurate to what you see in the image.`,
+        file_urls: [originalImage],
+        response_json_schema: {
+          type: "object",
+          properties: {
+            title: { type: "string", description: "A catchy, SEO-friendly title (max 60 chars)" },
+            description: { type: "string", description: "An engaging description (max 160 chars)" },
+            category: { type: "string", description: "Main category (e.g., Nature, Technology, People, Food, etc.)" },
+            mood: { type: "string", description: "The mood/feeling of the image (e.g., Energetic, Calm, Professional, etc.)" },
+            alt_text: { type: "string", description: "Descriptive alt text for accessibility (max 125 chars)" },
+            tags: { type: "array", items: { type: "string" }, description: "5-8 relevant tags/keywords" }
+          }
+        }
+      });
+      setAiMetadata(response);
+    } catch (error) {
+      console.error('Failed to generate metadata:', error);
+      toast.error('Failed to generate AI metadata');
+    }
+    setGeneratingMetadata(false);
+  };
+
+  const copyToClipboard = (text, label) => {
+    navigator.clipboard.writeText(text);
+    toast.success(`${label} copied to clipboard!`);
+  };
 
   // Calculate aspect ratio
   const getAspectRatio = (width, height) => {
@@ -244,8 +286,9 @@ export default function ImageComparisonModal({
               }}
             >
               {/* Image Container */}
-              <div className="flex-1 relative w-full flex items-center justify-center pb-2">
+              <div className="flex-1 relative w-full flex items-center justify-center">
                 <div
+                  ref={imageRef}
                   className="relative"
                   style={{
                     transform: `scale(${zoom}) translate(${pan.x / zoom}px, ${pan.y / zoom}px)`,
@@ -263,7 +306,7 @@ export default function ImageComparisonModal({
                     <img
                       src={compressedImage}
                       alt="Compressed"
-                      className="max-w-full max-h-[70vh] lg:max-h-[75vh] w-auto h-auto object-contain"
+                      className="max-w-full max-h-[65vh] lg:max-h-[70vh] w-auto h-auto object-contain"
                       draggable="false"
                     />
                   </div>
@@ -277,42 +320,42 @@ export default function ImageComparisonModal({
                       <img
                         src={originalImage}
                         alt="Original"
-                        className="max-w-full max-h-[70vh] lg:max-h-[75vh] w-auto h-auto object-contain"
+                        className="max-w-full max-h-[65vh] lg:max-h-[70vh] w-auto h-auto object-contain"
                         draggable="false"
                       />
                     </div>
                   </div>
+
+                  {/* Slider Line - only show when not zoomed/panning - CONSTRAINED TO IMAGE */}
+                  {zoom === 1 && !isPanning && (
+                    <>
+                      <div
+                        className="absolute top-0 bottom-0 w-0.5 bg-slate-800 dark:bg-white shadow-2xl z-10"
+                        style={{ left: `${sliderPosition}%`, transform: 'translateX(-50%)' }}
+                      >
+                        {/* Slider Handle */}
+                        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-12 h-12 bg-white dark:bg-slate-800 rounded-full shadow-2xl flex items-center justify-center cursor-col-resize border-2 border-slate-400 dark:border-slate-300">
+                          <MoveHorizontal className="w-5 h-5 text-slate-900 dark:text-white" />
+                        </div>
+                      </div>
+                    </>
+                  )}
                 </div>
-
-                {/* Slider Line - only show when not zoomed/panning */}
-                {zoom === 1 && !isPanning && (
-                  <>
-                    <div
-                      className="absolute top-0 bottom-0 w-0.5 bg-slate-800 dark:bg-white shadow-2xl z-10"
-                      style={{ left: `${sliderPosition}%`, transform: 'translateX(-50%)' }}
-                    >
-                      {/* Slider Handle */}
-                      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-12 h-12 bg-white dark:bg-slate-800 rounded-full shadow-2xl flex items-center justify-center cursor-col-resize border-2 border-slate-400 dark:border-slate-300">
-                        <MoveHorizontal className="w-5 h-5 text-slate-900 dark:text-white" />
-                      </div>
-                    </div>
-
-                    {/* Instruction */}
-                    {sliderPosition === 50 && !isDragging && (
-                      <div className="absolute bottom-24 left-1/2 -translate-x-1/2 bg-slate-800/95 dark:bg-slate-900/95 backdrop-blur-sm text-white px-5 py-2.5 rounded-full text-sm border border-slate-600 dark:border-slate-700 pointer-events-none animate-pulse shadow-lg">
-                        ← Drag to compare →
-                      </div>
-                    )}
-                  </>
-                )}
 
                 {/* Pan instruction when zoomed */}
                 {zoom > 1 && !isPanning && (
-                  <div className="absolute bottom-24 left-1/2 -translate-x-1/2 bg-slate-800/95 dark:bg-slate-900/95 backdrop-blur-sm text-white px-5 py-2.5 rounded-full text-sm border border-slate-600 dark:border-slate-700 pointer-events-none shadow-lg">
+                  <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-slate-800/95 dark:bg-slate-900/95 backdrop-blur-sm text-white px-5 py-2.5 rounded-full text-sm border border-slate-600 dark:border-slate-700 pointer-events-none shadow-lg">
                     Click and drag to pan • Scroll to zoom
                   </div>
                 )}
               </div>
+
+              {/* Instruction - Below Image */}
+              {zoom === 1 && sliderPosition === 50 && !isDragging && (
+                <div className="py-3 bg-slate-800/95 dark:bg-slate-900/95 backdrop-blur-sm text-white px-5 py-2.5 rounded-full text-sm border border-slate-600 dark:border-slate-700 shadow-lg animate-pulse">
+                  ← Drag to compare →
+                </div>
+              )}
 
               {/* Labels Below Image - Far Left and Far Right */}
               <div className="h-16 w-full flex items-center justify-between px-6 bg-slate-100/50 dark:bg-slate-950/50 border-t border-slate-300 dark:border-slate-800">
@@ -404,6 +447,143 @@ export default function ImageComparisonModal({
                     </>
                   )}
                 </div>
+              </div>
+
+              {/* Divider */}
+              <div className="h-px bg-gradient-to-r from-transparent via-slate-400 dark:via-slate-700 to-transparent" />
+
+              {/* AI-Generated Metadata */}
+              <div className="space-y-2.5">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Sparkles className="w-4 h-4 text-purple-600 dark:text-purple-400" />
+                    <h3 className="text-slate-900 dark:text-white font-semibold text-xs uppercase tracking-wider">AI Metadata</h3>
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={generateAIMetadata}
+                    disabled={generatingMetadata}
+                    className="h-7 px-2 text-xs"
+                  >
+                    <RefreshCw className={`w-3 h-3 mr-1 ${generatingMetadata ? 'animate-spin' : ''}`} />
+                    Regenerate
+                  </Button>
+                </div>
+
+                {generatingMetadata && (
+                  <div className="bg-white/50 dark:bg-slate-950/50 border border-slate-300 dark:border-slate-800 rounded-lg p-4 text-center">
+                    <RefreshCw className="w-5 h-5 animate-spin mx-auto mb-2 text-purple-600 dark:text-purple-400" />
+                    <p className="text-xs text-slate-600 dark:text-slate-400">Analyzing image...</p>
+                  </div>
+                )}
+
+                {aiMetadata && !generatingMetadata && (
+                  <div className="space-y-2">
+                    {/* Title */}
+                    <div className="bg-white/50 dark:bg-slate-950/50 border border-slate-300 dark:border-slate-800 rounded-lg p-2.5">
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="text-[10px] font-medium text-slate-600 dark:text-slate-400 uppercase tracking-wider">Title</span>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => copyToClipboard(aiMetadata.title, 'Title')}
+                          className="h-6 w-6 p-0"
+                        >
+                          <Copy className="w-3 h-3" />
+                        </Button>
+                      </div>
+                      <p className="text-xs text-slate-900 dark:text-white font-medium">{aiMetadata.title}</p>
+                    </div>
+
+                    {/* Description */}
+                    <div className="bg-white/50 dark:bg-slate-950/50 border border-slate-300 dark:border-slate-800 rounded-lg p-2.5">
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="text-[10px] font-medium text-slate-600 dark:text-slate-400 uppercase tracking-wider">Description</span>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => copyToClipboard(aiMetadata.description, 'Description')}
+                          className="h-6 w-6 p-0"
+                        >
+                          <Copy className="w-3 h-3" />
+                        </Button>
+                      </div>
+                      <p className="text-xs text-slate-900 dark:text-white leading-relaxed">{aiMetadata.description}</p>
+                    </div>
+
+                    {/* Category & Mood */}
+                    <div className="grid grid-cols-2 gap-2">
+                      <div className="bg-white/50 dark:bg-slate-950/50 border border-slate-300 dark:border-slate-800 rounded-lg p-2.5">
+                        <div className="flex items-center justify-between mb-1">
+                          <span className="text-[10px] font-medium text-slate-600 dark:text-slate-400 uppercase tracking-wider">Category</span>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => copyToClipboard(aiMetadata.category, 'Category')}
+                            className="h-6 w-6 p-0"
+                          >
+                            <Copy className="w-3 h-3" />
+                          </Button>
+                        </div>
+                        <p className="text-xs text-slate-900 dark:text-white font-medium">{aiMetadata.category}</p>
+                      </div>
+
+                      <div className="bg-white/50 dark:bg-slate-950/50 border border-slate-300 dark:border-slate-800 rounded-lg p-2.5">
+                        <div className="flex items-center justify-between mb-1">
+                          <span className="text-[10px] font-medium text-slate-600 dark:text-slate-400 uppercase tracking-wider">Mood</span>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => copyToClipboard(aiMetadata.mood, 'Mood')}
+                            className="h-6 w-6 p-0"
+                          >
+                            <Copy className="w-3 h-3" />
+                          </Button>
+                        </div>
+                        <p className="text-xs text-slate-900 dark:text-white font-medium">{aiMetadata.mood}</p>
+                      </div>
+                    </div>
+
+                    {/* Alt Text */}
+                    <div className="bg-white/50 dark:bg-slate-950/50 border border-slate-300 dark:border-slate-800 rounded-lg p-2.5">
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="text-[10px] font-medium text-slate-600 dark:text-slate-400 uppercase tracking-wider">Alt Text</span>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => copyToClipboard(aiMetadata.alt_text, 'Alt Text')}
+                          className="h-6 w-6 p-0"
+                        >
+                          <Copy className="w-3 h-3" />
+                        </Button>
+                      </div>
+                      <p className="text-xs text-slate-900 dark:text-white leading-relaxed">{aiMetadata.alt_text}</p>
+                    </div>
+
+                    {/* Tags */}
+                    <div className="bg-white/50 dark:bg-slate-950/50 border border-slate-300 dark:border-slate-800 rounded-lg p-2.5">
+                      <div className="flex items-center justify-between mb-1.5">
+                        <span className="text-[10px] font-medium text-slate-600 dark:text-slate-400 uppercase tracking-wider">Tags</span>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => copyToClipboard(aiMetadata.tags.join(', '), 'Tags')}
+                          className="h-6 w-6 p-0"
+                        >
+                          <Copy className="w-3 h-3" />
+                        </Button>
+                      </div>
+                      <div className="flex flex-wrap gap-1.5">
+                        {aiMetadata.tags.map((tag, idx) => (
+                          <Badge key={idx} variant="secondary" className="text-[10px] px-2 py-0.5 bg-purple-100 text-purple-700 dark:bg-purple-950 dark:text-purple-300">
+                            {tag}
+                          </Badge>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* Divider */}
