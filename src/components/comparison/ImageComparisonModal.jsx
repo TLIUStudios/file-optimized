@@ -26,38 +26,18 @@ export default function ImageComparisonModal({
   const [aiMetadata, setAiMetadata] = useState(null);
   const [generatingMetadata, setGeneratingMetadata] = useState(false);
   const containerRef = useRef(null);
-  const imageRef = useRef(null);
-  const [imageSize, setImageSize] = useState({ width: 0, height: 0 });
+  const imageContainerRef = useRef(null);
 
   // Extract file extensions
   const originalExt = fileName.split('.').pop().toUpperCase();
   const compressedExt = compressedImage.split('data:image/')[1]?.split(';')[0].toUpperCase() || 'WEBP';
 
-  // Load image dimensions and calculate display size
+  // Load image dimensions
   useEffect(() => {
     if (originalImage) {
       const img = new Image();
       img.onload = () => {
         setImageDimensions({ width: img.width, height: img.height });
-        
-        // Calculate the actual display size
-        const maxWidth = window.innerWidth * 0.98 - 32; // Account for padding
-        const maxHeight = window.innerHeight * 0.70;
-        
-        let displayWidth = img.width;
-        let displayHeight = img.height;
-        
-        // Scale down if needed
-        if (displayWidth > maxWidth || displayHeight > maxHeight) {
-          const widthRatio = maxWidth / displayWidth;
-          const heightRatio = maxHeight / displayHeight;
-          const ratio = Math.min(widthRatio, heightRatio);
-          
-          displayWidth = displayWidth * ratio;
-          displayHeight = displayHeight * ratio;
-        }
-        
-        setImageSize({ width: displayWidth, height: displayHeight });
       };
       img.src = originalImage;
     }
@@ -74,35 +54,38 @@ export default function ImageComparisonModal({
     setGeneratingMetadata(true);
     try {
       const response = await base44.integrations.Core.InvokeLLM({
-        prompt: `Analyze this image and generate SEO-optimized, playful, and engaging metadata. Be creative but accurate. 
+        prompt: `Analyze this image and generate:
+1. A catchy, SEO-friendly title (max 60 characters)
+2. An engaging, descriptive text (max 160 characters)
 
-Generate:
-- A catchy title (max 60 characters)
-- An engaging description (max 160 characters) 
-- A main category
-- The mood/feeling of the image
-- Descriptive alt text for accessibility (max 125 characters)
-- 5-8 relevant keywords/tags`,
+Be creative, playful, and accurate to what you see in the image. Focus on making it suitable for social media and SEO.`,
         file_urls: [originalImage],
         response_json_schema: {
           type: "object",
           properties: {
-            title: { type: "string" },
-            description: { type: "string" },
-            category: { type: "string" },
-            mood: { type: "string" },
-            alt_text: { type: "string" },
-            tags: { type: "array", items: { type: "string" } }
+            title: { 
+              type: "string",
+              description: "A catchy, SEO-friendly title, max 60 characters"
+            },
+            description: { 
+              type: "string",
+              description: "An engaging description, max 160 characters"
+            }
           },
-          required: ["title", "description", "category", "mood", "alt_text", "tags"]
+          required: ["title", "description"]
         }
       });
       
-      setAiMetadata(response);
-      toast.success('AI metadata generated!');
+      if (response && response.title && response.description) {
+        setAiMetadata(response);
+        toast.success('AI metadata generated!');
+      } else {
+        throw new Error('Invalid response from AI');
+      }
     } catch (error) {
       console.error('Failed to generate metadata:', error);
-      toast.error('Failed to generate AI metadata');
+      toast.error('Failed to generate AI metadata. Please try again.');
+      setAiMetadata(null);
     }
     setGeneratingMetadata(false);
   };
@@ -137,11 +120,14 @@ Generate:
 
   useEffect(() => {
     const handleMouseMove = (e) => {
-      if (isDragging && !isPanning && containerRef.current) {
-        const rect = containerRef.current.getBoundingClientRect();
-        const x = e.clientX - rect.left;
-        const percentage = (x / rect.width) * 100;
-        setSliderPosition(Math.max(0, Math.min(100, percentage)));
+      if (isDragging && !isPanning) {
+        // Only update slider when dragging over the image container
+        if (imageContainerRef.current) {
+          const rect = imageContainerRef.current.getBoundingClientRect();
+          const x = e.clientX - rect.left;
+          const percentage = (x / rect.width) * 100;
+          setSliderPosition(Math.max(0, Math.min(100, percentage)));
+        }
       }
       
       if (isPanning) {
@@ -154,8 +140,8 @@ Generate:
 
     const handleTouchMove = (e) => {
       if (e.touches.length === 1) {
-        if (isDragging && !isPanning && containerRef.current) {
-          const rect = containerRef.current.getBoundingClientRect();
+        if (isDragging && !isPanning && imageContainerRef.current) {
+          const rect = imageContainerRef.current.getBoundingClientRect();
           const x = e.touches[0].clientX - rect.left;
           const percentage = (x / rect.width) * 100;
           setSliderPosition(Math.max(0, Math.min(100, percentage)));
@@ -190,17 +176,17 @@ Generate:
     };
   }, [isDragging, isPanning, panStart, pan]);
 
-  // Wheel zoom
+  // Wheel zoom - only when hovering over image
   useEffect(() => {
     const handleWheel = (e) => {
-      if (containerRef.current?.contains(e.target)) {
+      if (imageContainerRef.current?.contains(e.target)) {
         e.preventDefault();
         const delta = e.deltaY > 0 ? -0.1 : 0.1;
         setZoom(prev => Math.max(0.5, Math.min(3, prev + delta)));
       }
     };
 
-    const container = containerRef.current;
+    const container = imageContainerRef.current;
     if (container) {
       container.addEventListener('wheel', handleWheel, { passive: false });
     }
@@ -247,7 +233,7 @@ Generate:
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-[98vw] w-[98vw] h-[98vh] p-0 bg-gradient-to-br from-slate-100 via-slate-50 to-slate-100 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950 border-slate-300 dark:border-slate-800 [&>button]:hidden overflow-hidden">
-        {/* Close Button - Top Right with Red Hover */}
+        {/* Close Button */}
         <Button
           variant="ghost"
           size="icon"
@@ -297,85 +283,76 @@ Generate:
             <div 
               ref={containerRef}
               className="relative w-full h-full bg-slate-200 dark:bg-slate-950 select-none flex flex-col items-center justify-center overflow-hidden"
-              style={{ 
-                cursor: zoom > 1 ? (isPanning ? 'grabbing' : 'grab') : 'col-resize'
-              }}
-              onMouseDown={(e) => {
-                if (zoom > 1) {
-                  handlePanStart(e);
-                } else {
-                  setIsDragging(true);
-                }
-              }}
-              onTouchStart={(e) => {
-                if (zoom > 1 && e.touches.length === 1) {
-                  setIsPanning(true);
-                  setPanStart({ x: e.touches[0].clientX, y: e.touches[0].clientY });
-                } else if (e.touches.length === 1) {
-                  setIsDragging(true);
-                }
-              }}
             >
-              {/* Image Container */}
-              <div className="flex-1 relative w-full flex items-center justify-center pt-16">
-                {imageSize.width > 0 && (
-                  <div
-                    ref={imageRef}
-                    className="relative"
-                    style={{
-                      width: `${imageSize.width}px`,
-                      height: `${imageSize.height}px`,
-                      transform: `scale(${zoom}) translate(${pan.x / zoom}px, ${pan.y / zoom}px)`,
-                      transformOrigin: 'center',
-                      transition: isDragging || isPanning ? 'none' : 'transform 0.2s ease-out'
-                    }}
-                  >
-                    {/* Compressed Image (Background - Full) */}
+              {/* Image Container - Fixed position regardless of slider */}
+              <div className="flex-1 relative w-full flex items-center justify-center pt-16 pb-4">
+                <div
+                  ref={imageContainerRef}
+                  className="relative"
+                  style={{
+                    transform: `scale(${zoom}) translate(${pan.x / zoom}px, ${pan.y / zoom}px)`,
+                    transformOrigin: 'center',
+                    transition: isDragging || isPanning ? 'none' : 'transform 0.2s ease-out',
+                    cursor: zoom > 1 ? (isPanning ? 'grabbing' : 'grab') : 'col-resize'
+                  }}
+                  onMouseDown={(e) => {
+                    if (zoom > 1) {
+                      handlePanStart(e);
+                    } else {
+                      setIsDragging(true);
+                    }
+                  }}
+                  onTouchStart={(e) => {
+                    if (zoom > 1 && e.touches.length === 1) {
+                      setIsPanning(true);
+                      setPanStart({ x: e.touches[0].clientX, y: e.touches[0].clientY });
+                    } else if (e.touches.length === 1) {
+                      setIsDragging(true);
+                    }
+                  }}
+                >
+                  {/* Both images in the same container */}
+                  <div className="relative">
+                    {/* Compressed Image (Background) */}
                     <img
                       src={compressedImage}
                       alt="Compressed"
-                      className="absolute inset-0 w-full h-full object-cover"
+                      className="max-w-[85vw] lg:max-w-[60vw] max-h-[60vh] w-auto h-auto object-contain"
                       draggable="false"
-                      style={{ width: '100%', height: '100%' }}
                     />
 
-                    {/* Original Image (Foreground - Clipped) */}
+                    {/* Original Image (Foreground with clip) */}
                     <div
                       className="absolute inset-0 overflow-hidden"
-                      style={{ 
-                        clipPath: `inset(0 ${100 - sliderPosition}% 0 0)`,
-                        width: '100%',
-                        height: '100%'
-                      }}
+                      style={{ clipPath: `inset(0 ${100 - sliderPosition}% 0 0)` }}
                     >
                       <img
                         src={originalImage}
                         alt="Original"
-                        className="absolute inset-0 w-full h-full object-cover"
+                        className="max-w-[85vw] lg:max-w-[60vw] max-h-[60vh] w-auto h-auto object-contain"
                         draggable="false"
-                        style={{ width: '100%', height: '100%' }}
                       />
                     </div>
 
                     {/* Slider Line - White on both modes */}
                     {zoom === 1 && !isPanning && (
                       <div
-                        className="absolute top-0 bottom-0 w-0.5 bg-white shadow-2xl z-10"
+                        className="absolute top-0 bottom-0 w-0.5 bg-white shadow-2xl z-10 pointer-events-none"
                         style={{ left: `${sliderPosition}%`, transform: 'translateX(-50%)' }}
                       >
                         {/* Slider Handle */}
-                        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-12 h-12 bg-white dark:bg-slate-800 rounded-full shadow-2xl flex items-center justify-center cursor-col-resize border-2 border-slate-400 dark:border-slate-300">
+                        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-12 h-12 bg-white dark:bg-slate-800 rounded-full shadow-2xl flex items-center justify-center cursor-col-resize border-2 border-slate-400 dark:border-slate-300 pointer-events-auto">
                           <MoveHorizontal className="w-5 h-5 text-slate-900 dark:text-white" />
                         </div>
                       </div>
                     )}
                   </div>
-                )}
+                </div>
 
                 {/* Pan instruction when zoomed */}
                 {zoom > 1 && !isPanning && (
                   <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-slate-800/95 dark:bg-slate-900/95 backdrop-blur-sm text-white px-5 py-2.5 rounded-full text-sm border border-slate-600 dark:border-slate-700 pointer-events-none shadow-lg">
-                    Click and drag to pan • Scroll to zoom
+                    Scroll to zoom • Drag to pan
                   </div>
                 )}
               </div>
@@ -489,16 +466,18 @@ Generate:
                     <Sparkles className="w-4 h-4 text-purple-600 dark:text-purple-400" />
                     <h3 className="text-slate-900 dark:text-white font-semibold text-xs uppercase tracking-wider">AI Metadata</h3>
                   </div>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={generateAIMetadata}
-                    disabled={generatingMetadata}
-                    className="h-7 px-2 text-xs hover:bg-slate-200 dark:hover:bg-slate-800"
-                  >
-                    <RefreshCw className={`w-3 h-3 mr-1 ${generatingMetadata ? 'animate-spin' : ''}`} />
-                    Regenerate
-                  </Button>
+                  {aiMetadata && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={generateAIMetadata}
+                      disabled={generatingMetadata}
+                      className="h-7 px-2 text-xs hover:bg-slate-200 dark:hover:bg-slate-800"
+                    >
+                      <RefreshCw className={`w-3 h-3 mr-1 ${generatingMetadata ? 'animate-spin' : ''}`} />
+                      Regenerate
+                    </Button>
+                  )}
                 </div>
 
                 {generatingMetadata && (
@@ -511,106 +490,35 @@ Generate:
                 {aiMetadata && !generatingMetadata && (
                   <div className="space-y-2">
                     {/* Title */}
-                    <div className="bg-white/50 dark:bg-slate-950/50 border border-slate-300 dark:border-slate-800 rounded-lg p-2.5">
-                      <div className="flex items-center justify-between mb-1.5">
+                    <div className="bg-white/50 dark:bg-slate-950/50 border border-slate-300 dark:border-slate-800 rounded-lg p-3">
+                      <div className="flex items-start justify-between gap-2 mb-2">
                         <span className="text-[10px] font-medium text-slate-600 dark:text-slate-400 uppercase tracking-wider">Title</span>
                         <Button
                           variant="ghost"
                           size="sm"
                           onClick={() => copyToClipboard(aiMetadata.title, 'Title')}
-                          className="h-6 w-6 p-0 hover:bg-slate-200 dark:hover:bg-slate-800"
+                          className="h-6 w-6 p-0 hover:bg-slate-200 dark:hover:bg-slate-800 flex-shrink-0"
                         >
                           <Copy className="w-3 h-3" />
                         </Button>
                       </div>
-                      <p className="text-xs text-slate-900 dark:text-white font-medium leading-relaxed">{aiMetadata.title}</p>
+                      <p className="text-sm text-slate-900 dark:text-white font-medium leading-relaxed">{aiMetadata.title}</p>
                     </div>
 
                     {/* Description */}
-                    <div className="bg-white/50 dark:bg-slate-950/50 border border-slate-300 dark:border-slate-800 rounded-lg p-2.5">
-                      <div className="flex items-center justify-between mb-1.5">
+                    <div className="bg-white/50 dark:bg-slate-950/50 border border-slate-300 dark:border-slate-800 rounded-lg p-3">
+                      <div className="flex items-start justify-between gap-2 mb-2">
                         <span className="text-[10px] font-medium text-slate-600 dark:text-slate-400 uppercase tracking-wider">Description</span>
                         <Button
                           variant="ghost"
                           size="sm"
                           onClick={() => copyToClipboard(aiMetadata.description, 'Description')}
-                          className="h-6 w-6 p-0 hover:bg-slate-200 dark:hover:bg-slate-800"
+                          className="h-6 w-6 p-0 hover:bg-slate-200 dark:hover:bg-slate-800 flex-shrink-0"
                         >
                           <Copy className="w-3 h-3" />
                         </Button>
                       </div>
                       <p className="text-xs text-slate-900 dark:text-white leading-relaxed">{aiMetadata.description}</p>
-                    </div>
-
-                    {/* Category & Mood */}
-                    <div className="grid grid-cols-2 gap-2">
-                      <div className="bg-white/50 dark:bg-slate-950/50 border border-slate-300 dark:border-slate-800 rounded-lg p-2.5">
-                        <div className="flex items-center justify-between mb-1.5">
-                          <span className="text-[10px] font-medium text-slate-600 dark:text-slate-400 uppercase tracking-wider">Category</span>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => copyToClipboard(aiMetadata.category, 'Category')}
-                            className="h-6 w-6 p-0 hover:bg-slate-200 dark:hover:bg-slate-800"
-                          >
-                            <Copy className="w-3 h-3" />
-                          </Button>
-                        </div>
-                        <p className="text-xs text-slate-900 dark:text-white font-medium">{aiMetadata.category}</p>
-                      </div>
-
-                      <div className="bg-white/50 dark:bg-slate-950/50 border border-slate-300 dark:border-slate-800 rounded-lg p-2.5">
-                        <div className="flex items-center justify-between mb-1.5">
-                          <span className="text-[10px] font-medium text-slate-600 dark:text-slate-400 uppercase tracking-wider">Mood</span>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => copyToClipboard(aiMetadata.mood, 'Mood')}
-                            className="h-6 w-6 p-0 hover:bg-slate-200 dark:hover:bg-slate-800"
-                          >
-                            <Copy className="w-3 h-3" />
-                          </Button>
-                        </div>
-                        <p className="text-xs text-slate-900 dark:text-white font-medium">{aiMetadata.mood}</p>
-                      </div>
-                    </div>
-
-                    {/* Alt Text */}
-                    <div className="bg-white/50 dark:bg-slate-950/50 border border-slate-300 dark:border-slate-800 rounded-lg p-2.5">
-                      <div className="flex items-center justify-between mb-1.5">
-                        <span className="text-[10px] font-medium text-slate-600 dark:text-slate-400 uppercase tracking-wider">Alt Text</span>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => copyToClipboard(aiMetadata.alt_text, 'Alt Text')}
-                          className="h-6 w-6 p-0 hover:bg-slate-200 dark:hover:bg-slate-800"
-                        >
-                          <Copy className="w-3 h-3" />
-                        </Button>
-                      </div>
-                      <p className="text-xs text-slate-900 dark:text-white leading-relaxed">{aiMetadata.alt_text}</p>
-                    </div>
-
-                    {/* Tags */}
-                    <div className="bg-white/50 dark:bg-slate-950/50 border border-slate-300 dark:border-slate-800 rounded-lg p-2.5">
-                      <div className="flex items-center justify-between mb-2">
-                        <span className="text-[10px] font-medium text-slate-600 dark:text-slate-400 uppercase tracking-wider">Tags</span>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => copyToClipboard(aiMetadata.tags.join(', '), 'Tags')}
-                          className="h-6 w-6 p-0 hover:bg-slate-200 dark:hover:bg-slate-800"
-                        >
-                          <Copy className="w-3 h-3" />
-                        </Button>
-                      </div>
-                      <div className="flex flex-wrap gap-1.5">
-                        {aiMetadata.tags.map((tag, idx) => (
-                          <Badge key={idx} variant="secondary" className="text-[10px] px-2 py-0.5 bg-purple-100 text-purple-700 dark:bg-purple-950 dark:text-purple-300">
-                            {tag}
-                          </Badge>
-                        ))}
-                      </div>
                     </div>
                   </div>
                 )}
@@ -618,12 +526,13 @@ Generate:
                 {!aiMetadata && !generatingMetadata && (
                   <div className="bg-white/50 dark:bg-slate-950/50 border border-slate-300 dark:border-slate-800 rounded-lg p-4 text-center">
                     <Sparkles className="w-5 h-5 mx-auto mb-2 text-purple-600 dark:text-purple-400" />
-                    <p className="text-xs text-slate-600 dark:text-slate-400 mb-2">Generate SEO-optimized metadata for this image</p>
+                    <p className="text-xs text-slate-600 dark:text-slate-400 mb-3">Generate SEO-optimized title and description for this image</p>
                     <Button
                       size="sm"
                       onClick={generateAIMetadata}
                       className="bg-purple-600 hover:bg-purple-700 text-white text-xs h-8"
                     >
+                      <Sparkles className="w-3 h-3 mr-1" />
                       Generate Metadata
                     </Button>
                   </div>
@@ -648,7 +557,7 @@ Generate:
                 </div>
               </div>
 
-              {/* Bottom padding for better scroll experience */}
+              {/* Bottom padding */}
               <div className="h-4" />
             </div>
           </div>
