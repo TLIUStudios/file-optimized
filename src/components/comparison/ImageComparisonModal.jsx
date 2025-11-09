@@ -1,3 +1,4 @@
+
 import { useState, useRef, useEffect } from "react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { X, MoveHorizontal, ZoomIn, ZoomOut, Maximize2 } from "lucide-react";
@@ -172,7 +173,7 @@ export default function ImageComparisonModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-[98vw] w-[98vw] h-[98vh] p-0 overflow-hidden bg-gradient-to-br from-slate-100 via-slate-50 to-slate-100 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950 border-slate-300 dark:border-slate-800 [&>button]:hidden">
+      <DialogContent className="max-w-[98vw] w-[98vw] h-[98vh] p-0 bg-gradient-to-br from-slate-100 via-slate-50 to-slate-100 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950 border-slate-300 dark:border-slate-800 [&>button]:hidden overflow-hidden">
         {/* Close Button - Top Right with Red Hover - Only this one */}
         <Button
           variant="ghost"
@@ -183,9 +184,9 @@ export default function ImageComparisonModal({
           <X className="w-5 h-5" />
         </Button>
 
-        <div className="flex flex-col lg:flex-row h-full">
+        <div className="flex flex-col lg:flex-row h-full overflow-hidden">
           {/* Left Side - Image Comparison */}
-          <div className="flex-1 relative overflow-hidden flex flex-col">
+          <div className="flex-1 relative overflow-hidden flex flex-col min-h-0">
             {/* Zoom Controls - Higher z-index to prevent overlap */}
             <div className="absolute top-4 left-4 z-[50] flex gap-2">
               <Button
@@ -336,8 +337,8 @@ export default function ImageComparisonModal({
             </div>
           </div>
 
-          {/* Right Side - Information Panel */}
-          <div className="w-full lg:w-[360px] xl:w-[400px] bg-gradient-to-b from-slate-100 to-slate-200 dark:from-slate-900 dark:to-slate-950 border-t lg:border-t-0 lg:border-l border-slate-300 dark:border-slate-800 flex flex-col overflow-y-auto max-h-[45vh] lg:max-h-full">
+          {/* Right Side - Information Panel - Now Fully Scrollable */}
+          <div className="w-full lg:w-[360px] xl:w-[400px] bg-gradient-to-b from-slate-100 to-slate-200 dark:from-slate-900 dark:to-slate-950 border-t lg:border-t-0 lg:border-l border-slate-300 dark:border-slate-800 flex flex-col overflow-y-auto min-h-0">
             <div className="p-4 lg:p-5 space-y-4">
               {/* Header */}
               <div>
@@ -406,10 +407,10 @@ export default function ImageComparisonModal({
               </div>
 
               {/* Divider */}
-              <div className="h-px bg-gradient-to-r from-transparent via-slate-400 dark:via-slate-700 to-transparent hidden lg:block" />
+              <div className="h-px bg-gradient-to-r from-transparent via-slate-400 dark:via-slate-700 to-transparent" />
 
               {/* Privacy Notice */}
-              <div className="bg-white/50 dark:bg-slate-950/50 border border-slate-300 dark:border-slate-800 rounded-xl p-3.5 hidden lg:block">
+              <div className="bg-white/50 dark:bg-slate-950/50 border border-slate-300 dark:border-slate-800 rounded-xl p-3.5">
                 <div className="flex items-start gap-3">
                   <div className="w-8 h-8 rounded-lg bg-emerald-600/20 flex items-center justify-center flex-shrink-0">
                     <span className="text-base">🔒</span>
@@ -422,6 +423,9 @@ export default function ImageComparisonModal({
                   </div>
                 </div>
               </div>
+
+              {/* Bottom padding for better scroll experience */}
+              <div className="h-4" />
             </div>
           </div>
         </div>
