@@ -1,3 +1,4 @@
+
 import { useState, useEffect, lazy, useRef } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -432,7 +433,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
       }
 
       let targetWidth = gifSettings.width;
-      targetHeight = gifSettings.height;
+      let targetHeight = gifSettings.height;
       
       if (maxWidth || maxHeight) {
         const aspectRatio = gifSettings.width / gifSettings.height;
@@ -855,21 +856,21 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
 
   return (
     <Card className="overflow-hidden bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 shadow-lg hover:shadow-xl transition-shadow">
-      <div className="relative pt-10">
-        {/* GIF/Video Frame Count Badge */}
-        {(isGif || isVideo) && gifFrameCount > 0 && (
-          <Badge className="absolute top-0 left-4 bg-slate-900/90 text-white text-xs px-3 py-1.5 font-bold flex items-center gap-1 shadow-lg z-10 rounded-md">
-            <Film className="w-3 h-3" />
-            {gifFrameCount} frames
-          </Badge>
-        )}
-        
+      <div className="relative">
         <div className="grid grid-cols-2 gap-2 p-4 bg-slate-50 dark:bg-slate-950">
           {preview && (
             <div 
               className="relative aspect-square rounded-lg overflow-hidden bg-slate-200 dark:bg-slate-800 cursor-pointer group"
               onClick={(isImage || isGif) && processed ? handleCompare : undefined}
             >
+              {/* Frame Count Badge - Above Original Preview */}
+              {(isGif || isVideo) && gifFrameCount > 0 && (
+                <Badge className="absolute -top-8 left-0 bg-slate-900/90 text-white text-xs px-3 py-1.5 font-bold flex items-center gap-1 shadow-lg z-10 rounded-md">
+                  <Film className="w-3 h-3" />
+                  {gifFrameCount} frames
+                </Badge>
+              )}
+              
               {(isImage || isGif) ? (
                 <LazyImage 
                   src={preview} 
@@ -909,6 +910,14 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
               className="relative aspect-square rounded-lg overflow-hidden bg-slate-200 dark:bg-slate-800 cursor-pointer group"
               onClick={(isImage || isGif) ? handleCompare : undefined}
             >
+              {/* Frame Count Badge - Above Compressed Preview */}
+              {(isGif || isVideo) && gifFrameCount > 0 && (
+                <Badge className="absolute -top-8 left-0 bg-slate-900/90 text-white text-xs px-3 py-1.5 font-bold flex items-center gap-1 shadow-lg z-10 rounded-md">
+                  <Film className="w-3 h-3" />
+                  {gifFrameCount} frames
+                </Badge>
+              )}
+              
               {(isImage || isGif) ? (
                 <LazyImage 
                   src={compressedPreview} 

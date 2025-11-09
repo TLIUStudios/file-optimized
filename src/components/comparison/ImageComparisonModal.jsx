@@ -15,7 +15,9 @@ export default function ImageComparisonModal({
   compressedImage,
   originalSize,
   compressedSize,
-  fileName
+  fileName,
+  mediaType = 'image',
+  fileFormat = 'webp'
 }) {
   const [sliderPosition, setSliderPosition] = useState(50);
   const [isDragging, setIsDragging] = useState(false);
@@ -31,24 +33,34 @@ export default function ImageComparisonModal({
   const [aiAltText, setAiAltText] = useState("");
   const [aiTags, setAiTags] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
-  const [regeneratingField, setRegeneratingField] = useState(null); // New state for individual field regeneration
+  const [regeneratingField, setRegeneratingField] = useState(null);
   const containerRef = useRef(null);
   const imageContainerRef = useRef(null);
 
   // Extract file extensions
   const originalExt = fileName.split('.').pop().toUpperCase();
-  const compressedExt = compressedImage.split('data:image/')[1]?.split(';')[0].toUpperCase() || 'WEBP';
+  const compressedExt = fileFormat.toUpperCase();
+
+  // Define available formats based on media type
+  const availableFormats = mediaType === 'video'
+    ? ['mp4']
+    : mediaType === 'audio'
+    ? ['mp3', 'wav']
+    : ['jpg', 'png', 'webp', 'avif'];
 
   // Load image dimensions
   useEffect(() => {
-    if (originalImage) {
+    if (originalImage && mediaType === 'image') {
       const img = new Image();
       img.onload = () => {
         setImageDimensions({ width: img.width, height: img.height });
       };
       img.src = originalImage;
+    } else if (mediaType !== 'image') {
+      // Reset image dimensions if not an image
+      setImageDimensions({ width: 0, height: 0 });
     }
-  }, [originalImage]);
+  }, [originalImage, mediaType]);
 
   const generateMetadata = async () => {
     console.log('🚀 Starting AI metadata generation...');
@@ -59,6 +71,13 @@ export default function ImageComparisonModal({
     setAiMood("");
     setAiAltText("");
     setAiTags("");
+
+    // AI metadata generation only makes sense for images, and current prompt is image-specific.
+    if (mediaType !== 'image') {
+        toast.info('AI metadata generation is currently only supported for images.');
+        setIsGenerating(false);
+        return;
+    }
 
     try {
       // Convert compressed image blob
@@ -112,6 +131,12 @@ export default function ImageComparisonModal({
   const regenerateField = async (fieldName) => {
     console.log(`🔄 Regenerating ${fieldName}...`);
     setRegeneratingField(fieldName); // Set the field being regenerated
+
+    if (mediaType !== 'image') {
+        toast.info('AI metadata regeneration is currently only supported for images.');
+        setRegeneratingField(null);
+        return;
+    }
 
     try {
       const res = await fetch(compressedImage);
@@ -198,9 +223,33 @@ export default function ImageComparisonModal({
     toast.success(`${label} copied!`);
   };
 
-  const downloadImage = async (format = null) => {
+  const downloadMedia = async (format = null) => {
     if (!format) {
       // Download ZIP with all formats
+      if (mediaType === 'video') {
+        // For video, if "Download" is clicked without specific format, download the default MP4.
+        downloadMedia('mp4');
+        return;
+      }
+
+      if (mediaType === 'audio') {
+        toast.info('Preparing audio for download...');
+        try {
+          // No multi-format conversion for audio in browser easily, just download the compressed one.
+          const link = document.createElement('a');
+          link.href = compressedImage;
+          const baseName = fileName.split('.')[0];
+          link.download = `${baseName}.${fileFormat}`; // Use the actual fileFormat of the compressed audio
+          link.click();
+          toast.success('Audio downloaded!');
+        } catch (error) {
+          console.error('Error downloading audio:', error);
+          toast.error('Failed to download audio');
+        }
+        return;
+      }
+
+      // For images, create ZIP with all formats
       toast.info('Creating multi-format ZIP...');
 
       try {
@@ -261,6 +310,18 @@ export default function ImageComparisonModal({
 
     // Download single format
     try {
+      if (mediaType === 'video' || mediaType === 'audio') {
+        // Direct download for video/audio
+        const link = document.createElement('a');
+        link.href = compressedImage;
+        const baseName = fileName.split('.')[0];
+        link.download = `${baseName}.${format}`;
+        link.click();
+        toast.success(`Downloaded as ${format.toUpperCase()}!`);
+        return;
+      }
+
+      // Image format conversion
       const img = new Image();
       img.src = compressedImage;
 
@@ -299,7 +360,7 @@ export default function ImageComparisonModal({
       URL.revokeObjectURL(url);
       toast.success(`Downloaded as ${format.toUpperCase()}!`);
     } catch (error) {
-      console.error('Error downloading single format:', error);
+      console.error('Error downloading format:', error);
       toast.error(`Failed to download as ${format.toUpperCase()}: ` + error.message);
     }
   };
@@ -383,7 +444,7 @@ export default function ImageComparisonModal({
 
   useEffect(() => {
     const handleWheel = (e) => {
-      if (imageContainerRef.current?.contains(e.target)) {
+      if (mediaType === 'image' && imageContainerRef.current?.contains(e.target)) {
         e.preventDefault();
         const delta = e.deltaY > 0 ? -0.1 : 0.1;
         setZoom(prev => Math.max(0.5, Math.min(3, prev + delta)));
@@ -400,7 +461,7 @@ export default function ImageComparisonModal({
         container.removeEventListener('wheel', handleWheel);
       }
     };
-  }, []);
+  }, [mediaType]);
 
   const handleZoomIn = () => {
     setZoom(prev => Math.min(3, prev + 0.25));
@@ -429,7 +490,7 @@ export default function ImageComparisonModal({
     return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
   };
 
-  const savingsPercent = ((1 - compressedSize / originalSize) * 100).toFixed(1);
+  const savingsPercent = originalSize ? ((1 - compressedSize / originalSize) * 100).toFixed(1) : '0';
   const savingsAmount = originalSize - compressedSize;
 
   const hasAnyMetadata = aiTitle || aiDescription || aiCategory || aiMood || aiAltText || aiTags;
@@ -442,76 +503,59 @@ export default function ImageComparisonModal({
         {/* Top Bar */}
         <div className="absolute top-0 left-0 right-0 z-[100] flex items-center justify-between px-4 py-3 bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm border-b border-slate-200 dark:border-slate-800">
           <div className="flex items-center gap-3">
-            <Button
-              variant="secondary"
-              size="icon"
-              onClick={handleZoomIn}
-              className="h-9 w-9 bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700"
-            >
-              <ZoomIn className="w-4 h-4" />
-            </Button>
-            <Button
-              variant="secondary"
-              size="icon"
-              onClick={handleZoomOut}
-              className="h-9 w-9 bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700"
-            >
-              <ZoomOut className="w-4 h-4" />
-            </Button>
-            <Button
-              variant="secondary"
-              size="icon"
-              onClick={handleResetZoom}
-              className="h-9 w-9 bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700"
-            >
-              <Maximize2 className="w-4 h-4" />
-            </Button>
-            <div className="bg-white dark:bg-slate-800 rounded-md px-3 h-9 flex items-center text-xs text-slate-900 dark:text-white font-medium border border-slate-200 dark:border-slate-700">
-              {(zoom * 100).toFixed(0)}%
-            </div>
+            {mediaType === 'image' && (
+              <>
+                <Button
+                  variant="secondary"
+                  size="icon"
+                  onClick={handleZoomIn}
+                  className="h-9 w-9 bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700"
+                >
+                  <ZoomIn className="w-4 h-4" />
+                </Button>
+                <Button
+                  variant="secondary"
+                  size="icon"
+                  onClick={handleZoomOut}
+                  className="h-9 w-9 bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700"
+                >
+                  <ZoomOut className="w-4 h-4" />
+                </Button>
+                <Button
+                  variant="secondary"
+                  size="icon"
+                  onClick={handleResetZoom}
+                  className="h-9 w-9 bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700"
+                >
+                  <Maximize2 className="w-4 h-4" />
+                </Button>
+                <div className="bg-white dark:bg-slate-800 rounded-md px-3 h-9 flex items-center text-xs text-slate-900 dark:text-white font-medium border border-slate-200 dark:border-slate-700">
+                  {(zoom * 100).toFixed(0)}%
+                </div>
+              </>
+            )}
           </div>
 
           <div className="flex items-center gap-2">
             <div className="flex items-center gap-1 bg-white dark:bg-slate-800 rounded-md border border-slate-200 dark:border-slate-700 p-1">
               <Button
-                onClick={() => downloadImage()}
+                onClick={() => downloadMedia()}
                 className="bg-emerald-600 hover:bg-emerald-700 text-white h-8 px-3 text-xs"
               >
                 <Download className="w-3 h-3 mr-1" />
                 Download
               </Button>
-              <Button
-                onClick={() => downloadImage('jpg')}
-                variant="ghost"
-                size="sm"
-                className="h-8 px-2 text-xs hover:bg-slate-100 dark:hover:bg-slate-700"
-              >
-                JPG
-              </Button>
-              <Button
-                onClick={() => downloadImage('png')}
-                variant="ghost"
-                size="sm"
-                className="h-8 px-2 text-xs hover:bg-slate-100 dark:hover:bg-slate-700"
-              >
-                PNG
-              </Button>
-              <Button
-                onClick={() => downloadImage('webp')}
-                variant="ghost"
-                size="sm"
-                className="h-8 px-2 text-xs hover:bg-slate-100 dark:hover:bg-slate-700"
-              >
-                WebP
-              </Button>
-              <Button
-                onClick={() => downloadImage('avif')}
-                variant="ghost"
-                size="sm"
-                className="h-8 px-2 text-xs hover:bg-slate-100 dark:hover:bg-slate-700"
-              >
-                AVIF
-              </Button>
+              {availableFormats.map((fmt) => (
+                <Button
+                  key={fmt}
+                  onClick={() => downloadMedia(fmt)}
+                  variant="ghost"
+                  size="sm"
+                  className="h-8 px-2 text-xs hover:bg-slate-100 dark:hover:bg-slate-700"
+                >
+                  {fmt.toUpperCase()}
+                </Button>
+              ))}
             </div>
             <Button
               variant="ghost"
@@ -525,98 +569,132 @@ export default function ImageComparisonModal({
         </div>
 
         <div className="flex flex-col lg:flex-row h-full overflow-hidden pt-[60px]">
-          {/* Left Side - Image Comparison */}
+          {/* Left Side - Media Display */}
           <div className="flex-1 relative overflow-hidden flex flex-col min-h-0">
-            <div
-              ref={containerRef}
-              className="relative w-full h-full bg-slate-100 dark:bg-slate-900 select-none flex flex-col items-center justify-center overflow-hidden"
-            >
-              <div className="flex-1 relative w-full flex items-center justify-center py-4">
-                <div
-                  ref={imageContainerRef}
-                  className="relative"
-                  style={{
-                    transform: `scale(${zoom}) translate(${pan.x / zoom}px, ${pan.y / zoom}px)`,
-                    transformOrigin: 'center',
-                    transition: isDragging || isPanning ? 'none' : 'transform 0.2s ease-out',
-                    cursor: zoom > 1 ? (isPanning ? 'grabbing' : 'grab') : 'col-resize'
-                  }}
-                  onMouseDown={(e) => {
-                    if (zoom > 1) {
-                      handlePanStart(e);
-                    } else {
-                      setIsDragging(true);
-                    }
-                  }}
-                  onTouchStart={(e) => {
-                    if (zoom > 1 && e.touches.length === 1) {
-                      setIsPanning(true);
-                      setPanStart({ x: e.touches[0].clientX, y: e.touches[0].clientY });
-                    } else if (e.touches.length === 1) {
-                      setIsDragging(true);
-                    }
-                  }}
-                >
-                  <div className="relative">
-                    <img
-                      src={compressedImage}
-                      alt="Compressed"
-                      className="max-w-[85vw] lg:max-w-[60vw] max-h-[calc(100vh-200px)] w-auto h-auto object-contain"
-                      draggable="false"
-                    />
-
-                    <div
-                      className="absolute inset-0 overflow-hidden"
-                      style={{ clipPath: `inset(0 ${100 - sliderPosition}% 0 0)` }}
-                    >
+            {mediaType === 'image' ? (
+              // Image comparison specific UI
+              <div
+                ref={containerRef}
+                className="relative w-full h-full bg-slate-100 dark:bg-slate-900 select-none flex flex-col items-center justify-center overflow-hidden"
+              >
+                <div className="flex-1 relative w-full flex items-center justify-center py-4">
+                  <div
+                    ref={imageContainerRef}
+                    className="relative"
+                    style={{
+                      transform: `scale(${zoom}) translate(${pan.x / zoom}px, ${pan.y / zoom}px)`,
+                      transformOrigin: 'center',
+                      transition: isDragging || isPanning ? 'none' : 'transform 0.2s ease-out',
+                      cursor: zoom > 1 ? (isPanning ? 'grabbing' : 'grab') : 'col-resize'
+                    }}
+                    onMouseDown={(e) => {
+                      if (zoom > 1) {
+                        handlePanStart(e);
+                      } else {
+                        setIsDragging(true);
+                      }
+                    }}
+                    onTouchStart={(e) => {
+                      if (zoom > 1 && e.touches.length === 1) {
+                        setIsPanning(true);
+                        setPanStart({ x: e.touches[0].clientX, y: e.touches[0].clientY });
+                      } else if (e.touches.length === 1) {
+                        setIsDragging(true);
+                      }
+                    }}
+                  >
+                    <div className="relative">
                       <img
-                        src={originalImage}
-                        alt="Original"
+                        src={compressedImage}
+                        alt="Compressed"
                         className="max-w-[85vw] lg:max-w-[60vw] max-h-[calc(100vh-200px)] w-auto h-auto object-contain"
                         draggable="false"
                       />
-                    </div>
 
-                    {zoom === 1 && !isPanning && (
                       <div
-                        className="absolute top-0 bottom-0 w-0.5 bg-white shadow-2xl z-10 pointer-events-none"
-                        style={{ left: `${sliderPosition}%`, transform: 'translateX(-50%)' }}
+                        className="absolute inset-0 overflow-hidden"
+                        style={{ clipPath: `inset(0 ${100 - sliderPosition}% 0 0)` }}
                       >
-                        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-12 h-12 bg-white dark:bg-slate-700 rounded-full shadow-2xl flex items-center justify-center cursor-col-resize border-2 border-slate-300 dark:border-slate-600 pointer-events-auto">
-                          <MoveHorizontal className="w-5 h-5 text-slate-700 dark:text-white" />
-                        </div>
+                        <img
+                          src={originalImage}
+                          alt="Original"
+                          className="max-w-[85vw] lg:max-w-[60vw] max-h-[calc(100vh-200px)] w-auto h-auto object-contain"
+                          draggable="false"
+                        />
                       </div>
-                    )}
+
+                      {zoom === 1 && !isPanning && (
+                        <div
+                          className="absolute top-0 bottom-0 w-0.5 bg-white shadow-2xl z-10 pointer-events-none"
+                          style={{ left: `${sliderPosition}%`, transform: 'translateX(-50%)' }}
+                        >
+                          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-12 h-12 bg-white dark:bg-slate-700 rounded-full shadow-2xl flex items-center justify-center cursor-col-resize border-2 border-slate-300 dark:border-slate-600 pointer-events-auto">
+                            <MoveHorizontal className="w-5 h-5 text-slate-700 dark:text-white" />
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="h-16 w-full flex items-center justify-between px-6 bg-slate-100/80 dark:bg-slate-900/80 backdrop-blur-sm border-t border-slate-200 dark:border-slate-800">
+                  <div className="flex flex-col gap-1">
+                    <Badge className="bg-slate-700 dark:bg-slate-800 text-white text-sm px-3 py-1 font-semibold w-fit">
+                      Original
+                    </Badge>
+                    <Badge className="bg-slate-700 dark:bg-slate-800 text-white text-xs px-2 py-0.5 font-bold w-fit">
+                      {originalExt}
+                    </Badge>
+                  </div>
+
+                  {zoom === 1 && (
+                    <div className="px-4 py-2 bg-slate-600/80 dark:bg-slate-700/80 backdrop-blur-sm rounded-lg text-white text-sm font-medium animate-pulse">
+                      ← Drag to compare →
+                    </div>
+                  )}
+
+                  <div className="flex flex-col gap-1 items-end">
+                    <Badge className="bg-emerald-600 text-white text-sm px-3 py-1 font-semibold w-fit">
+                      Compressed
+                    </Badge>
+                    <Badge className="bg-emerald-600 text-white text-xs px-2 py-0.5 font-bold w-fit">
+                      {compressedExt}
+                    </Badge>
                   </div>
                 </div>
               </div>
-
-              <div className="h-16 w-full flex items-center justify-between px-6 bg-slate-100/80 dark:bg-slate-900/80 backdrop-blur-sm border-t border-slate-200 dark:border-slate-800">
-                <div className="flex flex-col gap-1">
-                  <Badge className="bg-slate-700 dark:bg-slate-800 text-white text-sm px-3 py-1 font-semibold w-fit">
-                    Original
-                  </Badge>
-                  <Badge className="bg-slate-700 dark:bg-slate-800 text-white text-xs px-2 py-0.5 font-bold w-fit">
-                    {originalExt}
-                  </Badge>
+            ) : (
+              // Video or Audio player
+              <div className="relative w-full h-full bg-slate-100 dark:bg-slate-900 flex flex-col items-center justify-center">
+                <div className="flex-1 relative w-full flex items-center justify-center p-4">
+                  {mediaType === 'video' && (
+                    <video controls src={compressedImage} className="max-w-full max-h-full object-contain" />
+                  )}
+                  {mediaType === 'audio' && (
+                    <audio controls src={compressedImage} className="max-w-full max-h-full" />
+                  )}
                 </div>
-
-                {zoom === 1 && (
-                  <div className="px-4 py-2 bg-slate-600/80 dark:bg-slate-700/80 backdrop-blur-sm rounded-lg text-white text-sm font-medium animate-pulse">
-                    ← Drag to compare →
+                <div className="h-16 w-full flex items-center justify-between px-6 bg-slate-100/80 dark:bg-slate-900/80 backdrop-blur-sm border-t border-slate-200 dark:border-slate-800">
+                  <div className="flex flex-col gap-1">
+                    <Badge className="bg-slate-700 dark:bg-slate-800 text-white text-sm px-3 py-1 font-semibold w-fit">
+                      Original
+                    </Badge>
+                    <Badge className="bg-slate-700 dark:bg-slate-800 text-white text-xs px-2 py-0.5 font-bold w-fit">
+                      {originalExt}
+                    </Badge>
                   </div>
-                )}
 
-                <div className="flex flex-col gap-1 items-end">
-                  <Badge className="bg-emerald-600 text-white text-sm px-3 py-1 font-semibold w-fit">
-                    Compressed
-                  </Badge>
-                  <Badge className="bg-emerald-600 text-white text-xs px-2 py-0.5 font-bold w-fit">
-                    {compressedExt}
-                  </Badge>
+                  <div className="flex flex-col gap-1 items-end">
+                    <Badge className="bg-emerald-600 text-white text-sm px-3 py-1 font-semibold w-fit">
+                      Compressed
+                    </Badge>
+                    <Badge className="bg-emerald-600 text-white text-xs px-2 py-0.5 font-bold w-fit">
+                      {compressedExt}
+                    </Badge>
+                  </div>
                 </div>
               </div>
-            </div>
+            )}
           </div>
 
           {/* Right Panel */}
@@ -668,7 +746,7 @@ export default function ImageComparisonModal({
                     <Badge className="bg-blue-600 text-white font-semibold text-xs">Browser-side</Badge>
                   </div>
 
-                  {imageDimensions.width > 0 && (
+                  {mediaType === 'image' && imageDimensions.width > 0 && (
                     <>
                       <div className="flex items-center justify-between py-2 px-3 bg-slate-50 dark:bg-slate-950 rounded-lg border border-slate-200 dark:border-slate-800">
                         <span className="text-slate-600 dark:text-slate-400 text-xs font-medium">Resolution</span>
@@ -687,6 +765,7 @@ export default function ImageComparisonModal({
               <div className="h-px bg-slate-200 dark:bg-slate-800" />
 
               {/* AI Generated Section */}
+              {mediaType === 'image' && (
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
                   <h3 className="text-slate-900 dark:text-white font-semibold text-xs uppercase tracking-wider">AI Generated</h3>
@@ -917,6 +996,7 @@ export default function ImageComparisonModal({
                   </div>
                 )}
               </div>
+              )}
             </div>
 
             {/* Privacy Notice */}
