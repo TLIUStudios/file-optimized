@@ -3,11 +3,18 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Slider } from "@/components/ui/slider";
-import { Download, X, Loader2, CheckCircle2, ArrowRight, Settings2, AlertCircle, Eye } from "lucide-react";
+import { Download, X, Loader2, CheckCircle2, ArrowRight, Settings2, AlertCircle, Info } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import LazyImage from "./LazyImage";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import { Switch } from "@/components/ui/switch";
 
 export default function ImageCard({ image, onRemove, onProcessed, onCompare }) {
   const [processing, setProcessing] = useState(false);
@@ -22,6 +29,11 @@ export default function ImageCard({ image, onRemove, onProcessed, onCompare }) {
   const [maxHeight, setMaxHeight] = useState(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [error, setError] = useState(null);
+  
+  // Advanced settings
+  const [compressionMode, setCompressionMode] = useState('balanced');
+  const [stripMetadata, setStripMetadata] = useState(true);
+  const [noiseReduction, setNoiseReduction] = useState(false);
 
   useEffect(() => {
     const reader = new FileReader();
@@ -48,28 +60,61 @@ export default function ImageCard({ image, onRemove, onProcessed, onCompare }) {
       let width = img.width;
       let height = img.height;
 
-      // Apply resizing if specified
-      if (maxWidth && width > maxWidth) {
-        height = (height * maxWidth) / width;
-        width = maxWidth;
-      }
-      if (maxHeight && height > maxHeight) {
-        width = (width * maxHeight) / height;
-        height = maxHeight;
+      // Apply resizing if specified - maintain aspect ratio
+      if (maxWidth || maxHeight) {
+        const aspectRatio = width / height;
+        
+        if (maxWidth && maxHeight) {
+          // Both limits specified - fit within bounds while maintaining aspect ratio
+          const widthRatio = maxWidth / width;
+          const heightRatio = maxHeight / height;
+          const ratio = Math.min(widthRatio, heightRatio);
+          
+          width = Math.round(width * ratio);
+          height = Math.round(height * ratio);
+        } else if (maxWidth) {
+          // Only width specified
+          if (width > maxWidth) {
+            width = maxWidth;
+            height = Math.round(width / aspectRatio);
+          }
+        } else if (maxHeight) {
+          // Only height specified
+          if (height > maxHeight) {
+            height = maxHeight;
+            width = Math.round(height * aspectRatio);
+          }
+        }
       }
 
       canvas.width = width;
       canvas.height = height;
 
       const ctx = canvas.getContext('2d');
+      
+      // Apply noise reduction if enabled (via smoothing)
+      if (noiseReduction) {
+        ctx.imageSmoothingEnabled = true;
+        ctx.imageSmoothingQuality = 'high';
+      }
+      
       ctx.drawImage(img, 0, 0, width, height);
 
       // Convert to desired format
       const mimeType = format === 'jpg' ? 'image/jpeg' : `image/${format}`;
-      let qualityValue = quality / 100;
+      
+      // Adjust quality based on compression mode
+      let baseQuality = quality / 100;
+      if (compressionMode === 'aggressive') {
+        baseQuality = Math.max(0.5, baseQuality - 0.15);
+      } else if (compressionMode === 'maximum') {
+        baseQuality = Math.max(0.3, baseQuality - 0.3);
+      }
+      
+      let qualityValue = baseQuality;
       let blob = null;
       let attempts = 0;
-      const maxAttempts = 5;
+      const maxAttempts = compressionMode === 'aggressive' || compressionMode === 'maximum' ? 8 : 5;
 
       // Try to compress, reducing quality if result is larger than original
       while (attempts < maxAttempts) {
@@ -87,14 +132,14 @@ export default function ImageCard({ image, onRemove, onProcessed, onCompare }) {
         }
 
         // Reduce quality and try again
-        qualityValue -= 0.15;
+        qualityValue -= compressionMode === 'maximum' ? 0.2 : 0.15;
         attempts++;
       }
 
       // If still larger than original, use a more aggressive format
       if (blob.size >= image.size) {
         // Try WebP with lower quality as fallback
-        const fallbackQuality = 0.6;
+        const fallbackQuality = compressionMode === 'maximum' ? 0.4 : 0.6;
         blob = await new Promise((resolve) => {
           canvas.toBlob(
             (b) => resolve(b),
@@ -181,13 +226,6 @@ export default function ImageCard({ image, onRemove, onProcessed, onCompare }) {
               <Badge className="absolute top-2 left-2 bg-slate-900/80 text-white">
                 Original
               </Badge>
-              {processed && (
-                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                  <div className="bg-white dark:bg-slate-800 rounded-full p-3">
-                    <Eye className="w-6 h-6 text-slate-900 dark:text-white" />
-                  </div>
-                </div>
-              )}
             </div>
           )}
           {compressedPreview ? (
@@ -203,11 +241,6 @@ export default function ImageCard({ image, onRemove, onProcessed, onCompare }) {
               <Badge className="absolute top-2 left-2 bg-emerald-600 text-white">
                 Compressed
               </Badge>
-              <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                <div className="bg-white dark:bg-slate-800 rounded-full p-3">
-                  <Eye className="w-6 h-6 text-slate-900 dark:text-white" />
-                </div>
-              </div>
             </div>
           ) : (
             <div className="aspect-square rounded-lg bg-slate-200 dark:bg-slate-800 flex items-center justify-center">
@@ -220,9 +253,9 @@ export default function ImageCard({ image, onRemove, onProcessed, onCompare }) {
           variant="ghost"
           size="icon"
           onClick={onRemove}
-          className="absolute top-2 right-2 bg-white/90 dark:bg-slate-900/90 hover:bg-red-50 dark:hover:bg-red-950"
+          className="absolute top-2 right-2 bg-slate-900/90 dark:bg-slate-900/90 hover:bg-red-600 dark:hover:bg-red-600 text-white rounded-lg transition-colors"
         >
-          <X className="w-4 h-4 text-slate-600 dark:text-slate-400" />
+          <X className="w-4 h-4" />
         </Button>
       </div>
 
@@ -264,65 +297,185 @@ export default function ImageCard({ image, onRemove, onProcessed, onCompare }) {
             </Button>
           </CollapsibleTrigger>
           <CollapsibleContent className="space-y-4 mt-4">
-            <div>
-              <label className="text-xs font-medium text-slate-700 dark:text-slate-300 mb-2 block">
-                Output Format
-              </label>
-              <Select value={format} onValueChange={setFormat}>
-                <SelectTrigger className="h-9">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="webp">WebP (Best compression)</SelectItem>
-                  <SelectItem value="jpg">JPG (Universal)</SelectItem>
-                  <SelectItem value="png">PNG (Lossless)</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div>
-              <label className="text-xs font-medium text-slate-700 dark:text-slate-300 mb-2 block">
-                Quality: {quality}%
-              </label>
-              <Slider
-                value={[quality]}
-                onValueChange={(value) => setQuality(value[0])}
-                min={1}
-                max={100}
-                step={1}
-                className="w-full"
-              />
-              <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-                Lower quality = smaller file size
-              </p>
-            </div>
-
-            <div className="grid grid-cols-2 gap-2">
+            <TooltipProvider>
+              {/* Compression Mode */}
               <div>
-                <label className="text-xs font-medium text-slate-700 dark:text-slate-300 mb-1 block">
-                  Max Width (px)
-                </label>
-                <input
-                  type="number"
-                  placeholder="Auto"
-                  value={maxWidth || ''}
-                  onChange={(e) => setMaxWidth(e.target.value ? parseInt(e.target.value) : null)}
-                  className="w-full h-9 px-3 rounded-md border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 text-sm"
+                <div className="flex items-center gap-2 mb-2">
+                  <label className="text-xs font-medium text-slate-700 dark:text-slate-300">
+                    Compression Algorithm
+                  </label>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Info className="w-3 h-3 text-slate-400 cursor-help" />
+                    </TooltipTrigger>
+                    <TooltipContent className="max-w-xs">
+                      <p className="text-xs">
+                        <strong>Balanced:</strong> Good quality with moderate compression<br/>
+                        <strong>Aggressive:</strong> Smaller files with slight quality loss<br/>
+                        <strong>Maximum:</strong> Smallest files, noticeable quality reduction
+                      </p>
+                    </TooltipContent>
+                  </Tooltip>
+                </div>
+                <Select value={compressionMode} onValueChange={setCompressionMode}>
+                  <SelectTrigger className="h-9">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="balanced">Balanced (Recommended)</SelectItem>
+                    <SelectItem value="aggressive">Aggressive</SelectItem>
+                    <SelectItem value="maximum">Maximum Compression</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Output Format */}
+              <div>
+                <div className="flex items-center gap-2 mb-2">
+                  <label className="text-xs font-medium text-slate-700 dark:text-slate-300">
+                    Output Format
+                  </label>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Info className="w-3 h-3 text-slate-400 cursor-help" />
+                    </TooltipTrigger>
+                    <TooltipContent className="max-w-xs">
+                      <p className="text-xs">
+                        <strong>WebP:</strong> Best compression, modern browsers<br/>
+                        <strong>JPG:</strong> Universal support, good for photos<br/>
+                        <strong>PNG:</strong> Lossless, best for graphics/transparency
+                      </p>
+                    </TooltipContent>
+                  </Tooltip>
+                </div>
+                <Select value={format} onValueChange={setFormat}>
+                  <SelectTrigger className="h-9">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="webp">WebP (Best compression)</SelectItem>
+                    <SelectItem value="jpg">JPG (Universal)</SelectItem>
+                    <SelectItem value="png">PNG (Lossless)</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Quality Slider */}
+              <div>
+                <div className="flex items-center gap-2 mb-2">
+                  <label className="text-xs font-medium text-slate-700 dark:text-slate-300">
+                    Quality: {quality}%
+                  </label>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Info className="w-3 h-3 text-slate-400 cursor-help" />
+                    </TooltipTrigger>
+                    <TooltipContent className="max-w-xs">
+                      <p className="text-xs">Lower quality = smaller file size. 70-85% is usually optimal for web use.</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </div>
+                <Slider
+                  value={[quality]}
+                  onValueChange={(value) => setQuality(value[0])}
+                  min={1}
+                  max={100}
+                  step={1}
+                  className="w-full"
                 />
               </div>
-              <div>
-                <label className="text-xs font-medium text-slate-700 dark:text-slate-300 mb-1 block">
-                  Max Height (px)
-                </label>
-                <input
-                  type="number"
-                  placeholder="Auto"
-                  value={maxHeight || ''}
-                  onChange={(e) => setMaxHeight(e.target.value ? parseInt(e.target.value) : null)}
-                  className="w-full h-9 px-3 rounded-md border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 text-sm"
-                />
+
+              {/* Dimensions */}
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <div className="flex items-center gap-1 mb-1">
+                    <label className="text-xs font-medium text-slate-700 dark:text-slate-300">
+                      Max Width (px)
+                    </label>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Info className="w-3 h-3 text-slate-400 cursor-help" />
+                      </TooltipTrigger>
+                      <TooltipContent className="max-w-xs">
+                        <p className="text-xs">Scales image proportionally to fit within this width while maintaining aspect ratio</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </div>
+                  <input
+                    type="number"
+                    placeholder="Auto"
+                    value={maxWidth || ''}
+                    onChange={(e) => setMaxWidth(e.target.value ? parseInt(e.target.value) : null)}
+                    className="w-full h-9 px-3 rounded-md border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 text-sm"
+                  />
+                </div>
+                <div>
+                  <div className="flex items-center gap-1 mb-1">
+                    <label className="text-xs font-medium text-slate-700 dark:text-slate-300">
+                      Max Height (px)
+                    </label>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Info className="w-3 h-3 text-slate-400 cursor-help" />
+                      </TooltipTrigger>
+                      <TooltipContent className="max-w-xs">
+                        <p className="text-xs">Scales image proportionally to fit within this height while maintaining aspect ratio</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </div>
+                  <input
+                    type="number"
+                    placeholder="Auto"
+                    value={maxHeight || ''}
+                    onChange={(e) => setMaxHeight(e.target.value ? parseInt(e.target.value) : null)}
+                    className="w-full h-9 px-3 rounded-md border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 text-sm"
+                  />
+                </div>
               </div>
-            </div>
+
+              {/* Advanced Options */}
+              <div className="space-y-3 pt-2 border-t border-slate-200 dark:border-slate-800">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <label className="text-xs font-medium text-slate-700 dark:text-slate-300">
+                      Strip Metadata
+                    </label>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Info className="w-3 h-3 text-slate-400 cursor-help" />
+                      </TooltipTrigger>
+                      <TooltipContent className="max-w-xs">
+                        <p className="text-xs">Removes EXIF data, GPS coordinates, and other metadata to reduce file size and improve privacy</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </div>
+                  <Switch
+                    checked={stripMetadata}
+                    onCheckedChange={setStripMetadata}
+                  />
+                </div>
+
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <label className="text-xs font-medium text-slate-700 dark:text-slate-300">
+                      Noise Reduction
+                    </label>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Info className="w-3 h-3 text-slate-400 cursor-help" />
+                      </TooltipTrigger>
+                      <TooltipContent className="max-w-xs">
+                        <p className="text-xs">Applies smoothing to reduce image noise, which can help achieve better compression ratios</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </div>
+                  <Switch
+                    checked={noiseReduction}
+                    onCheckedChange={setNoiseReduction}
+                  />
+                </div>
+              </div>
+            </TooltipProvider>
           </CollapsibleContent>
         </Collapsible>
 
@@ -364,20 +517,10 @@ export default function ImageCard({ image, onRemove, onProcessed, onCompare }) {
         </div>
 
         {processed && !error && (
-          <>
-            <div className="flex items-center gap-2 text-sm text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/30 p-3 rounded-lg">
-              <CheckCircle2 className="w-4 h-4" />
-              <span>Saved {formatFileSize(originalSize - compressedSize)}</span>
-            </div>
-            <Button
-              onClick={handleCompare}
-              variant="outline"
-              className="w-full"
-              size="sm"
-            >
-              <Eye className="w-4 h-4" />
-            </Button>
-          </>
+          <div className="flex items-center gap-2 text-sm text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/30 p-3 rounded-lg">
+            <CheckCircle2 className="w-4 h-4" />
+            <span>Saved {formatFileSize(originalSize - compressedSize)}</span>
+          </div>
         )}
       </div>
     </Card>
