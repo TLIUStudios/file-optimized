@@ -4,7 +4,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Slider } from "@/components/ui/slider";
-import { Download, X, Loader2, CheckCircle2, ArrowRight, Settings2, AlertCircle, Info, Edit2, RefreshCcw, Sparkles, Film, Music, Video } from "lucide-react";
+import { Download, X, Loader2, CheckCircle2, ArrowRight, Settings2, AlertCircle, Info, Edit2, RefreshCcw, Sparkles, Film, Music, Video, Wand2, Check, XCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
@@ -18,6 +18,8 @@ import {
 import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
 import { motion, AnimatePresence } from "framer-motion";
+import { base44 } from "@/api/base44Client";
+import { Input } from "@/components/ui/input";
 
 // Lazy load the editor
 const ImageEditor = lazy(() => import("./ImageEditor"));
@@ -41,6 +43,12 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
   const [showEditor, setShowEditor] = useState(false);
   const [outputFormat, setOutputFormat] = useState(null);
   const [loadingProgress, setLoadingProgress] = useState(0);
+  
+  // AI filename suggestion states
+  const [suggestedFilename, setSuggestedFilename] = useState('');
+  const [generatingFilename, setGeneratingFilename] = useState(false);
+  const [showFilenameInput, setShowFilenameInput] = useState(false);
+  const [editedFilename, setEditedFilename] = useState('');
 
   // Media type detection
   const isImage = image.type.startsWith('image/');
@@ -65,6 +73,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
   
   const processMediaRef = useRef(null);
   const ffmpegRef = useRef(null);
+  const fetchFileRef = useRef(null); // Ref to store fetchFile
 
   useEffect(() => {
     const reader = new FileReader();
@@ -105,21 +114,34 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
   }, [autoProcess, processed, processing]);
 
   const loadFFmpeg = async () => {
+    if (ffmpegRef.current) {
+      console.log('FFmpeg already loaded');
+      return;
+    }
+
     try {
       console.log('🚀 Starting FFmpeg load...');
       setLoadingProgress(10);
       toast.info('Loading media processor...', { id: 'ffmpeg-load', duration: Infinity });
       
-      // Import FFmpeg from CDN - use jsdelivr with direct URLs (no toBlobURL needed)
       setLoadingProgress(20);
-      const { FFmpeg } = await import('https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@0.12.10/dist/esm/index.js');
-      const { fetchFile } = await import('https://cdn.jsdelivr.net/npm/@ffmpeg/util@0.12.1/dist/esm/index.js');
+      
+      // Dynamically import FFmpeg modules
+      console.log('📦 Importing FFmpeg modules...');
+      const ffmpegModule = await import('https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@0.12.10/dist/esm/index.js');
+      const utilModule = await import('https://cdn.jsdelivr.net/npm/@ffmpeg/util@0.12.1/dist/esm/index.js');
+      
+      const { FFmpeg } = ffmpegModule;
+      const { fetchFile } = utilModule;
       
       console.log('✅ Modules imported successfully');
       setLoadingProgress(40);
       
+      // Create FFmpeg instance
       const ffmpeg = new FFmpeg();
-      ffmpegRef.current = ffmpeg;
+      
+      // Store fetchFile for later use
+      fetchFileRef.current = fetchFile;
       
       // Set up logging
       ffmpeg.on('log', ({ message }) => {
@@ -127,70 +149,40 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
       });
       
       ffmpeg.on('progress', ({ progress }) => {
-        console.log(`[FFmpeg] Progress: ${Math.round(progress * 100)}%`);
+        const percent = Math.round(progress * 100);
+        console.log(`[FFmpeg] Progress: ${percent}%`);
       });
       
-      // Use jsdelivr with direct URLs - single threaded core for better compatibility
-      console.log('📦 Loading single-threaded core...');
       setLoadingProgress(50);
       
-      // Direct CDN URLs - no CORS issues
+      // Load core with direct URLs - single threaded for compatibility
+      console.log('🔧 Loading FFmpeg core...');
       const coreURL = 'https://cdn.jsdelivr.net/npm/@ffmpeg/core-st@0.12.6/dist/esm/ffmpeg-core.js';
       const wasmURL = 'https://cdn.jsdelivr.net/npm/@ffmpeg/core-st@0.12.6/dist/esm/ffmpeg-core.wasm';
       
       setLoadingProgress(70);
-      console.log('🔧 Loading FFmpeg with direct URLs...');
       
-      // Load FFmpeg
       await ffmpeg.load({
         coreURL,
         wasmURL,
       });
       
       setLoadingProgress(100);
+      
+      // Store reference
+      ffmpegRef.current = ffmpeg;
       setFfmpegLoaded(true);
+      
       console.log('✅ FFmpeg loaded successfully!');
       toast.success('Media processor ready!', { id: 'ffmpeg-load' });
-    } catch (error) {
-      console.error('❌ FFmpeg load error (primary attempt with jsdelivr failed):', error);
-      console.error('Error details:', {
-        message: error.message,
-        stack: error.stack,
-        name: error.name
-      });
       
-      // Try alternative loading method as fallback
-      console.log('⚠️ Trying alternative loading method (unpkg fallback)...');
-      try {
-        setLoadingProgress(30);
-        
-        // Alternative: try unpkg
-        const { FFmpeg } = await import('https://unpkg.com/@ffmpeg/ffmpeg@0.12.10/dist/esm/index.js');
-        const { fetchFile } = await import('https://unpkg.com/@ffmpeg/util@0.12.1/dist/esm/index.js');
-        
-        const ffmpeg = new FFmpeg();
-        ffmpegRef.current = ffmpeg;
-        
-        ffmpeg.on('log', ({ message }) => console.log('[FFmpeg]:', message));
-        ffmpeg.on('progress', ({ progress }) => console.log(`[FFmpeg] Progress: ${Math.round(progress * 100)}%`));
-        
-        setLoadingProgress(60);
-        
-        const coreURL = 'https://unpkg.com/@ffmpeg/core-st@0.12.6/dist/esm/ffmpeg-core.js';
-        const wasmURL = 'https://unpkg.com/@ffmpeg/core-st@0.12.6/dist/esm/ffmpeg-core.wasm';
-        
-        await ffmpeg.load({ coreURL, wasmURL });
-        
-        setLoadingProgress(100);
-        setFfmpegLoaded(true);
-        console.log('✅ FFmpeg loaded successfully via unpkg!');
-        toast.success('Media processor ready!', { id: 'ffmpeg-load' });
-      } catch (fallbackError) {
-        console.error('❌ Fallback (unpkg) also failed:', fallbackError);
-        setError('Unable to load media processor. Please check your internet connection and refresh the page.');
-        toast.error('Failed to load media processor. Please refresh and try again.', { id: 'ffmpeg-load' });
-        setLoadingProgress(0);
-      }
+    } catch (error) {
+      console.error('❌ FFmpeg load error:', error);
+      console.error('Error stack:', error.stack);
+      
+      setError(`Failed to load media processor: ${error.message}. Please refresh the page and try again.`);
+      toast.error('Failed to load media processor. Please refresh the page.', { id: 'ffmpeg-load' });
+      setLoadingProgress(0);
     }
   };
 
@@ -212,6 +204,56 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
     } catch (error) {
       console.error('Error parsing GIF:', error);
     }
+  };
+
+  const generateAIFilename = async () => {
+    setGeneratingFilename(true);
+    try {
+      const baseName = image.name.split('.')[0];
+      const mediaType = isVideo ? 'video' : isAudio ? 'audio' : isGif ? 'GIF animation' : 'image';
+      const ext = outputFormat || format;
+      
+      const result = await base44.integrations.Core.InvokeLLM({
+        prompt: `Generate a clean, SEO-friendly filename for a compressed ${mediaType}. Original name: "${baseName}". 
+Rules:
+- Use lowercase with hyphens (kebab-case)
+- Be descriptive but concise (max 50 chars)
+- Remove special characters
+- Don't include file extension
+- Make it web-friendly and searchable
+- Keep the essence of the original name
+
+Return ONLY the filename without extension, nothing else.`,
+        response_json_schema: {
+          type: "object",
+          properties: {
+            filename: { type: "string" }
+          }
+        }
+      });
+      
+      const suggestedName = result.filename || baseName.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+      setSuggestedFilename(`${suggestedName}.${ext}`);
+      setEditedFilename(`${suggestedName}.${ext}`);
+      setShowFilenameInput(true);
+      toast.success('AI filename generated!');
+    } catch (error) {
+      console.error('Error generating filename:', error);
+      toast.error('Failed to generate filename');
+    } finally {
+      setGeneratingFilename(false);
+    }
+  };
+
+  const acceptFilename = () => {
+    setShowFilenameInput(false);
+    downloadMedia(editedFilename);
+  };
+
+  const rejectFilename = () => {
+    setShowFilenameInput(false);
+    setSuggestedFilename('');
+    setEditedFilename('');
   };
 
   const processMedia = async () => {
@@ -247,7 +289,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
   });
 
   const convertGifToMp4 = async () => {
-    if (!ffmpegLoaded || !ffmpegRef.current) {
+    if (!ffmpegLoaded || !ffmpegRef.current || !fetchFileRef.current) {
       toast.error('Video processor not ready');
       return;
     }
@@ -257,7 +299,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
       toast.info('Converting GIF to MP4...', { id: 'processing', duration: Infinity });
       
       const ffmpeg = ffmpegRef.current;
-      const { fetchFile } = await import('https://cdn.jsdelivr.net/npm/@ffmpeg/util@0.12.1/dist/esm/index.js');
+      const fetchFile = fetchFileRef.current;
       
       console.log('📥 Fetching GIF data...');
       const gifData = await fetchFile(preview);
@@ -316,7 +358,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
   };
 
   const convertMp4ToGif = async () => {
-    if (!ffmpegLoaded || !ffmpegRef.current) {
+    if (!ffmpegLoaded || !ffmpegRef.current || !fetchFileRef.current) {
       toast.error('Video processor not ready');
       return;
     }
@@ -326,7 +368,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
       toast.info('Converting video to GIF...', { id: 'processing', duration: Infinity });
       
       const ffmpeg = ffmpegRef.current;
-      const { fetchFile } = await import('https://cdn.jsdelivr.net/npm/@ffmpeg/util@0.12.1/dist/esm/index.js');
+      const fetchFile = fetchFileRef.current;
       
       console.log('📥 Fetching video data...');
       const videoData = await fetchFile(preview);
@@ -392,7 +434,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
   };
 
   const processVideo = async () => {
-    if (!ffmpegLoaded || !ffmpegRef.current) {
+    if (!ffmpegLoaded || !ffmpegRef.current || !fetchFileRef.current) {
       toast.error('Video processor not ready');
       return;
     }
@@ -402,7 +444,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
       toast.info('Compressing video...', { id: 'processing', duration: Infinity });
       
       const ffmpeg = ffmpegRef.current;
-      const { fetchFile } = await import('https://cdn.jsdelivr.net/npm/@ffmpeg/util@0.12.1/dist/esm/index.js');
+      const fetchFile = fetchFileRef.current;
       
       console.log('📥 Fetching video data...');
       const videoData = await fetchFile(preview);
@@ -482,7 +524,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
   };
 
   const processAudio = async () => {
-    if (!ffmpegLoaded || !ffmpegRef.current) {
+    if (!ffmpegLoaded || !ffmpegRef.current || !fetchFileRef.current) {
       toast.error('Audio processor not ready');
       return;
     }
@@ -492,7 +534,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
       toast.info('Compressing audio...', { id: 'processing', duration: Infinity });
       
       const ffmpeg = ffmpegRef.current;
-      const { fetchFile } = await import('https://cdn.jsdelivr.net/npm/@ffmpeg/util@0.12.1/dist/esm/index.js');
+      const fetchFile = fetchFileRef.current;
       
       console.log('📥 Fetching audio data...');
       const audioData = await fetchFile(preview);
@@ -855,12 +897,15 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
     });
   };
 
-  const downloadMedia = () => {
+  const downloadMedia = (customFilename = null) => {
     const link = document.createElement('a');
     link.href = compressedPreview;
-    link.download = `${image.name.split('.')[0]}_compressed.${outputFormat || format}`;
+    link.download = customFilename || `${image.name.split('.')[0]}_compressed.${outputFormat || format}`;
     link.click();
     toast.success('Downloaded!');
+    setShowFilenameInput(false);
+    setSuggestedFilename('');
+    setEditedFilename('');
   };
 
   const handleCompare = () => {
@@ -1154,13 +1199,56 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
                   <Loader2 className="w-4 h-4 animate-spin flex-shrink-0" />
                   <span className="text-xs">Loading {isVideo ? 'video' : isAudio ? 'audio' : 'media'} processor... {loadingProgress}%</span>
                 </div>
-                <div className="w-full bg-slate-200 dark:bg-slate-800 rounded-full h-2 overflow-hidden">
-                  <motion.div
-                    className="h-full bg-blue-600"
-                    initial={{ width: 0 }}
-                    animate={{ width: `${loadingProgress}%` }}
-                    transition={{ duration: 0.3 }}
-                  />
+                {loadingProgress > 0 && (
+                  <div className="w-full bg-slate-200 dark:bg-slate-800 rounded-full h-2 overflow-hidden">
+                    <motion.div
+                      className="h-full bg-blue-600"
+                      initial={{ width: 0 }}
+                      animate={{ width: `${loadingProgress}%` }}
+                      transition={{ duration: 0.3 }}
+                    />
+                  </div>
+                )}
+              </motion.div>
+            )}
+
+            {processed && showFilenameInput && (
+              <motion.div
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                className="space-y-2 p-3 bg-emerald-50 dark:bg-emerald-950/20 rounded-lg border border-emerald-200 dark:border-emerald-800"
+              >
+                <div className="flex items-center gap-2 mb-2">
+                  <Sparkles className="w-4 h-4 text-emerald-600" />
+                  <label className="text-xs font-semibold text-emerald-700 dark:text-emerald-400">
+                    AI Suggested Filename
+                  </label>
+                </div>
+                <Input
+                  value={editedFilename}
+                  onChange={(e) => setEditedFilename(e.target.value)}
+                  className="text-sm"
+                  placeholder="Enter filename..."
+                />
+                <div className="flex gap-2">
+                  <Button
+                    size="sm"
+                    onClick={acceptFilename}
+                    className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white"
+                  >
+                    <Check className="w-3 h-3 mr-1" />
+                    Accept
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={rejectFilename}
+                    className="flex-1"
+                  >
+                    <XCircle className="w-3 h-3 mr-1" />
+                    Cancel
+                  </Button>
                 </div>
               </motion.div>
             )}
@@ -1677,12 +1765,32 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
                 </motion.div>
                 <motion.div className="flex-1" whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
                   <Button
-                    onClick={downloadMedia}
+                    onClick={() => {
+                      if (!showFilenameInput) {
+                        generateAIFilename();
+                      } else {
+                        downloadMedia();
+                      }
+                    }}
                     className="w-full bg-emerald-600 hover:bg-emerald-700 text-white"
-                    disabled={processing}
+                    disabled={processing || generatingFilename}
                   >
-                    <Download className="w-4 h-4 mr-2" />
-                    Download
+                    {generatingFilename ? (
+                      <>
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                        Generating...
+                      </>
+                    ) : showFilenameInput ? (
+                      <>
+                        <Download className="w-4 h-4 mr-2" />
+                        Download
+                      </>
+                    ) : (
+                      <>
+                        <Wand2 className="w-4 h-4 mr-2" />
+                        AI Download
+                      </>
+                    )}
                   </Button>
                 </motion.div>
               </>
