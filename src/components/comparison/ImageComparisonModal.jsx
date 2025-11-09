@@ -133,7 +133,13 @@ export default function ImageComparisonModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-[98vw] w-[98vw] h-[98vh] p-0 overflow-hidden bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 border-slate-800">
+      <DialogContent className="max-w-[98vw] w-[98vw] h-[98vh] p-0 overflow-hidden bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 border-slate-800 [&>button]:hidden">
+        <style>{`
+          [role="dialog"] > button[type="button"] {
+            display: none !important;
+          }
+        `}</style>
+        
         {/* Single Close Button - Top Right Corner */}
         <Button
           variant="ghost"
@@ -183,9 +189,10 @@ export default function ImageComparisonModal({
 
             <div 
               ref={containerRef}
-              className="relative w-full h-full bg-slate-950 select-none flex items-center justify-center p-4"
+              className="relative w-full h-full bg-slate-950 select-none"
               style={{ 
-                cursor: zoom > 1 ? (isPanning ? 'grabbing' : 'grab') : 'col-resize'
+                cursor: zoom > 1 ? (isPanning ? 'grabbing' : 'grab') : 'col-resize',
+                padding: '80px 20px 80px 20px'
               }}
               onMouseDown={(e) => {
                 if (zoom > 1) {
@@ -215,7 +222,7 @@ export default function ImageComparisonModal({
                 <img
                   src={compressedImage}
                   alt="Compressed"
-                  className="max-w-full max-h-full object-contain"
+                  className="max-w-full max-h-full w-auto h-auto object-contain"
                   draggable="false"
                 />
 
@@ -227,7 +234,7 @@ export default function ImageComparisonModal({
                   <img
                     src={originalImage}
                     alt="Original"
-                    className="max-w-full max-h-full object-contain"
+                    className="max-w-full max-h-full w-auto h-auto object-contain"
                     draggable="false"
                   />
                 </div>
@@ -247,10 +254,10 @@ export default function ImageComparisonModal({
                   </div>
 
                   {/* Labels */}
-                  <Badge className="absolute top-1/2 left-4 -translate-y-1/2 bg-slate-900/95 backdrop-blur-sm text-white border border-slate-700 text-sm px-4 py-2 z-10 shadow-lg">
+                  <Badge className="absolute top-1/2 left-8 -translate-y-1/2 bg-slate-900/95 backdrop-blur-sm text-white border border-slate-700 text-sm px-4 py-2 z-10 shadow-lg">
                     Original
                   </Badge>
-                  <Badge className="absolute top-1/2 right-4 md:right-auto md:left-[calc(50%+2rem)] -translate-y-1/2 bg-emerald-600/95 backdrop-blur-sm text-white border border-emerald-500 text-sm px-4 py-2 z-10 shadow-lg">
+                  <Badge className="absolute top-1/2 right-8 md:right-auto md:left-[calc(50%+2rem)] -translate-y-1/2 bg-emerald-600/95 backdrop-blur-sm text-white border border-emerald-500 text-sm px-4 py-2 z-10 shadow-lg">
                     Compressed
                   </Badge>
 
