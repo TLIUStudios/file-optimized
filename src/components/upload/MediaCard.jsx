@@ -124,123 +124,43 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
       setLoadingProgress(10);
       toast.info('Loading media processor...', { id: 'ffmpeg-load', duration: Infinity });
       
-      setLoadingProgress(20);
+      console.log('📦 Importing FFmpeg...');
+      const FFmpeg = (await import('https://unpkg.com/@ffmpeg/ffmpeg@0.12.10/dist/umd/ffmpeg.js')).default;
+      console.log('✅ FFmpeg imported');
+      setLoadingProgress(30);
       
-      // Try Method 1: Direct URLs from jsdelivr (no CORS, no workers issues)
-      try {
-        console.log('📦 Method 1: Importing from jsdelivr...');
-        const { FFmpeg } = await import('https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@0.12.10/dist/umd/index.js');
-        const { fetchFile } = await import('https://cdn.jsdelivr.net/npm/@ffmpeg/util@0.12.1/dist/umd/index.js');
-        
-        console.log('✅ Modules imported successfully');
-        setLoadingProgress(40);
-        
-        const ffmpeg = new FFmpeg();
-        window.fetchFile = fetchFile;
-        
-        ffmpeg.on('log', ({ message }) => {
-          console.log('[FFmpeg]:', message);
-        });
-        
-        ffmpeg.on('progress', ({ progress }) => {
-          const percent = Math.round(progress * 100);
-          console.log(`[FFmpeg] Progress: ${percent}%`);
-        });
-        
-        setLoadingProgress(60);
-        
-        console.log('🔧 Loading FFmpeg core...');
-        const baseURL = 'https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.6/dist/umd';
-        
-        await ffmpeg.load({
-          coreURL: `${baseURL}/ffmpeg-core.js`,
-          wasmURL: `${baseURL}/ffmpeg-core.wasm`,
-        });
-        
-        setLoadingProgress(100);
-        ffmpegRef.current = ffmpeg;
-        setFfmpegLoaded(true);
-        
-        console.log('✅ FFmpeg loaded successfully (Method 1)!');
-        toast.success('Media processor ready!', { id: 'ffmpeg-load' });
-        return;
-        
-      } catch (error1) {
-        console.warn('⚠️ Method 1 failed, trying Method 2...', error1);
-        setLoadingProgress(30);
-        
-        // Try Method 2: ESM with single-threaded core
-        try {
-          console.log('📦 Method 2: Importing ESM with single-threaded core...');
-          const { FFmpeg } = await import('https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@0.12.10/dist/esm/index.js');
-          const { fetchFile } = await import('https://cdn.jsdelivr.net/npm/@ffmpeg/util@0.12.1/dist/esm/index.js');
-          
-          console.log('✅ Modules imported successfully');
-          setLoadingProgress(50);
-          
-          const ffmpeg = new FFmpeg();
-          window.fetchFile = fetchFile;
-          
-          ffmpeg.on('log', ({ message }) => console.log('[FFmpeg]:', message));
-          ffmpeg.on('progress', ({ progress }) => console.log(`[FFmpeg] Progress: ${Math.round(progress * 100)}%`));
-          
-          setLoadingProgress(70);
-          
-          console.log('🔧 Loading single-threaded core...');
-          await ffmpeg.load({
-            coreURL: 'https://cdn.jsdelivr.net/npm/@ffmpeg/core-st@0.12.6/dist/esm/ffmpeg-core.js',
-            wasmURL: 'https://cdn.jsdelivr.net/npm/@ffmpeg/core-st@0.12.6/dist/esm/ffmpeg-core.wasm',
-          });
-          
-          setLoadingProgress(100);
-          ffmpegRef.current = ffmpeg;
-          setFfmpegLoaded(true);
-          
-          console.log('✅ FFmpeg loaded successfully (Method 2)!');
-          toast.success('Media processor ready!', { id: 'ffmpeg-load' });
-          return;
-          
-        } catch (error2) {
-          console.warn('⚠️ Method 2 failed, trying Method 3...', error2);
-          setLoadingProgress(40);
-          
-          // Try Method 3: Unpkg fallback
-          try {
-            console.log('📦 Method 3: Importing from unpkg...');
-            const { FFmpeg } = await import('https://unpkg.com/@ffmpeg/ffmpeg@0.12.10/dist/esm/index.js');
-            const { fetchFile } = await import('https://unpkg.com/@ffmpeg/util@0.12.1/dist/esm/index.js');
-            
-            console.log('✅ Modules imported successfully');
-            setLoadingProgress(60);
-            
-            const ffmpeg = new FFmpeg();
-            window.fetchFile = fetchFile;
-            
-            ffmpeg.on('log', ({ message }) => console.log('[FFmpeg]:', message));
-            ffmpeg.on('progress', ({ progress }) => console.log(`[FFmpeg] Progress: ${Math.round(progress * 100)}%`));
-            
-            setLoadingProgress(80);
-            
-            console.log('🔧 Loading from unpkg...');
-            await ffmpeg.load({
-              coreURL: 'https://unpkg.com/@ffmpeg/core-st@0.12.6/dist/esm/ffmpeg-core.js',
-              wasmURL: 'https://unpkg.com/@ffmpeg/core-st@0.12.6/dist/esm/ffmpeg-core.wasm',
-            });
-            
-            setLoadingProgress(100);
-            ffmpegRef.current = ffmpeg;
-            setFfmpegLoaded(true);
-            
-            console.log('✅ FFmpeg loaded successfully (Method 3)!');
-            toast.success('Media processor ready!', { id: 'ffmpeg-load' });
-            return;
-            
-          } catch (error3) {
-            console.error('❌ All methods failed');
-            throw new Error('Unable to load FFmpeg from any CDN. Please check your internet connection.');
-          }
-        }
-      }
+      const ffmpeg = new FFmpeg();
+      
+      // Set up logging
+      ffmpeg.on('log', ({ message }) => {
+        console.log('[FFmpeg]:', message);
+      });
+      
+      ffmpeg.on('progress', ({ progress }) => {
+        const percent = Math.round(progress * 100);
+        console.log(`[FFmpeg] Progress: ${percent}%`);
+      });
+      
+      setLoadingProgress(50);
+      
+      console.log('🔧 Loading FFmpeg core...');
+      // Use unpkg with simple direct loading
+      await ffmpeg.load({
+        coreURL: 'https://unpkg.com/@ffmpeg/core@0.12.6/dist/umd/ffmpeg-core.js',
+      });
+      
+      setLoadingProgress(100);
+      
+      // Store reference and fetchFile globally
+      ffmpegRef.current = ffmpeg;
+      setFfmpegLoaded(true);
+      
+      // Import fetchFile and store globally
+      const { fetchFile } = await import('https://unpkg.com/@ffmpeg/util@0.12.1/dist/umd/index.js');
+      window.fetchFile = fetchFile;
+      
+      console.log('✅ FFmpeg loaded successfully!');
+      toast.success('Media processor ready!', { id: 'ffmpeg-load' });
       
     } catch (error) {
       console.error('❌ FFmpeg load error:', error);
@@ -250,8 +170,8 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
         name: error.name
       });
       
-      setError(`Failed to load media processor. Try refreshing the page. Error: ${error.message}`);
-      toast.error('Failed to load media processor. Please refresh the page.', { id: 'ffmpeg-load' });
+      setError(`Media processor failed to load. Please refresh the page. (${error.message})`);
+      toast.error('Media processor failed. Please refresh the page.', { id: 'ffmpeg-load' });
       setLoadingProgress(0);
     }
   };
@@ -324,6 +244,12 @@ Return ONLY the filename without extension, nothing else.`,
     setShowFilenameInput(false);
     setSuggestedFilename('');
     setEditedFilename('');
+  };
+
+  const openFilenameEditor = () => {
+    const currentName = `${image.name.split('.')[0]}_compressed.${outputFormat || format}`;
+    setEditedFilename(currentName);
+    setShowFilenameInput(true);
   };
 
   const processMedia = async () => {
@@ -1866,6 +1792,23 @@ Return ONLY the filename without extension, nothing else.`,
               </>
             )}
           </div>
+
+          {processed && !showFilenameInput && (
+            <motion.div
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+            >
+              <Button
+                onClick={openFilenameEditor}
+                variant="outline"
+                size="sm"
+                className="w-full"
+              >
+                <Edit2 className="w-3 h-3 mr-2" />
+                Edit Filename Before Download
+              </Button>
+            </motion.div>
+          )}
 
           <AnimatePresence>
             {processed && !error && (
