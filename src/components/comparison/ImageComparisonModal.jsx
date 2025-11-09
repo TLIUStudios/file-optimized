@@ -1,12 +1,75 @@
 
 import { useState, useRef, useEffect } from "react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
-import { X, MoveHorizontal, ZoomIn, ZoomOut, Maximize2, Copy, RefreshCw, Download } from "lucide-react";
+import { X, MoveHorizontal, ZoomIn, ZoomOut, Maximize2, Copy, RefreshCw, Download as DownloadIcon } from "lucide-react"; // Renamed Download to DownloadIcon
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { base44 } from "@/api/base44Client";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils"; // Assuming cn utility is available at this path
+
+// Helper component for the download options modal for images
+function DownloadWithOptionsModal({
+  isOpen,
+  onClose,
+  onDownloadSpecificFormat,
+  onDownloadAllFormatsZip,
+  availableImageFormats,
+  fileName,
+  // For future enhancements, AI metadata could be passed here to offer inclusion options
+  // aiTitle, aiDescription, aiAltText, aiTags,
+}) {
+  return (
+    <Dialog open={isOpen} onOpenChange={onClose}>
+      <DialogContent className="sm:max-w-[425px] p-6 bg-white dark:bg-slate-950 border-slate-200 dark:border-slate-800">
+        <div className="flex items-center justify-between pb-4 border-b border-gray-200 dark:border-gray-700">
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Download Image Options</h3>
+          <Button variant="ghost" size="icon" onClick={onClose} className="h-7 w-7 text-gray-400 hover:text-gray-900 dark:hover:text-white">
+            <X className="h-4 w-4" />
+          </Button>
+        </div>
+        <div className="py-4 space-y-4">
+          <p className="text-sm text-gray-500 dark:text-gray-400">
+            Choose how you'd like to download your compressed image.
+          </p>
+
+          <div className="space-y-2">
+            <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-200">Download as single format:</h4>
+            {availableImageFormats.map((fmt) => (
+              <Button
+                key={fmt}
+                className="w-full justify-start text-gray-900 dark:text-white bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700"
+                variant="outline"
+                onClick={() => {
+                  onDownloadSpecificFormat(fmt);
+                  onClose();
+                }}
+              >
+                <DownloadIcon className="h-4 w-4 mr-2" /> Download as {fmt.toUpperCase()}
+              </Button>
+            ))}
+          </div>
+
+          <div className="border-t border-gray-200 dark:border-gray-700 pt-4 space-y-2">
+            <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-200">Other options:</h4>
+            <Button
+              className="w-full justify-start text-gray-900 dark:text-white bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700"
+              variant="outline"
+              onClick={() => {
+                onDownloadAllFormatsZip();
+                onClose();
+              }}
+            >
+              <DownloadIcon className="h-4 w-4 mr-2" /> Download all formats (.zip)
+            </Button>
+            {/* Future option for metadata inclusion could go here */}
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 
 export default function ImageComparisonModal({
   isOpen,
@@ -34,6 +97,8 @@ export default function ImageComparisonModal({
   const [aiTags, setAiTags] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
   const [regeneratingField, setRegeneratingField] = useState(null);
+  const [showDownloadModalForImage, setShowDownloadModalForImage] = useState(false); // New state for download modal
+
   const containerRef = useRef(null);
   const imageContainerRef = useRef(null);
 
@@ -223,45 +288,17 @@ export default function ImageComparisonModal({
     toast.success(`${label} copied!`);
   };
 
-  const downloadMedia = async (format = null) => {
-    if (!format) {
-      // Download ZIP with all formats
-      if (mediaType === 'video') {
-        // For video, if "Download" is clicked without specific format, download the default MP4.
-        downloadMedia('mp4');
-        return;
-      }
-
-      if (mediaType === 'audio') {
-        toast.info('Preparing audio for download...');
-        try {
-          // No multi-format conversion for audio in browser easily, just download the compressed one.
-          const link = document.createElement('a');
-          link.href = compressedImage;
-          const baseName = fileName.split('.')[0];
-          link.download = `${baseName}.${fileFormat}`; // Use the actual fileFormat of the compressed audio
-          link.click();
-          toast.success('Audio downloaded!');
-        } catch (error) {
-          console.error('Error downloading audio:', error);
-          toast.error('Failed to download audio');
-        }
-        return;
-      }
-
-      // For images, create ZIP with all formats
-      toast.info('Creating multi-format ZIP...');
-
-      try {
-        const JSZip = (await import('https://cdn.jsdelivr.net/npm/jszip@3.10.1/+esm')).default;
-        const zip = new JSZip();
-
+  // Helper function for downloading a single media file (image, video, or audio)
+  const performSingleMediaDownload = async (mediaUrl, format, mediaTypeOverride = mediaType) => {
+    try {
+      toast.info(`Preparing download as ${format.toUpperCase()}...`);
+      if (mediaTypeOverride === 'image') {
         const img = new Image();
-        img.src = compressedImage;
+        img.src = mediaUrl;
 
         await new Promise((resolve, reject) => {
           img.onload = resolve;
-          img.onerror = () => reject(new Error('Failed to load image for ZIP conversion.'));
+          img.onerror = () => reject(new Error('Failed to load image for conversion.'));
         });
 
         const canvas = document.createElement('canvas');
@@ -270,64 +307,57 @@ export default function ImageComparisonModal({
         const ctx = canvas.getContext('2d');
         ctx.drawImage(img, 0, 0);
 
-        const baseName = fileName.split('.')[0];
-        const formats = [
-          { ext: 'jpg', mime: 'image/jpeg' },
-          { ext: 'png', mime: 'image/png' },
-          { ext: 'webp', mime: 'image/webp' },
-          { ext: 'avif', mime: 'image/avif' }
-        ];
+        const mimeType = format === 'jpg' ? 'image/jpeg' : `image/${format}`;
 
-        for (const f of formats) {
-          const blob = await new Promise((resolve) => {
-            // Check if browser supports the format before trying to create blob
-            if (canvas.toDataURL(f.mime).startsWith(`data:${f.mime}`)) {
-              canvas.toBlob(resolve, f.mime, 0.95);
-            } else {
-              console.warn(`Browser does not support converting to ${f.ext}. Skipping.`);
-              resolve(null); // Resolve with null if not supported
-            }
-          });
-          if (blob) {
-            zip.file(`${baseName}.${f.ext}`, blob);
-          }
+        // Check if browser supports the requested format
+        if (!canvas.toDataURL(mimeType).startsWith(`data:${mimeType}`)) {
+          throw new Error(`Browser does not support converting to ${format.toUpperCase()}.`);
         }
 
-        const content = await zip.generateAsync({ type: 'blob' });
-        const link = document.createElement('a');
-        link.href = URL.createObjectURL(content);
-        link.download = `${baseName}-all-formats.zip`;
-        link.click();
-        URL.revokeObjectURL(link.href);
+        const blob = await new Promise((resolve, reject) => {
+          canvas.toBlob(resolve, mimeType, 0.95);
+        });
 
-        toast.success('All formats downloaded!');
-      } catch (error) {
-        console.error('Error creating ZIP:', error);
-        toast.error('Failed to create multi-format ZIP: ' + error.message);
-      }
-      return;
-    }
-
-    // Download single format
-    try {
-      if (mediaType === 'video' || mediaType === 'audio') {
-        // Direct download for video/audio
+        if (!blob) {
+          toast.error(`Failed to create ${format.toUpperCase()} image blob.`);
+          return;
+        }
+        const url = URL.createObjectURL(blob);
         const link = document.createElement('a');
-        link.href = compressedImage;
+        link.href = url;
         const baseName = fileName.split('.')[0];
         link.download = `${baseName}.${format}`;
         link.click();
+        URL.revokeObjectURL(url);
         toast.success(`Downloaded as ${format.toUpperCase()}!`);
-        return;
+      } else { // video or audio direct download
+        const link = document.createElement('a');
+        link.href = mediaUrl;
+        const baseName = fileName.split('.')[0];
+        link.download = `${baseName}.${format || fileFormat}`; // Use provided format or default compressed format
+        link.click();
+        toast.success(`${mediaTypeOverride.charAt(0).toUpperCase() + mediaTypeOverride.slice(1)} downloaded!`);
       }
+    } catch (error) {
+      console.error('Error downloading format:', error);
+      toast.error(`Failed to download as ${format.toUpperCase()}: ` + error.message);
+    }
+  };
 
-      // Image format conversion
+  // Function to download all image formats as a ZIP
+  const downloadAllImageFormatsAsZip = async () => {
+    toast.info('Creating multi-format ZIP...');
+
+    try {
+      const JSZip = (await import('https://cdn.jsdelivr.net/npm/jszip@3.10.1/+esm')).default;
+      const zip = new JSZip();
+
       const img = new Image();
-      img.src = compressedImage;
+      img.src = compressedImage; // Assuming compressedImage is the base for all formats in zip
 
       await new Promise((resolve, reject) => {
         img.onload = resolve;
-        img.onerror = () => reject(new Error('Failed to load image for conversion.'));
+        img.onerror = () => reject(new Error('Failed to load image for ZIP conversion.'));
       });
 
       const canvas = document.createElement('canvas');
@@ -336,34 +366,66 @@ export default function ImageComparisonModal({
       const ctx = canvas.getContext('2d');
       ctx.drawImage(img, 0, 0);
 
-      const mimeType = format === 'jpg' ? 'image/jpeg' : `image/${format}`;
-
-      // Check if browser supports the requested format
-      if (!canvas.toDataURL(mimeType).startsWith(`data:${mimeType}`)) {
-        throw new Error(`Browser does not support converting to ${format.toUpperCase()}.`);
-      }
-
-      const blob = await new Promise((resolve, reject) => {
-        canvas.toBlob(resolve, mimeType, 0.95);
-      });
-
-      if (!blob) {
-        toast.error(`Failed to create ${format.toUpperCase()} image blob.`);
-        return;
-      }
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
       const baseName = fileName.split('.')[0];
-      link.download = `${baseName}.${format}`;
+      const imageFormatsForZip = [ // Explicitly define image formats for ZIP
+        { ext: 'jpg', mime: 'image/jpeg' },
+        { ext: 'png', mime: 'image/png' },
+        { ext: 'webp', mime: 'image/webp' },
+        { ext: 'avif', mime: 'image/avif' }
+      ];
+
+      for (const f of imageFormatsForZip) {
+        const blob = await new Promise((resolve) => {
+          // Check if browser supports the format before trying to create blob
+          if (canvas.toDataURL(f.mime).startsWith(`data:${f.mime}`)) {
+            canvas.toBlob(resolve, f.mime, 0.95);
+          } else {
+            console.warn(`Browser does not support converting to ${f.ext}. Skipping.`);
+            resolve(null); // Resolve with null if not supported
+          }
+        });
+        if (blob) {
+          zip.file(`${baseName}.${f.ext}`, blob);
+        }
+      }
+
+      const content = await zip.generateAsync({ type: 'blob' });
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(content);
+      link.download = `${baseName}-all-formats.zip`;
       link.click();
-      URL.revokeObjectURL(url);
-      toast.success(`Downloaded as ${format.toUpperCase()}!`);
+      URL.revokeObjectURL(link.href);
+
+      toast.success('All formats downloaded!');
     } catch (error) {
-      console.error('Error downloading format:', error);
-      toast.error(`Failed to download as ${format.toUpperCase()}: ` + error.message);
+      console.error('Error creating ZIP:', error);
+      toast.error('Failed to create multi-format ZIP: ' + error.message);
     }
   };
+
+  const downloadMedia = async (format = null) => {
+    if (mediaType === 'image' && !format) {
+      // For images, if no specific format is selected, open the options modal
+      setShowDownloadModalForImage(true);
+      return;
+    }
+
+    if (mediaType === 'video' && !format) {
+      // For video, if "Download" is clicked without specific format, download the default MP4.
+      performSingleMediaDownload(compressedImage, 'mp4', 'video');
+      return;
+    }
+
+    if (mediaType === 'audio' && !format) {
+      // For audio, if "Download" is clicked without specific format, download the compressed one.
+      performSingleMediaDownload(compressedImage, fileFormat, 'audio');
+      return;
+    }
+
+    // For any media type, if a specific format is provided
+    performSingleMediaDownload(compressedImage, format);
+  };
+
 
   const getAspectRatio = (width, height) => {
     const gcd = (a, b) => b === 0 ? a : gcd(b, a % b);
@@ -539,10 +601,10 @@ export default function ImageComparisonModal({
           <div className="flex items-center gap-2">
             <div className="flex items-center gap-1 bg-white dark:bg-slate-800 rounded-md border border-slate-200 dark:border-slate-700 p-1">
               <Button
-                onClick={() => downloadMedia()}
+                onClick={() => downloadMedia()} // This now triggers the modal for images
                 className="bg-emerald-600 hover:bg-emerald-700 text-white h-8 px-3 text-xs"
               >
-                <Download className="w-3 h-3 mr-1" />
+                <DownloadIcon className="w-3 h-3 mr-1" />
                 Download
               </Button>
               {availableFormats.map((fmt) => (
@@ -626,7 +688,7 @@ export default function ImageComparisonModal({
                       {zoom === 1 && !isPanning && (
                         <div
                           className="absolute top-0 bottom-0 w-0.5 bg-white shadow-2xl z-10 pointer-events-none"
-                          style={{ left: `${sliderPosition}%`, transform: 'translateX(-50%)' }}
+                          style={{ left: `${sliderPosition}%`, transform: 'translateX(-50%)` }}
                         >
                           <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-12 h-12 bg-white dark:bg-slate-700 rounded-full shadow-2xl flex items-center justify-center cursor-col-resize border-2 border-slate-300 dark:border-slate-600 pointer-events-auto">
                             <MoveHorizontal className="w-5 h-5 text-slate-700 dark:text-white" />
@@ -1007,6 +1069,23 @@ export default function ImageComparisonModal({
             </div>
           </div>
         </div>
+
+        {/* Download Options Modal for Images */}
+        {mediaType === 'image' && (
+          <DownloadWithOptionsModal
+            isOpen={showDownloadModalForImage}
+            onClose={() => setShowDownloadModalForImage(false)}
+            onDownloadSpecificFormat={(format) => performSingleMediaDownload(compressedImage, format)}
+            onDownloadAllFormatsZip={downloadAllImageFormatsAsZip}
+            availableImageFormats={['jpg', 'png', 'webp', 'avif']} // Pass image specific formats
+            fileName={fileName}
+            // For future AI metadata integration:
+            // aiTitle={aiTitle}
+            // aiDescription={aiDescription}
+            // aiAltText={aiAltText}
+            // aiTags={aiTags}
+          />
+        )}
       </DialogContent>
     </Dialog>
   );

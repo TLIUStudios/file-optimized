@@ -18,8 +18,9 @@ import {
 import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
 
-// Lazy load the editor
+// Lazy load the editor and download modal
 const ImageEditor = lazy(() => import("./ImageEditor"));
+const DownloadModal = lazy(() => import("./DownloadModal"));
 
 export default function MediaCard({ image, onRemove, onProcessed, onCompare, autoProcess }) {
   const [processing, setProcessing] = useState(false);
@@ -39,6 +40,9 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
   const [noiseReduction, setNoiseReduction] = useState(false);
   const [showEditor, setShowEditor] = useState(false);
   const [outputFormat, setOutputFormat] = useState(null);
+  const [showDownloadModal, setShowDownloadModal] = useState(false);
+  const [compressedBlob, setCompressedBlob] = useState(null);
+  const [enableUpscale, setEnableUpscale] = useState(false);
 
   // Media type detection
   const isImage = image.type.startsWith('image/');
@@ -89,12 +93,12 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
     }
   }, [image, isGif, isVideo, isAudio]);
 
-  // Load FFmpeg for video/audio processing
+  // Load FFmpeg for video/audio processing - NEW APPROACH
   useEffect(() => {
-    if ((isVideo || isAudio || isGif) && !ffmpegLoaded) {
-      loadFFmpeg();
+    if ((isVideo || isAudio || (isGif && format === 'mp4')) && !ffmpegLoaded) {
+      loadFFmpegAlternative();
     }
-  }, [isVideo, isAudio, isGif, ffmpegLoaded]);
+  }, [isVideo, isAudio, isGif, format, ffmpegLoaded]);
 
   useEffect(() => {
     if (autoProcess && !processed && !processing && processMediaRef.current) {
@@ -102,72 +106,74 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
     }
   }, [autoProcess, processed, processing]);
 
-  const loadFFmpeg = async () => {
+  const loadFFmpegAlternative = async () => {
     try {
-      console.log('🚀 Starting FFmpeg load...');
-      toast.info('Loading media processor...', { duration: 5000 });
+      console.log('🚀 Loading FFmpeg with alternative approach...');
+      toast.info('Loading media processor...', { id: 'ffmpeg-load', duration: Infinity });
       
-      // Import FFmpeg and utilities
-      const FFmpegWASM = await import('https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@0.12.10/+esm');
-      const FFmpegUtil = await import('https://cdn.jsdelivr.net/npm/@ffmpeg/util@0.12.1/+esm');
+      // Use CDN bundle approach - simpler and more reliable
+      const script = document.createElement('script');
+      script.src = 'https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@0.12.10/dist/umd/ffmpeg.js';
       
-      const { FFmpeg } = FFmpegWASM;
-      const { fetchFile, toBlobURL } = FFmpegUtil;
+      await new Promise((resolve, reject) => {
+        script.onload = resolve;
+        script.onerror = () => reject(new Error('Failed to load FFmpeg script'));
+        document.head.appendChild(script);
+      });
       
-      console.log('✅ Modules imported successfully');
+      console.log('✅ FFmpeg script loaded');
+      
+      // Load utilities
+      const utilScript = document.createElement('script');
+      utilScript.src = 'https://cdn.jsdelivr.net/npm/@ffmpeg/util@0.12.1/dist/umd/index.js';
+      
+      await new Promise((resolve, reject) => {
+        utilScript.onload = resolve;
+        utilScript.onerror = () => reject(new Error('Failed to load FFmpeg utilities'));
+        document.head.appendChild(utilScript);
+      });
+      
+      console.log('✅ FFmpeg utilities loaded');
+      
+      // Access from window object
+      const { FFmpeg } = window.FFmpegWASM || window;
+      const { toBlobURL } = window.FFmpegUtil || window;
+      
+      if (!FFmpeg || !toBlobURL) {
+        throw new Error('FFmpeg or toBlobURL not available on window object');
+      }
       
       const ffmpeg = new FFmpeg();
       ffmpegRef.current = ffmpeg;
       
-      // Set up logging
       ffmpeg.on('log', ({ message }) => {
         console.log('[FFmpeg]:', message);
       });
       
       ffmpeg.on('progress', ({ progress }) => {
-        console.log(`[FFmpeg] Progress: ${Math.round(progress * 100)}%`);
+        const percent = Math.round(progress * 100);
+        console.log(`[FFmpeg] Progress: ${percent}%`);
+        toast.info(`Processing: ${percent}%`, { id: 'ffmpeg-progress' });
       });
       
-      // Use single-threaded core to avoid SharedArrayBuffer requirements
-      const baseURL = 'https://cdn.jsdelivr.net/npm/@ffmpeg/core-st@0.12.6/dist/esm';
-      console.log('📦 Loading single-threaded core from:', baseURL);
+      // Use single-threaded core for better compatibility
+      const baseURL = 'https://unpkg.com/@ffmpeg/core-st@0.12.6/dist/umd';
       
-      // Create blob URLs for core files
-      const coreURL = await toBlobURL(
-        `${baseURL}/ffmpeg-core.js`,
-        'text/javascript'
-      );
-      const wasmURL = await toBlobURL(
-        `${baseURL}/ffmpeg-core.wasm`,
-        'application/wasm'
-      );
+      console.log('📦 Creating blob URLs...');
+      const coreURL = await toBlobURL(`${baseURL}/ffmpeg-core.js`, 'text/javascript');
+      const wasmURL = await toBlobURL(`${baseURL}/ffmpeg-core.wasm`, 'application/wasm');
       
-      console.log('🔧 Core URLs created, loading FFmpeg...');
-      
-      // Load FFmpeg with timeout
-      const loadPromise = ffmpeg.load({
-        coreURL,
-        wasmURL,
-      });
-      
-      const timeoutPromise = new Promise((_, reject) => 
-        setTimeout(() => reject(new Error('FFmpeg load timeout after 30s')), 30000)
-      );
-      
-      await Promise.race([loadPromise, timeoutPromise]);
+      console.log('🔧 Loading FFmpeg core...');
+      await ffmpeg.load({ coreURL, wasmURL });
       
       setFfmpegLoaded(true);
-      console.log('✅ FFmpeg loaded successfully!');
-      toast.success('Media processor ready!');
+      console.log('✅ FFmpeg ready!');
+      toast.success('Media processor ready!', { id: 'ffmpeg-load' });
     } catch (error) {
-      console.error('❌ FFmpeg load error:', error);
-      console.error('Error details:', {
-        message: error.message,
-        stack: error.stack,
-        name: error.name
-      });
-      setError('Failed to load media processor. Try refreshing the page.');
-      toast.error('Failed to load media processor: ' + error.message);
+      console.error('❌ FFmpeg load failed:', error);
+      console.error('Details:', error.message, error.stack);
+      setError('Media processor failed to load. Try refreshing the page or use a different browser.');
+      toast.error('Failed to load media processor: ' + error.message, { id: 'ffmpeg-load' });
     }
   };
 
@@ -213,7 +219,6 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
     } catch (error) {
       console.error('Error processing media:', error);
       setError(`Failed to process ${isVideo ? 'video' : isAudio ? 'audio' : 'image'}. ${error.message}`);
-      toast.dismiss(); // Dismiss any ongoing toast before showing error
       toast.error('Processing failed: ' + error.message);
     }
     
@@ -235,7 +240,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
       toast.info('Converting GIF to MP4...', { duration: Infinity });
       
       const ffmpeg = ffmpegRef.current;
-      const { fetchFile } = await import('https://cdn.jsdelivr.net/npm/@ffmpeg/util@0.12.1/+esm');
+      const { fetchFile } = window.FFmpegUtil || window; // Changed import location
       
       console.log('📥 Fetching GIF data...');
       const gifData = await fetchFile(preview);
@@ -266,6 +271,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
       
       setCompressedPreview(compressedUrl);
       setCompressedSize(outputBlob.size);
+      setCompressedBlob(outputBlob); // ADDED
       setProcessed(true);
       setOutputFormat('mp4');
 
@@ -304,7 +310,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
       toast.info('Converting video to GIF...', { duration: Infinity });
       
       const ffmpeg = ffmpegRef.current;
-      const { fetchFile } = await import('https://cdn.jsdelivr.net/npm/@ffmpeg/util@0.12.1/+esm');
+      const { fetchFile } = window.FFmpegUtil || window; // Changed import location
       
       console.log('📥 Fetching video data...');
       const videoData = await fetchFile(preview);
@@ -342,6 +348,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
       
       setCompressedPreview(compressedUrl);
       setCompressedSize(outputBlob.size);
+      setCompressedBlob(outputBlob); // ADDED
       setProcessed(true);
       setOutputFormat('gif');
 
@@ -380,7 +387,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
       toast.info('Compressing video...', { duration: Infinity });
       
       const ffmpeg = ffmpegRef.current;
-      const { fetchFile } = await import('https://cdn.jsdelivr.net/npm/@ffmpeg/util@0.12.1/+esm');
+      const { fetchFile } = window.FFmpegUtil || window; // Changed import location
       
       console.log('📥 Fetching video data...');
       const videoData = await fetchFile(preview);
@@ -431,6 +438,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
       
       setCompressedPreview(compressedUrl);
       setCompressedSize(outputBlob.size);
+      setCompressedBlob(outputBlob); // ADDED
       setProcessed(true);
       setOutputFormat('mp4');
 
@@ -470,7 +478,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
       toast.info('Compressing audio...', { duration: Infinity });
       
       const ffmpeg = ffmpegRef.current;
-      const { fetchFile } = await import('https://cdn.jsdelivr.net/npm/@ffmpeg/util@0.12.1/+esm');
+      const { fetchFile } = window.FFmpegUtil || window; // Changed import location
       
       console.log('📥 Fetching audio data...');
       const audioData = await fetchFile(preview);
@@ -508,6 +516,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
       
       setCompressedPreview(compressedUrl);
       setCompressedSize(outputBlob.size);
+      setCompressedBlob(outputBlob); // ADDED
       setProcessed(true);
       setOutputFormat(format);
 
@@ -547,6 +556,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
         const compressedUrl = URL.createObjectURL(originalBlob);
         setCompressedPreview(compressedUrl);
         setCompressedSize(originalBlob.size);
+        setCompressedBlob(originalBlob); // ADDED
         setProcessed(true);
         setOutputFormat('gif');
 
@@ -687,6 +697,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
       const compressedUrl = URL.createObjectURL(gifBlob);
       setCompressedPreview(compressedUrl);
       setCompressedSize(gifBlob.size);
+      setCompressedBlob(gifBlob); // ADDED
       setProcessed(true);
       setOutputFormat('gif');
 
@@ -735,22 +746,23 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
     let width = img.width;
     let height = img.height;
 
-    if (maxWidth || maxHeight) {
+    if (maxWidth || maxHeight || enableUpscale) { // Added enableUpscale
       const aspectRatio = width / height;
       
       if (maxWidth && maxHeight) {
-        const widthRatio = maxWidth / width;
-        const heightRatio = maxHeight / height;
-        const ratio = Math.min(widthRatio, heightRatio);
+        // Changed Math.min to (enableUpscale ? Math.max : Math.min)
+        const widthRatio = maxWidth / img.width;
+        const heightRatio = maxHeight / img.height;
+        const ratio = enableUpscale ? Math.max(widthRatio, heightRatio) : Math.min(widthRatio, heightRatio);
         
-        width = Math.round(width * ratio);
-        height = Math.round(height * ratio);
+        width = Math.round(img.width * ratio);
+        height = Math.round(img.height * ratio);
       } else if (maxWidth) {
         width = maxWidth;
-        height = Math.round(width / aspectRatio);
+        height = Math.round(maxWidth / aspectRatio);
       } else if (maxHeight) {
         height = maxHeight;
-        width = Math.round(height * aspectRatio);
+        width = Math.round(maxHeight * aspectRatio);
       }
     }
 
@@ -759,7 +771,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
 
     const ctx = canvas.getContext('2d');
     
-    if (noiseReduction) {
+    if (noiseReduction || enableUpscale) { // Added enableUpscale
       ctx.imageSmoothingEnabled = true;
       ctx.imageSmoothingQuality = 'high';
     }
@@ -789,7 +801,8 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
         );
       });
 
-      if (blob.size < image.size || attempts === maxAttempts - 1) {
+      // Changed condition: now it's `enableUpscale || blob.size < image.size`
+      if (enableUpscale || blob.size < image.size || attempts === maxAttempts - 1) {
         break;
       }
 
@@ -797,7 +810,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
       attempts++;
     }
 
-    if (blob.size >= image.size) {
+    if (!enableUpscale && blob.size >= image.size) { // Only show error if not upscaling and size increased
       const fallbackQuality = compressionMode === 'maximum' ? 0.4 : 0.6;
       blob = await new Promise((resolve) => {
         canvas.toBlob(
@@ -816,6 +829,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
     const compressedUrl = URL.createObjectURL(blob);
     setCompressedPreview(compressedUrl);
     setCompressedSize(blob.size);
+    setCompressedBlob(blob); // ADDED
     setProcessed(true);
     setOutputFormat(format);
 
@@ -834,10 +848,9 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
   };
 
   const downloadMedia = () => {
-    const link = document.createElement('a');
-    link.href = compressedPreview;
-    link.download = `${image.name.split('.')[0]}_compressed.${outputFormat || format}`;
-    link.click();
+    if (compressedBlob) { // Ensure blob exists before opening modal
+      setShowDownloadModal(true);
+    }
   };
 
   const handleCompare = () => {
@@ -911,6 +924,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
       const url = URL.createObjectURL(blob);
       setCompressedPreview(url);
       setCompressedSize(blob.size);
+      setCompressedBlob(blob); // ADDED
       setOutputFormat(newFormat);
       
       onProcessed({
@@ -1093,7 +1107,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
           </div>
         )}
 
-        {(isVideo || isAudio || isGif) && !ffmpegLoaded && (
+        {(isVideo || isAudio || (isGif && format === 'mp4')) && !ffmpegLoaded && (
           <div className="flex items-center gap-2 text-sm text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/30 p-3 rounded-lg">
             <Loader2 className="w-4 h-4 animate-spin flex-shrink-0" />
             <span className="text-xs">Loading {isVideo ? 'video' : isAudio ? 'audio' : 'media'} processor...</span>
@@ -1409,38 +1423,63 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
               )}
 
               {(isImage || isVideo || isGif) && (
-                <div className="grid grid-cols-2 gap-2">
-                  <div>
-                    <div className="flex items-center gap-1 mb-1">
-                      <label className="text-xs font-medium text-slate-700 dark:text-slate-300">
-                        Max Width (px)
-                      </label>
+                <>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <div className="flex items-center gap-1 mb-1">
+                        <label className="text-xs font-medium text-slate-700 dark:text-slate-300">
+                          Max Width (px)
+                        </label>
+                      </div>
+                      <input
+                        type="number"
+                        placeholder="Auto"
+                        value={maxWidth || ''}
+                        onChange={(e) => setMaxWidth(e.target.value ? parseInt(e.target.value) : null)}
+                        className="w-full h-9 px-3 rounded-md border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 text-sm"
+                        disabled={processing}
+                      />
                     </div>
-                    <input
-                      type="number"
-                      placeholder="Auto"
-                      value={maxWidth || ''}
-                      onChange={(e) => setMaxWidth(e.target.value ? parseInt(e.target.value) : null)}
-                      className="w-full h-9 px-3 rounded-md border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 text-sm"
-                      disabled={processing}
-                    />
-                  </div>
-                  <div>
-                    <div className="flex items-center gap-1 mb-1">
-                      <label className="text-xs font-medium text-slate-700 dark:text-slate-300">
-                        Max Height (px)
-                      </label>
+                    <div>
+                      <div className="flex items-center gap-1 mb-1">
+                        <label className="text-xs font-medium text-slate-700 dark:text-slate-300">
+                          Max Height (px)
+                        </label>
+                      </div>
+                      <input
+                        type="number"
+                        placeholder="Auto"
+                        value={maxHeight || ''}
+                        onChange={(e) => setMaxHeight(e.target.value ? parseInt(e.target.value) : null)}
+                        className="w-full h-9 px-3 rounded-md border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 text-sm"
+                        disabled={processing}
+                      />
                     </div>
-                    <input
-                      type="number"
-                      placeholder="Auto"
-                      value={maxHeight || ''}
-                      onChange={(e) => setMaxHeight(e.target.value ? parseInt(e.target.value) : null)}
-                      className="w-full h-9 px-3 rounded-md border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 text-sm"
-                      disabled={processing}
-                    />
                   </div>
-                </div>
+                  
+                  {(isImage && !isGif) && (
+                    <div className="flex items-center justify-between pt-2 border-t border-slate-200 dark:border-slate-800">
+                      <div className="flex items-center gap-2">
+                        <label className="text-xs font-medium text-slate-700 dark:text-slate-300">
+                          Enable Upscaling
+                        </label>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Info className="w-3 h-3 text-slate-400 cursor-help" />
+                          </TooltipTrigger>
+                          <TooltipContent className="max-w-xs">
+                            <p className="text-xs">Allow increasing image dimensions beyond original size</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </div>
+                      <Switch
+                        checked={enableUpscale}
+                        onCheckedChange={setEnableUpscale}
+                        disabled={processing}
+                      />
+                    </div>
+                  )}
+                </>
               )}
 
               {(isImage && !isGif) && (
@@ -1476,7 +1515,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
           {!processed ? (
             <Button
               onClick={processMedia}
-              disabled={processing || ((isVideo || isAudio || isGif) && !ffmpegLoaded)}
+              disabled={processing || ((isVideo || isAudio || (isGif && format === 'mp4')) && !ffmpegLoaded)}
               className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white"
             >
               {processing ? (
@@ -1528,6 +1567,16 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
           onClose={() => setShowEditor(false)}
           imageData={preview}
           onSave={handleSaveEdit}
+        />
+      )}
+
+      {showDownloadModal && compressedBlob && (
+        <DownloadModal
+          isOpen={showDownloadModal}
+          onClose={() => setShowDownloadModal(false)}
+          blob={compressedBlob}
+          originalFilename={`${image.name.split('.')[0]}_compressed.${outputFormat || format}`}
+          format={outputFormat || format}
         />
       )}
     </Card>
