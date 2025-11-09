@@ -4,7 +4,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Slider } from "@/components/ui/slider";
-import { Download, X, Loader2, CheckCircle2, ArrowRight, Settings2, AlertCircle, Info, Edit2, RefreshCcw, Sparkles } from "lucide-react";
+import { Download, X, Loader2, CheckCircle2, ArrowRight, Settings2, AlertCircle, Info, Edit2, RefreshCcw, Sparkles, Film } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
@@ -17,6 +17,7 @@ import {
 } from "@/components/ui/tooltip";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
+import { Input } from "@/components/ui/input";
 
 // Lazy load the editor
 const ImageEditor = lazy(() => import("./ImageEditor"));
@@ -47,11 +48,28 @@ export default function ImageCard({ image, onRemove, onProcessed, onCompare }) {
   // Check if original image is GIF
   const isGif = image.type === 'image/gif';
 
+  // GIF-specific states
+  const [gifFrameCount, setGifFrameCount] = useState(0);
+  const [gifFrameDelay, setGifFrameDelay] = useState(100); // milliseconds
+  const [gifLoopCount, setGifLoopCount] = useState(0); // 0 = infinite (standard GIF behavior)
+  const [selectedFrames, setSelectedFrames] = useState([]); // Array of frame indices to include
+  const [gifSettings, setGifSettings] = useState({ width: 0, height: 0, frames: [] });
+
   useEffect(() => {
     const reader = new FileReader();
-    reader.onloadend = () => {
+    reader.onloadend = async () => {
       setPreview(reader.result);
       setOriginalSize(image.size);
+      
+      // Parse GIF if it's a GIF file
+      if (isGif) {
+        try {
+          await parseGif(reader.result);
+        } catch (error) {
+          console.error('Error parsing GIF:', error);
+          setError('Failed to parse GIF animation. It might be corrupted or unsupported.');
+        }
+      }
     };
     reader.readAsDataURL(image);
     
@@ -61,136 +79,51 @@ export default function ImageCard({ image, onRemove, onProcessed, onCompare }) {
     }
   }, [image, isGif]);
 
+  const parseGif = async (dataUrl) => {
+    try {
+      // Convert data URL to array buffer
+      const response = await fetch(dataUrl);
+      const arrayBuffer = await response.arrayBuffer();
+      
+      // Parse GIF using gifuct-js
+      const { parseGIF, decompressFrames } = await import('https://cdn.jsdelivr.net/npm/gifuct-js@2.1.2/+esm');
+      const gif = parseGIF(arrayBuffer);
+      const frames = decompressFrames(gif, true);
+      
+      setGifFrameCount(frames.length);
+      setGifSettings({
+        width: frames[0]?.dims?.width || 0,
+        height: frames[0]?.dims?.height || 0,
+        frames: frames
+      });
+      
+      // Select all frames by default
+      setSelectedFrames(frames.map((_, idx) => idx));
+      
+      // Get delay from first frame if available, default to 100ms
+      if (frames.length > 0 && frames[0].delay) {
+        setGifFrameDelay(frames[0].delay * 10); // Convert centiseconds to milliseconds
+      } else {
+        setGifFrameDelay(100); // Default delay
+      }
+    } catch (error) {
+      console.error('Error parsing GIF:', error);
+      toast.error('Failed to parse GIF animation');
+      throw error; // Re-throw to be caught by useEffect
+    }
+  };
+
   const processImage = async () => {
     setProcessing(true);
     setError(null);
     setOutputFormat(null); // Reset output format on re-process
     
     try {
-      const img = new Image();
-      img.src = preview;
-      
-      await new Promise((resolve) => {
-        img.onload = resolve;
-      });
-
-      const canvas = document.createElement('canvas');
-      let width = img.width;
-      let height = img.height;
-
-      // Apply resizing if specified - with upscaling support
-      if (maxWidth || maxHeight) {
-        const aspectRatio = width / height;
-        
-        if (maxWidth && maxHeight) {
-          // Both limits specified - scale to fit within bounds
-          const widthRatio = maxWidth / width;
-          const heightRatio = maxHeight / height;
-          const ratio = Math.min(widthRatio, heightRatio);
-          
-          width = Math.round(width * ratio);
-          height = Math.round(height * ratio);
-        } else if (maxWidth) {
-          // Only width specified - scale to exact width (upscale or downscale)
-          width = maxWidth;
-          height = Math.round(width / aspectRatio);
-        } else if (maxHeight) {
-          // Only height specified - scale to exact height (upscale or downscale)
-          height = maxHeight;
-          width = Math.round(height * aspectRatio);
-        }
+      if (isGif) {
+        await processGif();
+      } else {
+        await processStaticImage();
       }
-
-      canvas.width = width;
-      canvas.height = height;
-
-      const ctx = canvas.getContext('2d');
-      
-      // Apply noise reduction if enabled (via smoothing)
-      if (noiseReduction) {
-        ctx.imageSmoothingEnabled = true;
-        ctx.imageSmoothingQuality = 'high';
-      }
-      
-      ctx.drawImage(img, 0, 0, width, height);
-
-      // Convert to desired format
-      const mimeType = format === 'jpg' ? 'image/jpeg' : `image/${format}`;
-      
-      // Adjust quality based on compression mode
-      let baseQuality = quality / 100;
-      if (compressionMode === 'aggressive') {
-        baseQuality = Math.max(0.5, baseQuality - 0.15);
-      } else if (compressionMode === 'maximum') {
-        baseQuality = Math.max(0.3, baseQuality - 0.3);
-      }
-      
-      let qualityValue = baseQuality;
-      let blob = null;
-      let attempts = 0;
-      const maxAttempts = compressionMode === 'aggressive' || compressionMode === 'maximum' ? 8 : 5;
-
-      // Try to compress, reducing quality if result is larger than original
-      while (attempts < maxAttempts) {
-        blob = await new Promise((resolve) => {
-          canvas.toBlob(
-            (b) => resolve(b),
-            mimeType,
-            qualityValue
-          );
-        });
-
-        // If compressed size is smaller or we've tried enough times, use it
-        if (blob && blob.size < image.size || attempts === maxAttempts - 1) {
-          break;
-        }
-        
-        // Ensure quality does not go below zero
-        qualityValue = Math.max(0.01, qualityValue - (compressionMode === 'maximum' ? 0.2 : 0.15));
-        attempts++;
-      }
-
-      // If still larger than original:
-      if (blob && blob.size >= image.size) {
-        if (!isGif) { // Only try WebP fallback for non-GIFs
-            const fallbackQuality = compressionMode === 'maximum' ? 0.4 : 0.6;
-            blob = await new Promise((resolve) => {
-                canvas.toBlob(
-                    (b) => resolve(b),
-                    'image/webp',
-                    fallbackQuality
-                );
-            });
-            // If still larger after WebP fallback, then show error
-            if (blob && blob.size >= image.size) {
-                setError('Unable to reduce file size. Image may already be highly optimized or changing format did not help.');
-                setProcessing(false);
-                return;
-            }
-        } else { // It's a GIF and didn't reduce significantly
-            setError('Unable to significantly reduce GIF file size. GIFs are generally harder to compress without specialized tools.');
-            setProcessing(false);
-            return;
-        }
-      }
-
-      const compressedUrl = URL.createObjectURL(blob);
-      setCompressedPreview(compressedUrl);
-      setCompressedSize(blob.size);
-      setProcessed(true);
-      setOutputFormat(format); // Set output format to the initially compressed format
-
-      onProcessed({
-        id: image.name,
-        originalFile: image,
-        compressedBlob: blob,
-        compressedUrl,
-        originalSize: image.size,
-        compressedSize: blob.size,
-        format,
-        filename: `${image.name.split('.')[0]}.${format}`
-      });
-
     } catch (error) {
       console.error('Error processing image:', error);
       setError('Failed to process image. Please try again.');
@@ -199,7 +132,247 @@ export default function ImageCard({ image, onRemove, onProcessed, onCompare }) {
     setProcessing(false);
   };
 
+  const processGif = async () => {
+    if (!gifSettings.frames || gifSettings.frames.length === 0) {
+      setError('No GIF frames to process.');
+      setProcessing(false);
+      return;
+    }
+    if (selectedFrames.length === 0) {
+      setError('Please select at least one frame for the GIF.');
+      setProcessing(false);
+      return;
+    }
+
+    try {
+      // Import GIF encoder
+      const GIF = (await import('https://cdn.jsdelivr.net/npm/gif.js@0.2.0/+esm')).default;
+      
+      // GIF.js quality is 1-10 (lower is better, 1 is best, 10 is worst)
+      // Our quality is 1-100 (higher is better, 100 is best)
+      // Convert 1-100 to 1-10: (100 - our_quality) / 10. Clamp between 1 and 10.
+      const gifJSCQuality = Math.max(1, Math.min(10, Math.floor((100 - quality) / 10)));
+      
+      const targetWidth = maxWidth || gifSettings.width;
+      const targetHeight = maxHeight || gifSettings.height;
+
+      // Create GIF encoder
+      const gif = new GIF({
+        workers: 2,
+        quality: gifJSCQuality,
+        workerScript: 'https://cdn.jsdelivr.net/npm/gif.js@0.2.0/dist/gif.worker.js',
+        width: targetWidth,
+        height: targetHeight,
+        repeat: gifLoopCount,
+        // transparent: true // Uncomment if you want to preserve transparency, might increase size
+      });
+
+      // Filter and add selected frames, ensuring they are sorted
+      const framesToProcess = selectedFrames
+        .sort((a, b) => a - b)
+        .map(idx => gifSettings.frames[idx])
+        .filter(Boolean); // Remove any null/undefined entries
+
+      // Create canvas for frame processing
+      const canvas = document.createElement('canvas');
+      canvas.width = targetWidth;
+      canvas.height = targetHeight;
+      const ctx = canvas.getContext('2d');
+
+      // If noise reduction is enabled, apply image smoothing
+      if (noiseReduction) {
+        ctx.imageSmoothingEnabled = true;
+        ctx.imageSmoothingQuality = 'high';
+      } else {
+        ctx.imageSmoothingEnabled = false;
+      }
+      
+      for (const frame of framesToProcess) {
+        // Create image data from frame patch
+        const imageData = new ImageData(
+          new Uint8ClampedArray(frame.patch),
+          frame.dims.width,
+          frame.dims.height
+        );
+        
+        // Create a temporary canvas to draw the raw frame data
+        const tempCanvas = document.createElement('canvas');
+        tempCanvas.width = frame.dims.width;
+        tempCanvas.height = frame.dims.height;
+        const tempCtx = tempCanvas.getContext('2d');
+        tempCtx.putImageData(imageData, 0, 0); // Put raw image data
+
+        // Clear the main canvas and draw the frame from tempCanvas, scaling it
+        ctx.clearRect(0, 0, targetWidth, targetHeight);
+        ctx.drawImage(
+          tempCanvas,
+          0, 0, tempCanvas.width, tempCanvas.height, // Source dimensions
+          frame.dims.left * (targetWidth / gifSettings.width), // Apply original offset proportional to new size
+          frame.dims.top * (targetHeight / gifSettings.height),
+          targetWidth, targetHeight // Destination dimensions
+        );
+        
+        // Add frame to GIF with custom delay
+        gif.addFrame(canvas, { delay: gifFrameDelay, copy: true });
+      }
+
+      // Render GIF
+      await new Promise((resolve, reject) => {
+        gif.on('finished', (blob) => {
+          const compressedUrl = URL.createObjectURL(blob);
+          setCompressedPreview(compressedUrl);
+          setCompressedSize(blob.size);
+          setProcessed(true);
+          setOutputFormat('gif');
+
+          onProcessed({
+            id: image.name,
+            originalFile: image,
+            compressedBlob: blob,
+            compressedUrl,
+            originalSize: image.size,
+            compressedSize: blob.size,
+            format: 'gif',
+            filename: `${image.name.split('.')[0]}_compressed.gif`
+          });
+
+          resolve();
+        });
+
+        gif.on('error', reject);
+        gif.render();
+      });
+
+      toast.success(`GIF compressed with ${framesToProcess.length} frames!`);
+    } catch (error) {
+      console.error('Error processing GIF:', error);
+      setError('Failed to process GIF: ' + error.message);
+      toast.error('Failed to process GIF');
+      throw error; // Re-throw to be caught by processImage
+    }
+  };
+
+  const processStaticImage = async () => {
+    const img = new Image();
+    img.src = preview;
+    
+    await new Promise((resolve) => {
+      img.onload = resolve;
+    });
+
+    const canvas = document.createElement('canvas');
+    let width = img.width;
+    let height = img.height;
+
+    // Apply resizing if specified - with upscaling support
+    if (maxWidth || maxHeight) {
+      const aspectRatio = width / height;
+      
+      if (maxWidth && maxHeight) {
+        // Both limits specified - scale to fit within bounds
+        const widthRatio = maxWidth / width;
+        const heightRatio = maxHeight / height;
+        const ratio = Math.min(widthRatio, heightRatio);
+        
+        width = Math.round(width * ratio);
+        height = Math.round(height * ratio);
+      } else if (maxWidth) {
+        // Only width specified - scale to exact width (upscale or downscale)
+        width = maxWidth;
+        height = Math.round(width / aspectRatio);
+      } else if (maxHeight) {
+        // Only height specified - scale to exact height (upscale or downscale)
+        height = maxHeight;
+        width = Math.round(height * aspectRatio);
+      }
+    }
+
+    canvas.width = width;
+    canvas.height = height;
+
+    const ctx = canvas.getContext('2d');
+    
+    // Apply noise reduction if enabled (via smoothing)
+    if (noiseReduction) {
+      ctx.imageSmoothingEnabled = true;
+      ctx.imageSmoothingQuality = 'high';
+    }
+    
+    ctx.drawImage(img, 0, 0, width, height);
+
+    // Convert to desired format
+    const mimeType = format === 'jpg' ? 'image/jpeg' : `image/${format}`;
+    
+    // Adjust quality based on compression mode
+    let baseQuality = quality / 100;
+    if (compressionMode === 'aggressive') {
+      baseQuality = Math.max(0.5, baseQuality - 0.15);
+    } else if (compressionMode === 'maximum') {
+      baseQuality = Math.max(0.3, baseQuality - 0.3);
+    }
+    
+    let qualityValue = baseQuality;
+    let blob = null;
+    let attempts = 0;
+    const maxAttempts = compressionMode === 'aggressive' || compressionMode === 'maximum' ? 8 : 5;
+
+    // Try to compress, reducing quality if result is larger than original
+    while (attempts < maxAttempts) {
+      blob = await new Promise((resolve) => {
+        canvas.toBlob(
+          (b) => resolve(b),
+          mimeType,
+          qualityValue
+        );
+      });
+
+      // If blob is null or size is smaller, or we've tried enough times, break
+      if (!blob || blob.size < image.size || attempts === maxAttempts - 1) {
+        break;
+      }
+      
+      // Ensure quality does not go below zero
+      qualityValue = Math.max(0.01, qualityValue - (compressionMode === 'maximum' ? 0.2 : 0.15));
+      attempts++;
+    }
+
+    // If still larger than original or blob is null after attempts, try WebP fallback
+    if (!blob || blob.size >= image.size) {
+        const fallbackQuality = compressionMode === 'maximum' ? 0.4 : 0.6;
+        blob = await new Promise((resolve) => {
+            canvas.toBlob(
+                (b) => resolve(b),
+                'image/webp',
+                fallbackQuality
+            );
+        });
+        // If still larger after WebP fallback, then show error
+        if (!blob || blob.size >= image.size) {
+            setError('Unable to reduce file size. Image may already be highly optimized or changing format did not help.');
+            throw new Error('Compression failed to reduce size.');
+        }
+    }
+
+    const compressedUrl = URL.createObjectURL(blob);
+    setCompressedPreview(compressedUrl);
+    setCompressedSize(blob.size);
+    setProcessed(true);
+    setOutputFormat(format); // Set output format to the initially compressed format
+
+    onProcessed({
+      id: image.name,
+      originalFile: image,
+      compressedBlob: blob,
+      compressedUrl,
+      originalSize: image.size,
+      compressedSize: blob.size,
+      format,
+      filename: `${image.name.split('.')[0]}.${format}`
+    });
+  };
+
   const downloadImage = () => {
+    if (!compressedPreview) return;
     const link = document.createElement('a');
     link.href = compressedPreview;
     link.download = `${image.name.split('.')[0]}_compressed.${outputFormat || format}`;
@@ -238,7 +411,7 @@ export default function ImageCard({ image, onRemove, onProcessed, onCompare }) {
   };
 
   const convertFormat = async (newFormat) => {
-    if (!compressedPreview || processing) return;
+    if (!compressedPreview || processing || isGif) return; // Cannot convert GIF to other formats with this method
     
     setProcessing(true);
     setError(null);
@@ -289,6 +462,30 @@ export default function ImageCard({ image, onRemove, onProcessed, onCompare }) {
     }
   };
 
+  const toggleFrame = (frameIndex) => {
+    setSelectedFrames(prev => {
+      // Don't allow removing all frames if it's the last selected one
+      if (prev.includes(frameIndex) && prev.length === 1) {
+        toast.error('At least one frame must be selected.');
+        return prev;
+      }
+
+      if (prev.includes(frameIndex)) {
+        return prev.filter(idx => idx !== frameIndex);
+      } else {
+        return [...prev, frameIndex].sort((a, b) => a - b);
+      }
+    });
+  };
+
+  const selectAllFrames = () => {
+    setSelectedFrames(Array.from({ length: gifFrameCount }, (_, i) => i));
+  };
+
+  const deselectAllFrames = () => {
+    setSelectedFrames([0]); // Keep at least the first frame selected
+  };
+
   const savingsPercent = processed 
     ? ((1 - compressedSize / originalSize) * 100).toFixed(1)
     : 0;
@@ -327,6 +524,12 @@ export default function ImageCard({ image, onRemove, onProcessed, onCompare }) {
               <Badge className="absolute bottom-2 right-2 bg-slate-900/95 backdrop-blur-sm text-white border border-slate-700 text-xs px-2 py-1 font-bold shadow-lg">
                 {originalExt}
               </Badge>
+              {isGif && gifFrameCount > 0 && (
+                <Badge className="absolute top-2 right-2 bg-purple-600 text-white text-xs px-2 py-1 font-bold flex items-center gap-1">
+                  <Film className="w-3 h-3" />
+                  {gifFrameCount} frames
+                </Badge>
+              )}
               {!isGif && (
                 <Button
                   variant="ghost"
@@ -358,6 +561,12 @@ export default function ImageCard({ image, onRemove, onProcessed, onCompare }) {
               <Badge className="absolute bottom-2 right-2 bg-emerald-600/95 backdrop-blur-sm text-white border border-emerald-500 text-xs px-2 py-1 font-bold shadow-lg">
                 {displayCompressedExt}
               </Badge>
+              {isGif && compressedPreview && (
+                <Badge className="absolute top-2 right-2 bg-emerald-600 text-white text-xs px-2 py-1 font-bold flex items-center gap-1">
+                  <Film className="w-3 h-3" />
+                  {selectedFrames.length} frames
+                </Badge>
+              )}
             </div>
           ) : (
             <div className="aspect-square rounded-lg bg-slate-200 dark:bg-slate-800 flex items-center justify-center">
@@ -404,8 +613,8 @@ export default function ImageCard({ image, onRemove, onProcessed, onCompare }) {
           </div>
         )}
 
-        {/* Format Converter - shown after compression */}
-        {processed && (
+        {/* Format Converter - shown after compression (not for GIF) */}
+        {processed && !isGif && (
           <div className="space-y-2">
             <label className="text-xs font-medium text-slate-700 dark:text-slate-300">
               Convert Format
@@ -430,6 +639,120 @@ export default function ImageCard({ image, onRemove, onProcessed, onCompare }) {
                   {displayFormat === fmt && processing && <Loader2 className="ml-1 h-3 w-3 animate-spin" />}
                 </Button>
               ))}
+            </div>
+          </div>
+        )}
+
+        {/* GIF Controls */}
+        {isGif && gifFrameCount > 0 && (
+          <div className="space-y-3 p-3 bg-purple-50 dark:bg-purple-950/20 border border-purple-200 dark:border-purple-800 rounded-lg">
+            <div className="flex items-center gap-2">
+              <Film className="w-4 h-4 text-purple-600 dark:text-purple-400" />
+              <h4 className="text-xs font-bold text-purple-900 dark:text-purple-100 uppercase tracking-wider">
+                GIF Animation Controls
+              </h4>
+            </div>
+            
+            {/* Frame Selection */}
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <label className="text-xs font-medium text-slate-700 dark:text-slate-300">
+                  Selected Frames ({selectedFrames.length}/{gifFrameCount})
+                </label>
+                <div className="flex gap-1">
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={selectAllFrames}
+                    className="h-6 px-2 text-[10px]"
+                    disabled={processing || selectedFrames.length === gifFrameCount}
+                  >
+                    Select All
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={deselectAllFrames}
+                    className="h-6 px-2 text-[10px]"
+                    disabled={processing || selectedFrames.length === 1}
+                  >
+                    Deselect All (Keep 1)
+                  </Button>
+                </div>
+              </div>
+              <div className="flex flex-wrap gap-1 max-h-24 overflow-y-auto p-2 bg-white dark:bg-slate-900 rounded border border-slate-200 dark:border-slate-800">
+                {Array.from({ length: gifFrameCount }, (_, i) => (
+                  <Button
+                    key={i}
+                    size="sm"
+                    variant={selectedFrames.includes(i) ? "default" : "outline"}
+                    onClick={() => toggleFrame(i)}
+                    disabled={processing}
+                    className={cn(
+                      "h-6 w-10 text-[10px] p-0",
+                      selectedFrames.includes(i) && "bg-purple-600 hover:bg-purple-700"
+                    )}
+                  >
+                    {i + 1}
+                  </Button>
+                ))}
+              </div>
+            </div>
+
+            {/* Frame Delay */}
+            <div>
+              <div className="flex items-center gap-2 mb-2">
+                <label className="text-xs font-medium text-slate-700 dark:text-slate-300">
+                  Frame Delay: {gifFrameDelay}ms
+                </label>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Info className="w-3 h-3 text-slate-400 cursor-help" />
+                  </TooltipTrigger>
+                  <TooltipContent className="max-w-xs">
+                    <p className="text-xs">Time each frame is displayed. Lower = faster animation.</p>
+                  </TooltipContent>
+                </Tooltip>
+              </div>
+              <Slider
+                value={[gifFrameDelay]}
+                onValueChange={(value) => setGifFrameDelay(value[0])}
+                min={10}
+                max={1000} // Increased max delay for more control
+                step={10}
+                className="w-full"
+                disabled={processing}
+              />
+            </div>
+
+            {/* Loop Count */}
+            <div>
+              <label className="text-xs font-medium text-slate-700 dark:text-slate-300 mb-2 block">
+                Loop Count
+              </label>
+              <div className="flex gap-2">
+                <Button
+                  size="sm"
+                  variant={gifLoopCount === 0 ? "default" : "outline"}
+                  onClick={() => setGifLoopCount(0)}
+                  disabled={processing}
+                  className={cn(
+                    "flex-1 text-xs h-8",
+                    gifLoopCount === 0 && "bg-purple-600 hover:bg-purple-700"
+                  )}
+                >
+                  Infinite
+                </Button>
+                <Input
+                  type="number"
+                  value={gifLoopCount || ''}
+                  onChange={(e) => setGifLoopCount(Math.max(0, parseInt(e.target.value) || 0))}
+                  placeholder="Custom"
+                  className="flex-1 h-8 text-xs"
+                  min="0"
+                  disabled={processing}
+                />
+              </div>
             </div>
           </div>
         )}
@@ -476,43 +799,40 @@ export default function ImageCard({ image, onRemove, onProcessed, onCompare }) {
                 </Select>
               </div>
 
-              {/* Output Format */}
-              <div>
-                <div className="flex items-center gap-2 mb-2">
-                  <label className="text-xs font-medium text-slate-700 dark:text-slate-300">
-                    Output Format
-                  </label>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Info className="w-3 h-3 text-slate-400 cursor-help" />
-                    </TooltipTrigger>
-                    <TooltipContent className="max-w-xs">
-                      <p className="text-xs">
-                        <strong>WebP:</strong> Best compression, modern browsers<br/>
-                        <strong>JPG:</strong> Universal support, good for photos<br/>
-                        <strong>PNG:</strong> Lossless, best for graphics/transparency
-                      </p>
-                    </TooltipContent>
-                  </Tooltip>
+              {/* Output Format - Hidden for GIFs */}
+              {!isGif && (
+                <div>
+                  <div className="flex items-center gap-2 mb-2">
+                    <label className="text-xs font-medium text-slate-700 dark:text-slate-300">
+                      Output Format
+                    </label>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Info className="w-3 h-3 text-slate-400 cursor-help" />
+                      </TooltipTrigger>
+                      <TooltipContent className="max-w-xs">
+                        <p className="text-xs">
+                          <strong>AVIF:</strong> Newer, best efficiency, not universally supported.<br/>
+                          <strong>WebP:</strong> Best compression, modern browsers.<br/>
+                          <strong>JPG:</strong> Universal support, good for photos.<br/>
+                          <strong>PNG:</strong> Lossless, best for graphics/transparency.
+                        </p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </div>
+                  <Select value={format} onValueChange={setFormat} disabled={processing || isGif}>
+                    <SelectTrigger className="h-9">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="avif">AVIF (Newer, more efficient)</SelectItem>
+                      <SelectItem value="webp">WebP (Best compression)</SelectItem>
+                      <SelectItem value="jpg">JPG (Universal)</SelectItem>
+                      <SelectItem value="png">PNG (Lossless)</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
-                <Select value={format} onValueChange={setFormat} disabled={processing || isGif}>
-                  <SelectTrigger className="h-9">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {isGif ? (
-                      <SelectItem value="gif">GIF (Animated)</SelectItem>
-                    ) : (
-                      <>
-                        <SelectItem value="avif">AVIF (Newer, more efficient)</SelectItem>
-                        <SelectItem value="webp">WebP (Best compression)</SelectItem>
-                        <SelectItem value="jpg">JPG (Universal)</SelectItem>
-                        <SelectItem value="png">PNG (Lossless)</SelectItem>
-                      </>
-                    )}
-                  </SelectContent>
-                </Select>
-              </div>
+              )}
 
               {/* Quality Slider */}
               <div>
@@ -525,7 +845,7 @@ export default function ImageCard({ image, onRemove, onProcessed, onCompare }) {
                       <Info className="w-3 h-3 text-slate-400 cursor-help" />
                     </TooltipTrigger>
                     <TooltipContent className="max-w-xs">
-                      <p className="text-xs">Lower quality = smaller file size. 70-85% is usually optimal for web use.</p>
+                      <p className="text-xs">Lower quality = smaller file size. {isGif ? 'For GIFs, 70-90% is often a good balance.' : 'For static images, 70-85% is usually optimal for web use.'}</p>
                     </TooltipContent>
                   </Tooltip>
                 </div>
@@ -560,7 +880,7 @@ export default function ImageCard({ image, onRemove, onProcessed, onCompare }) {
                     type="number"
                     placeholder="Auto"
                     value={maxWidth || ''}
-                    onChange={(e) => setMaxWidth(e.target.value ? parseInt(e.target.value) : null)}
+                    onChange={(e) => setMaxWidth(e.target.value ? Math.max(1, parseInt(e.target.value)) : null)}
                     className="w-full h-9 px-3 rounded-md border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 text-sm"
                     disabled={processing}
                   />
@@ -583,57 +903,59 @@ export default function ImageCard({ image, onRemove, onProcessed, onCompare }) {
                     type="number"
                     placeholder="Auto"
                     value={maxHeight || ''}
-                    onChange={(e) => setMaxHeight(e.target.value ? parseInt(e.target.value) : null)}
+                    onChange={(e) => setMaxHeight(e.target.value ? Math.max(1, parseInt(e.target.value)) : null)}
                     className="w-full h-9 px-3 rounded-md border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 text-sm"
                     disabled={processing}
                   />
                 </div>
               </div>
 
-              {/* Advanced Options */}
-              <div className="space-y-3 pt-2 border-t border-slate-200 dark:border-slate-800">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <label className="text-xs font-medium text-slate-700 dark:text-slate-300">
-                      Strip Metadata
-                    </label>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Info className="w-3 h-3 text-slate-400 cursor-help" />
-                      </TooltipTrigger>
-                      <TooltipContent className="max-w-xs">
-                        <p className="text-xs">Removes EXIF data, GPS coordinates, and other metadata to reduce file size and improve privacy</p>
-                      </TooltipContent>
-                    </Tooltip>
+              {/* Advanced Options - Hidden for GIFs */}
+              {!isGif && (
+                <div className="space-y-3 pt-2 border-t border-slate-200 dark:border-slate-800">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <label className="text-xs font-medium text-slate-700 dark:text-slate-300">
+                        Strip Metadata
+                      </label>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Info className="w-3 h-3 text-slate-400 cursor-help" />
+                        </TooltipTrigger>
+                        <TooltipContent className="max-w-xs">
+                          <p className="text-xs">Removes EXIF data, GPS coordinates, and other metadata to reduce file size and improve privacy</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </div>
+                    <Switch
+                      checked={stripMetadata}
+                      onCheckedChange={setStripMetadata}
+                      disabled={processing}
+                    />
                   </div>
-                  <Switch
-                    checked={stripMetadata}
-                    onCheckedChange={setStripMetadata}
-                    disabled={processing}
-                  />
-                </div>
 
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <label className="text-xs font-medium text-slate-700 dark:text-slate-300">
-                      Noise Reduction
-                    </label>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Info className="w-3 h-3 text-slate-400 cursor-help" />
-                      </TooltipTrigger>
-                      <TooltipContent className="max-w-xs">
-                        <p className="text-xs">Applies smoothing to reduce image noise, which can help achieve better compression ratios</p>
-                      </TooltipContent>
-                    </Tooltip>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <label className="text-xs font-medium text-slate-700 dark:text-slate-300">
+                        Noise Reduction
+                      </label>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Info className="w-3 h-3 text-slate-400 cursor-help" />
+                        </TooltipTrigger>
+                        <TooltipContent className="max-w-xs">
+                          <p className="text-xs">Applies smoothing to reduce image noise, which can help achieve better compression ratios</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </div>
+                    <Switch
+                      checked={noiseReduction}
+                      onCheckedChange={setNoiseReduction}
+                      disabled={processing}
+                    />
                   </div>
-                  <Switch
-                    checked={noiseReduction}
-                    onCheckedChange={setNoiseReduction}
-                    disabled={processing}
-                  />
                 </div>
-              </div>
+              )}
             </TooltipProvider>
           </CollapsibleContent>
         </Collapsible>
@@ -642,7 +964,7 @@ export default function ImageCard({ image, onRemove, onProcessed, onCompare }) {
           {!processed ? (
             <Button
               onClick={processImage}
-              disabled={processing}
+              disabled={processing || (isGif && (selectedFrames.length === 0 || gifFrameCount === 0))}
               className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white"
             >
               {processing ? (
@@ -651,7 +973,10 @@ export default function ImageCard({ image, onRemove, onProcessed, onCompare }) {
                   Processing...
                 </>
               ) : (
-                'Compress Image'
+                <>
+                  {isGif && <Film className="w-4 h-4 mr-2" />}
+                  Compress {isGif ? 'GIF' : 'Image'}
+                </>
               )}
             </Button>
           ) : (
@@ -686,7 +1011,7 @@ export default function ImageCard({ image, onRemove, onProcessed, onCompare }) {
       </div>
 
       {/* Editor Modal - Lazy load */}
-      {showEditor && !isGif && (
+      {showEditor && !isGif && ( // Ensure editor is not shown for GIFs
         <ImageEditor
           isOpen={showEditor}
           onClose={() => setShowEditor(false)}
