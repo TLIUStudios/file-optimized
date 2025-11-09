@@ -4,7 +4,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Slider } from "@/components/ui/slider";
-import { Download, X, Loader2, CheckCircle2, ArrowRight, Settings2, AlertCircle, Info, Edit2, RefreshCcw, Sparkles, Film, Music, Video } from "lucide-react";
+import { Download, X, Loader2, CheckCircle2, ArrowRight, Settings2, AlertCircle, Info, Edit2, RefreshCcw, Sparkles, Film, Music, Video, ChevronDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
@@ -1175,6 +1175,10 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
                 <Settings2 className="w-4 h-4" />
                 Compression Settings
               </span>
+              <ChevronDown className={cn(
+                "w-4 h-4 transition-transform duration-200",
+                settingsOpen && "rotate-180"
+              )} />
             </Button>
           </CollapsibleTrigger>
           <CollapsibleContent className="space-y-4 mt-4">
@@ -1519,6 +1523,10 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
                   <Sparkles className="w-4 h-4" />
                   Upscale Settings
                 </span>
+                <ChevronDown className={cn(
+                  "w-4 h-4 transition-transform duration-200",
+                  upscaleSettingsOpen && "rotate-180"
+                )} />
               </Button>
             </CollapsibleTrigger>
             <CollapsibleContent className="space-y-4 mt-4">
@@ -1544,7 +1552,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
                             if (upscaleMultiplier) {
                               targetWidth = Math.round(originalImageDimensions.width * (upscaleMultiplier / 100));
                               targetHeight = Math.round(originalImageDimensions.height * (upscaleMultiplier / 100));
-                            } else if (maxWidth || maxHeight) { // Always check if maxWidth/maxHeight are set
+                            } else if (maxWidth || maxHeight) {
                               // For upscaling, we always take the maximum ratio to ensure the image meets or exceeds the target size
                               const widthRatio = maxWidth ? maxWidth / originalImageDimensions.width : 0;
                               const heightRatio = maxHeight ? maxHeight / originalImageDimensions.height : 0;
@@ -1605,7 +1613,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
                         Upscale Multiplier
                       </label>
                       <div className="grid grid-cols-3 gap-2">
-                        {[100, 200, 300, 400, 500].map((multiplier) => (
+                        {[150, 200, 250, 300, 400, 500].map((multiplier) => (
                           <Button
                             key={multiplier}
                             size="sm"
