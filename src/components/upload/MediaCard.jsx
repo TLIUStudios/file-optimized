@@ -45,6 +45,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
   const [enableUpscale, setEnableUpscale] = useState(false);
   const [upscaleSettingsOpen, setUpscaleSettingsOpen] = useState(false);
   const [upscaleMultiplier, setUpscaleMultiplier] = useState(null);
+  const [originalImageDimensions, setOriginalImageDimensions] = useState({ width: 0, height: 0 });
 
   // Media type detection
   const isImage = image.type.startsWith('image/');
@@ -76,6 +77,15 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
       setPreview(reader.result);
       setOriginalSize(image.size);
       
+      // Load image dimensions for static images
+      if (isImage && !isGif) {
+        const img = new Image();
+        img.onload = () => {
+          setOriginalImageDimensions({ width: img.width, height: img.height });
+        };
+        img.src = reader.result;
+      }
+      
       if (isGif) {
         try {
           await parseGif(reader.result);
@@ -93,7 +103,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
     } else if (isAudio) {
       setFormat(image.type.includes('wav') ? 'wav' : 'mp3');
     }
-  }, [image, isGif, isVideo, isAudio]);
+  }, [image, isGif, isVideo, isAudio, isImage]);
 
   // Load FFmpeg for video/audio processing - NEW APPROACH
   useEffect(() => {
@@ -1513,6 +1523,53 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
             </CollapsibleTrigger>
             <CollapsibleContent className="space-y-4 mt-4">
               <TooltipProvider>
+                {/* Resolution Display */}
+                {originalImageDimensions.width > 0 && (
+                  <div className="bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg p-3 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs text-slate-600 dark:text-slate-400">Original Resolution:</span>
+                      <span className="text-xs font-bold text-slate-900 dark:text-white">
+                        {originalImageDimensions.width} × {originalImageDimensions.height}
+                      </span>
+                    </div>
+                    {(enableUpscale && (upscaleMultiplier || maxWidth || maxHeight)) && (
+                      <div className="flex items-center justify-between pt-2 border-t border-slate-200 dark:border-slate-800">
+                        <span className="text-xs text-slate-600 dark:text-slate-400">Target Resolution:</span>
+                        <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400">
+                          {(() => {
+                            let targetWidth = originalImageDimensions.width;
+                            let targetHeight = originalImageDimensions.height;
+                            const aspectRatio = targetWidth / targetHeight;
+                            
+                            if (upscaleMultiplier) {
+                              targetWidth = Math.round(originalImageDimensions.width * (upscaleMultiplier / 100));
+                              targetHeight = Math.round(originalImageDimensions.height * (upscaleMultiplier / 100));
+                            } else if (maxWidth || maxHeight) { // Always check if maxWidth/maxHeight are set
+                              // For upscaling, we always take the maximum ratio to ensure the image meets or exceeds the target size
+                              const widthRatio = maxWidth ? maxWidth / originalImageDimensions.width : 0;
+                              const heightRatio = maxHeight ? maxHeight / originalImageDimensions.height : 0;
+                              
+                              let ratio = 1;
+                              if (maxWidth && maxHeight) {
+                                ratio = Math.max(widthRatio, heightRatio);
+                              } else if (maxWidth) {
+                                ratio = widthRatio;
+                              } else if (maxHeight) {
+                                ratio = heightRatio;
+                              }
+                              
+                              targetWidth = Math.round(originalImageDimensions.width * ratio);
+                              targetHeight = Math.round(originalImageDimensions.height * ratio);
+                            }
+                            
+                            return `${targetWidth} × ${targetHeight}`;
+                          })()}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                )}
+
                 <div className="flex items-center justify-between pb-2 border-b border-slate-200 dark:border-slate-800">
                   <div className="flex items-center gap-2">
                     <label className="text-xs font-medium text-slate-700 dark:text-slate-300">
