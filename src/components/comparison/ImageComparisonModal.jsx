@@ -619,14 +619,7 @@ export default function ImageComparisonModal({
                 </Button>
               ))}
             </div>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={onClose}
-              className="h-9 w-9 hover:bg-red-600 hover:text-white rounded-lg transition-colors"
-            >
-              <X className="w-5 h-5" />
-            </Button>
+            {/* The close button is now inside the image/video display area for better context */}
           </div>
         </div>
 
@@ -639,6 +632,15 @@ export default function ImageComparisonModal({
                 ref={containerRef}
                 className="relative w-full h-full bg-slate-100 dark:bg-slate-900 select-none flex flex-col items-center justify-center overflow-hidden"
               >
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={onClose}
+                  className="absolute top-4 right-4 z-50 h-10 w-10 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors shadow-lg"
+                >
+                  <X className="w-5 h-5" />
+                </Button>
+                
                 <div className="flex-1 relative w-full flex items-center justify-center py-4">
                   <div
                     ref={imageContainerRef}
@@ -699,35 +701,25 @@ export default function ImageComparisonModal({
                   </div>
                 </div>
 
-                <div className="h-16 w-full flex items-center justify-between px-6 bg-slate-100/80 dark:bg-slate-900/80 backdrop-blur-sm border-t border-slate-200 dark:border-slate-800">
-                  <div className="flex flex-col gap-1">
-                    <Badge className="bg-slate-700 dark:bg-slate-800 text-white text-sm px-3 py-1 font-semibold w-fit">
-                      Original
-                    </Badge>
-                    <Badge className="bg-slate-700 dark:bg-slate-800 text-white text-xs px-2 py-0.5 font-bold w-fit">
-                      {originalExt}
-                    </Badge>
-                  </div>
-
+                <div className="h-16 w-full flex items-center justify-center px-6 bg-slate-100/80 dark:bg-slate-900/80 backdrop-blur-sm border-t border-slate-200 dark:border-slate-800">
                   {zoom === 1 && (
                     <div className="px-4 py-2 bg-slate-600/80 dark:bg-slate-700/80 backdrop-blur-sm rounded-lg text-white text-sm font-medium animate-pulse">
                       ← Drag to compare →
                     </div>
                   )}
-
-                  <div className="flex flex-col gap-1 items-end">
-                    <Badge className="bg-emerald-600 text-white text-sm px-3 py-1 font-semibold w-fit">
-                      Compressed
-                    </Badge>
-                    <Badge className="bg-emerald-600 text-white text-xs px-2 py-0.5 font-bold w-fit">
-                      {compressedExt}
-                    </Badge>
-                  </div>
                 </div>
               </div>
             ) : (
               // Video or Audio player
               <div className="relative w-full h-full bg-slate-100 dark:bg-slate-900 flex flex-col items-center justify-center">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={onClose}
+                  className="absolute top-4 right-4 z-50 h-10 w-10 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors shadow-lg"
+                >
+                  <X className="w-5 h-5" />
+                </Button>
                 <div className="flex-1 relative w-full flex items-center justify-center p-4">
                   {mediaType === 'video' && (
                     <video controls src={compressedImage} className="max-w-full max-h-full object-contain" />
@@ -741,17 +733,11 @@ export default function ImageComparisonModal({
                     <Badge className="bg-slate-700 dark:bg-slate-800 text-white text-sm px-3 py-1 font-semibold w-fit">
                       Original
                     </Badge>
-                    <Badge className="bg-slate-700 dark:bg-slate-800 text-white text-xs px-2 py-0.5 font-bold w-fit">
-                      {originalExt}
-                    </Badge>
                   </div>
 
                   <div className="flex flex-col gap-1 items-end">
                     <Badge className="bg-emerald-600 text-white text-sm px-3 py-1 font-semibold w-fit">
                       Compressed
-                    </Badge>
-                    <Badge className="bg-emerald-600 text-white text-xs px-2 py-0.5 font-bold w-fit">
-                      {compressedExt}
                     </Badge>
                   </div>
                 </div>
