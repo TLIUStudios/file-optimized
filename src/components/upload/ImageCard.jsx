@@ -16,7 +16,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { Switch } from "@/components/ui/switch";
-import { toast } from "@/components/ui/use-toast"; // Assuming toast is available from shadcn/ui or similar
+import { toast } from "sonner";
 
 // Lazy load the editor
 const ImageEditor = lazy(() => import("./ImageEditor"));
