@@ -1,3 +1,4 @@
+
 import { useState, lazy, Suspense } from "react";
 import { Button } from "@/components/ui/button";
 import { Download, Trash2, Sparkles, Shield, Zap, Image as ImageIcon } from "lucide-react";
@@ -10,7 +11,6 @@ import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
 // Lazy load heavy components for better performance
 const MediaCard = lazy(() => import("../components/upload/MediaCard"));
 const ImageComparisonModal = lazy(() => import("../components/comparison/ImageComparisonModal"));
-const BatchSettingsModal = lazy(() => import("../components/batch/BatchSettingsModal"));
 
 // Loading fallback for image cards
 function ImageCardSkeleton() {
@@ -32,8 +32,6 @@ export default function Home() {
   const [isDragActive, setIsDragActive] = useState(false);
   const [comparisonData, setComparisonData] = useState(null);
   const [autoProcessTrigger, setAutoProcessTrigger] = useState(0);
-  const [batchSettings, setBatchSettings] = useState(null);
-  const [showBatchSettings, setShowBatchSettings] = useState(false);
 
   const handleFilesSelected = (files) => {
     const newFiles = Array.from(files).map(file => ({
@@ -41,9 +39,6 @@ export default function Home() {
       file
     }));
     setImages(prev => [...prev, ...newFiles]);
-    
-    // Show success toast
-    toast.success(`${newFiles.length} file${newFiles.length > 1 ? 's' : ''} added!`);
   };
 
   const handleDragEnd = (result) => {
@@ -80,7 +75,6 @@ export default function Home() {
   const clearAll = () => {
     setImages([]);
     setProcessedImages({});
-    setBatchSettings(null);
   };
 
   const processAllImages = async () => {
@@ -91,13 +85,7 @@ export default function Home() {
       return;
     }
     
-    // Show batch settings dialog if not already set
-    if (!batchSettings) {
-      setShowBatchSettings(true);
-      return;
-    }
-    
-    toast.info(`Processing ${unprocessedImages.length} files...`);
+    toast.info(`Processing ${unprocessedImages.length} images...`);
     setAutoProcessTrigger(prev => prev + 1);
   };
 
@@ -150,80 +138,53 @@ export default function Home() {
         animate={{ opacity: 1, y: 0 }}
         className="text-center mb-12"
       >
-        <motion.div 
-          initial={{ scale: 0.9, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1 }}
-          transition={{ delay: 0.1 }}
-          className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-emerald-100 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-400 text-sm font-medium mb-6"
-        >
+        <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-emerald-100 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-400 text-sm font-medium mb-6">
           <Shield className="w-4 h-4" />
           100% Private & Secure
-        </motion.div>
-        <motion.h1 
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2 }}
-          className="text-4xl md:text-6xl font-bold text-slate-900 dark:text-white mb-4"
-        >
+        </div>
+        <h1 className="text-4xl md:text-6xl font-bold text-slate-900 dark:text-white mb-4">
           Compress & Convert
           <span className="block text-emerald-600 dark:text-emerald-400">Images, Videos & Audio</span>
-        </motion.h1>
-        <motion.p 
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.3 }}
-          className="text-lg text-slate-600 dark:text-slate-400 max-w-2xl mx-auto"
-        >
+        </h1>
+        <p className="text-lg text-slate-600 dark:text-slate-400 max-w-2xl mx-auto">
           Fast, secure, and powerful media compression. Reduce file size by up to 90% 
           while maintaining quality. All processing happens in your browser.
-        </motion.p>
+        </p>
 
         {/* Features */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-12 max-w-4xl mx-auto">
-          {[
-            {
-              icon: Zap,
-              title: "Lightning Fast",
-              description: "Client-side processing means instant results with no upload wait times",
-              delay: 0.4
-            },
-            {
-              icon: Shield,
-              title: "100% Private",
-              description: "Your files never leave your device. Everything happens locally",
-              delay: 0.5
-            },
-            {
-              icon: ImageIcon,
-              title: "Multiple Formats",
-              description: (
-                <>
-                  <strong>Images:</strong> JPEG, PNG, WEBP, AVIF, GIF<br/>
-                  <strong>Video:</strong> MP4<br/>
-                  <strong>Audio:</strong> MP3, WAV<br/>
-                  <span className="text-xs">Convert between any format instantly.</span>
-                </>
-              ),
-              delay: 0.6
-            }
-          ].map((feature, index) => (
-            <motion.div
-              key={index}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: feature.delay }}
-              whileHover={{ y: -5, transition: { duration: 0.2 } }}
-              className="p-6 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm hover:shadow-md transition-all"
-            >
-              <div className="w-12 h-12 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-xl flex items-center justify-center mb-4 mx-auto">
-                <feature.icon className="w-6 h-6 text-white" />
-              </div>
-              <h3 className="font-semibold text-slate-900 dark:text-white mb-2">{feature.title}</h3>
-              <p className="text-sm text-slate-600 dark:text-slate-400">
-                {feature.description}
-              </p>
-            </motion.div>
-          ))}
+          <div className="p-6 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm">
+            <div className="w-12 h-12 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-xl flex items-center justify-center mb-4 mx-auto">
+              <Zap className="w-6 h-6 text-white" />
+            </div>
+            <h3 className="font-semibold text-slate-900 dark:text-white mb-2">Lightning Fast</h3>
+            <p className="text-sm text-slate-600 dark:text-slate-400">
+              Client-side processing means instant results with no upload wait times
+            </p>
+          </div>
+
+          <div className="p-6 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm">
+            <div className="w-12 h-12 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-xl flex items-center justify-center mb-4 mx-auto">
+              <Shield className="w-6 h-6 text-white" />
+            </div>
+            <h3 className="font-semibold text-slate-900 dark:text-white mb-2">100% Private</h3>
+            <p className="text-sm text-slate-600 dark:text-slate-400">
+              Your files never leave your device. Everything happens locally
+            </p>
+          </div>
+
+          <div className="p-6 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm">
+            <div className="w-12 h-12 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-xl flex items-center justify-center mb-4 mx-auto">
+              <ImageIcon className="w-6 h-6 text-white" />
+            </div>
+            <h3 className="font-semibold text-slate-900 dark:text-white mb-2">Multiple Formats</h3>
+            <p className="text-sm text-slate-600 dark:text-slate-400">
+              <strong>Images:</strong> JPEG, PNG, WEBP, AVIF, GIF<br/>
+              <strong>Video:</strong> MP4<br/>
+              <strong>Audio:</strong> MP3, WAV<br/>
+              <span className="text-xs">Convert between any format instantly.</span>
+            </p>
+          </div>
         </div>
       </motion.div>
 
@@ -232,7 +193,7 @@ export default function Home() {
         <motion.div
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
-          transition={{ delay: 0.7 }}
+          transition={{ delay: 0.2 }}
         >
           <UploadZone
             onFilesSelected={handleFilesSelected}
@@ -250,97 +211,68 @@ export default function Home() {
           className="space-y-6"
         >
           {/* Stats Bar */}
-          <motion.div 
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="bg-white dark:bg-slate-900 rounded-2xl p-6 border border-slate-200 dark:border-slate-800 shadow-lg"
-          >
+          <div className="bg-white dark:bg-slate-900 rounded-2xl p-6 border border-slate-200 dark:border-slate-800 shadow-lg">
             <div className="flex flex-wrap items-center justify-between gap-4">
               <div className="flex items-center gap-6 flex-wrap">
-                <motion.div
-                  initial={{ scale: 0.8, opacity: 0 }}
-                  animate={{ scale: 1, opacity: 1 }}
-                  transition={{ delay: 0.1 }}
-                >
-                  <p className="text-sm text-slate-500 dark:text-slate-400">Total Files</p>
+                <div>
+                  <p className="text-sm text-slate-500 dark:text-slate-400">Total Images</p>
                   <p className="text-2xl font-bold text-slate-900 dark:text-white">
                     {images.length}
                   </p>
-                </motion.div>
+                </div>
                 <div className="h-12 w-px bg-slate-200 dark:bg-slate-800 hidden sm:block" />
-                <motion.div
-                  initial={{ scale: 0.8, opacity: 0 }}
-                  animate={{ scale: 1, opacity: 1 }}
-                  transition={{ delay: 0.2 }}
-                >
+                <div>
                   <p className="text-sm text-slate-500 dark:text-slate-400">Processed</p>
                   <p className="text-2xl font-bold text-emerald-600 dark:text-emerald-400">
                     {Object.keys(processedImages).length}/{images.length}
                   </p>
-                </motion.div>
+                </div>
                 {Object.keys(processedImages).length > 0 && (
                   <>
                     <div className="h-12 w-px bg-slate-200 dark:bg-slate-800 hidden sm:block" />
-                    <motion.div
-                      initial={{ scale: 0.8, opacity: 0 }}
-                      animate={{ scale: 1, opacity: 1 }}
-                      transition={{ delay: 0.3 }}
-                    >
+                    <div>
                       <p className="text-sm text-slate-500 dark:text-slate-400">Total Savings</p>
                       <p className="text-2xl font-bold text-emerald-600 dark:text-emerald-400">
                         {savingsPercent}%
                       </p>
-                    </motion.div>
+                    </div>
                   </>
                 )}
               </div>
 
               <div className="flex gap-2 flex-wrap">
                 {unprocessedCount > 0 && (
-                  <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-                    <Button
-                      onClick={processAllImages}
-                      className="bg-blue-600 hover:bg-blue-700 text-white"
-                    >
-                      <Zap className="w-4 h-4 mr-2" />
-                      Process All Remaining
-                    </Button>
-                  </motion.div>
+                  <Button
+                    onClick={processAllImages}
+                    className="bg-blue-600 hover:bg-blue-700 text-white"
+                  >
+                    <Zap className="w-4 h-4 mr-2" />
+                    Process All Remaining
+                  </Button>
                 )}
                 {Object.keys(processedImages).length > 0 && (
-                  <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-                    <Button
-                      onClick={downloadAll}
-                      className="bg-emerald-600 hover:bg-emerald-700 text-white"
-                    >
-                      <Download className="w-4 h-4 mr-2" />
-                      Download All ({Object.keys(processedImages).length})
-                    </Button>
-                  </motion.div>
-                )}
-                <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
                   <Button
-                    onClick={clearAll}
-                    variant="outline"
-                    className="border-red-200 text-red-600 hover:bg-red-50 dark:border-red-900 dark:text-red-400 dark:hover:bg-red-950"
+                    onClick={downloadAll}
+                    className="bg-emerald-600 hover:bg-emerald-700 text-white"
                   >
-                    <Trash2 className="w-4 h-4 mr-2" />
-                    Clear All
+                    <Download className="w-4 h-4 mr-2" />
+                    Download All ({Object.keys(processedImages).length})
                   </Button>
-                </motion.div>
+                )}
+                <Button
+                  onClick={clearAll}
+                  variant="outline"
+                  className="border-red-200 text-red-600 hover:bg-red-50 dark:border-red-900 dark:text-red-400 dark:hover:bg-red-950"
+                >
+                  <Trash2 className="w-4 h-4 mr-2" />
+                  Clear All
+                </Button>
               </div>
             </div>
-          </motion.div>
+          </div>
 
           {/* Add More Button */}
-          <motion.div 
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.2 }}
-            className="relative"
-            whileHover={{ scale: 1.01 }}
-            whileTap={{ scale: 0.99 }}
-          >
+          <div className="relative">
             <input
               type="file"
               multiple
@@ -351,12 +283,12 @@ export default function Home() {
             />
             <Button
               variant="outline"
-              className="w-full h-16 border-2 border-dashed hover:border-emerald-400 dark:hover:border-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-950/20 transition-all"
+              className="w-full h-16 border-2 border-dashed hover:border-emerald-400 dark:hover:border-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-950/20"
             >
               <Sparkles className="w-5 h-5 mr-2" />
               Add More Files
             </Button>
-          </motion.div>
+          </div>
 
           {/* Images Grid with Drag & Drop */}
           <DragDropContext onDragEnd={handleDragEnd}>
@@ -389,7 +321,6 @@ export default function Home() {
                               onProcessed={(data) => handleImageProcessed(image.id, data)}
                               onCompare={handleCompare}
                               autoProcess={!processedImages[image.id] && autoProcessTrigger}
-                              batchSettings={batchSettings}
                             />
                           </Suspense>
                         </div>
@@ -402,23 +333,6 @@ export default function Home() {
             </Droppable>
           </DragDropContext>
         </motion.div>
-      )}
-
-      {/* Batch Settings Modal */}
-      {showBatchSettings && (
-        <Suspense fallback={null}>
-          <BatchSettingsModal
-            isOpen={showBatchSettings}
-            onClose={() => setShowBatchSettings(false)}
-            onApply={(settings) => {
-              setBatchSettings(settings);
-              setShowBatchSettings(false);
-              toast.info(`Processing with batch settings...`);
-              setAutoProcessTrigger(prev => prev + 1);
-            }}
-            fileCount={images.filter(img => !processedImages[img.id]).length}
-          />
-        </Suspense>
       )}
 
       {/* Comparison Modal */}
