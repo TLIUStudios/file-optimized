@@ -532,6 +532,14 @@ export default function ImageCard({ image, onRemove, onProcessed, onCompare, aut
   return (
     <Card className="overflow-hidden bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 shadow-lg hover:shadow-xl transition-shadow">
       <div className="relative">
+        {/* GIF Frame Count Badge - Above Card */}
+        {isGif && gifFrameCount > 0 && (
+          <Badge className="absolute -top-8 left-4 bg-slate-900/90 text-white text-xs px-3 py-1.5 font-bold flex items-center gap-1 shadow-lg z-10 rounded-md">
+            <Film className="w-3 h-3" />
+            {gifFrameCount} frames
+          </Badge>
+        )}
+        
         <div className="grid grid-cols-2 gap-2 p-4 bg-slate-50 dark:bg-slate-950">
           {preview && (
             <div 
@@ -549,12 +557,7 @@ export default function ImageCard({ image, onRemove, onProcessed, onCompare, aut
               <Badge className="absolute bottom-2 right-2 bg-slate-900/95 backdrop-blur-sm text-white border border-slate-700 text-xs px-2 py-1 font-bold shadow-lg">
                 {originalExt}
               </Badge>
-              {isGif && gifFrameCount > 0 && (
-                <Badge className="absolute bottom-2 left-2 bg-slate-900/80 text-white text-xs px-2 py-1 font-bold flex items-center gap-1">
-                  <Film className="w-3 h-3" />
-                  {gifFrameCount} frames
-                </Badge>
-              )}
+              {/* Old GIF frame count badge removed from here */}
               {!isGif && (
                 <Button
                   variant="ghost"
@@ -598,7 +601,7 @@ export default function ImageCard({ image, onRemove, onProcessed, onCompare, aut
           variant="ghost"
           size="icon"
           onClick={onRemove}
-          className="absolute top-2 right-2 bg-slate-900/90 dark:bg-slate-900/90 hover:bg-red-600 dark:hover:bg-red-600 text-white rounded-lg transition-colors z-10"
+          className="absolute -top-4 right-2 bg-slate-900/90 dark:bg-slate-900/90 hover:bg-red-600 dark:hover:bg-red-600 text-white rounded-lg transition-colors z-20 shadow-lg"
         >
           <X className="w-4 h-4" />
         </Button>
