@@ -786,14 +786,14 @@ export default function ImageComparisonModal({
                 )}
               </div>
             </div>
-          </div>
-        </div>
 
-        {/* Privacy Notice at Bottom */}
-        <div className="absolute bottom-0 left-0 right-0 bg-slate-100 dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 px-4 py-3">
-          <p className="text-xs text-slate-500 dark:text-slate-400 text-center">
-            🔒 All processing happens locally in your browser. Your images never leave your device.
-          </p>
+            {/* Privacy Notice */}
+            <div className="mt-4 bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg px-4 py-3 mx-5 mb-5">
+              <p className="text-xs text-slate-500 dark:text-slate-400 text-center">
+                🔒 All processing happens locally in your browser. Your images never leave your device.
+              </p>
+            </div>
+          </div>
         </div>
       </DialogContent>
     </Dialog>
