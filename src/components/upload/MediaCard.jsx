@@ -87,10 +87,10 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
 
   // Load FFmpeg for video/audio processing
   useEffect(() => {
-    if ((isVideo || isAudio) && !ffmpegLoaded) {
+    if ((isVideo || isAudio || isGif) && !ffmpegLoaded) {
       loadFFmpeg();
     }
-  }, [isVideo, isAudio, ffmpegLoaded]);
+  }, [isVideo, isAudio, isGif, ffmpegLoaded]);
 
   // Auto-process when autoProcess is triggered
   useEffect(() => {
@@ -101,9 +101,14 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
 
   const loadFFmpeg = async () => {
     try {
-      toast.info('Loading media processor...');
-      const { FFmpeg } = await import('https://unpkg.com/@ffmpeg/ffmpeg@0.12.10/dist/umd/ffmpeg.js');
-      const { fetchFile } = await import('https://unpkg.com/@ffmpeg/util@0.12.1/dist/umd/index.js');
+      toast.info('Loading media processor...', { duration: 3000 });
+      
+      // Use dynamic import with proper CDN
+      const FFmpegModule = await import('https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@0.12.10/dist/esm/index.js');
+      const UtilModule = await import('https://cdn.jsdelivr.net/npm/@ffmpeg/util@0.12.1/dist/esm/index.js');
+      
+      const { FFmpeg } = FFmpegModule;
+      const { toBlobURL, fetchFile } = UtilModule;
       
       const ffmpeg = new FFmpeg();
       ffmpegRef.current = ffmpeg;
@@ -112,22 +117,27 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
         console.log('FFmpeg:', message);
       });
       
-      ffmpeg.on('progress', ({ progress }) => {
-        console.log(`Progress: ${(progress * 100).toFixed(2)}%`);
+      ffmpeg.on('progress', ({ progress, time }) => {
+        const percent = Math.round(progress * 100);
+        console.log(`Progress: ${percent}% (${time}ms)`);
       });
       
-      const baseURL = 'https://unpkg.com/@ffmpeg/core@0.12.6/dist/umd';
+      // Use proper CDN URLs
+      const baseURL = 'https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.6/dist/esm';
+      
+      const coreURL = await toBlobURL(`${baseURL}/ffmpeg-core.js`, 'text/javascript');
+      const wasmURL = await toBlobURL(`${baseURL}/ffmpeg-core.wasm`, 'application/wasm');
       
       await ffmpeg.load({
-        coreURL: `${baseURL}/ffmpeg-core.js`,
-        wasmURL: `${baseURL}/ffmpeg-core.wasm`,
+        coreURL,
+        wasmURL,
       });
       
       setFfmpegLoaded(true);
-      console.log('FFmpeg loaded successfully');
+      console.log('✅ FFmpeg loaded successfully');
       toast.success('Media processor ready!');
     } catch (error) {
-      console.error('Error loading FFmpeg:', error);
+      console.error('❌ Error loading FFmpeg:', error);
       setError('Failed to load media processor. Please refresh and try again.');
       toast.error('Failed to load media processor');
     }
@@ -193,13 +203,19 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
     }
 
     try {
-      toast.info('Converting GIF to MP4...');
+      toast.info('Converting GIF to MP4...', { duration: 5000 });
       const ffmpeg = ffmpegRef.current;
-      const { fetchFile } = await import('https://unpkg.com/@ffmpeg/util@0.12.1/dist/umd/index.js');
       
-      await ffmpeg.writeFile('input.gif', await fetchFile(preview));
+      // Import fetchFile
+      const { fetchFile } = await import('https://cdn.jsdelivr.net/npm/@ffmpeg/util@0.12.1/dist/esm/index.js');
+      
+      // Fetch and write the GIF file
+      const gifData = await fetchFile(preview);
+      await ffmpeg.writeFile('input.gif', gifData);
       
       const targetFps = frameRate || 30;
+      
+      // Convert GIF to MP4
       await ffmpeg.exec([
         '-i', 'input.gif',
         '-movflags', 'faststart',
@@ -207,12 +223,17 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
         '-vf', `fps=${targetFps},scale=trunc(iw/2)*2:trunc(ih/2)*2`,
         '-b:v', `${videoBitrate}k`,
         '-c:v', 'libx264',
+        '-preset', 'medium',
         'output.mp4'
       ]);
       
       const data = await ffmpeg.readFile('output.mp4');
       const outputBlob = new Blob([data.buffer], { type: 'video/mp4' });
       const compressedUrl = URL.createObjectURL(outputBlob);
+      
+      // Clean up
+      await ffmpeg.deleteFile('input.gif');
+      await ffmpeg.deleteFile('output.mp4');
       
       setCompressedPreview(compressedUrl);
       setCompressedSize(outputBlob.size);
@@ -234,7 +255,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
       toast.success('GIF converted to MP4!');
     } catch (error) {
       console.error('GIF to MP4 conversion failed:', error);
-      setError('Failed to convert GIF to MP4');
+      setError('Failed to convert GIF to MP4: ' + error.message);
       toast.error('Conversion failed: ' + error.message);
     }
   };
@@ -246,25 +267,43 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
     }
 
     try {
-      toast.info('Converting MP4 to GIF...');
+      toast.info('Converting MP4 to GIF...', { duration: 5000 });
       const ffmpeg = ffmpegRef.current;
-      const { fetchFile } = await import('https://unpkg.com/@ffmpeg/util@0.12.1/dist/umd/index.js');
       
-      await ffmpeg.writeFile('input.mp4', await fetchFile(preview));
+      const { fetchFile } = await import('https://cdn.jsdelivr.net/npm/@ffmpeg/util@0.12.1/dist/esm/index.js');
+      
+      const videoData = await fetchFile(preview);
+      await ffmpeg.writeFile('input.mp4', videoData);
       
       const targetFps = Math.min(frameRate || 15, 15);
       const scale = maxWidth ? `scale=${maxWidth}:-1:flags=lanczos` : 'scale=640:-1:flags=lanczos';
       
+      // Generate palette first
       await ffmpeg.exec([
         '-i', 'input.mp4',
-        '-vf', `${scale},fps=${targetFps},split[s0][s1];[s0]palettegen=max_colors=256[p];[s1][p]paletteuse=dither=bayer:bayer_scale=5`,
+        '-vf', `${scale},fps=${targetFps},palettegen=max_colors=256`,
+        '-y',
+        'palette.png'
+      ]);
+      
+      // Use palette to create GIF
+      await ffmpeg.exec([
+        '-i', 'input.mp4',
+        '-i', 'palette.png',
+        '-lavfi', `${scale},fps=${targetFps}[x];[x][1:v]paletteuse=dither=bayer:bayer_scale=5`,
         '-loop', '0',
+        '-y',
         'output.gif'
       ]);
       
       const data = await ffmpeg.readFile('output.gif');
       const outputBlob = new Blob([data.buffer], { type: 'image/gif' });
       const compressedUrl = URL.createObjectURL(outputBlob);
+      
+      // Clean up
+      await ffmpeg.deleteFile('input.mp4');
+      await ffmpeg.deleteFile('palette.png');
+      await ffmpeg.deleteFile('output.gif');
       
       setCompressedPreview(compressedUrl);
       setCompressedSize(outputBlob.size);
@@ -286,7 +325,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
       toast.success('Video converted to GIF!');
     } catch (error) {
       console.error('MP4 to GIF conversion failed:', error);
-      setError('Failed to convert MP4 to GIF');
+      setError('Failed to convert MP4 to GIF: ' + error.message);
       toast.error('Conversion failed: ' + error.message);
     }
   };
@@ -298,11 +337,13 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
     }
 
     try {
-      toast.info('Compressing video...');
+      toast.info('Compressing video...', { duration: 5000 });
       const ffmpeg = ffmpegRef.current;
-      const { fetchFile } = await import('https://unpkg.com/@ffmpeg/util@0.12.1/dist/umd/index.js');
       
-      await ffmpeg.writeFile('input.mp4', await fetchFile(preview));
+      const { fetchFile } = await import('https://cdn.jsdelivr.net/npm/@ffmpeg/util@0.12.1/dist/esm/index.js');
+      
+      const videoData = await fetchFile(preview);
+      await ffmpeg.writeFile('input.mp4', videoData);
       
       const scaleFilter = maxWidth && maxHeight 
         ? `scale='min(${maxWidth},iw)':'min(${maxHeight},ih)':force_original_aspect_ratio=decrease`
@@ -310,25 +351,38 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
         ? `scale=${maxWidth}:-2`
         : maxHeight
         ? `scale=-2:${maxHeight}`
-        : 'scale=iw:ih';
+        : null;
       
-      await ffmpeg.exec([
+      const args = [
         '-i', 'input.mp4',
         '-c:v', 'libx264',
         '-preset', compressionMode === 'maximum' ? 'slow' : compressionMode === 'aggressive' ? 'medium' : 'fast',
         '-crf', String(Math.round((100 - quality) / 2.5)),
-        '-vf', scaleFilter,
+      ];
+      
+      if (scaleFilter) {
+        args.push('-vf', scaleFilter);
+      }
+      
+      args.push(
         '-r', String(frameRate),
         '-b:v', `${videoBitrate}k`,
         '-c:a', 'aac',
         '-b:a', '128k',
         '-movflags', '+faststart',
+        '-y',
         'output.mp4'
-      ]);
+      );
+      
+      await ffmpeg.exec(args);
       
       const data = await ffmpeg.readFile('output.mp4');
       const outputBlob = new Blob([data.buffer], { type: 'video/mp4' });
       const compressedUrl = URL.createObjectURL(outputBlob);
+      
+      // Clean up
+      await ffmpeg.deleteFile('input.mp4');
+      await ffmpeg.deleteFile('output.mp4');
       
       setCompressedPreview(compressedUrl);
       setCompressedSize(outputBlob.size);
@@ -351,7 +405,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
       toast.success(`Video compressed! Saved ${savings}%`);
     } catch (error) {
       console.error('Video compression failed:', error);
-      setError('Failed to compress video');
+      setError('Failed to compress video: ' + error.message);
       toast.error('Video compression failed: ' + error.message);
     }
   };
@@ -363,12 +417,14 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
     }
 
     try {
-      toast.info('Compressing audio...');
+      toast.info('Compressing audio...', { duration: 5000 });
       const ffmpeg = ffmpegRef.current;
-      const { fetchFile } = await import('https://unpkg.com/@ffmpeg/util@0.12.1/dist/umd/index.js');
       
+      const { fetchFile } = await import('https://cdn.jsdelivr.net/npm/@ffmpeg/util@0.12.1/dist/esm/index.js');
+      
+      const audioData = await fetchFile(preview);
       const inputExt = image.name.split('.').pop().toLowerCase();
-      await ffmpeg.writeFile(`input.${inputExt}`, await fetchFile(preview));
+      await ffmpeg.writeFile(`input.${inputExt}`, audioData);
       
       const outputExt = format === 'wav' ? 'wav' : 'mp3';
       const codec = format === 'wav' ? 'pcm_s16le' : 'libmp3lame';
@@ -378,6 +434,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
         '-c:a', codec,
         '-b:a', `${audioBitrate}k`,
         '-ar', '44100',
+        '-y',
         `output.${outputExt}`
       ]);
       
@@ -385,6 +442,10 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
       const mimeType = format === 'wav' ? 'audio/wav' : 'audio/mpeg';
       const outputBlob = new Blob([data.buffer], { type: mimeType });
       const compressedUrl = URL.createObjectURL(outputBlob);
+      
+      // Clean up
+      await ffmpeg.deleteFile(`input.${inputExt}`);
+      await ffmpeg.deleteFile(`output.${outputExt}`);
       
       setCompressedPreview(compressedUrl);
       setCompressedSize(outputBlob.size);
@@ -407,7 +468,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
       toast.success(`Audio compressed! Saved ${savings}%`);
     } catch (error) {
       console.error('Audio compression failed:', error);
-      setError('Failed to compress audio');
+      setError('Failed to compress audio: ' + error.message);
       toast.error('Audio compression failed: ' + error.message);
     }
   };
@@ -994,10 +1055,10 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
           </div>
         )}
 
-        {(isVideo || isAudio) && !ffmpegLoaded && (
+        {(isVideo || isAudio || isGif) && !ffmpegLoaded && (
           <div className="flex items-center gap-2 text-sm text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/30 p-3 rounded-lg">
             <Loader2 className="w-4 h-4 animate-spin flex-shrink-0" />
-            <span className="text-xs">Loading {isVideo ? 'video' : 'audio'} processor...</span>
+            <span className="text-xs">Loading {isVideo ? 'video' : isAudio ? 'audio' : 'media'} processor...</span>
           </div>
         )}
 
@@ -1265,7 +1326,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
           {!processed ? (
             <Button
               onClick={processMedia}
-              disabled={processing || ((isVideo || isAudio) && !ffmpegLoaded)}
+              disabled={processing || ((isVideo || isAudio || isGif) && !ffmpegLoaded)}
               className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white"
             >
               {processing ? (

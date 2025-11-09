@@ -169,7 +169,7 @@ export default function Home() {
             </div>
             <h3 className="font-semibold text-slate-900 dark:text-white mb-2">100% Private</h3>
             <p className="text-sm text-slate-600 dark:text-slate-400">
-              Your images never leave your device. Everything happens locally
+              Your files never leave your device. Everything happens locally
             </p>
           </div>
 
@@ -179,7 +179,7 @@ export default function Home() {
             </div>
             <h3 className="font-semibold text-slate-900 dark:text-white mb-2">Multiple Formats</h3>
             <p className="text-sm text-slate-600 dark:text-slate-400">
-              Convert between PNG, JPG, WebP, AVIF, and GIF formats
+              Images: JPG, PNG, WebP, AVIF, GIF • Video: MP4 • Audio: MP3, WAV. Convert between any format instantly.
             </p>
           </div>
         </div>
