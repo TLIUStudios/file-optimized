@@ -1,3 +1,4 @@
+
 import { useState, useRef, useEffect } from "react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { X, RotateCw, Crop, ZoomIn, ZoomOut, Sun, Contrast, Droplet, Sparkles, Undo, Redo } from "lucide-react";
@@ -26,10 +27,19 @@ export default function ImageEditor({ isOpen, onClose, imageData, onSave }) {
   useEffect(() => {
     if (imageData && canvasRef.current) {
       const img = new Image();
+      img.crossOrigin = "anonymous"; // Handle CORS for data URLs
       img.onload = () => {
         setOriginalImage(img);
         setImageDimensions({ width: img.width, height: img.height });
-        drawCanvas(img);
+        
+        // Initial draw
+        const canvas = canvasRef.current;
+        if (canvas) {
+          canvas.width = img.width;
+          canvas.height = img.height;
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0); // Draw original image without transformations
+        }
         
         // Initialize history with default state
         const initialState = {
@@ -43,6 +53,10 @@ export default function ImageEditor({ isOpen, onClose, imageData, onSave }) {
         };
         setHistory([initialState]);
         setHistoryIndex(0);
+      };
+      img.onerror = (error) => {
+        console.error('Error loading image:', error);
+        toast.error('Failed to load image for editing');
       };
       img.src = imageData;
     }
