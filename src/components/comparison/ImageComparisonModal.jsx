@@ -143,7 +143,7 @@ export default function ImageComparisonModal({
           variant="ghost"
           size="icon"
           onClick={onClose}
-          className="absolute top-4 right-4 z-50 bg-slate-900/90 hover:bg-red-600 text-white rounded-lg transition-colors h-10 w-10"
+          className="absolute top-4 right-4 z-[100] bg-slate-900/90 hover:bg-red-600 text-white rounded-lg transition-colors h-10 w-10"
         >
           <X className="w-5 h-5" />
         </Button>
@@ -151,8 +151,8 @@ export default function ImageComparisonModal({
         <div className="flex flex-col lg:flex-row h-full">
           {/* Left Side - Image Comparison */}
           <div className="flex-1 relative overflow-hidden flex flex-col">
-            {/* Zoom Controls - Repositioned and Styled */}
-            <div className="absolute top-4 left-4 z-20 flex gap-2">
+            {/* Zoom Controls - Higher z-index to prevent overlap */}
+            <div className="absolute top-4 left-4 z-[50] flex gap-2">
               <Button
                 variant="secondary"
                 size="icon"
@@ -187,7 +187,7 @@ export default function ImageComparisonModal({
 
             <div 
               ref={containerRef}
-              className="relative w-full h-full bg-slate-950 select-none flex items-center justify-center overflow-hidden"
+              className="relative w-full h-full bg-slate-950 select-none flex flex-col items-center justify-center overflow-hidden"
               style={{ 
                 cursor: zoom > 1 ? (isPanning ? 'grabbing' : 'grab') : 'col-resize'
               }}
@@ -207,89 +207,101 @@ export default function ImageComparisonModal({
                 }
               }}
             >
-              <div
-                className="relative"
-                style={{
-                  transform: `scale(${zoom}) translate(${pan.x / zoom}px, ${pan.y / zoom}px)`,
-                  transformOrigin: 'center',
-                  transition: isDragging || isPanning ? 'none' : 'transform 0.2s ease-out',
-                  maxWidth: 'calc(100% - 32px)',
-                  maxHeight: 'calc(100% - 32px)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center'
-                }}
-              >
-                {/* Compressed Image (Background - Right Side) */}
-                <div className="relative flex items-center justify-center">
-                  <img
-                    src={compressedImage}
-                    alt="Compressed"
-                    className="max-w-full max-h-[85vh] lg:max-h-[90vh] w-auto h-auto object-contain"
-                    draggable="false"
-                  />
-                  {/* Compressed File Type Badge */}
-                  <Badge className="absolute bottom-3 right-3 bg-emerald-600/95 backdrop-blur-sm text-white border border-emerald-500 text-xs px-2.5 py-1 shadow-lg font-bold">
+              {/* Image Container */}
+              <div className="flex-1 relative w-full flex items-center justify-center">
+                <div
+                  className="relative"
+                  style={{
+                    transform: `scale(${zoom}) translate(${pan.x / zoom}px, ${pan.y / zoom}px)`,
+                    transformOrigin: 'center',
+                    transition: isDragging || isPanning ? 'none' : 'transform 0.2s ease-out',
+                    maxWidth: 'calc(100% - 32px)',
+                    maxHeight: 'calc(100% - 32px)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center'
+                  }}
+                >
+                  {/* Compressed Image (Background - Right Side) */}
+                  <div className="relative flex items-center justify-center">
+                    <img
+                      src={compressedImage}
+                      alt="Compressed"
+                      className="max-w-full max-h-[75vh] lg:max-h-[80vh] w-auto h-auto object-contain"
+                      draggable="false"
+                    />
+                  </div>
+
+                  {/* Original Image (Foreground - Left Side with clip) */}
+                  <div
+                    className="absolute inset-0 flex items-center justify-center overflow-hidden"
+                    style={{ clipPath: `inset(0 ${100 - sliderPosition}% 0 0)` }}
+                  >
+                    <div className="relative flex items-center justify-center">
+                      <img
+                        src={originalImage}
+                        alt="Original"
+                        className="max-w-full max-h-[75vh] lg:max-h-[80vh] w-auto h-auto object-contain"
+                        draggable="false"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Slider Line - only show when not zoomed/panning */}
+                {zoom === 1 && !isPanning && (
+                  <>
+                    <div
+                      className="absolute top-0 bottom-0 w-0.5 bg-white shadow-2xl z-10"
+                      style={{ left: `${sliderPosition}%`, transform: 'translateX(-50%)' }}
+                    >
+                      {/* Slider Handle */}
+                      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-12 h-12 bg-white rounded-full shadow-2xl flex items-center justify-center cursor-col-resize border-2 border-slate-300">
+                        <MoveHorizontal className="w-5 h-5 text-slate-900" />
+                      </div>
+                    </div>
+
+                    {/* Labels */}
+                    <Badge className="absolute top-6 left-6 bg-slate-900/95 backdrop-blur-sm text-white border border-slate-700 text-sm px-3 py-1.5 z-10 shadow-lg font-semibold">
+                      Original
+                    </Badge>
+                    <Badge className="absolute top-6 right-6 lg:right-auto lg:left-[calc(50%+1.5rem)] bg-emerald-600/95 backdrop-blur-sm text-white border border-emerald-500 text-sm px-3 py-1.5 z-10 shadow-lg font-semibold">
+                      Compressed
+                    </Badge>
+
+                    {/* Instruction */}
+                    {sliderPosition === 50 && !isDragging && (
+                      <div className="absolute bottom-20 left-1/2 -translate-x-1/2 bg-slate-900/95 backdrop-blur-sm text-white px-5 py-2.5 rounded-full text-sm border border-slate-700 pointer-events-none animate-pulse shadow-lg">
+                        ← Drag to compare →
+                      </div>
+                    )}
+                  </>
+                )}
+
+                {/* Pan instruction when zoomed */}
+                {zoom > 1 && !isPanning && (
+                  <div className="absolute bottom-20 left-1/2 -translate-x-1/2 bg-slate-900/95 backdrop-blur-sm text-white px-5 py-2.5 rounded-full text-sm border border-slate-700 pointer-events-none shadow-lg">
+                    Click and drag to pan • Scroll to zoom
+                  </div>
+                )}
+              </div>
+
+              {/* File Type Badges Below Image */}
+              <div className="h-16 w-full flex items-center justify-center gap-8 px-4 bg-slate-950/50 border-t border-slate-800">
+                <div className="flex items-center gap-3">
+                  <span className="text-slate-400 text-sm font-medium">Original:</span>
+                  <Badge className="bg-slate-900/95 backdrop-blur-sm text-white border border-slate-700 text-sm px-3 py-1.5 font-bold shadow-lg">
+                    {originalExt}
+                  </Badge>
+                </div>
+                <div className="h-8 w-px bg-slate-700" />
+                <div className="flex items-center gap-3">
+                  <span className="text-slate-400 text-sm font-medium">Compressed:</span>
+                  <Badge className="bg-emerald-600/95 backdrop-blur-sm text-white border border-emerald-500 text-sm px-3 py-1.5 font-bold shadow-lg">
                     {compressedExt}
                   </Badge>
                 </div>
-
-                {/* Original Image (Foreground - Left Side with clip) */}
-                <div
-                  className="absolute inset-0 flex items-center justify-center overflow-hidden"
-                  style={{ clipPath: `inset(0 ${100 - sliderPosition}% 0 0)` }}
-                >
-                  <div className="relative flex items-center justify-center">
-                    <img
-                      src={originalImage}
-                      alt="Original"
-                      className="max-w-full max-h-[85vh] lg:max-h-[90vh] w-auto h-auto object-contain"
-                      draggable="false"
-                    />
-                    {/* Original File Type Badge */}
-                    <Badge className="absolute bottom-3 right-3 bg-slate-900/95 backdrop-blur-sm text-white border border-slate-700 text-xs px-2.5 py-1 shadow-lg font-bold">
-                      {originalExt}
-                    </Badge>
-                  </div>
-                </div>
               </div>
-
-              {/* Slider Line - only show when not zoomed/panning */}
-              {zoom === 1 && !isPanning && (
-                <>
-                  <div
-                    className="absolute top-0 bottom-0 w-0.5 bg-white shadow-2xl z-10"
-                    style={{ left: `${sliderPosition}%`, transform: 'translateX(-50%)' }}
-                  >
-                    {/* Slider Handle */}
-                    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-12 h-12 bg-white rounded-full shadow-2xl flex items-center justify-center cursor-col-resize border-2 border-slate-300">
-                      <MoveHorizontal className="w-5 h-5 text-slate-900" />
-                    </div>
-                  </div>
-
-                  {/* Labels */}
-                  <Badge className="absolute top-6 left-6 bg-slate-900/95 backdrop-blur-sm text-white border border-slate-700 text-sm px-3 py-1.5 z-10 shadow-lg font-semibold">
-                    Original
-                  </Badge>
-                  <Badge className="absolute top-6 right-6 lg:right-auto lg:left-[calc(50%+1.5rem)] bg-emerald-600/95 backdrop-blur-sm text-white border border-emerald-500 text-sm px-3 py-1.5 z-10 shadow-lg font-semibold">
-                    Compressed
-                  </Badge>
-
-                  {/* Instruction */}
-                  {sliderPosition === 50 && !isDragging && (
-                    <div className="absolute bottom-6 left-1/2 -translate-x-1/2 bg-slate-900/95 backdrop-blur-sm text-white px-5 py-2.5 rounded-full text-sm border border-slate-700 pointer-events-none animate-pulse shadow-lg">
-                      ← Drag to compare →
-                    </div>
-                  )}
-                </>
-              )}
-
-              {/* Pan instruction when zoomed */}
-              {zoom > 1 && !isPanning && (
-                <div className="absolute bottom-6 left-1/2 -translate-x-1/2 bg-slate-900/95 backdrop-blur-sm text-white px-5 py-2.5 rounded-full text-sm border border-slate-700 pointer-events-none shadow-lg">
-                  Click and drag to pan • Scroll to zoom
-                </div>
-              )}
             </div>
           </div>
 
