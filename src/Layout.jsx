@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from "react";
 import { Moon, Sun, Image as ImageIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -76,10 +77,11 @@ export default function Layout({ children }) {
       </main>
       
       <footer className="border-t border-slate-200 dark:border-slate-800 mt-20">
-        <div className="container mx-auto px-4 py-8 text-center space-y-2">
+        <div className="container mx-auto px-4 py-8 text-center space-y-4">
           <p className="text-sm text-slate-500 dark:text-slate-400">
             🔒 All processing happens locally in your browser. Your images never leave your device.
           </p>
+          <div className="w-32 h-px bg-gradient-to-r from-transparent via-slate-300 dark:via-slate-700 to-transparent mx-auto" />
           <p className="text-sm text-slate-500 dark:text-slate-400">
             © <a href="https://www.tliu.co/" target="_blank" rel="noopener noreferrer" className="hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors">TLIU Studios</a> 2025, All Rights Reserved.
           </p>

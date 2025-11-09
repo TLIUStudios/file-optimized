@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -194,7 +195,7 @@ export default function ImageCard({ image, onRemove, onProcessed, onCompare }) {
         compressed: compressedPreview,
         originalSize,
         compressedSize,
-        fileName: image.name
+        fileName: `${image.name.split('.')[0]}_compressed.${format}`
       });
     }
   };

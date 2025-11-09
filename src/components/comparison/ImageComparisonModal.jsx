@@ -22,6 +22,12 @@ export default function ImageComparisonModal({
   const [panStart, setPanStart] = useState({ x: 0, y: 0 });
   const containerRef = useRef(null);
 
+  // Extract file extensions
+  const originalExtension = fileName.split('.').pop().toUpperCase();
+  const compressedExtension = compressedImage.includes('data:image/') 
+    ? compressedImage.split('data:image/')[1].split(';')[0].toUpperCase()
+    : 'WEBP';
+
   useEffect(() => {
     const handleMouseMove = (e) => {
       if (isDragging && !isPanning && containerRef.current) {
@@ -140,7 +146,7 @@ export default function ImageComparisonModal({
           }
         `}</style>
         
-        {/* Single Close Button - Top Right Corner */}
+        {/* Close Button - Matching Image Card Style */}
         <Button
           variant="ghost"
           size="icon"
@@ -189,10 +195,10 @@ export default function ImageComparisonModal({
 
             <div 
               ref={containerRef}
-              className="relative w-full h-full bg-slate-950 select-none"
+              className="relative w-full h-full bg-slate-950 select-none flex items-center justify-center"
               style={{ 
                 cursor: zoom > 1 ? (isPanning ? 'grabbing' : 'grab') : 'col-resize',
-                padding: '80px 20px 80px 20px'
+                padding: '100px 20px'
               }}
               onMouseDown={(e) => {
                 if (zoom > 1) {
@@ -219,24 +225,36 @@ export default function ImageComparisonModal({
                 }}
               >
                 {/* Compressed Image (Background - Right Side) */}
-                <img
-                  src={compressedImage}
-                  alt="Compressed"
-                  className="max-w-full max-h-full w-auto h-auto object-contain"
-                  draggable="false"
-                />
+                <div className="relative max-w-full max-h-full flex items-center justify-center">
+                  <img
+                    src={compressedImage}
+                    alt="Compressed"
+                    className="max-w-full max-h-full w-auto h-auto object-contain"
+                    draggable="false"
+                  />
+                  {/* Compressed File Type Badge */}
+                  <Badge className="absolute bottom-4 right-4 bg-emerald-600/95 backdrop-blur-sm text-white border border-emerald-500 text-xs px-3 py-1.5 shadow-lg font-bold">
+                    {compressedExtension}
+                  </Badge>
+                </div>
 
                 {/* Original Image (Foreground - Left Side with clip) */}
                 <div
                   className="absolute inset-0 flex items-center justify-center overflow-hidden"
                   style={{ clipPath: `inset(0 ${100 - sliderPosition}% 0 0)` }}
                 >
-                  <img
-                    src={originalImage}
-                    alt="Original"
-                    className="max-w-full max-h-full w-auto h-auto object-contain"
-                    draggable="false"
-                  />
+                  <div className="relative max-w-full max-h-full flex items-center justify-center">
+                    <img
+                      src={originalImage}
+                      alt="Original"
+                      className="max-w-full max-h-full w-auto h-auto object-contain"
+                      draggable="false"
+                    />
+                    {/* Original File Type Badge */}
+                    <Badge className="absolute bottom-4 right-4 bg-slate-900/95 backdrop-blur-sm text-white border border-slate-700 text-xs px-3 py-1.5 shadow-lg font-bold">
+                      {originalExtension}
+                    </Badge>
+                  </div>
                 </div>
               </div>
 
