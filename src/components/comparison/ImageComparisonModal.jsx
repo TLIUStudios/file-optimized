@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
-import { X, MoveHorizontal, ZoomIn, ZoomOut, Maximize2, Copy, RefreshCw, Sparkles, Download } from "lucide-react";
+import { X, MoveHorizontal, ZoomIn, ZoomOut, Maximize2, Copy, RefreshCw, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
@@ -24,8 +24,7 @@ export default function ImageComparisonModal({
   const [panStart, setPanStart] = useState({ x: 0, y: 0 });
   const [imageDimensions, setImageDimensions] = useState({ width: 0, height: 0 });
   const [aiMetadata, setAiMetadata] = useState(null);
-  const [generatingMetadata, setGeneratingMetadata] = useState(false);
-  const [uploadedImageUrl, setUploadedImageUrl] = useState(null);
+  const [isGenerating, setIsGenerating] = useState(false);
   const containerRef = useRef(null);
   const imageContainerRef = useRef(null);
 
@@ -44,78 +43,56 @@ export default function ImageComparisonModal({
     }
   }, [originalImage]);
 
-  // Upload image for AI processing
+  // Auto-generate AI metadata when modal opens
   useEffect(() => {
-    if (isOpen && originalImage && !uploadedImageUrl) {
-      uploadImageForAI();
+    if (isOpen && originalImage && !aiMetadata && !isGenerating) {
+      generateMetadata();
     }
   }, [isOpen, originalImage]);
 
-  const uploadImageForAI = async () => {
+  const generateMetadata = async () => {
+    setIsGenerating(true);
     try {
-      // Convert base64 to blob
+      // Convert base64 to blob and upload
       const response = await fetch(originalImage);
       const blob = await response.blob();
-      
-      // Upload to get a proper URL
       const { file_url } = await base44.integrations.Core.UploadFile({ file: blob });
-      setUploadedImageUrl(file_url);
-    } catch (error) {
-      console.error('Failed to upload image:', error);
-    }
-  };
 
-  const generateAIMetadata = async () => {
-    if (!uploadedImageUrl) {
-      toast.error('Please wait while image is being prepared...');
-      return;
-    }
+      // Generate metadata with AI
+      const result = await base44.integrations.Core.InvokeLLM({
+        prompt: `Analyze this image carefully and generate a title and description.
 
-    setGeneratingMetadata(true);
-    setAiMetadata(null);
-    
-    try {
-      const response = await base44.integrations.Core.InvokeLLM({
-        prompt: `Analyze this image and generate exactly 2 fields:
+TITLE: Create a short, catchy, SEO-friendly title (max 60 characters) that describes what's in the image.
+DESCRIPTION: Write a brief, engaging description (max 160 characters) that describes the image content.
 
-1. "title": A catchy, SEO-friendly title that describes what's in the image (maximum 60 characters)
-2. "description": An engaging description of the image suitable for social media and SEO (maximum 160 characters)
-
-Be specific about what you see. If it's food, mention the food. If it's a person/animal, describe them. If it's a landscape, describe the scene.`,
-        file_urls: [uploadedImageUrl],
+Be specific about what you see. If it's food, mention what food. If it's an animal, describe it. If it's a scene, describe it.`,
+        file_urls: [file_url],
         response_json_schema: {
           type: "object",
           properties: {
-            title: { 
-              type: "string"
-            },
-            description: { 
-              type: "string"
-            }
+            title: { type: "string" },
+            description: { type: "string" }
           },
           required: ["title", "description"]
         }
       });
-      
-      console.log('AI Response:', response);
-      
-      if (response && response.title && response.description) {
-        setAiMetadata(response);
-        toast.success('AI metadata generated!');
-      } else {
-        throw new Error('Invalid response from AI');
+
+      if (result?.title && result?.description) {
+        setAiMetadata(result);
       }
     } catch (error) {
       console.error('Failed to generate metadata:', error);
-      toast.error('Failed to generate metadata. Please try again.');
-      setAiMetadata(null);
+      setAiMetadata({
+        title: "Image Analysis Failed",
+        description: "Unable to generate metadata for this image."
+      });
     }
-    setGeneratingMetadata(false);
+    setIsGenerating(false);
   };
 
   const copyToClipboard = (text, label) => {
     navigator.clipboard.writeText(text);
-    toast.success(`${label} copied to clipboard!`);
+    toast.success(`${label} copied!`);
   };
 
   const downloadImage = () => {
@@ -142,7 +119,6 @@ Be specific about what you see. If it's food, mention the food. If it's a person
     if (Math.abs(ratio - 21/9) < 0.01) return "21:9";
     if (Math.abs(ratio - 9/16) < 0.01) return "9:16";
     
-    // If not a common ratio, return calculated ratio (but simplify if too large)
     if (ratioW > 100 || ratioH > 100) {
       return `${ratio.toFixed(2)}:1`;
     }
@@ -383,13 +359,6 @@ Be specific about what you see. If it's food, mention the food. If it's a person
                     )}
                   </div>
                 </div>
-
-                {/* Instructions */}
-                {zoom > 1 && !isPanning && (
-                  <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-slate-700/95 dark:bg-slate-800/95 backdrop-blur-sm text-white px-5 py-2 rounded-full text-sm shadow-lg">
-                    ← Drag to compare →
-                  </div>
-                )}
               </div>
 
               {/* Labels */}
@@ -403,9 +372,11 @@ Be specific about what you see. If it's food, mention the food. If it's a person
                   </Badge>
                 </div>
                 
-                <div className="px-4 py-2 bg-slate-600/80 dark:bg-slate-700/80 backdrop-blur-sm rounded-lg text-white text-sm font-medium">
-                  ← Drag to compare →
-                </div>
+                {zoom === 1 && (
+                  <div className="px-4 py-2 bg-slate-600/80 dark:bg-slate-700/80 backdrop-blur-sm rounded-lg text-white text-sm font-medium animate-pulse">
+                    ← Drag to compare →
+                  </div>
+                )}
                 
                 <div className="flex flex-col gap-1 items-end">
                   <Badge className="bg-emerald-600 text-white text-sm px-3 py-1 font-semibold w-fit">
@@ -430,13 +401,11 @@ Be specific about what you see. If it's food, mention the food. If it's a person
 
               {/* Stats */}
               <div className="space-y-3">
-                {/* Original Size */}
                 <div className="bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg p-4">
                   <p className="text-slate-500 dark:text-slate-400 text-[10px] font-semibold uppercase tracking-wider mb-1">Original Size</p>
                   <p className="text-slate-900 dark:text-white text-2xl font-bold">{formatFileSize(originalSize)}</p>
                 </div>
 
-                {/* Compressed Size */}
                 <div className="bg-gradient-to-br from-emerald-600 to-emerald-700 rounded-lg p-4">
                   <p className="text-emerald-100 text-[10px] font-semibold uppercase tracking-wider mb-1">Compressed Size</p>
                   <p className="text-white text-2xl font-bold mb-2">{formatFileSize(compressedSize)}</p>
@@ -445,7 +414,6 @@ Be specific about what you see. If it's food, mention the food. If it's a person
                   </Badge>
                 </div>
 
-                {/* Space Saved */}
                 <div className="bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg p-4">
                   <p className="text-slate-500 dark:text-slate-400 text-[10px] font-semibold uppercase tracking-wider mb-1">Space Saved</p>
                   <p className="text-emerald-600 dark:text-emerald-400 text-xl font-bold">{formatFileSize(savingsAmount)}</p>
@@ -494,40 +462,36 @@ Be specific about what you see. If it's food, mention the food. If it's a person
               {/* Divider */}
               <div className="h-px bg-slate-200 dark:bg-slate-800" />
 
-              {/* AI Metadata */}
-              <div className="space-y-2">
+              {/* AI Generated Text Fields */}
+              <div className="space-y-3">
                 <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <Sparkles className="w-4 h-4 text-purple-600 dark:text-purple-400" />
-                    <h3 className="text-slate-900 dark:text-white font-semibold text-xs uppercase tracking-wider">AI Metadata</h3>
-                  </div>
-                  {aiMetadata && (
+                  <h3 className="text-slate-900 dark:text-white font-semibold text-xs uppercase tracking-wider">AI Generated</h3>
+                  {aiMetadata && !isGenerating && (
                     <Button
                       variant="ghost"
                       size="sm"
-                      onClick={generateAIMetadata}
-                      disabled={generatingMetadata}
+                      onClick={generateMetadata}
                       className="h-7 px-2 text-xs"
                     >
-                      <RefreshCw className={`w-3 h-3 mr-1 ${generatingMetadata ? 'animate-spin' : ''}`} />
+                      <RefreshCw className="w-3 h-3 mr-1" />
                       Regenerate
                     </Button>
                   )}
                 </div>
 
-                {generatingMetadata && (
-                  <div className="bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg p-4 text-center">
-                    <RefreshCw className="w-5 h-5 animate-spin mx-auto mb-2 text-purple-600 dark:text-purple-400" />
-                    <p className="text-xs text-slate-600 dark:text-slate-400">Analyzing image with AI...</p>
+                {isGenerating && (
+                  <div className="bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg p-6 text-center">
+                    <RefreshCw className="w-6 h-6 animate-spin mx-auto mb-2 text-slate-400" />
+                    <p className="text-xs text-slate-500 dark:text-slate-400">Generating metadata...</p>
                   </div>
                 )}
 
-                {aiMetadata && !generatingMetadata && (
+                {!isGenerating && aiMetadata && (
                   <div className="space-y-2">
-                    {/* Title */}
+                    {/* Title Field */}
                     <div className="bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg p-3">
-                      <div className="flex items-start justify-between gap-2 mb-2">
-                        <span className="text-[10px] font-bold text-purple-600 dark:text-purple-400 uppercase tracking-wider">Title</span>
+                      <div className="flex items-center justify-between mb-2">
+                        <label className="text-[10px] font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider">Title</label>
                         <Button
                           variant="ghost"
                           size="sm"
@@ -537,13 +501,18 @@ Be specific about what you see. If it's food, mention the food. If it's a person
                           <Copy className="w-3 h-3" />
                         </Button>
                       </div>
-                      <p className="text-sm text-slate-900 dark:text-white font-medium">{aiMetadata.title}</p>
+                      <input
+                        type="text"
+                        value={aiMetadata.title}
+                        readOnly
+                        className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded px-3 py-2 text-sm text-slate-900 dark:text-white"
+                      />
                     </div>
 
-                    {/* Description */}
+                    {/* Description Field */}
                     <div className="bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg p-3">
-                      <div className="flex items-start justify-between gap-2 mb-2">
-                        <span className="text-[10px] font-bold text-purple-600 dark:text-purple-400 uppercase tracking-wider">Description</span>
+                      <div className="flex items-center justify-between mb-2">
+                        <label className="text-[10px] font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider">Description</label>
                         <Button
                           variant="ghost"
                           size="sm"
@@ -553,27 +522,13 @@ Be specific about what you see. If it's food, mention the food. If it's a person
                           <Copy className="w-3 h-3" />
                         </Button>
                       </div>
-                      <p className="text-xs text-slate-900 dark:text-white leading-relaxed">{aiMetadata.description}</p>
+                      <textarea
+                        value={aiMetadata.description}
+                        readOnly
+                        rows={3}
+                        className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded px-3 py-2 text-xs text-slate-900 dark:text-white resize-none"
+                      />
                     </div>
-                  </div>
-                )}
-
-                {!aiMetadata && !generatingMetadata && (
-                  <div className="bg-purple-50 dark:bg-purple-950/20 border border-purple-200 dark:border-purple-800 rounded-lg p-4 text-center">
-                    <Sparkles className="w-5 h-5 mx-auto mb-2 text-purple-600 dark:text-purple-400" />
-                    <p className="text-xs text-slate-700 dark:text-slate-300 mb-3">Generate SEO-optimized title and description</p>
-                    <Button
-                      size="sm"
-                      onClick={generateAIMetadata}
-                      disabled={!uploadedImageUrl}
-                      className="bg-purple-600 hover:bg-purple-700 text-white text-xs h-8"
-                    >
-                      <Sparkles className="w-3 h-3 mr-1" />
-                      Generate Metadata
-                    </Button>
-                    {!uploadedImageUrl && (
-                      <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-2">Preparing image...</p>
-                    )}
                   </div>
                 )}
               </div>
