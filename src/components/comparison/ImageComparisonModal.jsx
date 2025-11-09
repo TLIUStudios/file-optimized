@@ -1,3 +1,4 @@
+
 import { useState, useRef, useEffect } from "react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { X, MoveHorizontal, ZoomIn, ZoomOut, Maximize2 } from "lucide-react";
@@ -278,33 +279,24 @@ export default function ImageComparisonModal({
                 )}
               </div>
 
-              {/* Labels Below Image & File Type Badges */}
-              <div className="h-20 w-full flex flex-col gap-2 px-4 bg-slate-950/50 border-t border-slate-800">
-                {/* Original/Compressed Labels Row */}
-                <div className="flex items-center justify-between pt-2">
-                  <Badge className="bg-slate-900/95 backdrop-blur-sm text-white border border-slate-700 text-sm px-3 py-1.5 shadow-lg font-semibold">
+              {/* Labels Below Image - Far Left and Far Right */}
+              <div className="h-16 w-full flex items-center justify-between px-6 bg-slate-950/50 border-t border-slate-800">
+                <div className="flex flex-col gap-1.5">
+                  <Badge className="bg-slate-900/95 backdrop-blur-sm text-white border border-slate-700 text-sm px-3 py-1.5 shadow-lg font-semibold w-fit">
                     Original
                   </Badge>
-                  <Badge className="bg-emerald-600/95 backdrop-blur-sm text-white border border-emerald-500 text-sm px-3 py-1.5 shadow-lg font-semibold">
-                    Compressed
+                  <Badge className="bg-slate-900/95 backdrop-blur-sm text-white border border-slate-700 text-xs px-2.5 py-1 font-bold shadow-lg w-fit">
+                    {originalExt}
                   </Badge>
                 </div>
                 
-                {/* File Type Badges Row */}
-                <div className="flex items-center justify-center gap-8 pb-2">
-                  <div className="flex items-center gap-3">
-                    <span className="text-slate-400 text-sm font-medium">Original:</span>
-                    <Badge className="bg-slate-900/95 backdrop-blur-sm text-white border border-slate-700 text-sm px-3 py-1.5 font-bold shadow-lg">
-                      {originalExt}
-                    </Badge>
-                  </div>
-                  <div className="h-8 w-px bg-slate-700" />
-                  <div className="flex items-center gap-3">
-                    <span className="text-slate-400 text-sm font-medium">Compressed:</span>
-                    <Badge className="bg-emerald-600/95 backdrop-blur-sm text-white border border-emerald-500 text-sm px-3 py-1.5 font-bold shadow-lg">
-                      {compressedExt}
-                    </Badge>
-                  </div>
+                <div className="flex flex-col gap-1.5 items-end">
+                  <Badge className="bg-emerald-600/95 backdrop-blur-sm text-white border border-emerald-500 text-sm px-3 py-1.5 shadow-lg font-semibold w-fit">
+                    Compressed
+                  </Badge>
+                  <Badge className="bg-emerald-600/95 backdrop-blur-sm text-white border border-emerald-500 text-xs px-2.5 py-1 font-bold shadow-lg w-fit">
+                    {compressedExt}
+                  </Badge>
                 </div>
               </div>
             </div>

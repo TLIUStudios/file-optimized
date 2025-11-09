@@ -259,7 +259,7 @@ export default function ImageCard({ image, onRemove, onProcessed, onCompare }) {
           variant="ghost"
           size="icon"
           onClick={onRemove}
-          className="absolute top-2 right-2 bg-slate-900/90 dark:bg-slate-900/90 hover:bg-red-600 dark:hover:bg-red-600 text-white rounded-lg transition-colors"
+          className="absolute top-2 right-2 bg-slate-900/90 dark:bg-slate-900/90 hover:bg-red-600 dark:hover:bg-red-600 text-white rounded-lg transition-colors z-10"
         >
           <X className="w-4 h-4" />
         </Button>
