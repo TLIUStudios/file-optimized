@@ -47,6 +47,9 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
   const [upscaleMultiplier, setUpscaleMultiplier] = useState(null);
   const [originalImageDimensions, setOriginalImageDimensions] = useState({ width: 0, height: 0 });
 
+  // New state for editable filename
+  const [editableFilename, setEditableFilename] = useState('');
+
   // Media type detection
   const isImage = image.type.startsWith('image/');
   const isVideo = image.type.startsWith('video/');
@@ -76,6 +79,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
     reader.onloadend = async () => {
       setPreview(reader.result);
       setOriginalSize(image.size);
+      setEditableFilename(image.name); // Initialize editable filename
       
       // Load image dimensions for static images
       if (isImage && !isGif) {
@@ -295,7 +299,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
         originalSize: image.size,
         compressedSize: outputBlob.size,
         format: 'mp4',
-        filename: `${image.name.split('.')[0]}.mp4`,
+        filename: getOutputFilename('mp4'), // Use new helper
         mediaType: 'video',
         fileFormat: 'mp4'
       });
@@ -372,7 +376,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
         originalSize: image.size,
         compressedSize: outputBlob.size,
         format: 'gif',
-        filename: `${image.name.split('.')[0]}.gif`,
+        filename: getOutputFilename('gif'), // Use new helper
         mediaType: 'image',
         fileFormat: 'gif'
       });
@@ -462,7 +466,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
         originalSize: image.size,
         compressedSize: outputBlob.size,
         format: 'mp4',
-        filename: `${image.name.split('.')[0]}_compressed.mp4`,
+        filename: getOutputFilename('mp4'), // Use new helper
         mediaType: 'video',
         fileFormat: 'mp4'
       });
@@ -540,7 +544,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
         originalSize: image.size,
         compressedSize: outputBlob.size,
         format: format,
-        filename: `${image.name.split('.')[0]}_compressed.${outputExt}`,
+        filename: getOutputFilename(outputExt), // Use new helper
         mediaType: 'audio',
         fileFormat: format
       });
@@ -580,7 +584,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
           originalSize: image.size,
           compressedSize: originalBlob.size,
           format: 'gif',
-          filename: `${image.name.split('.')[0]}_compressed.gif`,
+          filename: getOutputFilename('gif'), // Use new helper
           mediaType: 'image',
           fileFormat: 'gif'
         });
@@ -723,7 +727,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
         originalSize: image.size,
         compressedSize: gifBlob.size,
         format: 'gif',
-        filename: `${image.name.split('.')[0]}_compressed.gif`,
+        filename: getOutputFilename('gif'), // Use new helper
         mediaType: 'image',
         fileFormat: 'gif'
       });
@@ -866,16 +870,115 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
       originalSize: image.size,
       compressedSize: blob.size,
       format,
-      filename: `${image.name.split('.')[0]}.${format}`,
+      filename: getOutputFilename(format), // Use new helper
       mediaType: 'image',
       fileFormat: format
     });
   };
 
-  const downloadMedia = () => {
-    if (compressedBlob) { // Ensure blob exists before opening modal
-      setShowDownloadModal(true);
+  // Helper function for actual download logic
+  const performSingleMediaDownload = async (blob, targetFormat, mediaType, filename) => {
+    if (!blob) {
+      toast.error("No compressed file available to download.");
+      return;
     }
+
+    let finalBlob = blob;
+    let finalFilename = filename || getOutputFilename(targetFormat);
+
+    // If it's an image (and not a GIF being treated as video) and the targetFormat is different from the current outputFormat,
+    // we need to perform an on-the-fly conversion for download.
+    if (isImage && !isGif && targetFormat && targetFormat !== (outputFormat || format)) {
+        try {
+            const img = new Image();
+            img.src = compressedPreview; // Use the currently processed preview as source
+            await new Promise((resolve) => { img.onload = resolve; });
+
+            const canvas = document.createElement('canvas');
+            canvas.width = img.width;
+            canvas.height = img.height;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0);
+
+            const mimeType = targetFormat === 'jpg' ? 'image/jpeg' : `image/${targetFormat}`;
+            
+            // Re-use the existing quality setting for this on-the-fly conversion
+            const qualityValue = quality / 100; 
+
+            const convertedBlob = await new Promise((resolve) => {
+                canvas.toBlob((b) => resolve(b), mimeType, qualityValue);
+            });
+            finalBlob = convertedBlob;
+        } catch (error) {
+            console.error("Error during on-the-fly image conversion for download:", error);
+            toast.error(`Failed to convert image to ${targetFormat} for download.`);
+            return;
+        }
+    }
+
+    try {
+        const url = URL.createObjectURL(finalBlob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = finalFilename;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        toast.success(`'${finalFilename}' downloaded!`);
+    } catch (error) {
+        console.error("Error during download:", error);
+        toast.error("Failed to download file.");
+    }
+  };
+
+  const downloadMedia = async (formatOverride = null) => {
+    if (!compressedBlob) {
+        toast.error("No processed media available for download.");
+        return;
+    }
+
+    const mediaType = isVideo ? 'video' : isAudio ? 'audio' : 'image';
+    // The format that the media is currently in (after processing)
+    const currentCompressedFormat = outputFormat || format; 
+
+    // Case 1: Image, and no specific format requested (user clicked general "Download")
+    if (mediaType === 'image' && formatOverride === null) {
+      // For images, if no specific format is selected, open the options modal.
+      // NOTE: The prompt implies a modal allowing format selection. Since we cannot modify
+      // the external DownloadModal.jsx file, we will open the existing DownloadModal.
+      // This means it will proceed to download the image in its `currentCompressedFormat`
+      // without offering dynamic choices within the modal itself.
+      // If dynamic format selection is desired, the user should use the "Convert Format" buttons first.
+      setShowDownloadModal(true);
+      return;
+    }
+
+    // Case 2: Video, and no specific format requested. Download the currently compressed video.
+    // The prompt explicitly refers to 'mp4' for video here, but we should use the actual output format.
+    // If the original video was converted to GIF, `currentCompressedFormat` would be 'gif'.
+    if (mediaType === 'video' && formatOverride === null) {
+      performSingleMediaDownload(compressedBlob, currentCompressedFormat, 'video', getOutputFilename(currentCompressedFormat));
+      return;
+    }
+
+    // Case 3: Audio, and no specific format requested. Download the currently compressed audio.
+    // The prompt refers to `fileFormat` which maps to `currentCompressedFormat`.
+    if (mediaType === 'audio' && formatOverride === null) {
+      performSingleMediaDownload(compressedBlob, currentCompressedFormat, 'audio', getOutputFilename(currentCompressedFormat));
+      return;
+    }
+
+    // Case 4: Any media type, if a specific format is provided (e.g., from a convert button or a direct download button from a hypothetical image options modal).
+    // The `performSingleMediaDownload` function now handles on-the-fly conversion for images if the `formatOverride` differs.
+    performSingleMediaDownload(compressedBlob, formatOverride, mediaType, getOutputFilename(formatOverride));
+  };
+
+  // Helper function to get the output filename
+  const getOutputFilename = (targetFormat = null) => {
+    const nameWithoutExt = editableFilename.split('.').slice(0, -1).join('.') || editableFilename;
+    const finalExt = targetFormat || outputFormat || format; // Prioritize targetFormat, then actual output, then configured format
+    return `${nameWithoutExt}.${finalExt}`;
   };
 
   const handleCompare = () => {
@@ -885,7 +988,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
         compressed: compressedPreview,
         originalSize,
         compressedSize,
-        fileName: `${image.name.split('.')[0]}_compressed.${outputFormat || format}`,
+        fileName: getOutputFilename(), // Use new helper for filename
         mediaType: isVideo ? 'video' : isAudio ? 'audio' : 'image',
         fileFormat: outputFormat || format
       });
@@ -964,7 +1067,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
         originalSize: originalSize,
         compressedSize: blob.size,
         format: newFormat,
-        filename: `${image.name.split('.')[0]}.${newFormat}`,
+        filename: getOutputFilename(newFormat), // Use new helper
         mediaType: 'image',
         fileFormat: newFormat
       });
@@ -1694,7 +1797,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
                 Reprocess
               </Button>
               <Button
-                onClick={downloadMedia}
+                onClick={() => downloadMedia()} // Call without arguments for default logic
                 className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white"
                 disabled={processing}
               >
@@ -1727,7 +1830,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
           isOpen={showDownloadModal}
           onClose={() => setShowDownloadModal(false)}
           blob={compressedBlob}
-          originalFilename={`${image.name.split('.')[0]}_compressed.${outputFormat || format}`}
+          originalFilename={getOutputFilename()} // Use new helper
           format={outputFormat || format}
         />
       )}
