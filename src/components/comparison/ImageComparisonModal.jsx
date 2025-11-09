@@ -1,4 +1,3 @@
-
 import { useState, useRef, useEffect } from "react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { X, MoveHorizontal, ZoomIn, ZoomOut, Maximize2, Copy, RefreshCw, Sparkles } from "lucide-react";
@@ -28,17 +27,37 @@ export default function ImageComparisonModal({
   const [generatingMetadata, setGeneratingMetadata] = useState(false);
   const containerRef = useRef(null);
   const imageRef = useRef(null);
+  const [imageSize, setImageSize] = useState({ width: 0, height: 0 });
 
   // Extract file extensions
   const originalExt = fileName.split('.').pop().toUpperCase();
   const compressedExt = compressedImage.split('data:image/')[1]?.split(';')[0].toUpperCase() || 'WEBP';
 
-  // Load image dimensions
+  // Load image dimensions and calculate display size
   useEffect(() => {
     if (originalImage) {
       const img = new Image();
       img.onload = () => {
         setImageDimensions({ width: img.width, height: img.height });
+        
+        // Calculate the actual display size
+        const maxWidth = window.innerWidth * 0.98 - 32; // Account for padding
+        const maxHeight = window.innerHeight * 0.70;
+        
+        let displayWidth = img.width;
+        let displayHeight = img.height;
+        
+        // Scale down if needed
+        if (displayWidth > maxWidth || displayHeight > maxHeight) {
+          const widthRatio = maxWidth / displayWidth;
+          const heightRatio = maxHeight / displayHeight;
+          const ratio = Math.min(widthRatio, heightRatio);
+          
+          displayWidth = displayWidth * ratio;
+          displayHeight = displayHeight * ratio;
+        }
+        
+        setImageSize({ width: displayWidth, height: displayHeight });
       };
       img.src = originalImage;
     }
@@ -55,21 +74,32 @@ export default function ImageComparisonModal({
     setGeneratingMetadata(true);
     try {
       const response = await base44.integrations.Core.InvokeLLM({
-        prompt: `Analyze this image and generate SEO-optimized, playful metadata. Be creative and engaging while staying accurate to what you see in the image.`,
+        prompt: `Analyze this image and generate SEO-optimized, playful, and engaging metadata. Be creative but accurate. 
+
+Generate:
+- A catchy title (max 60 characters)
+- An engaging description (max 160 characters) 
+- A main category
+- The mood/feeling of the image
+- Descriptive alt text for accessibility (max 125 characters)
+- 5-8 relevant keywords/tags`,
         file_urls: [originalImage],
         response_json_schema: {
           type: "object",
           properties: {
-            title: { type: "string", description: "A catchy, SEO-friendly title (max 60 chars)" },
-            description: { type: "string", description: "An engaging description (max 160 chars)" },
-            category: { type: "string", description: "Main category (e.g., Nature, Technology, People, Food, etc.)" },
-            mood: { type: "string", description: "The mood/feeling of the image (e.g., Energetic, Calm, Professional, etc.)" },
-            alt_text: { type: "string", description: "Descriptive alt text for accessibility (max 125 chars)" },
-            tags: { type: "array", items: { type: "string" }, description: "5-8 relevant tags/keywords" }
-          }
+            title: { type: "string" },
+            description: { type: "string" },
+            category: { type: "string" },
+            mood: { type: "string" },
+            alt_text: { type: "string" },
+            tags: { type: "array", items: { type: "string" } }
+          },
+          required: ["title", "description", "category", "mood", "alt_text", "tags"]
         }
       });
+      
       setAiMetadata(response);
+      toast.success('AI metadata generated!');
     } catch (error) {
       console.error('Failed to generate metadata:', error);
       toast.error('Failed to generate AI metadata');
@@ -79,7 +109,7 @@ export default function ImageComparisonModal({
 
   const copyToClipboard = (text, label) => {
     navigator.clipboard.writeText(text);
-    toast.success(`${label} copied to clipboard!`);
+    toast.success(`${label} copied!`);
   };
 
   // Calculate aspect ratio
@@ -217,7 +247,7 @@ export default function ImageComparisonModal({
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-[98vw] w-[98vw] h-[98vh] p-0 bg-gradient-to-br from-slate-100 via-slate-50 to-slate-100 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950 border-slate-300 dark:border-slate-800 [&>button]:hidden overflow-hidden">
-        {/* Close Button - Top Right with Red Hover - Only this one */}
+        {/* Close Button - Top Right with Red Hover */}
         <Button
           variant="ghost"
           size="icon"
@@ -230,7 +260,7 @@ export default function ImageComparisonModal({
         <div className="flex flex-col lg:flex-row h-full overflow-hidden">
           {/* Left Side - Image Comparison */}
           <div className="flex-1 relative overflow-hidden flex flex-col min-h-0">
-            {/* Zoom Controls - Higher z-index to prevent overlap */}
+            {/* Zoom Controls */}
             <div className="absolute top-4 left-4 z-[50] flex gap-2">
               <Button
                 variant="secondary"
@@ -286,50 +316,49 @@ export default function ImageComparisonModal({
                 }
               }}
             >
-              {/* Image Container - Added padding top to avoid overlap with controls */}
+              {/* Image Container */}
               <div className="flex-1 relative w-full flex items-center justify-center pt-16">
-                <div
-                  ref={imageRef}
-                  className="relative"
-                  style={{
-                    transform: `scale(${zoom}) translate(${pan.x / zoom}px, ${pan.y / zoom}px)`,
-                    transformOrigin: 'center',
-                    transition: isDragging || isPanning ? 'none' : 'transform 0.2s ease-out',
-                    maxWidth: 'calc(100% - 32px)',
-                    maxHeight: 'calc(100% - 32px)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center'
-                  }}
-                >
-                  {/* Compressed Image (Background - Right Side) */}
-                  <div className="relative flex items-center justify-center">
+                {imageSize.width > 0 && (
+                  <div
+                    ref={imageRef}
+                    className="relative"
+                    style={{
+                      width: `${imageSize.width}px`,
+                      height: `${imageSize.height}px`,
+                      transform: `scale(${zoom}) translate(${pan.x / zoom}px, ${pan.y / zoom}px)`,
+                      transformOrigin: 'center',
+                      transition: isDragging || isPanning ? 'none' : 'transform 0.2s ease-out'
+                    }}
+                  >
+                    {/* Compressed Image (Background - Full) */}
                     <img
                       src={compressedImage}
                       alt="Compressed"
-                      className="max-w-full max-h-[65vh] lg:max-h-[70vh] w-auto h-auto object-contain"
+                      className="absolute inset-0 w-full h-full object-cover"
                       draggable="false"
+                      style={{ width: '100%', height: '100%' }}
                     />
-                  </div>
 
-                  {/* Original Image (Foreground - Left Side with clip) */}
-                  <div
-                    className="absolute inset-0 flex items-center justify-center overflow-hidden"
-                    style={{ clipPath: `inset(0 ${100 - sliderPosition}% 0 0)` }}
-                  >
-                    <div className="relative flex items-center justify-center">
+                    {/* Original Image (Foreground - Clipped) */}
+                    <div
+                      className="absolute inset-0 overflow-hidden"
+                      style={{ 
+                        clipPath: `inset(0 ${100 - sliderPosition}% 0 0)`,
+                        width: '100%',
+                        height: '100%'
+                      }}
+                    >
                       <img
                         src={originalImage}
                         alt="Original"
-                        className="max-w-full max-h-[65vh] lg:max-h-[70vh] w-auto h-auto object-contain"
+                        className="absolute inset-0 w-full h-full object-cover"
                         draggable="false"
+                        style={{ width: '100%', height: '100%' }}
                       />
                     </div>
-                  </div>
 
-                  {/* Slider Line - White on both modes - only show when not zoomed/panning */}
-                  {zoom === 1 && !isPanning && (
-                    <>
+                    {/* Slider Line - White on both modes */}
+                    {zoom === 1 && !isPanning && (
                       <div
                         className="absolute top-0 bottom-0 w-0.5 bg-white shadow-2xl z-10"
                         style={{ left: `${sliderPosition}%`, transform: 'translateX(-50%)' }}
@@ -339,9 +368,9 @@ export default function ImageComparisonModal({
                           <MoveHorizontal className="w-5 h-5 text-slate-900 dark:text-white" />
                         </div>
                       </div>
-                    </>
-                  )}
-                </div>
+                    )}
+                  </div>
+                )}
 
                 {/* Pan instruction when zoomed */}
                 {zoom > 1 && !isPanning && (
@@ -358,7 +387,7 @@ export default function ImageComparisonModal({
                 </div>
               )}
 
-              {/* Labels Below Image - Far Left and Far Right */}
+              {/* Labels Below Image */}
               <div className="h-16 w-full flex items-center justify-between px-6 bg-slate-100/50 dark:bg-slate-950/50 border-t border-slate-300 dark:border-slate-800">
                 <div className="flex flex-col gap-1.5">
                   <Badge className="bg-slate-800/95 dark:bg-slate-900/95 backdrop-blur-sm text-white border border-slate-600 dark:border-slate-700 text-sm px-3 py-1.5 shadow-lg font-semibold w-fit">
@@ -381,7 +410,7 @@ export default function ImageComparisonModal({
             </div>
           </div>
 
-          {/* Right Side - Information Panel - Now Fully Scrollable */}
+          {/* Right Side - Information Panel */}
           <div className="w-full lg:w-[360px] xl:w-[400px] bg-gradient-to-b from-slate-100 to-slate-200 dark:from-slate-900 dark:to-slate-950 border-t lg:border-t-0 lg:border-l border-slate-300 dark:border-slate-800 flex flex-col overflow-y-auto min-h-0">
             <div className="p-4 lg:p-5 space-y-4">
               {/* Header */}
@@ -465,7 +494,7 @@ export default function ImageComparisonModal({
                     size="sm"
                     onClick={generateAIMetadata}
                     disabled={generatingMetadata}
-                    className="h-7 px-2 text-xs"
+                    className="h-7 px-2 text-xs hover:bg-slate-200 dark:hover:bg-slate-800"
                   >
                     <RefreshCw className={`w-3 h-3 mr-1 ${generatingMetadata ? 'animate-spin' : ''}`} />
                     Regenerate
@@ -475,7 +504,7 @@ export default function ImageComparisonModal({
                 {generatingMetadata && (
                   <div className="bg-white/50 dark:bg-slate-950/50 border border-slate-300 dark:border-slate-800 rounded-lg p-4 text-center">
                     <RefreshCw className="w-5 h-5 animate-spin mx-auto mb-2 text-purple-600 dark:text-purple-400" />
-                    <p className="text-xs text-slate-600 dark:text-slate-400">Analyzing image...</p>
+                    <p className="text-xs text-slate-600 dark:text-slate-400">Analyzing image with AI...</p>
                   </div>
                 )}
 
@@ -483,29 +512,29 @@ export default function ImageComparisonModal({
                   <div className="space-y-2">
                     {/* Title */}
                     <div className="bg-white/50 dark:bg-slate-950/50 border border-slate-300 dark:border-slate-800 rounded-lg p-2.5">
-                      <div className="flex items-center justify-between mb-1">
+                      <div className="flex items-center justify-between mb-1.5">
                         <span className="text-[10px] font-medium text-slate-600 dark:text-slate-400 uppercase tracking-wider">Title</span>
                         <Button
                           variant="ghost"
                           size="sm"
                           onClick={() => copyToClipboard(aiMetadata.title, 'Title')}
-                          className="h-6 w-6 p-0"
+                          className="h-6 w-6 p-0 hover:bg-slate-200 dark:hover:bg-slate-800"
                         >
                           <Copy className="w-3 h-3" />
                         </Button>
                       </div>
-                      <p className="text-xs text-slate-900 dark:text-white font-medium">{aiMetadata.title}</p>
+                      <p className="text-xs text-slate-900 dark:text-white font-medium leading-relaxed">{aiMetadata.title}</p>
                     </div>
 
                     {/* Description */}
                     <div className="bg-white/50 dark:bg-slate-950/50 border border-slate-300 dark:border-slate-800 rounded-lg p-2.5">
-                      <div className="flex items-center justify-between mb-1">
+                      <div className="flex items-center justify-between mb-1.5">
                         <span className="text-[10px] font-medium text-slate-600 dark:text-slate-400 uppercase tracking-wider">Description</span>
                         <Button
                           variant="ghost"
                           size="sm"
                           onClick={() => copyToClipboard(aiMetadata.description, 'Description')}
-                          className="h-6 w-6 p-0"
+                          className="h-6 w-6 p-0 hover:bg-slate-200 dark:hover:bg-slate-800"
                         >
                           <Copy className="w-3 h-3" />
                         </Button>
@@ -516,13 +545,13 @@ export default function ImageComparisonModal({
                     {/* Category & Mood */}
                     <div className="grid grid-cols-2 gap-2">
                       <div className="bg-white/50 dark:bg-slate-950/50 border border-slate-300 dark:border-slate-800 rounded-lg p-2.5">
-                        <div className="flex items-center justify-between mb-1">
+                        <div className="flex items-center justify-between mb-1.5">
                           <span className="text-[10px] font-medium text-slate-600 dark:text-slate-400 uppercase tracking-wider">Category</span>
                           <Button
                             variant="ghost"
                             size="sm"
                             onClick={() => copyToClipboard(aiMetadata.category, 'Category')}
-                            className="h-6 w-6 p-0"
+                            className="h-6 w-6 p-0 hover:bg-slate-200 dark:hover:bg-slate-800"
                           >
                             <Copy className="w-3 h-3" />
                           </Button>
@@ -531,13 +560,13 @@ export default function ImageComparisonModal({
                       </div>
 
                       <div className="bg-white/50 dark:bg-slate-950/50 border border-slate-300 dark:border-slate-800 rounded-lg p-2.5">
-                        <div className="flex items-center justify-between mb-1">
+                        <div className="flex items-center justify-between mb-1.5">
                           <span className="text-[10px] font-medium text-slate-600 dark:text-slate-400 uppercase tracking-wider">Mood</span>
                           <Button
                             variant="ghost"
                             size="sm"
                             onClick={() => copyToClipboard(aiMetadata.mood, 'Mood')}
-                            className="h-6 w-6 p-0"
+                            className="h-6 w-6 p-0 hover:bg-slate-200 dark:hover:bg-slate-800"
                           >
                             <Copy className="w-3 h-3" />
                           </Button>
@@ -548,13 +577,13 @@ export default function ImageComparisonModal({
 
                     {/* Alt Text */}
                     <div className="bg-white/50 dark:bg-slate-950/50 border border-slate-300 dark:border-slate-800 rounded-lg p-2.5">
-                      <div className="flex items-center justify-between mb-1">
+                      <div className="flex items-center justify-between mb-1.5">
                         <span className="text-[10px] font-medium text-slate-600 dark:text-slate-400 uppercase tracking-wider">Alt Text</span>
                         <Button
                           variant="ghost"
                           size="sm"
                           onClick={() => copyToClipboard(aiMetadata.alt_text, 'Alt Text')}
-                          className="h-6 w-6 p-0"
+                          className="h-6 w-6 p-0 hover:bg-slate-200 dark:hover:bg-slate-800"
                         >
                           <Copy className="w-3 h-3" />
                         </Button>
@@ -564,13 +593,13 @@ export default function ImageComparisonModal({
 
                     {/* Tags */}
                     <div className="bg-white/50 dark:bg-slate-950/50 border border-slate-300 dark:border-slate-800 rounded-lg p-2.5">
-                      <div className="flex items-center justify-between mb-1.5">
+                      <div className="flex items-center justify-between mb-2">
                         <span className="text-[10px] font-medium text-slate-600 dark:text-slate-400 uppercase tracking-wider">Tags</span>
                         <Button
                           variant="ghost"
                           size="sm"
                           onClick={() => copyToClipboard(aiMetadata.tags.join(', '), 'Tags')}
-                          className="h-6 w-6 p-0"
+                          className="h-6 w-6 p-0 hover:bg-slate-200 dark:hover:bg-slate-800"
                         >
                           <Copy className="w-3 h-3" />
                         </Button>
@@ -583,6 +612,20 @@ export default function ImageComparisonModal({
                         ))}
                       </div>
                     </div>
+                  </div>
+                )}
+
+                {!aiMetadata && !generatingMetadata && (
+                  <div className="bg-white/50 dark:bg-slate-950/50 border border-slate-300 dark:border-slate-800 rounded-lg p-4 text-center">
+                    <Sparkles className="w-5 h-5 mx-auto mb-2 text-purple-600 dark:text-purple-400" />
+                    <p className="text-xs text-slate-600 dark:text-slate-400 mb-2">Generate SEO-optimized metadata for this image</p>
+                    <Button
+                      size="sm"
+                      onClick={generateAIMetadata}
+                      className="bg-purple-600 hover:bg-purple-700 text-white text-xs h-8"
+                    >
+                      Generate Metadata
+                    </Button>
                   </div>
                 )}
               </div>
