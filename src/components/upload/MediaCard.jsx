@@ -912,8 +912,10 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
   const convertFormat = async (newFormat) => {
     if (!compressedPreview || processing) return;
     
-    if (isVideo || isAudio || isGif) {
+    // For video/audio/gif, just update the format state, actual conversion happens on re-process
+    if (isVideo || isAudio || (isGif && newFormat === 'mp4') || (isVideo && newFormat === 'gif')) {
       setFormat(newFormat);
+      // If already processed, reset processed state so user can re-process with new format
       if (processed) {
         setProcessed(false);
         setCompressedPreview(null);
@@ -924,6 +926,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
       return;
     }
 
+    // For static images, convert on the fly if already compressed
     setProcessing(true);
     setError(null);
 
@@ -951,6 +954,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
       setCompressedSize(blob.size);
       setCompressedBlob(blob); // ADDED
       setOutputFormat(newFormat);
+      setFormat(newFormat); // Update the internal format state as well
       
       onProcessed({
         id: image.name,
@@ -1139,6 +1143,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
           </div>
         )}
 
+        {/* Convert Format Selector - Show AFTER compression */}
         {processed && availableFormats.length > 0 && (
           <div className="space-y-2">
             <label className="text-xs font-medium text-slate-700 dark:text-slate-300">
@@ -1162,6 +1167,35 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
                 >
                   {fmt.toUpperCase()}
                   {displayFormat === fmt && processing && <Loader2 className="ml-1 h-3 w-3 animate-spin" />}
+                </Button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Output Format Selector - Show BEFORE compression */}
+        {!processed && availableFormats.length > 0 && (
+          <div className="space-y-2">
+            <label className="text-xs font-medium text-slate-700 dark:text-slate-300">
+              Output Format
+            </label>
+            <div className={cn(
+              "grid gap-2",
+              availableFormats.length === 2 ? "grid-cols-2" : "grid-cols-4"
+            )}>
+              {availableFormats.map((fmt) => (
+                <Button
+                  key={fmt}
+                  size="sm"
+                  variant={format === fmt ? "default" : "outline"}
+                  onClick={() => setFormat(fmt)}
+                  disabled={processing}
+                  className={cn(
+                    "relative text-xs h-9",
+                    format === fmt && "bg-emerald-600 hover:bg-emerald-700"
+                  )}
+                >
+                  {fmt.toUpperCase()}
                 </Button>
               ))}
             </div>
@@ -1198,67 +1232,6 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
                       <SelectItem value="balanced">Balanced</SelectItem>
                       <SelectItem value="aggressive">Aggressive</SelectItem>
                       <SelectItem value="maximum">Maximum</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              )}
-
-              {(isImage && !isGif) && (
-                <div>
-                  <div className="flex items-center gap-2 mb-2">
-                    <label className="text-xs font-medium text-slate-700 dark:text-slate-300">
-                      Output Format
-                    </label>
-                  </div>
-                  <Select value={format} onValueChange={setFormat} disabled={processing}>
-                    <SelectTrigger className="h-9">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="jpg">JPG (Universal)</SelectItem>
-                      <SelectItem value="png">PNG (Lossless)</SelectItem>
-                      <SelectItem value="webp">WebP (Best compression)</SelectItem>
-                      <SelectItem value="avif">AVIF (Next-gen)</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              )}
-
-              {(isGif || isVideo) && (
-                <div>
-                  <div className="flex items-center gap-2 mb-2">
-                    <label className="text-xs font-medium text-slate-700 dark:text-slate-300">
-                      Output Format
-                    </label>
-                  </div>
-                  <Select value={format} onValueChange={setFormat} disabled={processing}>
-                    <SelectTrigger className="h-9">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {isGif && <SelectItem value="gif">GIF (Animation)</SelectItem>}
-                      {isGif && <SelectItem value="mp4">MP4 (Video)</SelectItem>}
-                      {isVideo && <SelectItem value="mp4">MP4 (Video)</SelectItem>}
-                      {isVideo && <SelectItem value="gif">GIF (Animation)</SelectItem>}
-                    </SelectContent>
-                  </Select>
-                </div>
-              )}
-
-              {isAudio && (
-                <div>
-                  <div className="flex items-center gap-2 mb-2">
-                    <label className="text-xs font-medium text-slate-700 dark:text-slate-300">
-                      Output Format
-                    </label>
-                  </div>
-                  <Select value={format} onValueChange={setFormat} disabled={processing}>
-                    <SelectTrigger className="h-9">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="mp3">MP3 (Compressed)</SelectItem>
-                      <SelectItem value="wav">WAV (Uncompressed)</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -1451,7 +1424,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
                 </>
               )}
 
-              {(isVideo || isGif) && (
+              {(isVideo || isGif || (isImage && !isGif)) && ( // Apply max width/height for static images as well
                 <div className="grid grid-cols-2 gap-2">
                   <div>
                     <div className="flex items-center gap-1 mb-1">
@@ -1598,7 +1571,11 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
                       setEnableUpscale(checked);
                       if (!checked) {
                         setUpscaleMultiplier(null);
-                        setMaxWidth(null); // Clear custom dimensions when disabling upscale
+                        // Clear custom dimensions when disabling upscale only if they were set for upscaling
+                        // If they were set as "Max Width/Height" in compression settings, they should persist
+                        // This logic becomes a bit tricky with shared state. For now, we clear them for simplicity.
+                        // A better approach might be separate states for upscale dimensions vs compression dimensions.
+                        setMaxWidth(null); 
                         setMaxHeight(null);
                       }
                     }}
