@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { X, MoveHorizontal, ZoomIn, ZoomOut, Maximize2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -131,11 +131,12 @@ export default function ImageComparisonModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-7xl w-[95vw] h-[95vh] p-0 overflow-hidden bg-slate-950 flex flex-col">
-        <DialogHeader className="p-4 md:p-6 pb-3 md:pb-4 border-b border-slate-800 flex-shrink-0">
+      <DialogContent className="max-w-[98vw] w-[98vw] h-[98vh] p-0 overflow-hidden bg-slate-950 flex flex-col border-slate-800">
+        {/* Header */}
+        <div className="p-4 md:p-6 pb-3 md:pb-4 border-b border-slate-800 flex-shrink-0 relative">
           <div className="flex items-start justify-between gap-4">
-            <div className="flex-1 min-w-0">
-              <DialogTitle className="text-white text-base md:text-xl mb-2 truncate">{fileName}</DialogTitle>
+            <div className="flex-1 min-w-0 pr-12">
+              <h2 className="text-white text-base md:text-xl mb-2 truncate font-semibold">{fileName}</h2>
               <div className="flex items-center gap-2 md:gap-4 text-xs md:text-sm flex-wrap">
                 <div className="flex items-center gap-2">
                   <span className="text-slate-400">Original:</span>
@@ -155,16 +156,16 @@ export default function ImageComparisonModal({
               variant="ghost"
               size="icon"
               onClick={onClose}
-              className="text-slate-400 hover:text-white hover:bg-slate-800 flex-shrink-0"
+              className="text-slate-400 hover:text-white hover:bg-slate-800 flex-shrink-0 absolute top-4 right-4"
             >
               <X className="w-5 h-5" />
             </Button>
           </div>
-        </DialogHeader>
+        </div>
 
-        <div className="flex-1 overflow-hidden p-4 md:p-6 relative">
+        <div className="flex-1 overflow-hidden p-3 md:p-4 relative">
           {/* Zoom Controls */}
-          <div className="absolute top-8 right-8 z-20 flex flex-col gap-2">
+          <div className="absolute top-6 right-6 z-20 flex flex-col gap-2">
             <Button
               variant="secondary"
               size="icon"
@@ -199,7 +200,7 @@ export default function ImageComparisonModal({
 
           <div 
             ref={containerRef}
-            className="relative w-full h-full bg-slate-900 rounded-xl overflow-hidden select-none flex items-center justify-center"
+            className="relative w-full h-full bg-slate-900 rounded-xl overflow-hidden select-none"
             style={{ 
               cursor: zoom > 1 ? (isPanning ? 'grabbing' : 'grab') : 'col-resize'
             }}
@@ -226,31 +227,27 @@ export default function ImageComparisonModal({
                 transition: isDragging || isPanning ? 'none' : 'transform 0.2s ease-out',
                 width: '100%',
                 height: '100%',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center'
+                position: 'relative'
               }}
             >
               {/* Compressed Image (Background - Right Side) */}
               <img
                 src={compressedImage}
                 alt="Compressed"
-                className="w-full h-full object-contain"
+                className="absolute inset-0 w-full h-full object-contain"
                 draggable="false"
-                style={{ maxWidth: '100%', maxHeight: '100%' }}
               />
 
               {/* Original Image (Foreground - Left Side with clip) */}
               <div
-                className="absolute inset-0 flex items-center justify-center overflow-hidden"
+                className="absolute inset-0 overflow-hidden"
                 style={{ clipPath: `inset(0 ${100 - sliderPosition}% 0 0)` }}
               >
                 <img
                   src={originalImage}
                   alt="Original"
-                  className="w-full h-full object-contain"
+                  className="absolute inset-0 w-full h-full object-contain"
                   draggable="false"
-                  style={{ maxWidth: '100%', maxHeight: '100%' }}
                 />
               </div>
             </div>
@@ -295,7 +292,7 @@ export default function ImageComparisonModal({
         </div>
 
         {/* Stats */}
-        <div className="p-4 md:p-6 pt-0 flex-shrink-0">
+        <div className="p-3 md:p-4 flex-shrink-0">
           <div className="grid grid-cols-3 gap-2 md:gap-4">
             <div className="bg-slate-900 rounded-lg p-3 md:p-4 border border-slate-800">
               <p className="text-slate-400 text-xs md:text-sm mb-1">Original</p>
