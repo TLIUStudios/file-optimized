@@ -110,10 +110,10 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
       setLoadingProgress(10);
       toast.info('Loading media processor...', { id: 'ffmpeg-load', duration: Infinity });
       
-      // Import FFmpeg and utilities from unpkg with blob URLs for CORS
+      // Import FFmpeg from CDN - use jsdelivr with direct URLs (no toBlobURL needed)
       setLoadingProgress(20);
-      const { FFmpeg } = await import('https://unpkg.com/@ffmpeg/ffmpeg@0.12.10/dist/esm/index.js');
-      const { fetchFile, toBlobURL } = await import('https://unpkg.com/@ffmpeg/util@0.12.1/dist/esm/index.js');
+      const { FFmpeg } = await import('https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@0.12.10/dist/esm/index.js');
+      const { fetchFile } = await import('https://cdn.jsdelivr.net/npm/@ffmpeg/util@0.12.1/dist/esm/index.js');
       
       console.log('✅ Modules imported successfully');
       setLoadingProgress(40);
@@ -130,25 +130,16 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
         console.log(`[FFmpeg] Progress: ${Math.round(progress * 100)}%`);
       });
       
-      // Use unpkg with single-threaded core for better compatibility
-      const baseURL = 'https://unpkg.com/@ffmpeg/core-st@0.12.6/dist/esm';
-      console.log('📦 Loading single-threaded core from:', baseURL);
+      // Use jsdelivr with direct URLs - single threaded core for better compatibility
+      console.log('📦 Loading single-threaded core...');
       setLoadingProgress(50);
       
-      // Create blob URLs for core files to avoid CORS issues
-      const coreURL = await toBlobURL(
-        `${baseURL}/ffmpeg-core.js`,
-        'text/javascript'
-      );
-      setLoadingProgress(65);
+      // Direct CDN URLs - no CORS issues
+      const coreURL = 'https://cdn.jsdelivr.net/npm/@ffmpeg/core-st@0.12.6/dist/esm/ffmpeg-core.js';
+      const wasmURL = 'https://cdn.jsdelivr.net/npm/@ffmpeg/core-st@0.12.6/dist/esm/ffmpeg-core.wasm';
       
-      const wasmURL = await toBlobURL(
-        `${baseURL}/ffmpeg-core.wasm`,
-        'application/wasm'
-      );
-      setLoadingProgress(80);
-      
-      console.log('🔧 Core URLs created, loading FFmpeg...');
+      setLoadingProgress(70);
+      console.log('🔧 Loading FFmpeg with direct URLs...');
       
       // Load FFmpeg
       await ffmpeg.load({
@@ -161,15 +152,45 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
       console.log('✅ FFmpeg loaded successfully!');
       toast.success('Media processor ready!', { id: 'ffmpeg-load' });
     } catch (error) {
-      console.error('❌ FFmpeg load error:', error);
+      console.error('❌ FFmpeg load error (primary attempt with jsdelivr failed):', error);
       console.error('Error details:', {
         message: error.message,
         stack: error.stack,
         name: error.name
       });
-      setError('Failed to load media processor. Please refresh and try again.');
-      toast.error('Failed to load media processor: ' + error.message, { id: 'ffmpeg-load' });
-      setLoadingProgress(0);
+      
+      // Try alternative loading method as fallback
+      console.log('⚠️ Trying alternative loading method (unpkg fallback)...');
+      try {
+        setLoadingProgress(30);
+        
+        // Alternative: try unpkg
+        const { FFmpeg } = await import('https://unpkg.com/@ffmpeg/ffmpeg@0.12.10/dist/esm/index.js');
+        const { fetchFile } = await import('https://unpkg.com/@ffmpeg/util@0.12.1/dist/esm/index.js');
+        
+        const ffmpeg = new FFmpeg();
+        ffmpegRef.current = ffmpeg;
+        
+        ffmpeg.on('log', ({ message }) => console.log('[FFmpeg]:', message));
+        ffmpeg.on('progress', ({ progress }) => console.log(`[FFmpeg] Progress: ${Math.round(progress * 100)}%`));
+        
+        setLoadingProgress(60);
+        
+        const coreURL = 'https://unpkg.com/@ffmpeg/core-st@0.12.6/dist/esm/ffmpeg-core.js';
+        const wasmURL = 'https://unpkg.com/@ffmpeg/core-st@0.12.6/dist/esm/ffmpeg-core.wasm';
+        
+        await ffmpeg.load({ coreURL, wasmURL });
+        
+        setLoadingProgress(100);
+        setFfmpegLoaded(true);
+        console.log('✅ FFmpeg loaded successfully via unpkg!');
+        toast.success('Media processor ready!', { id: 'ffmpeg-load' });
+      } catch (fallbackError) {
+        console.error('❌ Fallback (unpkg) also failed:', fallbackError);
+        setError('Unable to load media processor. Please check your internet connection and refresh the page.');
+        toast.error('Failed to load media processor. Please refresh and try again.', { id: 'ffmpeg-load' });
+        setLoadingProgress(0);
+      }
     }
   };
 
@@ -236,7 +257,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
       toast.info('Converting GIF to MP4...', { id: 'processing', duration: Infinity });
       
       const ffmpeg = ffmpegRef.current;
-      const { fetchFile } = await import('https://unpkg.com/@ffmpeg/util@0.12.1/dist/esm/index.js');
+      const { fetchFile } = await import('https://cdn.jsdelivr.net/npm/@ffmpeg/util@0.12.1/dist/esm/index.js');
       
       console.log('📥 Fetching GIF data...');
       const gifData = await fetchFile(preview);
@@ -305,7 +326,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
       toast.info('Converting video to GIF...', { id: 'processing', duration: Infinity });
       
       const ffmpeg = ffmpegRef.current;
-      const { fetchFile } = await import('https://unpkg.com/@ffmpeg/util@0.12.1/dist/esm/index.js');
+      const { fetchFile } = await import('https://cdn.jsdelivr.net/npm/@ffmpeg/util@0.12.1/dist/esm/index.js');
       
       console.log('📥 Fetching video data...');
       const videoData = await fetchFile(preview);
@@ -381,7 +402,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
       toast.info('Compressing video...', { id: 'processing', duration: Infinity });
       
       const ffmpeg = ffmpegRef.current;
-      const { fetchFile } = await import('https://unpkg.com/@ffmpeg/util@0.12.1/dist/esm/index.js');
+      const { fetchFile } = await import('https://cdn.jsdelivr.net/npm/@ffmpeg/util@0.12.1/dist/esm/index.js');
       
       console.log('📥 Fetching video data...');
       const videoData = await fetchFile(preview);
@@ -471,7 +492,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
       toast.info('Compressing audio...', { id: 'processing', duration: Infinity });
       
       const ffmpeg = ffmpegRef.current;
-      const { fetchFile } = await import('https://unpkg.com/@ffmpeg/util@0.12.1/dist/esm/index.js');
+      const { fetchFile } = await import('https://cdn.jsdelivr.net/npm/@ffmpeg/util@0.12.1/dist/esm/index.js');
       
       console.log('📥 Fetching audio data...');
       const audioData = await fetchFile(preview);
