@@ -1,7 +1,7 @@
-
 import { useEffect, useState } from "react";
 import { Moon, Sun, Image as ImageIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Toaster } from "sonner";
 
 export default function Layout({ children }) {
   const [theme, setTheme] = useState(() => {
@@ -22,6 +22,7 @@ export default function Layout({ children }) {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-950 dark:to-slate-900 transition-colors duration-300">
+      <Toaster position="top-center" richColors />
       <style>{`
         :root {
           --primary: 142 76% 36%;
