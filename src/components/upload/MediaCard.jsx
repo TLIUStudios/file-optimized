@@ -747,48 +747,42 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
     });
 
     const canvas = document.createElement('canvas');
-    let targetWidth = img.width; // Start with original dimensions
-    let targetHeight = img.height;
+    let width = img.width;
+    let height = img.height;
 
-    // Handle upscale multiplier first if enabled
-    if (enableUpscale && upscaleMultiplier !== null) {
-      targetWidth = Math.round(img.width * (upscaleMultiplier / 100));
-      targetHeight = Math.round(img.height * (upscaleMultiplier / 100));
-    } 
-    // Then handle explicit maxWidth/maxHeight, potentially overriding original or acting as limits
-    else if (maxWidth || maxHeight) {
-      const aspectRatio = img.width / img.height; // Always use original aspect ratio for calculation
+    // Handle upscaling with multiplier or custom dimensions
+    if (enableUpscale && upscaleMultiplier) {
+      // Use multiplier
+      width = Math.round(img.width * (upscaleMultiplier / 100));
+      height = Math.round(img.height * (upscaleMultiplier / 100));
+    } else if (maxWidth || maxHeight || enableUpscale) { // The '|| enableUpscale' here ensures the block is entered if only upscaling is enabled without specific dims/multiplier
+      const aspectRatio = width / height;
       
       if (maxWidth && maxHeight) {
         const widthRatio = maxWidth / img.width;
         const heightRatio = maxHeight / img.height;
         const ratio = enableUpscale ? Math.max(widthRatio, heightRatio) : Math.min(widthRatio, heightRatio);
         
-        targetWidth = Math.round(img.width * ratio);
-        targetHeight = Math.round(img.height * ratio);
+        width = Math.round(img.width * ratio);
+        height = Math.round(img.height * ratio);
       } else if (maxWidth) {
-        if (enableUpscale || maxWidth < img.width) { // Only set maxWidth if upscaling allowed or downscaling
-          targetWidth = maxWidth;
-          targetHeight = Math.round(maxWidth / aspectRatio);
-        } else {
-          // If not upscaling and maxWidth is larger than original, keep original width
-          targetWidth = img.width;
-          targetHeight = img.height;
+        // If enabling upscale and maxWidth is set, apply it.
+        // If not enabling upscale, only apply if maxWidth is less than current width (downscale).
+        if (enableUpscale || maxWidth < width) {
+          width = maxWidth;
+          height = Math.round(maxWidth / aspectRatio);
         }
       } else if (maxHeight) {
-        if (enableUpscale || maxHeight < img.height) { // Only set maxHeight if upscaling allowed or downscaling
-          targetHeight = maxHeight;
-          targetWidth = Math.round(maxHeight * aspectRatio);
-        } else {
-          // If not upscaling and maxHeight is larger than original, keep original height
-          targetWidth = img.width;
-          targetHeight = img.height;
+        // Similar logic for maxHeight
+        if (enableUpscale || maxHeight < height) {
+          height = maxHeight;
+          width = Math.round(maxHeight * aspectRatio);
         }
       }
     }
 
-    canvas.width = targetWidth;
-    canvas.height = targetHeight;
+    canvas.width = width;
+    canvas.height = height;
 
     const ctx = canvas.getContext('2d');
     
@@ -797,7 +791,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
       ctx.imageSmoothingQuality = 'high';
     }
     
-    ctx.drawImage(img, 0, 0, targetWidth, targetHeight);
+    ctx.drawImage(img, 0, 0, width, height);
 
     const mimeType = format === 'jpg' ? 'image/jpeg' : `image/${format}`;
     
