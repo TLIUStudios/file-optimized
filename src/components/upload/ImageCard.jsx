@@ -121,55 +121,99 @@ export default function ImageCard({ image, onRemove, onProcessed, onCompare, aut
 
   const processGif = async () => {
     if (!gifSettings.frames || gifSettings.frames.length === 0) {
-      setError('No GIF frames to process');
-      return;
+      // Fallback: If frames couldn't be parsed, pass through the original GIF
+      // This avoids turning an animated GIF into a static image inadvertently
+      // and ensures the GIF remains animated if parsing fails.
+      try {
+        const blob = await fetch(preview).then(r => r.blob());
+        const compressedUrl = URL.createObjectURL(blob);
+        setCompressedPreview(compressedUrl);
+        setCompressedSize(blob.size); // No actual compression here, just passthrough
+        setProcessed(true);
+        setOutputFormat('gif');
+
+        onProcessed({
+          id: image.name,
+          originalFile: image,
+          compressedBlob: blob,
+          compressedUrl,
+          originalSize: image.size,
+          compressedSize: blob.size,
+          format: 'gif',
+          filename: `${image.name.split('.')[0]}_processed_passthrough.gif` // Renamed to indicate passthrough
+        });
+        
+        toast.info('GIF frames could not be parsed. Displaying original GIF (no compression applied).');
+        return;
+      } catch (fallbackError) {
+        console.error('GIF passthrough fallback failed:', fallbackError);
+        setError('Unable to process GIF. Could not parse frames or create fallback.');
+        toast.error('Failed to process GIF');
+        return;
+      }
     }
 
     try {
-      // Use gif-encoder for better compatibility
       const targetWidth = maxWidth || gifSettings.width;
       const targetHeight = maxHeight || gifSettings.height;
       
-      // Create canvas for each frame
+      // Create canvas for processing
       const canvas = document.createElement('canvas');
       canvas.width = targetWidth;
       canvas.height = targetHeight;
       const ctx = canvas.getContext('2d');
 
-      // Prepare frames data
+      // Process each frame
       const processedFrames = [];
       
       for (const frame of gifSettings.frames) {
-        const imageData = new ImageData(
-          new Uint8ClampedArray(frame.patch),
-          frame.dims.width,
-          frame.dims.height
-        );
-        
-        const tempCanvas = document.createElement('canvas');
-        tempCanvas.width = frame.dims.width;
-        tempCanvas.height = frame.dims.height;
-        const tempCtx = tempCanvas.getContext('2d');
-        tempCtx.putImageData(imageData, 0, 0);
-        
-        ctx.clearRect(0, 0, targetWidth, targetHeight);
-        ctx.drawImage(tempCanvas, 0, 0, targetWidth, targetHeight);
-        
-        const delay = frame.delay ? frame.delay * 10 : 100;
-        
-        // Get frame as blob
-        const frameBlob = await new Promise(resolve => {
-          canvas.toBlob(resolve, 'image/png', quality / 100);
-        });
-        
-        processedFrames.push({ blob: frameBlob, delay });
+        try {
+          const imageData = new ImageData(
+            new Uint8ClampedArray(frame.patch),
+            frame.dims.width,
+            frame.dims.height
+          );
+          
+          const tempCanvas = document.createElement('canvas');
+          tempCanvas.width = frame.dims.width;
+          tempCanvas.height = frame.dims.height;
+          const tempCtx = tempCanvas.getContext('2d');
+          tempCtx.putImageData(imageData, 0, 0);
+          
+          ctx.clearRect(0, 0, targetWidth, targetHeight);
+          ctx.drawImage(tempCanvas, 0, 0, targetWidth, targetHeight);
+          
+          const delay = frame.delay ? frame.delay * 10 : 100;
+          
+          // Get frame as blob (using PNG for intermediate lossless quality)
+          const frameBlob = await new Promise(resolve => {
+            canvas.toBlob(resolve, 'image/png', quality / 100); // Quality setting affects PNG intermediate compression
+          });
+          
+          processedFrames.push({ blob: frameBlob, delay });
+        } catch (frameError) {
+          console.warn('Skipping problematic frame:', frameError);
+          continue; // Skip this frame if it causes an error
+        }
       }
 
-      // Use modern-gif library for encoding
-      const { GIFEncoder, quantize, applyPalette } = await import('https://cdn.jsdelivr.net/npm/modern-gif@latest/dist/modern-gif.min.js');
+      if (processedFrames.length === 0) {
+        throw new Error('No valid frames could be processed for GIF encoding.');
+      }
+
+      // Use gif.js for encoding (more reliable)
+      const GIF = (await import('https://cdn.jsdelivr.net/npm/gif.js@0.2.0/dist/gif.js')).default;
       
-      const encoder = new GIFEncoder();
-      
+      const gif = new GIF({
+        workers: 2,
+        // gif.js quality is 0-10, where 0 is best quality (least compression)
+        // and 10 is worst quality (most compression).
+        // Our 'quality' is 1-100, where 100 is best quality.
+        // So, (100 - our_quality) / 10 maps our_quality=100 -> gif.js_quality=0, our_quality=0 -> gif.js_quality=10.
+        quality: Math.round((100 - quality) / 10),
+        workerScript: 'https://cdn.jsdelivr.net/npm/gif.js@0.2.0/dist/gif.worker.js'
+      });
+
       for (const frameData of processedFrames) {
         const img = new Image();
         const frameUrl = URL.createObjectURL(frameData.blob);
@@ -179,23 +223,15 @@ export default function ImageCard({ image, onRemove, onProcessed, onCompare, aut
           img.src = frameUrl;
         });
         
-        ctx.clearRect(0, 0, targetWidth, targetHeight);
-        ctx.drawImage(img, 0, 0);
-        
-        const imageData = ctx.getImageData(0, 0, targetWidth, targetHeight);
-        const palette = quantize(imageData.data, 256);
-        const index = applyPalette(imageData.data, palette);
-        
-        encoder.writeFrame(index, targetWidth, targetHeight, {
-          palette,
-          delay: frameData.delay,
-        });
-        
+        gif.addFrame(img, { delay: frameData.delay });
         URL.revokeObjectURL(frameUrl);
       }
-      
-      encoder.finish();
-      const gifBlob = new Blob([encoder.bytes()], { type: 'image/gif' });
+
+      const gifBlob = await new Promise((resolve, reject) => {
+        gif.on('finished', (blob) => resolve(blob)); // gif.js resolves with the blob directly
+        gif.on('error', reject);
+        gif.render();
+      });
       
       const compressedUrl = URL.createObjectURL(gifBlob);
       setCompressedPreview(compressedUrl);
@@ -214,12 +250,12 @@ export default function ImageCard({ image, onRemove, onProcessed, onCompare, aut
         filename: `${image.name.split('.')[0]}_compressed.gif`
       });
 
-      toast.success(`GIF compressed successfully!`);
+      toast.success('GIF compressed successfully!');
     } catch (error) {
-      console.error('Error processing GIF:', error);
-      setError('Failed to process GIF. Trying alternative method...');
+      console.error('Error processing GIF with gif.js:', error);
+      setError('Failed to process GIF. Falling back to original...');
       
-      // Fallback: Just re-encode as is without compression
+      // Ultimate fallback: just pass through the original
       try {
         const blob = await fetch(preview).then(r => r.blob());
         const compressedUrl = URL.createObjectURL(blob);
@@ -236,12 +272,13 @@ export default function ImageCard({ image, onRemove, onProcessed, onCompare, aut
           originalSize: image.size,
           compressedSize: blob.size,
           format: 'gif',
-          filename: `${image.name.split('.')[0]}_compressed.gif`
+          filename: `${image.name.split('.')[0]}_processed_passthrough.gif`
         });
         
-        toast.success('GIF processed (compression limited for animated GIFs)');
+        toast.warn('GIF compression failed, displaying original GIF.');
       } catch (fallbackError) {
-        console.error('Fallback failed:', fallbackError);
+        console.error('All GIF processing fallbacks failed:', fallbackError);
+        setError('Failed to process GIF and cannot display a fallback.');
         toast.error('Failed to process GIF');
       }
     }

@@ -198,12 +198,46 @@ export default function ImageComparisonModal({
     toast.success(`${label} copied!`);
   };
 
-  const downloadImage = () => {
-    const link = document.createElement('a');
-    link.href = compressedImage;
-    link.download = fileName;
-    link.click();
-    toast.success('Image downloaded!');
+  const downloadImage = (format = null) => {
+    if (!format) {
+      // Download current compressed image
+      const link = document.createElement('a');
+      link.href = compressedImage;
+      link.download = fileName;
+      link.click();
+      toast.success('Image downloaded!');
+      return;
+    }
+
+    // Convert and download in different format
+    const img = new Image();
+    img.src = compressedImage;
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      canvas.width = img.width;
+      canvas.height = img.height;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(img, 0, 0);
+
+      const mimeType = format === 'jpg' ? 'image/jpeg' : `image/${format}`;
+      canvas.toBlob((blob) => {
+        if (!blob) {
+          toast.error(`Failed to create ${format.toUpperCase()} image blob.`);
+          return;
+        }
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        const baseName = fileName.split('.')[0];
+        link.download = `${baseName}.${format}`;
+        link.click();
+        URL.revokeObjectURL(url);
+        toast.success(`Downloaded as ${format.toUpperCase()}!`);
+      }, mimeType, 0.95);
+    };
+    img.onerror = () => {
+      toast.error('Failed to load image for conversion.');
+    };
   };
 
   const getAspectRatio = (width, height) => {
@@ -374,13 +408,39 @@ export default function ImageComparisonModal({
           </div>
 
           <div className="flex items-center gap-2">
-            <Button
-              onClick={downloadImage}
-              className="bg-emerald-600 hover:bg-emerald-700 text-white h-9 px-4"
-            >
-              <Download className="w-4 h-4 mr-2" />
-              Download
-            </Button>
+            <div className="flex items-center gap-1 bg-white dark:bg-slate-800 rounded-md border border-slate-200 dark:border-slate-700 p-1">
+              <Button
+                onClick={() => downloadImage()}
+                className="bg-emerald-600 hover:bg-emerald-700 text-white h-8 px-3 text-xs"
+              >
+                <Download className="w-3 h-3 mr-1" />
+                Download
+              </Button>
+              <Button
+                onClick={() => downloadImage('webp')}
+                variant="ghost"
+                size="sm"
+                className="h-8 px-2 text-xs hover:bg-slate-100 dark:hover:bg-slate-700"
+              >
+                WebP
+              </Button>
+              <Button
+                onClick={() => downloadImage('png')}
+                variant="ghost"
+                size="sm"
+                className="h-8 px-2 text-xs hover:bg-slate-100 dark:hover:bg-slate-700"
+              >
+                PNG
+              </Button>
+              <Button
+                onClick={() => downloadImage('jpg')}
+                variant="ghost"
+                size="sm"
+                className="h-8 px-2 text-xs hover:bg-slate-100 dark:hover:bg-slate-700"
+              >
+                JPG
+              </Button>
+            </div>
             <Button
               variant="ghost"
               size="icon"
