@@ -44,47 +44,67 @@ export default function ImageComparisonModal({
   }, [originalImage]);
 
   const generateMetadata = async () => {
+    console.log('🚀 Starting AI metadata generation...');
     setIsGenerating(true);
     setAiTitle("");
     setAiDescription("");
     
     try {
-      // Convert compressed image (base64) to blob
+      // Step 1: Convert base64 to blob
+      console.log('📦 Converting image to blob...');
       const res = await fetch(compressedImage);
       const blob = await res.blob();
+      console.log('✅ Blob created:', blob.type, blob.size, 'bytes');
       
-      // Upload the blob to get a file URL
+      // Step 2: Upload file
+      console.log('☁️ Uploading file...');
       const uploadRes = await base44.integrations.Core.UploadFile({ file: blob });
-      const fileUrl = uploadRes.file_url;
+      console.log('✅ Upload successful:', uploadRes);
       
-      // Call AI to analyze the image
+      const fileUrl = uploadRes.file_url;
+      console.log('🔗 File URL:', fileUrl);
+      
+      // Step 3: Call AI
+      console.log('🤖 Calling AI to analyze image...');
       const aiResponse = await base44.integrations.Core.InvokeLLM({
-        prompt: `Analyze this image and provide:
-1. A short, catchy title (max 60 characters)
-2. A brief description (max 160 characters)
+        prompt: `You are analyzing an image. Please provide:
 
-Be specific about what you see.`,
+1. A short, descriptive title for this image (maximum 60 characters)
+2. A brief description of what's in the image (maximum 160 characters)
+
+Be specific and accurate about what you see.`,
         file_urls: [fileUrl],
         response_json_schema: {
           type: "object",
           properties: {
-            title: { type: "string" },
-            description: { type: "string" }
+            title: { 
+              type: "string",
+              description: "A short, descriptive title for the image"
+            },
+            description: { 
+              type: "string",
+              description: "A brief description of what's in the image"
+            }
           },
           required: ["title", "description"]
         }
       });
       
-      if (aiResponse?.title && aiResponse?.description) {
+      console.log('✅ AI Response:', aiResponse);
+      
+      if (aiResponse && typeof aiResponse === 'object' && aiResponse.title && aiResponse.description) {
         setAiTitle(aiResponse.title);
         setAiDescription(aiResponse.description);
-        toast.success('Metadata generated!');
+        toast.success('AI metadata generated successfully!');
+        console.log('✨ Metadata set:', { title: aiResponse.title, description: aiResponse.description });
       } else {
-        throw new Error('Invalid AI response');
+        console.error('❌ Invalid AI response format:', aiResponse);
+        toast.error('AI returned an invalid response');
       }
     } catch (error) {
-      console.error('Generation error:', error);
-      toast.error('Failed to generate metadata. Please try again.');
+      console.error('❌ Error generating metadata:', error);
+      console.error('Error details:', error.message, error.stack);
+      toast.error(`Failed to generate metadata: ${error.message}`);
     } finally {
       setIsGenerating(false);
     }
@@ -469,7 +489,7 @@ Be specific about what you see.`,
                 {isGenerating ? (
                   <div className="bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg p-6 text-center">
                     <RefreshCw className="w-6 h-6 animate-spin mx-auto mb-2 text-slate-400" />
-                    <p className="text-xs text-slate-500 dark:text-slate-400">Analyzing image...</p>
+                    <p className="text-xs text-slate-500 dark:text-slate-400">Analyzing image with AI...</p>
                   </div>
                 ) : (aiTitle || aiDescription) ? (
                   <div className="space-y-2">
@@ -515,7 +535,7 @@ Be specific about what you see.`,
                   </div>
                 ) : (
                   <div className="bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg p-4 text-center">
-                    <p className="text-xs text-slate-500 dark:text-slate-400 mb-3">Click to generate AI metadata</p>
+                    <p className="text-xs text-slate-500 dark:text-slate-400 mb-3">Generate AI-powered title and description</p>
                     <Button
                       size="sm"
                       onClick={generateMetadata}
