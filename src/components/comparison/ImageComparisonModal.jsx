@@ -1,4 +1,3 @@
-
 import { useState, useRef, useEffect } from "react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { X, MoveHorizontal, ZoomIn, ZoomOut, Maximize2, Copy, RefreshCw, Download } from "lucide-react";
@@ -26,7 +25,6 @@ export default function ImageComparisonModal({
   const [imageDimensions, setImageDimensions] = useState({ width: 0, height: 0 });
   const [aiMetadata, setAiMetadata] = useState(null);
   const [isGenerating, setIsGenerating] = useState(false);
-  const [uploadedFileUrl, setUploadedFileUrl] = useState(null);
   const containerRef = useRef(null);
   const imageContainerRef = useRef(null);
 
@@ -45,64 +43,44 @@ export default function ImageComparisonModal({
     }
   }, [originalImage]);
 
-  // Upload image when modal opens
+  // Auto-generate AI metadata when modal opens
   useEffect(() => {
-    if (isOpen && originalImage && !uploadedFileUrl) {
-      uploadImageFile();
-    }
-  }, [isOpen, originalImage, uploadedFileUrl]);
-
-  // Auto-generate metadata once image is uploaded
-  useEffect(() => {
-    if (uploadedFileUrl && !aiMetadata && !isGenerating) {
+    if (isOpen && compressedImage && !aiMetadata && !isGenerating) {
       generateMetadata();
     }
-  }, [uploadedFileUrl, aiMetadata, isGenerating]); // Added aiMetadata and isGenerating to dependencies to prevent re-triggering unnecessarily
-
-  const uploadImageFile = async () => {
-    try {
-      console.log('Uploading image...');
-      const response = await fetch(originalImage);
-      const blob = await response.blob();
-      const result = await base44.integrations.Core.UploadFile({ file: blob });
-      console.log('Upload result:', result);
-      setUploadedFileUrl(result.file_url);
-    } catch (error) {
-      console.error('Failed to upload image:', error);
-      toast.error('Failed to prepare image for AI analysis');
-    }
-  };
+  }, [isOpen]);
 
   const generateMetadata = async () => {
-    if (!uploadedFileUrl) {
-      console.error('No uploaded file URL available');
-      return;
-    }
-
     setIsGenerating(true);
     try {
-      console.log('Generating metadata with file URL:', uploadedFileUrl);
+      console.log('Starting metadata generation...');
       
+      // Convert compressed image to blob and upload
+      const response = await fetch(compressedImage);
+      const blob = await response.blob();
+      console.log('Blob created, uploading...');
+      
+      const uploadResult = await base44.integrations.Core.UploadFile({ file: blob });
+      console.log('Upload result:', uploadResult);
+      
+      const fileUrl = uploadResult.file_url;
+      console.log('File URL:', fileUrl);
+
+      // Generate metadata with AI
+      console.log('Calling AI to generate metadata...');
       const result = await base44.integrations.Core.InvokeLLM({
-        prompt: `You are analyzing an image. Describe what you see in the image and generate:
+        prompt: `Look at this image carefully. Generate a title and description for it.
 
-1. A short, descriptive title (under 60 characters)
-2. A brief description (under 160 characters)
+Title: A short, catchy, SEO-friendly title that describes what's in the image (maximum 60 characters)
+Description: A brief, engaging description of the image (maximum 160 characters)
 
-Be specific and accurate about what's visible in the image.`,
-        file_urls: [uploadedFileUrl],
-        add_context_from_internet: false,
+Be specific about what you see in the image.`,
+        file_urls: [fileUrl],
         response_json_schema: {
           type: "object",
           properties: {
-            title: { 
-              type: "string",
-              description: "A short, descriptive title for the image"
-            },
-            description: { 
-              type: "string",
-              description: "A brief description of what's in the image"
-            }
+            title: { type: "string" },
+            description: { type: "string" }
           },
           required: ["title", "description"]
         }
@@ -110,20 +88,20 @@ Be specific and accurate about what's visible in the image.`,
 
       console.log('AI result:', result);
 
-      if (result && result.title && result.description) {
+      if (result?.title && result?.description) {
         setAiMetadata({
           title: result.title,
           description: result.description
         });
-        toast.success('Metadata generated!');
+        toast.success('AI metadata generated!');
       } else {
-        throw new Error('Invalid response from AI');
+        throw new Error('Invalid AI response');
       }
     } catch (error) {
       console.error('Error generating metadata:', error);
-      toast.error('Failed to generate metadata. Please try again.');
-      // Don't set error metadata, just leave it empty so user can retry
-      setAiMetadata(null); // Clear metadata on error to allow retry
+      toast.error('Failed to generate metadata');
+      // Set placeholder so user can try to regenerate
+      setAiMetadata(null);
     }
     setIsGenerating(false);
   };
@@ -321,7 +299,7 @@ Be specific and accurate about what's visible in the image.`,
               variant="ghost"
               size="icon"
               onClick={onClose}
-              className="h-9 w-9 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg"
+              className="h-9 w-9 hover:bg-red-600 hover:text-white rounded-lg transition-colors"
             >
               <X className="w-5 h-5" />
             </Button>
@@ -572,13 +550,10 @@ Be specific and accurate about what's visible in the image.`,
 
                 {!isGenerating && !aiMetadata && (
                   <div className="bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg p-4 text-center">
-                    <p className="text-xs text-slate-500 dark:text-slate-400 mb-3">
-                      {uploadedFileUrl ? 'Click to generate AI metadata' : 'Preparing image...'}
-                    </p>
+                    <p className="text-xs text-slate-500 dark:text-slate-400 mb-3">Click to generate AI metadata</p>
                     <Button
                       size="sm"
                       onClick={generateMetadata}
-                      disabled={!uploadedFileUrl}
                       className="bg-slate-700 hover:bg-slate-800 text-white text-xs h-8"
                     >
                       <RefreshCw className="w-3 h-3 mr-1" />
