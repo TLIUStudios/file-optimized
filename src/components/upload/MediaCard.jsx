@@ -108,9 +108,9 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
     try {
       toast.info('Loading media processor...', { duration: 3000 });
       
-      // Use dynamic import with proper CDN
-      const FFmpegModule = await import('https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@0.12.10/dist/esm/index.js');
-      const UtilModule = await import('https://cdn.jsdelivr.net/npm/@ffmpeg/util@0.12.1/dist/esm/index.js');
+      // Use UMD bundles for better browser compatibility
+      const FFmpegModule = await import('https://unpkg.com/@ffmpeg/ffmpeg@0.12.10/dist/umd/ffmpeg.js');
+      const UtilModule = await import('https://unpkg.com/@ffmpeg/util@0.12.1/dist/umd/index.js');
       
       const { FFmpeg } = FFmpegModule;
       const { toBlobURL, fetchFile } = UtilModule;
@@ -127,8 +127,8 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
         console.log(`Progress: ${percent}% (${time}ms)`);
       });
       
-      // Use proper CDN URLs
-      const baseURL = 'https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.6/dist/esm';
+      // Use UMD core files from unpkg
+      const baseURL = 'https://unpkg.com/@ffmpeg/core@0.12.6/dist/umd';
       
       const coreURL = await toBlobURL(`${baseURL}/ffmpeg-core.js`, 'text/javascript');
       const wasmURL = await toBlobURL(`${baseURL}/ffmpeg-core.wasm`, 'application/wasm');
@@ -211,8 +211,8 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
       toast.info('Converting GIF to MP4...', { duration: 5000 });
       const ffmpeg = ffmpegRef.current;
       
-      // Import fetchFile
-      const { fetchFile } = await import('https://cdn.jsdelivr.net/npm/@ffmpeg/util@0.12.1/dist/esm/index.js');
+      // Import fetchFile from the same UMD module
+      const { fetchFile } = await import('https://unpkg.com/@ffmpeg/util@0.12.1/dist/umd/index.js');
       
       // Fetch and write the GIF file
       const gifData = await fetchFile(preview);
@@ -228,8 +228,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
         '-vf', `fps=${targetFps},scale=trunc(iw/2)*2:trunc(ih/2)*2`,
         '-b:v', `${videoBitrate}k`,
         '-c:v', 'libx264',
-        '-preset', videoPreset, // Use video preset
-        '-g', String(gopSize), // Keyframe interval
+        '-preset', 'medium', // Changed from videoPreset to 'medium'
         'output.mp4'
       ]);
       
@@ -255,7 +254,9 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
         originalSize: image.size,
         compressedSize: outputBlob.size,
         format: 'mp4',
-        filename: `${image.name.split('.')[0]}.mp4`
+        filename: `${image.name.split('.')[0]}.mp4`,
+        mediaType: 'video', // Added
+        fileFormat: 'mp4' // Added
       });
 
       toast.success('GIF converted to MP4!');
@@ -276,7 +277,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
       toast.info('Converting MP4 to GIF...', { duration: 5000 });
       const ffmpeg = ffmpegRef.current;
       
-      const { fetchFile } = await import('https://cdn.jsdelivr.net/npm/@ffmpeg/util@0.12.1/dist/esm/index.js');
+      const { fetchFile } = await import('https://unpkg.com/@ffmpeg/util@0.12.1/dist/umd/index.js');
       
       const videoData = await fetchFile(preview);
       await ffmpeg.writeFile('input.mp4', videoData);
@@ -325,7 +326,9 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
         originalSize: image.size,
         compressedSize: outputBlob.size,
         format: 'gif',
-        filename: `${image.name.split('.')[0]}.gif`
+        filename: `${image.name.split('.')[0]}.gif`,
+        mediaType: 'image', // Added
+        fileFormat: 'gif' // Added
       });
 
       toast.success('Video converted to GIF!');
@@ -346,7 +349,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
       toast.info('Compressing video...', { duration: 5000 });
       const ffmpeg = ffmpegRef.current;
       
-      const { fetchFile } = await import('https://cdn.jsdelivr.net/npm/@ffmpeg/util@0.12.1/dist/esm/index.js');
+      const { fetchFile } = await import('https://unpkg.com/@ffmpeg/util@0.12.1/dist/umd/index.js');
       
       const videoData = await fetchFile(preview);
       await ffmpeg.writeFile('input.mp4', videoData);
@@ -362,9 +365,9 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
       const args = [
         '-i', 'input.mp4',
         '-c:v', 'libx264',
-        '-preset', videoPreset, // FFmpeg preset
+        '-preset', videoPreset,
         '-crf', String(Math.round((100 - quality) / 2.5)),
-        '-g', String(gopSize), // Keyframe interval
+        '-g', String(gopSize),
       ];
       
       if (scaleFilter) {
@@ -374,8 +377,8 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
       args.push(
         '-r', String(frameRate),
         '-b:v', `${videoBitrate}k`,
-        '-maxrate', `${videoBitrate * 1.5}k`, // Max bitrate to prevent spikes
-        '-bufsize', `${videoBitrate * 2}k`, // Buffer size
+        '-maxrate', `${videoBitrate * 1.5}k`,
+        '-bufsize', `${videoBitrate * 2}k`,
         '-c:a', 'aac',
         '-b:a', '128k',
         '-movflags', '+faststart',
@@ -407,7 +410,9 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
         originalSize: image.size,
         compressedSize: outputBlob.size,
         format: 'mp4',
-        filename: `${image.name.split('.')[0]}_compressed.mp4`
+        filename: `${image.name.split('.')[0]}_compressed.mp4`,
+        mediaType: 'video', // Added
+        fileFormat: 'mp4' // Added
       });
 
       const savings = ((1 - outputBlob.size / image.size) * 100).toFixed(1);
@@ -429,7 +434,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
       toast.info('Compressing audio...', { duration: 5000 });
       const ffmpeg = ffmpegRef.current;
       
-      const { fetchFile } = await import('https://cdn.jsdelivr.net/npm/@ffmpeg/util@0.12.1/dist/esm/index.js');
+      const { fetchFile } = await import('https://unpkg.com/@ffmpeg/util@0.12.1/dist/umd/index.js');
       
       const audioData = await fetchFile(preview);
       const inputExt = image.name.split('.').pop().toLowerCase();
@@ -443,7 +448,6 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
       if (audioQuality === 'high') {
         finalBitrate = Math.max(192, audioBitrate);
       } else if (audioQuality === 'lossless' && format === 'wav') {
-        // WAV is already lossless, ensure high bitrate for best quality if setting allows
         finalBitrate = 1411; // CD quality bitrate for WAV
       }
       
@@ -451,7 +455,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
         '-i', `input.${inputExt}`,
         '-c:a', codec,
         '-b:a', `${finalBitrate}k`,
-        '-ar', String(sampleRate), // Audio sample rate
+        '-ar', String(sampleRate),
         '-y',
         `output.${outputExt}`
       ]);
@@ -479,7 +483,9 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
         originalSize: image.size,
         compressedSize: outputBlob.size,
         format: format,
-        filename: `${image.name.split('.')[0]}_compressed.${outputExt}`
+        filename: `${image.name.split('.')[0]}_compressed.${outputExt}`,
+        mediaType: 'audio', // Added
+        fileFormat: format // Added
       });
 
       const savings = ((1 - outputBlob.size / image.size) * 100).toFixed(1);
