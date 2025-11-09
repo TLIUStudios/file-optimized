@@ -1,11 +1,10 @@
-
 import { useState, lazy, Suspense } from "react";
 import { Button } from "@/components/ui/button";
 import { Download, Trash2, Sparkles, Shield, Zap, Image as ImageIcon } from "lucide-react";
 import UploadZone from "../components/upload/UploadZone";
 import { motion, AnimatePresence } from "framer-motion";
 import { Skeleton } from "@/components/ui/skeleton";
-import { toast } from 'react-toastify'; // Added toast import
+import { toast } from "sonner";
 
 // Lazy load heavy components for better performance
 const ImageCard = lazy(() => import("../components/upload/ImageCard"));
@@ -30,7 +29,7 @@ export default function Home() {
   const [processedImages, setProcessedImages] = useState({});
   const [isDragActive, setIsDragActive] = useState(false);
   const [comparisonData, setComparisonData] = useState(null);
-  const [isProcessingAll, setIsProcessingAll] = useState(false); // Added state for processing all
+  const [isProcessingAll, setIsProcessingAll] = useState(false);
 
   const handleFilesSelected = (files) => {
     const newImages = Array.from(files).map(file => ({
@@ -68,21 +67,17 @@ export default function Home() {
   const processAllImages = async () => {
     setIsProcessingAll(true);
     toast.info(`Processing ${images.length} images...`);
-
-    // Trigger processing for all unprocessed images
+    
     const unprocessedImages = images.filter(img => !processedImages[img.id]);
-
+    
     if (unprocessedImages.length === 0) {
       toast.success('All images are already processed!');
       setIsProcessingAll(false);
       return;
     }
-
-    // The actual processing will be handled by each ImageCard component
-    // This just sets a flag that child components can check
-    // (Note: ImageCard component needs to observe this flag or a direct trigger for it to initiate processing)
+    
     toast.success(`Started processing ${unprocessedImages.length} images`);
-    setIsProcessingAll(false); // Reset immediately as the "trigger" is essentially done.
+    setIsProcessingAll(false);
   };
 
   const downloadAll = async () => {
@@ -92,8 +87,7 @@ export default function Home() {
     }
 
     toast.info('Creating zip file...');
-
-    // Dynamic import for JSZip - only loaded when needed
+    
     const JSZip = (await import('https://cdn.jsdelivr.net/npm/jszip@3.10.1/+esm')).default;
     const zip = new JSZip();
 
@@ -106,7 +100,7 @@ export default function Home() {
     link.href = URL.createObjectURL(content);
     link.download = `compressed-images-${Date.now()}.zip`;
     link.click();
-
+    
     toast.success('Zip file downloaded!');
   };
 
@@ -115,7 +109,7 @@ export default function Home() {
     (sum, img) => sum + img.compressedSize, 0
   );
   const totalSavings = totalOriginalSize - totalCompressedSize;
-  const savingsPercent = totalOriginalSize > 0
+  const savingsPercent = totalOriginalSize > 0 
     ? ((totalSavings / totalOriginalSize) * 100).toFixed(1)
     : 0;
 
@@ -128,7 +122,7 @@ export default function Home() {
   return (
     <div className="max-w-7xl mx-auto">
       {/* Hero Section */}
-      <motion.div
+      <motion.div 
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         className="text-center mb-12"
@@ -142,7 +136,7 @@ export default function Home() {
           <span className="block text-emerald-600 dark:text-emerald-400">Your Images</span>
         </h1>
         <p className="text-lg text-slate-600 dark:text-slate-400 max-w-2xl mx-auto">
-          Fast, secure, and powerful image compression. Reduce file size by up to 90%
+          Fast, secure, and powerful image compression. Reduce file size by up to 90% 
           while maintaining quality. All processing happens in your browser.
         </p>
 
@@ -301,9 +295,6 @@ export default function Home() {
                       onRemove={() => removeImage(image.id)}
                       onProcessed={(data) => handleImageProcessed(image.id, data)}
                       onCompare={handleCompare}
-                      // Note: An additional prop would be needed for ImageCard to
-                      // react to a global 'processAll' trigger.
-                      // For this outline, isProcessingAll is a top-level flag.
                     />
                   </Suspense>
                 </motion.div>
