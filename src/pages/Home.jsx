@@ -343,6 +343,8 @@ export default function Home() {
             originalSize={comparisonData.originalSize}
             compressedSize={comparisonData.compressedSize}
             fileName={comparisonData.fileName}
+            mediaType={comparisonData.mediaType}
+            fileFormat={comparisonData.fileFormat}
           />
         </Suspense>
       )}
