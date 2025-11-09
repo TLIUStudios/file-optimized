@@ -1,7 +1,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
-import { X, MoveHorizontal, ZoomIn, ZoomOut, Maximize2, Copy, RefreshCw, Download as DownloadIcon } from "lucide-react"; // Renamed Download to DownloadIcon
+import { X, MoveHorizontal, ZoomIn, ZoomOut, Maximize2, Copy, RefreshCw, Download as DownloadIcon, Check } from "lucide-react"; // Renamed Download to DownloadIcon, added Check
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { base44 } from "@/api/base44Client";
@@ -99,8 +99,18 @@ export default function ImageComparisonModal({
   const [regeneratingField, setRegeneratingField] = useState(null);
   const [showDownloadModalForImage, setShowDownloadModalForImage] = useState(false); // New state for download modal
 
+  // New states for editable filename
+  const [isEditingFilename, setIsEditingFilename] = useState(false);
+  const [editableFilename, setEditableFilename] = useState(fileName);
+
+
   const containerRef = useRef(null);
   const imageContainerRef = useRef(null);
+
+  // Sync editableFilename with fileName prop when it changes
+  useEffect(() => {
+    setEditableFilename(fileName);
+  }, [fileName]);
 
   // Extract file extensions
   const originalExt = fileName.split('.').pop().toUpperCase();
@@ -325,7 +335,7 @@ export default function ImageComparisonModal({
         const url = URL.createObjectURL(blob);
         const link = document.createElement('a');
         link.href = url;
-        const baseName = fileName.split('.')[0];
+        const baseName = editableFilename.split('.')[0]; // Use editableFilename for download name
         link.download = `${baseName}.${format}`;
         link.click();
         URL.revokeObjectURL(url);
@@ -333,7 +343,7 @@ export default function ImageComparisonModal({
       } else { // video or audio direct download
         const link = document.createElement('a');
         link.href = mediaUrl;
-        const baseName = fileName.split('.')[0];
+        const baseName = editableFilename.split('.')[0]; // Use editableFilename for download name
         link.download = `${baseName}.${format || fileFormat}`; // Use provided format or default compressed format
         link.click();
         toast.success(`${mediaTypeOverride.charAt(0).toUpperCase() + mediaTypeOverride.slice(1)} downloaded!`);
@@ -366,7 +376,7 @@ export default function ImageComparisonModal({
       const ctx = canvas.getContext('2d');
       ctx.drawImage(img, 0, 0);
 
-      const baseName = fileName.split('.')[0];
+      const baseName = editableFilename.split('.')[0]; // Use editableFilename for zip name
       const imageFormatsForZip = [ // Explicitly define image formats for ZIP
         { ext: 'jpg', mime: 'image/jpeg' },
         { ext: 'png', mime: 'image/png' },
@@ -763,7 +773,46 @@ export default function ImageComparisonModal({
           <div className="w-full lg:w-[360px] xl:w-[400px] bg-white dark:bg-slate-900 border-t lg:border-t-0 lg:border-l border-slate-200 dark:border-slate-800 flex flex-col overflow-y-auto">
             <div className="p-5 space-y-4">
               <div>
-                <h2 className="text-slate-900 dark:text-white text-sm font-bold mb-1 break-words line-clamp-2">{fileName}</h2>
+                {isEditingFilename ? (
+                  <div className="flex items-center gap-2 mb-1">
+                    <input
+                      type="text"
+                      value={editableFilename}
+                      onChange={(e) => setEditableFilename(e.target.value)}
+                      className="flex-1 text-sm font-bold text-slate-900 dark:text-white bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded px-2 py-1"
+                      onBlur={() => setIsEditingFilename(false)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          setIsEditingFilename(false);
+                          toast.success('Filename updated!');
+                        }
+                        if (e.key === 'Escape') {
+                          setEditableFilename(fileName);
+                          setIsEditingFilename(false);
+                        }
+                      }}
+                      autoFocus
+                    />
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => {
+                        setIsEditingFilename(false);
+                        toast.success('Filename updated!');
+                      }}
+                      className="h-7 w-7 p-0"
+                    >
+                      <Check className="w-4 h-4 text-emerald-600" />
+                    </Button>
+                  </div>
+                ) : (
+                  <h2 
+                    className="text-slate-900 dark:text-white text-sm font-bold mb-1 break-words line-clamp-2 cursor-pointer hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors" 
+                    onClick={() => setIsEditingFilename(true)}
+                  >
+                    {editableFilename}
+                  </h2>
+                )}
                 <p className="text-slate-500 dark:text-slate-400 text-xs">Compare quality and analyze compression efficiency</p>
               </div>
 
@@ -1078,7 +1127,7 @@ export default function ImageComparisonModal({
             onDownloadSpecificFormat={(format) => performSingleMediaDownload(compressedImage, format)}
             onDownloadAllFormatsZip={downloadAllImageFormatsAsZip}
             availableImageFormats={['jpg', 'png', 'webp', 'avif']} // Pass image specific formats
-            fileName={fileName}
+            fileName={editableFilename} // Pass the editable filename to the download modal
             // For future AI metadata integration:
             // aiTitle={aiTitle}
             // aiDescription={aiDescription}
