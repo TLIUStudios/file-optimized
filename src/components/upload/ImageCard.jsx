@@ -4,7 +4,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Slider } from "@/components/ui/slider";
-import { Download, X, Loader2, CheckCircle2, ArrowRight, Settings2, AlertCircle, Info, Edit2, RefreshCcw } from "lucide-react";
+import { Download, X, Loader2, CheckCircle2, ArrowRight, Settings2, AlertCircle, Info, Edit2, RefreshCcw, Sparkles } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
@@ -44,6 +44,9 @@ export default function ImageCard({ image, onRemove, onProcessed, onCompare }) {
   const [showEditor, setShowEditor] = useState(false);
   const [outputFormat, setOutputFormat] = useState(null); // Actual format of the compressedPreview
 
+  // Check if original image is GIF
+  const isGif = image.type === 'image/gif';
+
   useEffect(() => {
     const reader = new FileReader();
     reader.onloadend = () => {
@@ -51,7 +54,12 @@ export default function ImageCard({ image, onRemove, onProcessed, onCompare }) {
       setOriginalSize(image.size);
     };
     reader.readAsDataURL(image);
-  }, [image]);
+    
+    // Set format to gif if the image is a gif
+    if (isGif) {
+      setFormat('gif');
+    }
+  }, [image, isGif]);
 
   const processImage = async () => {
     setProcessing(true);
@@ -133,31 +141,36 @@ export default function ImageCard({ image, onRemove, onProcessed, onCompare }) {
         });
 
         // If compressed size is smaller or we've tried enough times, use it
-        if (blob.size < image.size || attempts === maxAttempts - 1) {
+        if (blob && blob.size < image.size || attempts === maxAttempts - 1) {
           break;
         }
-
-        // Reduce quality and try again
-        qualityValue -= compressionMode === 'maximum' ? 0.2 : 0.15;
+        
+        // Ensure quality does not go below zero
+        qualityValue = Math.max(0.01, qualityValue - (compressionMode === 'maximum' ? 0.2 : 0.15));
         attempts++;
       }
 
-      // If still larger than original, try WebP with lower quality
-      if (blob.size >= image.size) {
-        const fallbackQuality = compressionMode === 'maximum' ? 0.4 : 0.6;
-        blob = await new Promise((resolve) => {
-          canvas.toBlob(
-            (b) => resolve(b),
-            'image/webp',
-            fallbackQuality
-          );
-        });
-
-        // If still larger, show error
-        if (blob.size >= image.size) {
-          setError('Unable to reduce file size. Image may already be highly optimized.');
-          setProcessing(false);
-          return;
+      // If still larger than original:
+      if (blob && blob.size >= image.size) {
+        if (!isGif) { // Only try WebP fallback for non-GIFs
+            const fallbackQuality = compressionMode === 'maximum' ? 0.4 : 0.6;
+            blob = await new Promise((resolve) => {
+                canvas.toBlob(
+                    (b) => resolve(b),
+                    'image/webp',
+                    fallbackQuality
+                );
+            });
+            // If still larger after WebP fallback, then show error
+            if (blob && blob.size >= image.size) {
+                setError('Unable to reduce file size. Image may already be highly optimized or changing format did not help.');
+                setProcessing(false);
+                return;
+            }
+        } else { // It's a GIF and didn't reduce significantly
+            setError('Unable to significantly reduce GIF file size. GIFs are generally harder to compress without specialized tools.');
+            setProcessing(false);
+            return;
         }
       }
 
@@ -291,6 +304,9 @@ export default function ImageCard({ image, onRemove, onProcessed, onCompare }) {
   const displayFormat = outputFormat || format;
   const displayCompressedExt = displayFormat.toUpperCase();
 
+  // Define available formats based on whether it's a GIF
+  const availableFormats = isGif ? ['gif'] : ['avif', 'jpg', 'png', 'webp'];
+
   return (
     <Card className="overflow-hidden bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 shadow-lg hover:shadow-xl transition-shadow">
       <div className="relative">
@@ -311,17 +327,19 @@ export default function ImageCard({ image, onRemove, onProcessed, onCompare }) {
               <Badge className="absolute bottom-2 right-2 bg-slate-900/95 backdrop-blur-sm text-white border border-slate-700 text-xs px-2 py-1 font-bold shadow-lg">
                 {originalExt}
               </Badge>
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleEditImage();
-                }}
-                className="absolute top-2 right-2 bg-white/80 hover:bg-white dark:bg-slate-800/80 dark:hover:bg-slate-800 h-7 w-7 rounded-lg"
-              >
-                <Edit2 className="w-3 h-3" />
-              </Button>
+              {!isGif && (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleEditImage();
+                  }}
+                  className="absolute top-2 right-2 bg-white/80 hover:bg-white dark:bg-slate-800/80 dark:hover:bg-slate-800 h-7 w-7 rounded-lg"
+                >
+                  <Edit2 className="w-3 h-3" />
+                </Button>
+              )}
             </div>
           )}
           {compressedPreview ? (
@@ -392,17 +410,23 @@ export default function ImageCard({ image, onRemove, onProcessed, onCompare }) {
             <label className="text-xs font-medium text-slate-700 dark:text-slate-300">
               Convert Format
             </label>
-            <div className="flex gap-2">
-              {['webp', 'jpg', 'png'].map((fmt) => (
+            <div className="grid grid-cols-4 gap-2">
+              {availableFormats.map((fmt) => (
                 <Button
                   key={fmt}
                   size="sm"
                   variant={displayFormat === fmt ? "default" : "outline"}
                   onClick={() => convertFormat(fmt)}
                   disabled={displayFormat === fmt || processing}
-                  className="flex-1 text-xs"
+                  className={cn(
+                    "relative text-xs h-9",
+                    displayFormat === fmt && "bg-emerald-600 hover:bg-emerald-700"
+                  )}
                 >
                   {fmt.toUpperCase()}
+                  {fmt === 'webp' && (
+                    <Sparkles className="absolute -top-1 -right-1 w-3 h-3 text-yellow-500 animate-pulse" />
+                  )}
                   {displayFormat === fmt && processing && <Loader2 className="ml-1 h-3 w-3 animate-spin" />}
                 </Button>
               ))}
@@ -471,14 +495,21 @@ export default function ImageCard({ image, onRemove, onProcessed, onCompare }) {
                     </TooltipContent>
                   </Tooltip>
                 </div>
-                <Select value={format} onValueChange={setFormat} disabled={processing}>
+                <Select value={format} onValueChange={setFormat} disabled={processing || isGif}>
                   <SelectTrigger className="h-9">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="webp">WebP (Best compression)</SelectItem>
-                    <SelectItem value="jpg">JPG (Universal)</SelectItem>
-                    <SelectItem value="png">PNG (Lossless)</SelectItem>
+                    {isGif ? (
+                      <SelectItem value="gif">GIF (Animated)</SelectItem>
+                    ) : (
+                      <>
+                        <SelectItem value="avif">AVIF (Newer, more efficient)</SelectItem>
+                        <SelectItem value="webp">WebP (Best compression)</SelectItem>
+                        <SelectItem value="jpg">JPG (Universal)</SelectItem>
+                        <SelectItem value="png">PNG (Lossless)</SelectItem>
+                      </>
+                    )}
                   </SelectContent>
                 </Select>
               </div>
@@ -655,7 +686,7 @@ export default function ImageCard({ image, onRemove, onProcessed, onCompare }) {
       </div>
 
       {/* Editor Modal - Lazy load */}
-      {showEditor && (
+      {showEditor && !isGif && (
         <ImageEditor
           isOpen={showEditor}
           onClose={() => setShowEditor(false)}

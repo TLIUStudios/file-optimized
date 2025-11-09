@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { base44 } from "@/api/base44Client";
 import { toast } from "sonner";
+import { cn } from "@/lib/utils"; // Assuming cn utility is available at this path
 
 export default function ImageComparisonModal({
   isOpen,
@@ -25,7 +26,12 @@ export default function ImageComparisonModal({
   const [imageDimensions, setImageDimensions] = useState({ width: 0, height: 0 });
   const [aiTitle, setAiTitle] = useState("");
   const [aiDescription, setAiDescription] = useState("");
+  const [aiCategory, setAiCategory] = useState("");
+  const [aiMood, setAiMood] = useState("");
+  const [aiAltText, setAiAltText] = useState("");
+  const [aiTags, setAiTags] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
+  const [regeneratingField, setRegeneratingField] = useState(null); // New state for individual field regeneration
   const containerRef = useRef(null);
   const imageContainerRef = useRef(null);
 
@@ -49,6 +55,10 @@ export default function ImageComparisonModal({
     setIsGenerating(true);
     setAiTitle("");
     setAiDescription("");
+    setAiCategory("");
+    setAiMood("");
+    setAiAltText("");
+    setAiTags("");
 
     try {
       // Convert compressed image blob
@@ -64,15 +74,19 @@ export default function ImageComparisonModal({
       const uploadResult = await base44.integrations.Core.UploadFile({ file });
       console.log('☁️ Upload complete:', uploadResult.file_url);
 
-      // Generate with AI - simpler prompt
+      // Generate with AI - updated prompt for more fields
       const aiResult = await base44.integrations.Core.InvokeLLM({
-        prompt: "Analyze this image and provide a short title (under 60 chars) and brief description (under 160 chars) of what you see.",
+        prompt: "Analyze this image and provide: a short title (under 60 chars), brief description (under 160 chars), category (1-2 words), mood (1-2 words describing the emotional tone), alt text for accessibility (descriptive, under 125 chars), and 5-8 relevant tags (comma-separated keywords).",
         file_urls: [uploadResult.file_url],
         response_json_schema: {
           type: "object",
           properties: {
             title: { type: "string" },
-            description: { type: "string" }
+            description: { type: "string" },
+            category: { type: "string" },
+            mood: { type: "string" },
+            alt_text: { type: "string" },
+            tags: { type: "string" }
           }
         }
       });
@@ -81,6 +95,10 @@ export default function ImageComparisonModal({
 
       setAiTitle(aiResult.title || "Generated Title");
       setAiDescription(aiResult.description || "Generated description of the image.");
+      setAiCategory(aiResult.category || "General");
+      setAiMood(aiResult.mood || "Neutral");
+      setAiAltText(aiResult.alt_text || "Image description");
+      setAiTags(aiResult.tags || "image, photo");
       toast.success('Metadata generated!');
 
     } catch (error) {
@@ -88,6 +106,90 @@ export default function ImageComparisonModal({
       toast.error('Could not generate metadata: ' + error.message);
     } finally {
       setIsGenerating(false);
+    }
+  };
+
+  const regenerateField = async (fieldName) => {
+    console.log(`🔄 Regenerating ${fieldName}...`);
+    setRegeneratingField(fieldName); // Set the field being regenerated
+
+    try {
+      const res = await fetch(compressedImage);
+      const blob = await res.blob();
+      const file = new File([blob], 'image.jpg', { type: blob.type });
+      const uploadResult = await base44.integrations.Core.UploadFile({ file });
+
+      let prompt = "";
+      let schemaProperty = "";
+
+      switch (fieldName) {
+        case "title":
+          prompt = "Analyze this image and provide ONLY a short, catchy title (under 60 chars).";
+          schemaProperty = "title";
+          break;
+        case "description":
+          prompt = "Analyze this image and provide ONLY a brief, informative description (under 160 chars).";
+          schemaProperty = "description";
+          break;
+        case "category":
+          prompt = "Analyze this image and provide ONLY a category (1-2 words, e.g., 'Nature', 'Technology', 'People').";
+          schemaProperty = "category";
+          break;
+        case "mood":
+          prompt = "Analyze this image and provide ONLY the mood or emotional tone (1-2 words, e.g., 'Calm', 'Energetic', 'Melancholic').";
+          schemaProperty = "mood";
+          break;
+        case "alt_text":
+          prompt = "Analyze this image and provide ONLY accessible alt text - a descriptive sentence for screen readers (under 125 chars).";
+          schemaProperty = "alt_text";
+          break;
+        case "tags":
+          prompt = "Analyze this image and provide ONLY 5-8 relevant keywords as comma-separated tags.";
+          schemaProperty = "tags";
+          break;
+        default:
+          throw new Error("Invalid field name for regeneration.");
+      }
+
+      const aiResult = await base44.integrations.Core.InvokeLLM({
+        prompt,
+        file_urls: [uploadResult.file_url],
+        response_json_schema: {
+          type: "object",
+          properties: {
+            [schemaProperty]: { type: "string" }
+          }
+        }
+      });
+
+      // Update specific state based on fieldName
+      switch (fieldName) {
+        case "title":
+          setAiTitle(aiResult.title || "Generated Title");
+          break;
+        case "description":
+          setAiDescription(aiResult.description || "Generated description");
+          break;
+        case "category":
+          setAiCategory(aiResult.category || "General");
+          break;
+        case "mood":
+          setAiMood(aiResult.mood || "Neutral");
+          break;
+        case "alt_text":
+          setAiAltText(aiResult.alt_text || "Image description");
+          break;
+        case "tags":
+          setAiTags(aiResult.tags || "image, photo");
+          break;
+      }
+
+      toast.success(`${fieldName.charAt(0).toUpperCase() + fieldName.slice(1)} regenerated!`);
+    } catch (error) {
+      console.error(`❌ Error regenerating ${fieldName}:`, error);
+      toast.error(`Failed to regenerate ${fieldName}: ${error.message}`);
+    } finally {
+      setRegeneratingField(null); // Reset the regenerating field state
     }
   };
 
@@ -118,7 +220,7 @@ export default function ImageComparisonModal({
     if (Math.abs(ratio - 21/9) < 0.01) return "21:9";
     if (Math.abs(ratio - 9/16) < 0.01) return "9:16";
 
-    if (ratioW > 100 || ratioH > 100) {
+    if (ratioW > 100 || ratioH > 100) { // To prevent very large ratios for small differences
       return `${ratio.toFixed(2)}:1`;
     }
     return `${ratioW}:${ratioH}`;
@@ -231,6 +333,8 @@ export default function ImageComparisonModal({
 
   const savingsPercent = ((1 - compressedSize / originalSize) * 100).toFixed(1);
   const savingsAmount = originalSize - compressedSize;
+
+  const hasAnyMetadata = aiTitle || aiDescription || aiCategory || aiMood || aiAltText || aiTags;
 
   if (!isOpen) return null;
 
@@ -450,11 +554,11 @@ export default function ImageComparisonModal({
 
               <div className="h-px bg-slate-200 dark:bg-slate-800" />
 
-              {/* AI Generated */}
+              {/* AI Generated Section */}
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
                   <h3 className="text-slate-900 dark:text-white font-semibold text-xs uppercase tracking-wider">AI Generated</h3>
-                  {(aiTitle || aiDescription) && !isGenerating && (
+                  {hasAnyMetadata && !isGenerating && (
                     <Button
                       variant="ghost"
                       size="sm"
@@ -462,7 +566,7 @@ export default function ImageComparisonModal({
                       className="h-7 px-2 text-xs"
                     >
                       <RefreshCw className="w-3 h-3 mr-1" />
-                      Regenerate
+                      Regenerate All
                     </Button>
                   )}
                 </div>
@@ -472,19 +576,31 @@ export default function ImageComparisonModal({
                     <RefreshCw className="w-6 h-6 animate-spin mx-auto mb-2 text-slate-400" />
                     <p className="text-xs text-slate-500 dark:text-slate-400">Analyzing image with AI...</p>
                   </div>
-                ) : (aiTitle || aiDescription) ? (
+                ) : hasAnyMetadata ? (
                   <div className="space-y-2">
+                    {/* Title */}
                     <div className="bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg p-3">
                       <div className="flex items-center justify-between mb-2">
                         <label className="text-[10px] font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider">Title</label>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => copyToClipboard(aiTitle, 'Title')}
-                          className="h-5 w-5 p-0 hover:bg-slate-200 dark:hover:bg-slate-800"
-                        >
-                          <Copy className="w-3 h-3" />
-                        </Button>
+                        <div className="flex gap-1">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => regenerateField('title')}
+                            disabled={regeneratingField === 'title'}
+                            className="h-5 w-5 p-0 hover:bg-slate-200 dark:hover:bg-slate-800"
+                          >
+                            <RefreshCw className={cn("w-3 h-3", regeneratingField === 'title' && "animate-spin")} />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => copyToClipboard(aiTitle, 'Title')}
+                            className="h-5 w-5 p-0 hover:bg-slate-200 dark:hover:bg-slate-800"
+                          >
+                            <Copy className="w-3 h-3" />
+                          </Button>
+                        </div>
                       </div>
                       <input
                         type="text"
@@ -494,17 +610,29 @@ export default function ImageComparisonModal({
                       />
                     </div>
 
+                    {/* Description */}
                     <div className="bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg p-3">
                       <div className="flex items-center justify-between mb-2">
                         <label className="text-[10px] font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider">Description</label>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => copyToClipboard(aiDescription, 'Description')}
-                          className="h-5 w-5 p-0 hover:bg-slate-200 dark:hover:bg-slate-800"
-                        >
-                          <Copy className="w-3 h-3" />
-                        </Button>
+                        <div className="flex gap-1">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => regenerateField('description')}
+                            disabled={regeneratingField === 'description'}
+                            className="h-5 w-5 p-0 hover:bg-slate-200 dark:hover:bg-slate-800"
+                          >
+                            <RefreshCw className={cn("w-3 h-3", regeneratingField === 'description' && "animate-spin")} />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => copyToClipboard(aiDescription, 'Description')}
+                            className="h-5 w-5 p-0 hover:bg-slate-200 dark:hover:bg-slate-800"
+                          >
+                            <Copy className="w-3 h-3" />
+                          </Button>
+                        </div>
                       </div>
                       <textarea
                         value={aiDescription}
@@ -513,10 +641,139 @@ export default function ImageComparisonModal({
                         className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded px-3 py-2 text-xs text-slate-900 dark:text-white resize-none"
                       />
                     </div>
+
+                    {/* Category & Mood */}
+                    <div className="grid grid-cols-2 gap-2">
+                      <div className="bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg p-3">
+                        <div className="flex items-center justify-between mb-2">
+                          <label className="text-[10px] font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider">Category</label>
+                          <div className="flex gap-1">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => regenerateField('category')}
+                              disabled={regeneratingField === 'category'}
+                              className="h-5 w-5 p-0 hover:bg-slate-200 dark:hover:bg-slate-800"
+                            >
+                              <RefreshCw className={cn("w-3 h-3", regeneratingField === 'category' && "animate-spin")} />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => copyToClipboard(aiCategory, 'Category')}
+                              className="h-5 w-5 p-0 hover:bg-slate-200 dark:hover:bg-slate-800"
+                            >
+                              <Copy className="w-3 h-3" />
+                            </Button>
+                          </div>
+                        </div>
+                        <input
+                          type="text"
+                          value={aiCategory}
+                          readOnly
+                          className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded px-3 py-2 text-xs text-slate-900 dark:text-white"
+                        />
+                      </div>
+
+                      <div className="bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg p-3">
+                        <div className="flex items-center justify-between mb-2">
+                          <label className="text-[10px] font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider">Mood</label>
+                          <div className="flex gap-1">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => regenerateField('mood')}
+                              disabled={regeneratingField === 'mood'}
+                              className="h-5 w-5 p-0 hover:bg-slate-200 dark:hover:bg-slate-800"
+                            >
+                              <RefreshCw className={cn("w-3 h-3", regeneratingField === 'mood' && "animate-spin")} />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => copyToClipboard(aiMood, 'Mood')}
+                              className="h-5 w-5 p-0 hover:bg-slate-200 dark:hover:bg-slate-800"
+                            >
+                              <Copy className="w-3 h-3" />
+                            </Button>
+                          </div>
+                        </div>
+                        <input
+                          type="text"
+                          value={aiMood}
+                          readOnly
+                          className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded px-3 py-2 text-xs text-slate-900 dark:text-white"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Alt Text */}
+                    <div className="bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg p-3">
+                      <div className="flex items-center justify-between mb-2">
+                        <label className="text-[10px] font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider">Alt Text</label>
+                        <div className="flex gap-1">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => regenerateField('alt_text')}
+                            disabled={regeneratingField === 'alt_text'}
+                            className="h-5 w-5 p-0 hover:bg-slate-200 dark:hover:bg-slate-800"
+                          >
+                            <RefreshCw className={cn("w-3 h-3", regeneratingField === 'alt_text' && "animate-spin")} />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => copyToClipboard(aiAltText, 'Alt Text')}
+                            className="h-5 w-5 p-0 hover:bg-slate-200 dark:hover:bg-slate-800"
+                          >
+                            <Copy className="w-3 h-3" />
+                          </Button>
+                        </div>
+                      </div>
+                      <textarea
+                        value={aiAltText}
+                        readOnly
+                        rows={2}
+                        className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded px-3 py-2 text-xs text-slate-900 dark:text-white resize-none"
+                      />
+                    </div>
+
+                    {/* Tags */}
+                    <div className="bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg p-3">
+                      <div className="flex items-center justify-between mb-2">
+                        <label className="text-[10px] font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider">Tags</label>
+                        <div className="flex gap-1">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => regenerateField('tags')}
+                            disabled={regeneratingField === 'tags'}
+                            className="h-5 w-5 p-0 hover:bg-slate-200 dark:hover:bg-slate-800"
+                          >
+                            <RefreshCw className={cn("w-3 h-3", regeneratingField === 'tags' && "animate-spin")} />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => copyToClipboard(aiTags, 'Tags')}
+                            className="h-5 w-5 p-0 hover:bg-slate-200 dark:hover:bg-slate-800"
+                          >
+                            <Copy className="w-3 h-3" />
+                          </Button>
+                        </div>
+                      </div>
+                      <input
+                        type="text"
+                        value={aiTags}
+                        readOnly
+                        className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded px-3 py-2 text-xs text-slate-900 dark:text-white"
+                      />
+                    </div>
                   </div>
                 ) : (
                   <div className="bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg p-4 text-center">
-                    <p className="text-xs text-slate-500 dark:text-slate-400 mb-3">Generate AI-powered title and description</p>
+                    <p className="text-xs text-slate-500 dark:text-slate-400 mb-3">Generate AI-powered metadata for this image</p>
                     <Button
                       size="sm"
                       onClick={generateMetadata}
