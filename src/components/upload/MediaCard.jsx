@@ -139,22 +139,68 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
 
   const loadFFmpegAlternative = async () => {
     try {
-      console.log('🚀 Loading FFmpeg...');
+      console.log('🚀 Loading FFmpeg with UMD bundles...');
       toast.info('Loading media processor...', { id: 'ffmpeg-load', duration: Infinity });
       
-      // Import FFmpeg from CDN using dynamic import
-      const FFmpegModule = await import('https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@0.12.10/dist/esm/index.js');
-      const FFmpeg = FFmpegModule.FFmpeg;
-      
-      const UtilModule = await import('https://cdn.jsdelivr.net/npm/@ffmpeg/util@0.12.1/dist/esm/index.js');
-      const { toBlobURL, fetchFile } = UtilModule;
-      
-      // Store fetchFile in window for later use
-      if (!window.FFmpegUtil) {
-        window.FFmpegUtil = { toBlobURL, fetchFile };
+      // Check if already loaded globally (by another card instance)
+      if (window.FFmpegWASM?.FFmpeg && window.FFmpegUtil?.toBlobURL) {
+        console.log('✅ FFmpeg already loaded globally, re-initializing for this card.');
+        const { FFmpeg } = window.FFmpegWASM;
+        const { toBlobURL } = window.FFmpegUtil;
+        const ffmpeg = new FFmpeg();
+        ffmpegRef.current = ffmpeg;
+        
+        ffmpeg.on('log', ({ message }) => {
+          console.log('[FFmpeg]:', message);
+        });
+        
+        ffmpeg.on('progress', ({ progress }) => {
+          const percent = Math.round(progress * 100);
+          toast.info(`Processing: ${percent}%`, { id: 'ffmpeg-progress' });
+        });
+        
+        const baseURL = 'https://unpkg.com/@ffmpeg/core-st@0.12.6/dist/umd';
+        const coreURL = await toBlobURL(`${baseURL}/ffmpeg-core.js`, 'text/javascript');
+        const wasmURL = await toBlobURL(`${baseURL}/ffmpeg-core.wasm`, 'application/wasm');
+        
+        await ffmpeg.load({ coreURL, wasmURL });
+        setFfmpegLoaded(true);
+        toast.success('Media processor ready!', { id: 'ffmpeg-load' });
+        return;
       }
       
-      console.log('✅ FFmpeg modules loaded');
+      // Load FFmpeg script if not already loaded globally
+      await new Promise((resolve, reject) => {
+        const script = document.createElement('script');
+        script.src = 'https://unpkg.com/@ffmpeg/ffmpeg@0.12.10/dist/umd/ffmpeg.js';
+        script.onload = resolve;
+        script.onerror = () => reject(new Error('Failed to load FFmpeg script'));
+        document.head.appendChild(script);
+      });
+      
+      console.log('✅ FFmpeg script loaded');
+      
+      // Load utilities script
+      await new Promise((resolve, reject) => {
+        const script = document.createElement('script');
+        script.src = 'https://unpkg.com/@ffmpeg/util@0.12.1/dist/umd/index.js';
+        script.onload = resolve;
+        script.onerror = () => reject(new Error('Failed to load FFmpeg utilities'));
+        document.head.appendChild(script);
+      });
+      
+      console.log('✅ FFmpeg utilities loaded');
+      
+      // Wait a bit for scripts to initialize and attach to window
+      await new Promise(resolve => setTimeout(resolve, 100));
+      
+      // Access from window
+      if (!window.FFmpegWASM?.FFmpeg || !window.FFmpegUtil?.toBlobURL) {
+        throw new Error('FFmpeg modules not available on window object after loading scripts.');
+      }
+      
+      const { FFmpeg } = window.FFmpegWASM;
+      const { toBlobURL } = window.FFmpegUtil;
       
       const ffmpeg = new FFmpeg();
       ffmpegRef.current = ffmpeg;
@@ -170,13 +216,13 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
       });
       
       // Use CDN for WASM files - single-threaded for better compatibility
-      const baseURL = 'https://unpkg.com/@ffmpeg/core-st@0.12.6/dist/esm';
+      const baseURL = 'https://unpkg.com/@ffmpeg/core-st@0.12.6/dist/umd';
       
-      console.log('📦 Loading FFmpeg core...');
+      console.log('📦 Creating blob URLs...');
       const coreURL = await toBlobURL(`${baseURL}/ffmpeg-core.js`, 'text/javascript');
       const wasmURL = await toBlobURL(`${baseURL}/ffmpeg-core.wasm`, 'application/wasm');
       
-      console.log('🔧 Initializing FFmpeg...');
+      console.log('🔧 Loading FFmpeg core...');
       await ffmpeg.load({ coreURL, wasmURL });
       
       setFfmpegLoaded(true);
@@ -185,8 +231,8 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
     } catch (error) {
       console.error('❌ FFmpeg load failed:', error);
       console.error('Error details:', error.message, error.stack);
-      setError('Media processor failed to load. Try refreshing the page or use a different browser (Chrome/Edge recommended).');
-      toast.error('Failed to load media processor. Try Chrome or Edge browser.', { id: 'ffmpeg-load' });
+      setError('Media processor failed to load. Please use Chrome or Edge browser and ensure you have a stable internet connection.');
+      toast.error('Failed to load media processor. Please refresh and try again with Chrome/Edge.', { id: 'ffmpeg-load', duration: 5000 });
     }
   };
 
@@ -255,7 +301,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
       toast.info('Converting GIF to MP4...', { duration: Infinity });
       
       const ffmpeg = ffmpegRef.current;
-      const { fetchFile } = window.FFmpegUtil || window; // Changed import location
+      const { fetchFile } = window.FFmpegUtil;
       
       console.log('📥 Fetching GIF data...');
       const gifData = await fetchFile(preview);
@@ -325,7 +371,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
       toast.info('Converting video to GIF...', { duration: Infinity });
       
       const ffmpeg = ffmpegRef.current;
-      const { fetchFile } = window.FFmpegUtil || window; // Changed import location
+      const { fetchFile } = window.FFmpegUtil;
       
       console.log('📥 Fetching video data...');
       const videoData = await fetchFile(preview);
@@ -402,7 +448,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
       toast.info('Compressing video...', { duration: Infinity });
       
       const ffmpeg = ffmpegRef.current;
-      const { fetchFile } = window.FFmpegUtil || window; // Changed import location
+      const { fetchFile } = window.FFmpegUtil;
       
       console.log('📥 Fetching video data...');
       const videoData = await fetchFile(preview);
@@ -493,7 +539,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
       toast.info('Compressing audio...', { duration: Infinity });
       
       const ffmpeg = ffmpegRef.current;
-      const { fetchFile } = window.FFmpegUtil || window; // Changed import location
+      const { fetchFile } = window.FFmpegUtil;
       
       console.log('📥 Fetching audio data...');
       const audioData = await fetchFile(preview);
@@ -886,7 +932,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
       toast.info('Creating animation from image...', { duration: Infinity });
 
       const ffmpeg = ffmpegRef.current;
-      const { fetchFile } = window.FFmpegUtil || window;
+      const { fetchFile } = window.FFmpegUtil;
 
       console.log('📥 Fetching image data...');
       const imgData = await fetchFile(preview);
@@ -1620,7 +1666,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
                       <SelectTrigger className="h-9">
                         <SelectValue />
                       </SelectTrigger>
-                      <SelectContent>
+                    <SelectContent>
                         <SelectItem value="ultrafast">Ultra Fast (Larger File)</SelectItem>
                         <SelectItem value="superfast">Super Fast</SelectItem>
                         <SelectItem value="veryfast">Very Fast</SelectItem>
