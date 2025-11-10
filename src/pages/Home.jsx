@@ -144,10 +144,12 @@ export default function Home() {
     (sum, img) => sum + img.compressedSize, 0
   );
   const totalSavings = totalOriginalSize - totalCompressedSize;
+  
+  // Calculate absolute percentage for display
   const savingsPercent = totalOriginalSize > 0 
-    ? (((totalSavings / totalOriginalSize) * 100) * (totalSavings >= 0 ? 1 : -1)).toFixed(1)
-    : 0; // Absolute value for percentage
-
+    ? Math.abs((totalSavings / totalOriginalSize) * 100).toFixed(1)
+    : '0';
+  
   const unprocessedCount = images.filter(img => !processedImages[img.id]).length;
   
   // Check if compression actually increased total size
@@ -269,7 +271,7 @@ export default function Home() {
                           ? "text-red-600 dark:text-red-400" 
                           : "text-emerald-600 dark:text-emerald-400"
                       )}>
-                        {sizeIncreased ? '+' : ''}{savingsPercent}%
+                        {sizeIncreased ? '+' : '-'} {savingsPercent}%
                       </p>
                     </div>
                   </>
