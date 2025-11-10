@@ -601,38 +601,57 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
       toast.info('Step 2/3: AI analyzing image...', { id: 'anim-gen' });
       // Assuming base44 is globally available as per instructions
       const analysisResult = await base44.integrations.Core.InvokeLLM({
-        prompt: `Analyze this image in detail and create 4 unique, creative animation concepts that would bring it to life.
+        prompt: `Analyze this EXACT image in detail and create 4 unique, creative animation concepts that would bring it to life with REAL motion.
+
+CRITICAL INSTRUCTIONS:
+- Frame 1 is ALWAYS the exact uploaded image (no generation needed)
+- Frames 2-11 show progressive motion/action
+- Frame 12 MUST return character/subject to the exact same pose as Frame 1 for seamless loop
 
 For each animation:
-1. Describe what's happening in the scene (be specific about objects, people, style)
-2. Create a cinematic animation concept that makes sense for this image
-3. Provide 12 detailed frame descriptions that show progressive motion from start back to start (seamless loop)
+1. Describe what's in this EXACT image (objects, people, poses, expressions, background)
+2. Create a cinematic animation concept that makes sense for THIS specific scene
+3. Provide frame descriptions for frames 2-12 ONLY (frame 1 is the original image):
+   - Frame 2: Very slight change from original pose
+   - Frames 3-10: Progressive motion (character moves, performs action)
+   - Frame 11: Beginning to return to original pose
+   - Frame 12: EXACT SAME pose as Frame 1 (critical for seamless loop!)
+
+Example for image of "anime girl with sword":
+Frame 1: [Original image - not generated]
+Frame 2: Girl's eyes narrow slightly, grip tightens on sword handle
+Frame 3: Begins drawing sword from sheath, body starts to rotate
+Frame 4-10: [progressive sword swing motion]
+Frame 11: Sword returning to sheath, body rotating back
+Frame 12: EXACT same standing pose as Frame 1 - ready stance with sword at side
 
 Output format:
 {
-  "scene_description": "detailed description of what's in the image",
-  "image_style": "art style/medium (e.g., anime, realistic photo, cartoon, 3D render)",
+  "scene_description": "Detailed description of EXACTLY what's in the uploaded image",
+  "image_style": "art style (anime/photo/cartoon/3D/etc)",
+  "subject_pose": "Exact pose/position of main subject in original image",
   "animations": [
     {
-      "name": "Animation 1 Name",
-      "concept": "brief description of the animation concept",
+      "name": "Animation Name",
+      "concept": "brief description",
       "frame_prompts": [
-        "Frame 1: [original scene]",
-        "Frame 2: [slight change]",
+        "Frame 2: [very slight change from original]",
+        "Frame 3: [small motion begins]",
         ...
-        "Frame 12: [returns to frame 1 pose]"
+        "Frame 12: [EXACT same pose as original image for perfect loop]"
       ]
     }
   ]
 }
 
-Make animations creative and dynamic - they should have real motion and action!`,
+Make animations dynamic with REAL motion - characters move, swing weapons, change expressions, etc!`,
         file_urls: [imageUrl],
         response_json_schema: {
           type: "object",
           properties: {
             scene_description: { type: "string" },
             image_style: { type: "string" },
+            subject_pose: { type: "string" },
             animations: {
               type: "array",
               items: {
@@ -677,11 +696,11 @@ Make animations creative and dynamic - they should have real motion and action!`
           toast.info(`Creating ${anim.name}... Frame ${frameIndex + 1}/${framesPerAnimation}`, { id: 'anim-gen' });
           
           try {
-            const framePrompt = anim.frame_prompts[frameIndex];
+            const framePrompt = anim.frame_prompts[frameIndex -1]; // frame_prompts now starts at index 0 for Frame 2
             
             // For frame 12, explicitly reference returning to original pose
             const enhancedPrompt = frameIndex === framesPerAnimation - 1 
-              ? `${analysisResult.image_style} style. ${framePrompt}. CRITICAL: This is the final frame - the character/subject should return to the EXACT SAME pose as the original image for seamless looping. Match the original image's composition, character position, and pose exactly.`
+              ? `${analysisResult.image_style} style. ${framePrompt}. CRITICAL: This is the final frame - the character/subject should return to the EXACT SAME pose as the original image based on description: "${analysisResult.subject_pose}". Match the original image's composition, character position, and pose exactly.`
               : `${analysisResult.image_style} style. ${framePrompt}. Match the style and quality of the original image exactly. Maintain consistent character features, lighting, and composition.`;
             
             // Generate image for this frame
