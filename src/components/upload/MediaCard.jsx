@@ -1215,6 +1215,9 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
   const savingsPercent = processed
     ? ((1 - compressedSize / originalSize) * 100).toFixed(1)
     : 0;
+  
+  // Check if file got larger
+  const sizeIncreased = processed && compressedSize > originalSize;
 
   const formatFileSize = (bytes) => {
     if (bytes < 1024) return bytes + ' B';
@@ -1713,11 +1716,20 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
             {processed && (
               <>
                 <ArrowRight className="w-3 h-3" />
-                <span className="text-emerald-600 dark:text-emerald-400 font-medium">
+                <span className={cn(
+                  "font-medium",
+                  sizeIncreased 
+                    ? "text-red-600 dark:text-red-400" 
+                    : "text-emerald-600 dark:text-emerald-400"
+                )}>
                   {formatFileSize(compressedSize)}
                 </span>
-                <Badge variant="secondary" className="bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-400">
-                  -{savingsPercent}%
+                <Badge variant="secondary" className={cn(
+                  sizeIncreased
+                    ? "bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-400"
+                    : "bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-400"
+                )}>
+                  {sizeIncreased ? '+' : ''}{Math.abs(parseFloat(savingsPercent))}%
                 </Badge>
               </>
             )}
