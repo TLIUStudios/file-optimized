@@ -579,18 +579,24 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
   const processGif = async () => {
     try {
       console.log('🎞️ Starting GIF compression...');
-
+      
+      // Check if GIF.js is loaded
+      if (!gifJsLoaded || !window.GIF || !workerBlobUrl) {
+        toast.error('GIF processor still loading. Please wait a moment...');
+        return;
+      }
+      
       const response = await fetch(preview);
       const originalBlob = await response.blob();
-
+      
       if (!gifSettings.frames || gifSettings.frames.length === 0) {
         const compressedUrl = URL.createObjectURL(originalBlob);
         setCompressedPreview(compressedUrl);
         setCompressedSize(originalBlob.size);
-        setCompressedBlob(originalBlob); // ADDED
+        setCompressedBlob(originalBlob);
         setProcessed(true);
         setOutputFormat('gif');
-        setOutputGifFrameCount(gifFrameCount); // Set output frame count for direct GIF processing
+        setOutputGifFrameCount(gifFrameCount);
 
         onProcessed({
           id: image.name,
@@ -600,25 +606,25 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
           originalSize: image.size,
           compressedSize: originalBlob.size,
           format: 'gif',
-          filename: getOutputFilename('gif'), // Use new helper
+          filename: getOutputFilename('gif'),
           mediaType: 'image',
           fileFormat: 'gif'
         });
-
+        
         toast.info('GIF processed (animation preserved)');
         return;
       }
 
       let targetWidth = gifSettings.width;
       let targetHeight = gifSettings.height;
-
+      
       if (maxWidth || maxHeight) {
         const aspectRatio = gifSettings.width / gifSettings.height;
-
+        
         if (maxWidth && maxHeight) {
           const widthRatio = maxWidth / gifSettings.width;
           const heightRatio = maxHeight / gifSettings.height;
-          const ratio = Math.min(widthRatio, heightRatio); // Always min for GIF resizing
+          const ratio = Math.min(widthRatio, heightRatio);
           targetWidth = Math.round(gifSettings.width * ratio);
           targetHeight = Math.round(gifSettings.height * ratio);
         } else if (maxWidth && maxWidth < gifSettings.width) {
@@ -629,14 +635,14 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
           targetWidth = Math.round(maxHeight * aspectRatio);
         }
       }
-
+      
       let frameSkip = 1;
       if (gifOptimization === 'aggressive') {
         frameSkip = 2;
       } else if (gifOptimization === 'maximum') {
         frameSkip = 3;
       }
-
+      
       const canvas = document.createElement('canvas');
       canvas.width = targetWidth;
       canvas.height = targetHeight;
@@ -645,7 +651,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
       const processedFrames = [];
       const maxFrames = Math.min(gifSettings.frames.length, 400);
       let prevImageData = null;
-
+      
       for (let i = 0; i < maxFrames; i += frameSkip) {
         const frame = gifSettings.frames[i];
         if (!frame || !frame.patch || !frame.dims) continue;
@@ -655,27 +661,27 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
           frame.dims.width,
           frame.dims.height
         );
-
+        
         const tempCanvas = document.createElement('canvas');
         tempCanvas.width = frame.dims.width;
         tempCanvas.height = frame.dims.height;
         const tempCtx = tempCanvas.getContext('2d');
         if (!tempCtx) continue;
-
+        
         tempCtx.putImageData(imageData, 0, 0);
         ctx.clearRect(0, 0, targetWidth, targetHeight);
         ctx.drawImage(tempCanvas, 0, 0, targetWidth, targetHeight);
-
+        
         let delay = frame.delay ? Math.max(20, frame.delay * 10 * frameSkip) : 100 * frameSkip;
         const frameImageData = ctx.getImageData(0, 0, targetWidth, targetHeight);
-
+        
         if (gifOptimization !== 'balanced' && prevImageData) {
           const diff = calculateFrameDifference(prevImageData.data, frameImageData.data);
           if (diff < 0.05) continue;
         }
-
+        
         prevImageData = frameImageData;
-        processedFrames.push({
+        processedFrames.push({ 
           data: new Uint8ClampedArray(frameImageData.data),
           delay,
           width: targetWidth,
@@ -686,7 +692,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
       if (processedFrames.length === 0) throw new Error('No frames processed');
 
       const GIF = window.GIF;
-
+      
       let gifQuality;
       if (gifOptimization === 'balanced') {
         gifQuality = Math.max(1, Math.min(30, Math.round((100 - quality) / 3.5)));
@@ -695,13 +701,13 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
       } else {
         gifQuality = Math.max(10, Math.min(30, Math.round((100 - quality) / 2.5)));
       }
-
+      
       const gif = new GIF({
         workers: 2,
         quality: gifQuality,
         width: targetWidth,
         height: targetHeight,
-        workerScript: workerBlobUrl, // Ensure workerBlobUrl is used here too if GIF.js is available
+        workerScript: workerBlobUrl,
         dither: gifOptimization === 'maximum' ? 'FloydSteinberg' : false,
         transparent: null,
         repeat: 0
@@ -713,10 +719,10 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
         frameCanvas.height = frameData.height;
         const frameCtx = frameCanvas.getContext('2d');
         if (!frameCtx) continue;
-
+        
         const imgData = new ImageData(frameData.data, frameData.width, frameData.height);
         frameCtx.putImageData(imgData, 0, 0);
-
+        
         gif.addFrame(frameCanvas, { delay: frameData.delay, copy: true, dispose: 2 });
       }
 
@@ -725,14 +731,14 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
         gif.on('error', reject);
         gif.render();
       });
-
+      
       const compressedUrl = URL.createObjectURL(gifBlob);
       setCompressedPreview(compressedUrl);
       setCompressedSize(gifBlob.size);
-      setCompressedBlob(gifBlob); // ADDED
+      setCompressedBlob(gifBlob);
       setProcessed(true);
       setOutputFormat('gif');
-      setOutputGifFrameCount(processedFrames.length); // Set output frame count for processed GIF
+      setOutputGifFrameCount(processedFrames.length);
 
       onProcessed({
         id: image.name,
@@ -742,7 +748,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
         originalSize: image.size,
         compressedSize: gifBlob.size,
         format: 'gif',
-        filename: getOutputFilename('gif'), // Use new helper
+        filename: getOutputFilename('gif'),
         mediaType: 'image',
         fileFormat: 'gif'
       });
@@ -928,7 +934,7 @@ For each animation:
    - Frame 2: Very slight change from original pose
    - Frames 3-8: Progressive motion (character moves, performs action)
    - Frame 9: Beginning to return to original pose
-   - Frame 10: EXACT SAME pose as Frame 1 (critical for seamless loop!)
+   - Frame 10: EXACT same standing pose as Frame 1 - ready stance with sword at side
 
 Example for image of "anime girl with sword":
 Frame 1: [Original image - not generated]
