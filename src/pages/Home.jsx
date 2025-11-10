@@ -7,6 +7,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
 import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
+import { cn } from "@/lib/utils"; // Assuming cn utility is available here
 
 // Lazy load heavy components for better performance
 const MediaCard = lazy(() => import("../components/upload/MediaCard"));
@@ -144,10 +145,13 @@ export default function Home() {
   );
   const totalSavings = totalOriginalSize - totalCompressedSize;
   const savingsPercent = totalOriginalSize > 0 
-    ? ((totalSavings / totalOriginalSize) * 100).toFixed(1)
-    : 0;
-  
+    ? (((totalSavings / totalOriginalSize) * 100) * (totalSavings >= 0 ? 1 : -1)).toFixed(1)
+    : 0; // Absolute value for percentage
+
   const unprocessedCount = images.filter(img => !processedImages[img.id]).length;
+  
+  // Check if compression actually increased total size
+  const sizeIncreased = totalCompressedSize > totalOriginalSize;
 
   const formatFileSize = (bytes) => {
     if (bytes < 1024) return bytes + ' B';
@@ -256,9 +260,16 @@ export default function Home() {
                   <>
                     <div className="h-12 w-px bg-slate-200 dark:bg-slate-800 hidden sm:block" />
                     <div>
-                      <p className="text-sm text-slate-500 dark:text-slate-400">Total Savings</p>
-                      <p className="text-2xl font-bold text-emerald-600 dark:text-emerald-400">
-                        {savingsPercent}%
+                      <p className="text-sm text-slate-500 dark:text-slate-400">
+                        {sizeIncreased ? 'Total Change' : 'Total Savings'}
+                      </p>
+                      <p className={cn(
+                        "text-2xl font-bold",
+                        sizeIncreased 
+                          ? "text-red-600 dark:text-red-400" 
+                          : "text-emerald-600 dark:text-emerald-400"
+                      )}>
+                        {sizeIncreased ? '+' : ''}{savingsPercent}%
                       </p>
                     </div>
                   </>

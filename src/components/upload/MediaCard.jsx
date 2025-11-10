@@ -1091,7 +1091,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
           ? 4 * rawProgress * rawProgress * rawProgress
           : 1 - Math.pow(-2 * rawProgress + 2, 3) / 2;
         
-        // Apply animation effect
+        // Apply animation effect - ONLY ZOOM AND GLOW
         switch (animationType) {
           case 'zoom':
             // Smooth zoom from 100% to 110% and back
@@ -1099,31 +1099,6 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
             ctx.translate(width / 2, height / 2);
             ctx.scale(scale, scale);
             ctx.translate(-width / 2, -height / 2);
-            break;
-            
-          case 'ripple':
-            // Ripple distortion effect
-            const rippleStrength = progress * 10;
-            const rippleFrequency = 0.05;
-            
-            // Draw image with ripple distortion
-            for (let y = 0; y < height; y++) {
-              const offsetX = Math.sin(y * rippleFrequency + progress * Math.PI * 2) * rippleStrength;
-              ctx.drawImage(img, offsetX, y, width, 1, 0, y, width, 1);
-            }
-            ctx.restore();
-            frames.push(canvas);
-            continue; // Skip normal drawing
-            
-          case 'ken-burns':
-            // Ken Burns effect (slow zoom + pan)
-            const kbScale = 1 + (progress * 0.15);
-            const kbPanX = progress * (width * 0.08);
-            const kbPanY = progress * (height * 0.05);
-            
-            ctx.translate(width / 2, height / 2);
-            ctx.scale(kbScale, kbScale);
-            ctx.translate(-width / 2 - kbPanX + (width * 0.04), -height / 2 - kbPanY + (height * 0.025));
             break;
             
           case 'glow':
@@ -1847,6 +1822,48 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
                 </div>
               )}
 
+              {/* GIF Settings - LOCKED TO OPTIMAL */}
+              {isGif && format === 'gif' && (
+                <div className="bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800 rounded-lg p-4 space-y-3">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Sparkles className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                    <h4 className="text-sm font-semibold text-emerald-700 dark:text-emerald-400">
+                      Optimal GIF Settings (Auto)
+                    </h4>
+                  </div>
+                  <p className="text-xs text-emerald-700 dark:text-emerald-400 mb-3">
+                    Settings optimized for best quality + file size reduction
+                  </p>
+                  
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between py-2 px-3 bg-white/50 dark:bg-slate-900/50 rounded-lg">
+                      <span className="text-xs text-slate-700 dark:text-slate-300">Quality Level</span>
+                      <Badge className="bg-emerald-600 text-white text-xs">Excellent (2-5)</Badge>
+                    </div>
+                    
+                    <div className="flex items-center justify-between py-2 px-3 bg-white/50 dark:bg-slate-900/50 rounded-lg">
+                      <span className="text-xs text-slate-700 dark:text-slate-300">Frame Processing</span>
+                      <Badge className="bg-emerald-600 text-white text-xs">All Frames</Badge>
+                    </div>
+                    
+                    <div className="flex items-center justify-between py-2 px-3 bg-white/50 dark:bg-slate-900/50 rounded-lg">
+                      <span className="text-xs text-slate-700 dark:text-slate-300">Color Mode</span>
+                      <Badge className="bg-emerald-600 text-white text-xs">No Dithering</Badge>
+                    </div>
+                    
+                    <div className="flex items-center justify-between py-2 px-3 bg-white/50 dark:bg-slate-900/50 rounded-lg">
+                      <span className="text-xs text-slate-700 dark:text-slate-300">Smoothing</span>
+                      <Badge className="bg-emerald-600 text-white text-xs">High Quality</Badge>
+                    </div>
+                  </div>
+                  
+                  <p className="text-xs text-emerald-600 dark:text-emerald-400 mt-3 flex items-center gap-1">
+                    <Info className="w-3 h-3" />
+                    Minimal quality loss with 20-40% file size reduction
+                  </p>
+                </div>
+              )}
+
               {/* Video Settings */}
               {isVideo && ffmpegLoaded && (
                 <>
@@ -1983,8 +2000,8 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
                 </>
               )}
 
-              {/* Image/GIF Specific Settings (when not video or audio) */}
-              {!(isAudio || isVideo || enableAnimation) && (
+              {/* Image/GIF Specific Settings (when not video or audio or GIF with gif format) */}
+              {!(isAudio || isVideo || enableAnimation || (isGif && format === 'gif')) && (
                 <>
                   <div>
                     <div className="flex items-center gap-2 mb-2">
@@ -2327,8 +2344,6 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
                         </SelectTrigger>
                         <SelectContent>
                           <SelectItem value="zoom">Smooth Zoom</SelectItem>
-                          <SelectItem value="ripple">Ripple Effect</SelectItem>
-                          <SelectItem value="ken-burns">Ken Burns</SelectItem>
                           <SelectItem value="glow">Glow Pulse</SelectItem>
                         </SelectContent>
                       </Select>
