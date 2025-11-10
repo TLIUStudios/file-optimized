@@ -69,7 +69,7 @@ export default function ImageCard({ image, onRemove, onProcessed, onCompare, aut
 
   // Auto-process when autoProcess is triggered
   useEffect(() => {
-    if (autoProcess > 0 && !processed && !processing && processImageRef.current) {
+    if (autoProcess && !processed && !processing && processImageRef.current) {
       processImageRef.current();
     }
   }, [autoProcess, processed, processing]);
@@ -777,8 +777,8 @@ export default function ImageCard({ image, onRemove, onProcessed, onCompare, aut
                   </Tooltip>
                 </div>
                 <Slider
-                  value={[Number(quality) || 80]}
-                  onValueChange={(value) => setQuality(Number(value[0]) || 80)}
+                  value={[quality]}
+                  onValueChange={(value) => setQuality(value[0])}
                   min={1}
                   max={100}
                   step={1}
@@ -805,8 +805,8 @@ export default function ImageCard({ image, onRemove, onProcessed, onCompare, aut
                   <input
                     type="number"
                     placeholder="Auto"
-                    value={maxWidth !== null ? maxWidth : ''}
-                    onChange={(e) => setMaxWidth(e.target.value ? parseInt(e.target.value, 10) : null)}
+                    value={maxWidth || ''}
+                    onChange={(e) => setMaxWidth(e.target.value ? parseInt(e.target.value) : null)}
                     className="w-full h-9 px-3 rounded-md border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 text-sm"
                     disabled={processing}
                   />
@@ -828,8 +828,8 @@ export default function ImageCard({ image, onRemove, onProcessed, onCompare, aut
                   <input
                     type="number"
                     placeholder="Auto"
-                    value={maxHeight !== null ? maxHeight : ''}
-                    onChange={(e) => setMaxHeight(e.target.value ? parseInt(e.target.value, 10) : null)}
+                    value={maxHeight || ''}
+                    onChange={(e) => setMaxHeight(e.target.value ? parseInt(e.target.value) : null)}
                     className="w-full h-9 px-3 rounded-md border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 text-sm"
                     disabled={processing}
                   />
