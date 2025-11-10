@@ -89,10 +89,10 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
 
   // Load FFmpeg when video/audio is uploaded
   useEffect(() => {
-    if ((isVideo || isAudio || isGif) && !ffmpegLoaded && !ffmpegLoading) { // isGif added to trigger FFmpeg for GIF conversion
+    if ((isVideo || isAudio || (isGif && format === 'mp4')) && !ffmpegLoaded && !ffmpegLoading) { // isGif added to trigger FFmpeg for GIF conversion
       loadFFmpeg();
     }
-  }, [isVideo, isAudio, isGif, ffmpegLoaded, ffmpegLoading]);
+  }, [isVideo, isAudio, isGif, format, ffmpegLoaded, ffmpegLoading]);
 
   const loadFFmpeg = async () => {
     if (ffmpegLoading || ffmpegLoaded) return;
@@ -228,8 +228,8 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
         }
         await processAudio();
       } else if (isGif) {
-        if (!ffmpegLoaded) {
-          toast.error('Video processor still loading (needed for GIF conversions). Please wait...');
+        if (!ffmpegLoaded && format === 'mp4') { // Only block if MP4 conversion is requested
+          toast.error('Video processor still loading (needed for GIF to MP4 conversion). Please wait...');
           setProcessing(false);
           return;
         }
@@ -1624,7 +1624,7 @@ Make animations dynamic with REAL motion - characters move, swing weapons, chang
                   size="sm"
                   variant={displayFormat === fmt ? "default" : "outline"}
                   onClick={() => convertFormat(fmt)}
-                  disabled={displayFormat === fmt || processing || ffmpegLoading}
+                  disabled={displayFormat === fmt || processing || (ffmpegLoading && (isVideo || isAudio || (isGif && fmt === 'mp4')))}
                   className={cn(
                     "relative text-xs h-9",
                     displayFormat === fmt && "bg-emerald-600 hover:bg-emerald-700"
@@ -1654,7 +1654,7 @@ Make animations dynamic with REAL motion - characters move, swing weapons, chang
                   size="sm"
                   variant={format === fmt ? "default" : "outline"}
                   onClick={() => setFormat(fmt)}
-                  disabled={processing || ffmpegLoading}
+                  disabled={processing || (ffmpegLoading && (isVideo || isAudio || (isGif && fmt === 'mp4')))}
                   className={cn(
                     "relative text-xs h-9",
                     format === fmt && "bg-emerald-600 hover:bg-emerald-700"
@@ -1682,237 +1682,273 @@ Make animations dynamic with REAL motion - characters move, swing weapons, chang
           </CollapsibleTrigger>
           <CollapsibleContent className="space-y-4 mt-4">
             <TooltipProvider>
-              {!(isAudio || (isImage && enableAnimation) || isVideo) && ( // Don't show for audio or image animations or video (video has its own compression settings)
-                <div>
-                  <div className="flex items-center gap-2 mb-2">
-                    <label className="text-xs font-medium text-slate-700 dark:text-slate-300">
-                      Compression Mode
-                    </label>
+              {/* Loading state for FFmpeg */}
+              {(isVideo || isAudio || (isGif && format === 'mp4')) && ffmpegLoading && (
+                <div className="bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800 rounded-lg p-3">
+                  <div className="flex items-center gap-2">
+                    <Loader2 className="w-4 h-4 animate-spin text-emerald-600" />
+                    <p className="text-xs text-emerald-700 dark:text-emerald-400">
+                      <strong>Loading video/audio processor...</strong>
+                    </p>
                   </div>
-                  <Select value={compressionMode} onValueChange={setCompressionMode} disabled={processing}>
-                    <SelectTrigger className="h-9">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="balanced">Balanced</SelectItem>
-                      <SelectItem value="aggressive">Aggressive</SelectItem>
-                      <SelectItem value="maximum">Maximum</SelectItem>
-                    </SelectContent>
-                  </Select>
                 </div>
               )}
 
-              {!(isAudio) && ( // Show quality for images, GIFs, video (and animations). Audio has its own quality setting
-                <div>
-                  <div className="flex items-center gap-2 mb-2">
-                    <label className="text-xs font-medium text-slate-700 dark:text-slate-300">
+              {/* Video Settings */}
+              {isVideo && ffmpegLoaded && (
+                <>
+                  <div>
+                    <label className="text-xs font-medium text-slate-700 dark:text-slate-300 mb-2 block">
                       Quality: {quality}%
                     </label>
-                  </div>
-                  <Slider
-                    value={[quality]}
-                    onValueChange={(value) => setQuality(value[0])}
-                    min={1}
-                    max={100}
-                    step={1}
-                    className="w-full"
-                    disabled={processing}
-                  />
-                </div>
-              )}
-              
-              {isGif && (
-                <div>
-                  <div className="flex items-center gap-2 mb-2">
-                    <label className="text-xs font-medium text-slate-700 dark:text-slate-300">
-                      GIF Optimization
-                    </label>
-                  </div>
-                  <Select value={gifOptimization} onValueChange={setGifOptimization} disabled={processing}>
-                    <SelectTrigger className="h-9">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="balanced">Balanced (Best Quality)</SelectItem>
-                      <SelectItem value="aggressive">Aggressive (Better Compression)</SelectItem>
-                      <SelectItem value="maximum">Maximum (Smallest Size)</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              )}
-
-              {isVideo && (
-                <div className="space-y-3">
-                  <div className="flex items-center gap-2 mb-2">
-                    <label className="text-xs font-medium text-slate-700 dark:text-slate-300">
-                      Video Bitrate ({videoBitrate} kbps)
-                    </label>
-                  </div>
-                  <Slider
-                    value={[videoBitrate]}
-                    onValueChange={(value) => setVideoBitrate(value[0])}
-                    min={100}
-                    max={5000}
-                    step={100}
-                    className="w-full"
-                    disabled={processing}
-                  />
-
-                  <div>
-                    <div className="flex items-center gap-2 mb-2">
-                      <label className="text-xs font-medium text-slate-700 dark:text-slate-300">
-                        Frame Rate
-                      </label>
-                    </div>
-                    <Select value={String(frameRate)} onValueChange={(val) => setFrameRate(parseInt(val))} disabled={processing}>
-                      <SelectTrigger className="h-9">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="24">24 fps</SelectItem>
-                        <SelectItem value="30">30 fps</SelectItem>
-                        <SelectItem value="60">60 fps</SelectItem>
-                      </SelectContent>
-                    </Select>
+                    <Slider
+                      value={[quality]}
+                      onValueChange={(value) => setQuality(value[0])}
+                      min={1}
+                      max={100}
+                      step={1}
+                      className="w-full"
+                      disabled={processing}
+                    />
                   </div>
 
                   <div>
-                    <div className="flex items-center gap-2 mb-2">
-                      <label className="text-xs font-medium text-slate-700 dark:text-slate-300">
-                        Video Resolution
-                      </label>
-                    </div>
+                    <label className="text-xs font-medium text-slate-700 dark:text-slate-300 mb-2 block">
+                      Video Bitrate: {videoBitrate} kbps
+                    </label>
+                    <Slider
+                      value={[videoBitrate]}
+                      onValueChange={(value) => setVideoBitrate(value[0])}
+                      min={500}
+                      max={5000}
+                      step={100}
+                      className="w-full"
+                      disabled={processing}
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-xs font-medium text-slate-700 dark:text-slate-300 mb-2 block">
+                      Resolution
+                    </label>
                     <Select value={videoResolution} onValueChange={setVideoResolution} disabled={processing}>
                       <SelectTrigger className="h-9">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="original">Original</SelectItem>
-                        <SelectItem value="1080p">1920x1080 (1080p)</SelectItem>
-                        <SelectItem value="720p">1280x720 (720p)</SelectItem>
-                        <SelectItem value="480p">854x480 (480p)</SelectItem>
+                        <SelectItem value="1080p">1080p (Full HD)</SelectItem>
+                        <SelectItem value="720p">720p (HD)</SelectItem>
+                        <SelectItem value="480p">480p (SD)</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
 
                   <div>
-                    <div className="flex items-center gap-2 mb-2">
-                      <label className="text-xs font-medium text-slate-700 dark:text-slate-300">
-                        Video Preset
-                      </label>
-                    </div>
+                    <label className="text-xs font-medium text-slate-700 dark:text-slate-300 mb-2 block">
+                      Frame Rate: {frameRate} fps
+                    </label>
+                    <Slider
+                      value={[frameRate]}
+                      onValueChange={(value) => setFrameRate(value[0])}
+                      min={15}
+                      max={60}
+                      step={5}
+                      className="w-full"
+                      disabled={processing}
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-xs font-medium text-slate-700 dark:text-slate-300 mb-2 block">
+                      Encoding Preset
+                    </label>
                     <Select value={videoPreset} onValueChange={setVideoPreset} disabled={processing}>
                       <SelectTrigger className="h-9">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="ultrafast">Ultrafast (Larger file, faster processing)</SelectItem>
+                        <SelectItem value="ultrafast">Ultrafast (Fastest, Larger)</SelectItem>
                         <SelectItem value="fast">Fast</SelectItem>
-                        <SelectItem value="medium">Medium (Default)</SelectItem>
-                        <SelectItem value="slow">Slow</SelectItem>
-                        <SelectItem value="veryslow">Very Slow (Smaller file, slower processing)</SelectItem>
+                        <SelectItem value="medium">Medium (Balanced)</SelectItem>
+                        <SelectItem value="slow">Slow (Better Quality)</SelectItem>
+                        <SelectItem value="veryslow">Very Slow (Best Quality)</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
-                </div>
-              )}
-              
-              {isAudio && (
-                <div className="space-y-3">
-                  <div className="flex items-center gap-2 mb-2">
-                    <label className="text-xs font-medium text-slate-700 dark:text-slate-300">
-                      Audio Bitrate ({audioBitrate} kbps)
-                    </label>
-                  </div>
-                  <Slider
-                    value={[audioBitrate]}
-                    onValueChange={(value) => setAudioBitrate(value[0])}
-                    min={32}
-                    max={320}
-                    step={16}
-                    className="w-full"
-                    disabled={processing}
-                  />
 
                   <div>
-                    <div className="flex items-center gap-2 mb-2">
-                      <label className="text-xs font-medium text-slate-700 dark:text-slate-300">
-                        Audio Quality
-                      </label>
-                    </div>
+                    <label className="text-xs font-medium text-slate-700 dark:text-slate-300 mb-2 block">
+                      Audio Bitrate: {audioBitrate} kbps
+                    </label>
+                    <Slider
+                      value={[audioBitrate]}
+                      onValueChange={(value) => setAudioBitrate(value[0])}
+                      min={64}
+                      max={320}
+                      step={16}
+                      className="w-full"
+                      disabled={processing}
+                    />
+                  </div>
+                </>
+              )}
+
+              {/* Audio Settings */}
+              {isAudio && ffmpegLoaded && (
+                <>
+                  <div>
+                    <label className="text-xs font-medium text-slate-700 dark:text-slate-300 mb-2 block">
+                      Audio Bitrate: {audioBitrate} kbps
+                    </label>
+                    <Slider
+                      value={[audioBitrate]}
+                      onValueChange={(value) => setAudioBitrate(value[0])}
+                      min={64}
+                      max={320}
+                      step={16}
+                      className="w-full"
+                      disabled={processing}
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-xs font-medium text-slate-700 dark:text-slate-300 mb-2 block">
+                      Audio Quality
+                    </label>
                     <Select value={audioQuality} onValueChange={setAudioQuality} disabled={processing}>
                       <SelectTrigger className="h-9">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="high">High</SelectItem>
-                        <SelectItem value="standard">Standard</SelectItem>
-                        <SelectItem value="low">Low</SelectItem>
+                        <SelectItem value="high">High Quality</SelectItem>
+                        <SelectItem value="standard">Standard (Recommended)</SelectItem>
+                        <SelectItem value="low">Low (Smaller Size)</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
-                </div>
-              )}
-              
-              {(isImage && !isGif && !enableAnimation) && ( // Apply max width/height for static images. For animation, it's handled by processImageToAnimation
-                <div className="grid grid-cols-2 gap-2">
-                  <div>
-                    <div className="flex items-center gap-1 mb-1">
-                      <label className="text-xs font-medium text-slate-700 dark:text-slate-300">
-                        Max Width (px)
-                      </label>
-                    </div>
-                    <input
-                      type="number"
-                      placeholder="Auto"
-                      value={maxWidth || ''}
-                      onChange={(e) => setMaxWidth(e.target.value ? parseInt(e.target.value) : null)}
-                      className="w-full h-9 px-3 rounded-md border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 text-sm"
-                      disabled={processing}
-                    />
-                  </div>
-                  <div>
-                    <div className="flex items-center gap-1 mb-1">
-                      <label className="text-xs font-medium text-slate-700 dark:text-slate-300">
-                        Max Height (px)
-                      </label>
-                    </div>
-                    <input
-                      type="number"
-                      placeholder="Auto"
-                      value={maxHeight || ''}
-                      onChange={(e) => setMaxHeight(e.target.value ? parseInt(e.target.value) : null)}
-                      className="w-full h-9 px-3 rounded-md border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 text-sm"
-                      disabled={processing}
-                    />
-                  </div>
-                </div>
+                </>
               )}
 
-              {(isImage && !isGif && !enableAnimation) && ( // Metadata/noise reduction only for static images, not for animations
-                <div className="space-y-3 pt-2 border-t border-slate-200 dark:border-slate-800">
-                  <div className="flex items-center justify-between">
-                    <label className="text-xs font-medium text-slate-700 dark:text-slate-300">
-                      Strip Metadata
-                    </label>
-                    <Switch
-                      checked={stripMetadata}
-                      onCheckedChange={setStripMetadata}
-                      disabled={processing}
-                    />
+              {/* Image/GIF Specific Settings (when not video, audio, or AI animation) */}
+              {!(isAudio || isVideo || (isImage && enableAnimation)) && (
+                <>
+                  <div>
+                    <div className="flex items-center gap-2 mb-2">
+                      <label className="text-xs font-medium text-slate-700 dark:text-slate-300">
+                        Compression Mode
+                      </label>
+                    </div>
+                    <Select value={compressionMode} onValueChange={setCompressionMode} disabled={processing}>
+                      <SelectTrigger className="h-9">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="balanced">Balanced</SelectItem>
+                        <SelectItem value="aggressive">Aggressive</SelectItem>
+                        <SelectItem value="maximum">Maximum</SelectItem>
+                      </SelectContent>
+                    </Select>
                   </div>
 
-                  <div className="flex items-center justify-between">
-                    <label className="text-xs font-medium text-slate-700 dark:text-slate-300">
-                      Noise Reduction
-                    </label>
-                    <Switch
-                      checked={noiseReduction}
-                      onCheckedChange={setNoiseReduction}
+                  <div>
+                    <div className="flex items-center gap-2 mb-2">
+                      <label className="text-xs font-medium text-slate-700 dark:text-slate-300">
+                        Quality: {quality}%
+                      </label>
+                    </div>
+                    <Slider
+                      value={[quality]}
+                      onValueChange={(value) => setQuality(value[0])}
+                      min={1}
+                      max={100}
+                      step={1}
+                      className="w-full"
                       disabled={processing}
                     />
                   </div>
-                </div>
+                  
+                  {isGif && (
+                    <div>
+                      <div className="flex items-center gap-2 mb-2">
+                        <label className="text-xs font-medium text-slate-700 dark:text-slate-300">
+                          GIF Optimization
+                        </label>
+                      </div>
+                      <Select value={gifOptimization} onValueChange={setGifOptimization} disabled={processing}>
+                        <SelectTrigger className="h-9">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="balanced">Balanced (Best Quality)</SelectItem>
+                          <SelectItem value="aggressive">Aggressive (Better Compression)</SelectItem>
+                          <SelectItem value="maximum">Maximum (Smallest Size)</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
+                  
+                  {(isImage && !isGif && !enableAnimation) && (
+                    <div className="grid grid-cols-2 gap-2">
+                      <div>
+                        <div className="flex items-center gap-1 mb-1">
+                          <label className="text-xs font-medium text-slate-700 dark:text-slate-300">
+                            Max Width (px)
+                          </label>
+                        </div>
+                        <input
+                          type="number"
+                          placeholder="Auto"
+                          value={maxWidth || ''}
+                          onChange={(e) => setMaxWidth(e.target.value ? parseInt(e.target.value) : null)}
+                          className="w-full h-9 px-3 rounded-md border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 text-sm"
+                          disabled={processing}
+                        />
+                      </div>
+                      <div>
+                        <div className="flex items-center gap-1 mb-1">
+                          <label className="text-xs font-medium text-slate-700 dark:text-slate-300">
+                            Max Height (px)
+                          </label>
+                        </div>
+                        <input
+                          type="number"
+                          placeholder="Auto"
+                          value={maxHeight || ''}
+                          onChange={(e) => setMaxHeight(e.target.value ? parseInt(e.target.value) : null)}
+                          className="w-full h-9 px-3 rounded-md border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 text-sm"
+                          disabled={processing}
+                        />
+                      </div>
+                    </div>
+                  )}
+
+                  {(isImage && !isGif && !enableAnimation) && (
+                    <div className="space-y-3 pt-2 border-t border-slate-200 dark:border-slate-800">
+                      <div className="flex items-center justify-between">
+                        <label className="text-xs font-medium text-slate-700 dark:text-slate-300">
+                          Strip Metadata
+                        </label>
+                        <Switch
+                          checked={stripMetadata}
+                          onCheckedChange={setStripMetadata}
+                          disabled={processing}
+                        />
+                      </div>
+
+                      <div className="flex items-center justify-between">
+                        <label className="text-xs font-medium text-slate-700 dark:text-slate-300">
+                          Noise Reduction
+                        </label>
+                        <Switch
+                          checked={noiseReduction}
+                          onCheckedChange={setNoiseReduction}
+                          disabled={processing}
+                        />
+                      </div>
+                    </div>
+                  )}
+                </>
               )}
             </TooltipProvider>
           </CollapsibleContent>
@@ -2257,7 +2293,7 @@ Make animations dynamic with REAL motion - characters move, swing weapons, chang
           {!processed ? (
             <Button
               onClick={processMedia}
-              disabled={processing || (isVideo && !ffmpegLoaded) || (isAudio && !ffmpegLoaded) || (isGif && !ffmpegLoaded && format === 'mp4') || (enableAnimation && !gifJsLoaded)}
+              disabled={processing || (isVideo && !ffmpegLoaded) || (isAudio && !ffmpegLoaded) || (isGif && format === 'mp4' && !ffmpegLoaded) || (enableAnimation && !gifJsLoaded)}
               className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white"
             >
               {processing ? (
@@ -2278,7 +2314,7 @@ Make animations dynamic with REAL motion - characters move, swing weapons, chang
                 onClick={processMedia}
                 variant="outline"
                 className="flex-1"
-                disabled={processing || (isVideo && !ffmpegLoaded) || (isAudio && !ffmpegLoaded) || (isGif && !ffmpegLoaded && format === 'mp4') || (enableAnimation && !gifJsLoaded)}
+                disabled={processing || (isVideo && !ffmpegLoaded) || (isAudio && !ffmpegLoaded) || (isGif && format === 'mp4' && !ffmpegLoaded) || (enableAnimation && !gifJsLoaded)}
               >
                 <RefreshCcw className="w-4 h-4 mr-2" />
                 Reprocess
