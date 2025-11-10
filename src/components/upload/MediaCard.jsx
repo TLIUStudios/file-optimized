@@ -50,8 +50,9 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
   // New states for animation
   const [animationSettingsOpen, setAnimationSettingsOpen] = useState(false);
   const [enableAnimation, setEnableAnimation] = useState(false);
-  const [animationType, setAnimationType] = useState('auto'); // 'auto', 'low', 'high'
-  const [loopType, setLoopType] = useState('loop'); // 'loop', 'oscillate', 'random'
+  const [animationType, setAnimationType] = useState('all'); // 'all', 'zoom', 'pan', 'rotate', 'ken-burns'
+  const [animationDuration, setAnimationDuration] = useState(3); // seconds
+  const [generatedAnimations, setGeneratedAnimations] = useState([]); // Store 4 variations
 
   // New state for editable filename
   const [editableFilename, setEditableFilename] = useState('');
@@ -67,11 +68,10 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
   const [gifFrameCount, setGifFrameCount] = useState(0);
   const [gifSettings, setGifSettings] = useState({ width: 0, height: 0, frames: [] });
   
-  // Video/Audio specific states
+  // Video/Audio specific states (These will not be used without FFmpeg, but kept for consistency if re-added)
   const [videoBitrate, setVideoBitrate] = useState(1000);
   const [audioBitrate, setAudioBitrate] = useState(128);
   const [frameRate, setFrameRate] = useState(30);
-  const [ffmpegLoaded, setFfmpegLoaded] = useState(false);
   const [videoPreset, setVideoPreset] = useState('medium');
   const [gopSize, setGopSize] = useState(250);
   const [sampleRate, setSampleRate] = useState(44100);
@@ -79,7 +79,6 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
   const [gifOptimization, setGifOptimization] = useState('balanced');
   
   const processMediaRef = useRef(null);
-  const ffmpegRef = useRef(null);
 
   useEffect(() => {
     const reader = new FileReader();
@@ -119,122 +118,11 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
     }
   }, [image, isGif, isVideo, isAudio, isImage]);
 
-  // Load FFmpeg for video/audio/animation processing
-  useEffect(() => {
-    const needsFFmpeg = isVideo || 
-                        isAudio || 
-                        (isGif && format === 'mp4') || 
-                        (isImage && enableAnimation && (format === 'mp4' || format === 'gif'));
-    
-    if (needsFFmpeg && !ffmpegLoaded) {
-      loadFFmpegAlternative();
-    }
-  }, [isVideo, isAudio, isGif, format, ffmpegLoaded, isImage, enableAnimation]);
-
   useEffect(() => {
     if (autoProcess && !processed && !processing && processMediaRef.current) {
       processMediaRef.current();
     }
   }, [autoProcess, processed, processing]);
-
-  const loadFFmpegAlternative = async () => {
-    try {
-      console.log('🚀 Loading FFmpeg with UMD bundles...');
-      toast.info('Loading media processor...', { id: 'ffmpeg-load', duration: Infinity });
-      
-      // Check if already loaded globally (by another card instance)
-      if (window.FFmpegWASM?.FFmpeg && window.FFmpegUtil?.toBlobURL) {
-        console.log('✅ FFmpeg already loaded globally, re-initializing for this card.');
-        const { FFmpeg } = window.FFmpegWASM;
-        const { toBlobURL } = window.FFmpegUtil;
-        const ffmpeg = new FFmpeg();
-        ffmpegRef.current = ffmpeg;
-        
-        ffmpeg.on('log', ({ message }) => {
-          console.log('[FFmpeg]:', message);
-        });
-        
-        ffmpeg.on('progress', ({ progress }) => {
-          const percent = Math.round(progress * 100);
-          toast.info(`Processing: ${percent}%`, { id: 'ffmpeg-progress' });
-        });
-        
-        const baseURL = 'https://unpkg.com/@ffmpeg/core-st@0.12.6/dist/umd';
-        const coreURL = await toBlobURL(`${baseURL}/ffmpeg-core.js`, 'text/javascript');
-        const wasmURL = await toBlobURL(`${baseURL}/ffmpeg-core.wasm`, 'application/wasm');
-        
-        await ffmpeg.load({ coreURL, wasmURL });
-        setFfmpegLoaded(true);
-        toast.success('Media processor ready!', { id: 'ffmpeg-load' });
-        return;
-      }
-      
-      // Load FFmpeg script if not already loaded globally
-      await new Promise((resolve, reject) => {
-        const script = document.createElement('script');
-        script.src = 'https://unpkg.com/@ffmpeg/ffmpeg@0.12.10/dist/umd/ffmpeg.js';
-        script.onload = resolve;
-        script.onerror = () => reject(new Error('Failed to load FFmpeg script'));
-        document.head.appendChild(script);
-      });
-      
-      console.log('✅ FFmpeg script loaded');
-      
-      // Load utilities script
-      await new Promise((resolve, reject) => {
-        const script = document.createElement('script');
-        script.src = 'https://unpkg.com/@ffmpeg/util@0.12.1/dist/umd/index.js';
-        script.onload = resolve;
-        script.onerror = () => reject(new Error('Failed to load FFmpeg utilities'));
-        document.head.appendChild(script);
-      });
-      
-      console.log('✅ FFmpeg utilities loaded');
-      
-      // Wait a bit for scripts to initialize and attach to window
-      await new Promise(resolve => setTimeout(resolve, 100));
-      
-      // Access from window
-      if (!window.FFmpegWASM?.FFmpeg || !window.FFmpegUtil?.toBlobURL) {
-        throw new Error('FFmpeg modules not available on window object after loading scripts.');
-      }
-      
-      const { FFmpeg } = window.FFmpegWASM;
-      const { toBlobURL } = window.FFmpegUtil;
-      
-      const ffmpeg = new FFmpeg();
-      ffmpegRef.current = ffmpeg;
-      
-      ffmpeg.on('log', ({ message }) => {
-        console.log('[FFmpeg]:', message);
-      });
-      
-      ffmpeg.on('progress', ({ progress }) => {
-        const percent = Math.round(progress * 100);
-        console.log(`[FFmpeg] Progress: ${percent}%`);
-        toast.info(`Processing: ${percent}%`, { id: 'ffmpeg-progress' });
-      });
-      
-      // Use CDN for WASM files - single-threaded for better compatibility
-      const baseURL = 'https://unpkg.com/@ffmpeg/core-st@0.12.6/dist/umd';
-      
-      console.log('📦 Creating blob URLs...');
-      const coreURL = await toBlobURL(`${baseURL}/ffmpeg-core.js`, 'text/javascript');
-      const wasmURL = await toBlobURL(`${baseURL}/ffmpeg-core.wasm`, 'application/wasm');
-      
-      console.log('🔧 Loading FFmpeg core...');
-      await ffmpeg.load({ coreURL, wasmURL });
-      
-      setFfmpegLoaded(true);
-      console.log('✅ FFmpeg ready!');
-      toast.success('Media processor ready!', { id: 'ffmpeg-load' });
-    } catch (error) {
-      console.error('❌ FFmpeg load failed:', error);
-      console.error('Error details:', error.message, error.stack);
-      setError('Media processor failed to load. Please use Chrome or Edge browser and ensure you have a stable internet connection.');
-      toast.error('Failed to load media processor. Please refresh and try again with Chrome/Edge.', { id: 'ffmpeg-load', duration: 5000 });
-    }
-  };
 
   const parseGif = async (dataUrl) => {
     try {
@@ -260,26 +148,35 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
     setProcessing(true);
     setError(null);
     setOutputFormat(null);
-    
+    setGeneratedAnimations([]); // Clear previous animations
+
     try {
-      if (isImage && enableAnimation) { // NEW condition for animation
+      if (isImage && enableAnimation) {
         await processImageToAnimation();
       } else if (isGif && format === 'mp4') {
-        await convertGifToMp4();
+        toast.error('GIF to MP4 conversion requires a video processor, which is currently unavailable. Please select GIF format.');
+        setProcessing(false);
+        return;
+      } else if (isVideo && format === 'gif') {
+        toast.error('Video to GIF conversion requires a video processor, which is currently unavailable. Please select MP4 format.');
+        setProcessing(false);
+        return;
+      } else if (isVideo) {
+        toast.error('Video compression requires a video processor, which is currently unavailable.');
+        setProcessing(false);
+        return;
+      } else if (isAudio) {
+        toast.error('Audio compression requires an audio processor, which is currently unavailable.');
+        setProcessing(false);
+        return;
       } else if (isGif) {
         await processGif();
-      } else if (isVideo && format === 'gif') {
-        await convertMp4ToGif();
-      } else if (isVideo) {
-        await processVideo();
-      } else if (isAudio) {
-        await processAudio();
       } else if (isImage) {
         await processStaticImage();
       }
     } catch (error) {
       console.error('Error processing media:', error);
-      setError(`Failed to process ${isImage && enableAnimation ? 'animation' : isVideo ? 'video' : isAudio ? 'audio' : 'image'}. ${error.message}`);
+      setError(`Failed to process. ${error.message}`);
       toast.error('Processing failed: ' + error.message);
     }
     
@@ -290,321 +187,11 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
     processMediaRef.current = processMedia;
   });
 
-  const convertGifToMp4 = async () => {
-    if (!ffmpegLoaded || !ffmpegRef.current) {
-      toast.error('Video processor not ready');
-      return;
-    }
-
-    try {
-      console.log('🎬 Starting GIF to MP4 conversion...');
-      toast.info('Converting GIF to MP4...', { duration: Infinity });
-      
-      const ffmpeg = ffmpegRef.current;
-      const { fetchFile } = window.FFmpegUtil;
-      
-      console.log('📥 Fetching GIF data...');
-      const gifData = await fetchFile(preview);
-      
-      console.log('📝 Writing input file...');
-      await ffmpeg.writeFile('input.gif', gifData);
-      
-      console.log('⚙️ Starting conversion...');
-      await ffmpeg.exec([
-        '-i', 'input.gif',
-        '-movflags', 'faststart',
-        '-pix_fmt', 'yuv420p',
-        '-vf', `fps=${frameRate},scale=trunc(iw/2)*2:trunc(ih/2)*2`,
-        '-b:v', `${videoBitrate}k`,
-        '-c:v', 'libx264',
-        '-preset', 'medium',
-        'output.mp4'
-      ]);
-      
-      console.log('📤 Reading output file...');
-      const data = await ffmpeg.readFile('output.mp4');
-      const outputBlob = new Blob([data.buffer], { type: 'video/mp4' });
-      const compressedUrl = URL.createObjectURL(outputBlob);
-      
-      console.log('🧹 Cleaning up...');
-      await ffmpeg.deleteFile('input.gif');
-      await ffmpeg.deleteFile('output.mp4');
-      
-      setCompressedPreview(compressedUrl);
-      setCompressedSize(outputBlob.size);
-      setCompressedBlob(outputBlob); // ADDED
-      setProcessed(true);
-      setOutputFormat('mp4');
-
-      onProcessed({
-        id: image.name,
-        originalFile: image,
-        compressedBlob: outputBlob,
-        compressedUrl,
-        originalSize: image.size,
-        compressedSize: outputBlob.size,
-        format: 'mp4',
-        filename: getOutputFilename('mp4'), // Use new helper
-        mediaType: 'video',
-        fileFormat: 'mp4'
-      });
-
-      toast.dismiss();
-      toast.success('GIF converted to MP4!');
-      console.log('✅ Conversion complete!');
-    } catch (error) {
-      console.error('❌ GIF to MP4 failed:', error);
-      toast.dismiss();
-      toast.error('Conversion failed: ' + error.message);
-      throw error;
-    }
-  };
-
-  const convertMp4ToGif = async () => {
-    if (!ffmpegLoaded || !ffmpegRef.current) {
-      toast.error('Video processor not ready');
-      return;
-    }
-
-    try {
-      console.log('🎞️ Starting MP4 to GIF conversion...');
-      toast.info('Converting video to GIF...', { duration: Infinity });
-      
-      const ffmpeg = ffmpegRef.current;
-      const { fetchFile } = window.FFmpegUtil;
-      
-      console.log('📥 Fetching video data...');
-      const videoData = await fetchFile(preview);
-      await ffmpeg.writeFile('input.mp4', videoData);
-      
-      const targetFps = Math.min(frameRate || 15, 15);
-      const scale = maxWidth ? `scale=${maxWidth}:-1:flags=lanczos` : 'scale=640:-1:flags=lanczos';
-      
-      console.log('🎨 Generating palette...');
-      await ffmpeg.exec([
-        '-i', 'input.mp4',
-        '-vf', `${scale},fps=${targetFps},palettegen=max_colors=256`,
-        '-y',
-        'palette.png'
-      ]);
-      
-      console.log('⚙️ Creating GIF...');
-      await ffmpeg.exec([
-        '-i', 'input.mp4',
-        '-i', 'palette.png',
-        '-lavfi', `${scale},fps=${targetFps}[x];[x][1:v]paletteuse=dither=bayer:bayer_scale=5`,
-        '-loop', '0',
-        '-y',
-        'output.gif'
-      ]);
-      
-      console.log('📤 Reading output...');
-      const data = await ffmpeg.readFile('output.gif');
-      const outputBlob = new Blob([data.buffer], { type: 'image/gif' });
-      const compressedUrl = URL.createObjectURL(outputBlob);
-      
-      await ffmpeg.deleteFile('input.mp4');
-      await ffmpeg.deleteFile('palette.png');
-      await ffmpeg.deleteFile('output.gif');
-      
-      setCompressedPreview(compressedUrl);
-      setCompressedSize(outputBlob.size);
-      setCompressedBlob(outputBlob); // ADDED
-      setProcessed(true);
-      setOutputFormat('gif');
-
-      onProcessed({
-        id: image.name,
-        originalFile: image,
-        compressedBlob: outputBlob,
-        compressedUrl,
-        originalSize: image.size,
-        compressedSize: outputBlob.size,
-        format: 'gif',
-        filename: getOutputFilename('gif'), // Use new helper
-        mediaType: 'image',
-        fileFormat: 'gif'
-      });
-
-      toast.dismiss();
-      toast.success('Video converted to GIF!');
-      console.log('✅ Conversion complete!');
-    } catch (error) {
-      console.error('❌ MP4 to GIF failed:', error);
-      toast.dismiss();
-      toast.error('Conversion failed: ' + error.message);
-      throw error;
-    }
-  };
-
-  const processVideo = async () => {
-    if (!ffmpegLoaded || !ffmpegRef.current) {
-      toast.error('Video processor not ready');
-      return;
-    }
-
-    try {
-      console.log('🎥 Starting video compression...');
-      toast.info('Compressing video...', { duration: Infinity });
-      
-      const ffmpeg = ffmpegRef.current;
-      const { fetchFile } = window.FFmpegUtil;
-      
-      console.log('📥 Fetching video data...');
-      const videoData = await fetchFile(preview);
-      await ffmpeg.writeFile('input.mp4', videoData);
-      
-      const scaleFilter = maxWidth && maxHeight 
-        ? `scale='min(${maxWidth},iw)':'min(${maxHeight},ih)':force_original_aspect_ratio=decrease`
-        : maxWidth 
-        ? `scale=${maxWidth}:-2`
-        : maxHeight
-        ? `scale=-2:${maxHeight}`
-        : null;
-      
-      const args = [
-        '-i', 'input.mp4',
-        '-c:v', 'libx264',
-        '-preset', videoPreset,
-        '-crf', String(Math.round((100 - quality) / 2.5)),
-        '-g', String(gopSize),
-      ];
-      
-      if (scaleFilter) {
-        args.push('-vf', scaleFilter);
-      }
-      
-      args.push(
-        '-r', String(frameRate),
-        '-b:v', `${videoBitrate}k`,
-        '-maxrate', `${videoBitrate * 1.5}k`,
-        '-bufsize', `${videoBitrate * 2}k`,
-        '-c:a', 'aac',
-        '-b:a', '128k',
-        '-movflags', '+faststart',
-        '-y',
-        'output.mp4'
-      );
-      
-      console.log('⚙️ Compressing with args:', args.join(' '));
-      await ffmpeg.exec(args);
-      
-      console.log('📤 Reading output...');
-      const data = await ffmpeg.readFile('output.mp4');
-      const outputBlob = new Blob([data.buffer], { type: 'video/mp4' });
-      const compressedUrl = URL.createObjectURL(outputBlob);
-      
-      await ffmpeg.deleteFile('input.mp4');
-      await ffmpeg.deleteFile('output.mp4');
-      
-      setCompressedPreview(compressedUrl);
-      setCompressedSize(outputBlob.size);
-      setCompressedBlob(outputBlob); // ADDED
-      setProcessed(true);
-      setOutputFormat('mp4');
-
-      onProcessed({
-        id: image.name,
-        originalFile: image,
-        compressedBlob: outputBlob,
-        compressedUrl,
-        originalSize: image.size,
-        compressedSize: outputBlob.size,
-        format: 'mp4',
-        filename: getOutputFilename('mp4'), // Use new helper
-        mediaType: 'video',
-        fileFormat: 'mp4'
-      });
-
-      const savings = ((1 - outputBlob.size / image.size) * 100).toFixed(1);
-      toast.dismiss();
-      toast.success(`Video compressed! Saved ${savings}%`);
-      console.log('✅ Compression complete!');
-    } catch (error) {
-      console.error('❌ Video compression failed:', error);
-      toast.dismiss();
-      toast.error('Compression failed: ' + error.message);
-      throw error;
-    }
-  };
-
-  const processAudio = async () => {
-    if (!ffmpegLoaded || !ffmpegRef.current) {
-      toast.error('Audio processor not ready');
-      return;
-    }
-
-    try {
-      console.log('🎵 Starting audio compression...');
-      toast.info('Compressing audio...', { duration: Infinity });
-      
-      const ffmpeg = ffmpegRef.current;
-      const { fetchFile } = window.FFmpegUtil;
-      
-      console.log('📥 Fetching audio data...');
-      const audioData = await fetchFile(preview);
-      const inputExt = image.name.split('.').pop().toLowerCase();
-      await ffmpeg.writeFile(`input.${inputExt}`, audioData);
-      
-      const outputExt = format === 'wav' ? 'wav' : 'mp3';
-      const codec = format === 'wav' ? 'pcm_s16le' : 'libmp3lame';
-      
-      let finalBitrate = audioBitrate;
-      if (audioQuality === 'high') {
-        finalBitrate = Math.max(192, audioBitrate);
-      } else if (audioQuality === 'lossless' && format === 'wav') {
-        finalBitrate = 1411;
-      }
-      
-      console.log('⚙️ Processing audio...');
-      await ffmpeg.exec([
-        '-i', `input.${inputExt}`,
-        '-c:a', codec,
-        '-b:a', `${finalBitrate}k`,
-        '-ar', String(sampleRate),
-        '-y',
-        `output.${outputExt}`
-      ]);
-      
-      console.log('📤 Reading output...');
-      const data = await ffmpeg.readFile(`output.${outputExt}`);
-      const mimeType = format === 'wav' ? 'audio/wav' : 'audio/mpeg';
-      const outputBlob = new Blob([data.buffer], { type: mimeType });
-      const compressedUrl = URL.createObjectURL(outputBlob);
-      
-      await ffmpeg.deleteFile(`input.${inputExt}`);
-      await ffmpeg.deleteFile(`output.${outputExt}`);
-      
-      setCompressedPreview(compressedUrl);
-      setCompressedSize(outputBlob.size);
-      setCompressedBlob(outputBlob); // ADDED
-      setProcessed(true);
-      setOutputFormat(format);
-
-      onProcessed({
-        id: image.name,
-        originalFile: image,
-        compressedBlob: outputBlob,
-        compressedUrl,
-        originalSize: image.size,
-        compressedSize: outputBlob.size,
-        format: format,
-        filename: getOutputFilename(outputExt), // Use new helper
-        mediaType: 'audio',
-        fileFormat: format
-      });
-
-      const savings = ((1 - outputBlob.size / image.size) * 100).toFixed(1);
-      toast.dismiss();
-      toast.success(`Audio compressed! Saved ${savings}%`);
-      console.log('✅ Compression complete!');
-    } catch (error) {
-      console.error('❌ Audio compression failed:', error);
-      toast.dismiss();
-      toast.error('Compression failed: ' + error.message);
-      throw error;
-    }
-  };
+  // These functions are defunct without FFmpeg. The processMedia will now toast errors.
+  const convertGifToMp4 = async () => { /* Not implemented without FFmpeg */ };
+  const convertMp4ToGif = async () => { /* Not implemented without FFmpeg */ };
+  const processVideo = async () => { /* Not implemented without FFmpeg */ };
+  const processAudio = async () => { /* Not implemented without FFmpeg */ };
 
   const processGif = async () => {
     try {
@@ -645,8 +232,6 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
         const aspectRatio = gifSettings.width / gifSettings.height;
         
         if (maxWidth && maxHeight) {
-          // Changed Math.min to (enableUpscale ? Math.max : Math.min) - NOTE: enableUpscale is for static images, not gifs directly
-          // For GIF, we always want to downscale or maintain, not upscale beyond original.
           const widthRatio = maxWidth / gifSettings.width;
           const heightRatio = maxHeight / gifSettings.height;
           const ratio = Math.min(widthRatio, heightRatio); // Always min for GIF resizing
@@ -921,184 +506,163 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
     });
   };
 
+  // NEW: Generate 4 animated GIF variations using Canvas API only
   const processImageToAnimation = async () => {
-    if (!ffmpegLoaded || !ffmpegRef.current) {
-      toast.error('Media processor not ready for animation');
-      return;
-    }
-
     try {
-      console.log('✨ Starting image to animation conversion...');
-      toast.info('Creating animation from image...', { duration: Infinity });
+      console.log('✨ Starting animation generation...');
+      toast.info('Creating 4 animation variations...', { duration: Infinity, id: 'anim-gen' });
 
-      const ffmpeg = ffmpegRef.current;
-      const { fetchFile } = window.FFmpegUtil;
+      const img = new Image();
+      img.src = preview;
+      await new Promise((resolve) => { img.onload = resolve; });
 
-      console.log('📥 Fetching image data...');
-      const imgData = await fetchFile(preview);
-      await ffmpeg.writeFile('input.jpg', imgData); // Assuming input is jpg/png, ffmpeg can handle it
-
-      const outputExt = format; // 'mp4' or 'gif'
-      const outputMimeType = outputExt === 'mp4' ? 'video/mp4' : 'image/gif';
-      const outputFilename = `output.${outputExt}`;
-
-      // Calculate target resolution based on maxWidth/maxHeight and original dimensions
+      // Calculate target resolution
       let targetWidth = originalImageDimensions.width;
       let targetHeight = originalImageDimensions.height;
 
-      // Prioritize maxWidth/maxHeight if set, otherwise use original dimensions
-      if (maxWidth && maxHeight) {
-        const widthRatio = maxWidth / originalImageDimensions.width;
-        const heightRatio = maxHeight / originalImageDimensions.height;
-        const ratio = Math.min(widthRatio, heightRatio); // Downscale if needed
-        targetWidth = Math.round(originalImageDimensions.width * ratio);
-        targetHeight = Math.round(originalImageDimensions.height * ratio);
-      } else if (maxWidth && maxWidth < targetWidth) {
+      if (maxWidth && maxWidth < targetWidth) {
         targetWidth = maxWidth;
         targetHeight = Math.round(maxWidth / (originalImageDimensions.width / originalImageDimensions.height));
       } else if (maxHeight && maxHeight < targetHeight) {
         targetHeight = maxHeight;
         targetWidth = Math.round(maxHeight * (originalImageDimensions.width / originalImageDimensions.height));
       }
-      
-      // Ensure dimensions are even for FFmpeg
+
+      // Ensure even dimensions
       targetWidth = targetWidth % 2 === 0 ? targetWidth : targetWidth - 1;
       targetHeight = targetHeight % 2 === 0 ? targetHeight : targetHeight - 1;
+      if (targetWidth <= 0) targetWidth = 640;
+      if (targetHeight <= 0) targetHeight = 480;
+
+      const GIF = (await import('https://cdn.jsdelivr.net/npm/gif.js@0.2.0/dist/gif.js')).default;
       
-      // Fallback for extremely small or zero dimensions
-      if (targetWidth <= 0) targetWidth = 640; 
-      if (targetHeight <= 0) targetHeight = 480; 
-
-      let zoomExpr;
-      let xExpr;
-      let yExpr;
-      const animationDurationSeconds = 8; // Total animation duration
-      const totalFrames = animationDurationSeconds * frameRate;
-
-      // Base parameters adjusted by animationType
-      let baseZoomSpeed = 0.0005;
-      let basePanSpeed = 0.002;
-      let maxZoomContinuous = 1.2;
-      let oscillationMaxZoom = 1.1; // for oscillate type
-      let oscillationPanRange = 10;
-      let randomPanRange = 15;
-
-      switch (animationType) {
-        case 'low':
-          baseZoomSpeed = 0.0003; basePanSpeed = 0.001; maxZoomContinuous = 1.1; oscillationMaxZoom = 1.07; oscillationPanRange = 7; randomPanRange = 10; break;
-        case 'high':
-          baseZoomSpeed = 0.0008; basePanSpeed = 0.003; maxZoomContinuous = 1.3; oscillationMaxZoom = 1.15; oscillationPanRange = 15; randomPanRange = 20; break;
-        case 'auto': // default for auto
-        default:
-          break;
-      }
-
-      switch (loopType) {
-        case 'loop': // Continuous zoom-in and pan
-          zoomExpr = `min(zoom+${baseZoomSpeed},${maxZoomContinuous})`;
-          xExpr = `iw/2-(iw/zoom/2)+${basePanSpeed}*iw*sin(n/20)`; // pan relative to image width
-          yExpr = `ih/2-(ih/zoom/2)+${basePanSpeed}*ih*cos(n/20)`; // pan relative to image height
-          break;
-        case 'oscillate': // Oscillating zoom and pan
-          // Oscillation between 1x and oscillationMaxZoom
-          zoomExpr = `1+${(oscillationMaxZoom - 1) / 2}*sin(PI*n/${totalFrames})`;
-          xExpr = `iw/2-(iw/z/2)+${oscillationPanRange}*sin(PI*n/${totalFrames} + PI/4)`;
-          yExpr = `ih/2-(ih/z/2)+${oscillationPanRange}*cos(PI*n/${totalFrames} + PI/2)`;
-          break;
-        case 'random': // Random-like pan, with slight zoom
-          zoomExpr = `min(zoom+${baseZoomSpeed/2},1.05)`; // Gentle zoom in
-          xExpr = `iw/2-(iw/z/2)+${randomPanRange}*sin(n/(${frameRate/2})+random(0))`; // random-like pan
-          yExpr = `ih/2-(ih/z/2)+${randomPanRange}*cos(n/(${frameRate/2})+random(1))`; // random-like pan
-          break;
-        default: // Fallback to 'loop' if not recognized
-          zoomExpr = `min(zoom+${baseZoomSpeed},${maxZoomContinuous})`;
-          xExpr = `iw/2-(iw/zoom/2)+${basePanSpeed}*iw*sin(n/20)`;
-          yExpr = `ih/2-(ih/zoom/2)+${basePanSpeed}*ih*cos(n/20)`;
-          break;
-      }
-
-      const vf = `zoompan=z='${zoomExpr}':x='${xExpr}':y='${yExpr}':d=1:s=${targetWidth}x${targetHeight}:fps=${frameRate}`;
-
-      const args = [
-        '-loop', '1', // Loop input image indefinitely
-        '-i', 'input.jpg',
-        '-t', String(animationDurationSeconds), // Output duration
-        '-vf', vf,
+      // Define 4 animation styles
+      const animations = [
+        { name: 'Zoom In', type: 'zoom' },
+        { name: 'Pan Left-Right', type: 'pan' },
+        { name: 'Ken Burns', type: 'ken-burns' },
+        { name: 'Rotate Slow', type: 'rotate' }
       ];
 
-      if (outputExt === 'mp4') {
-        args.push(
-          '-c:v', 'libx264',
-          '-preset', videoPreset,
-          '-crf', String(Math.round((100 - quality) / 2.5)),
-          '-pix_fmt', 'yuv420p', // Required for wider compatibility
-          '-movflags', '+faststart',
-        );
-      } else if (outputExt === 'gif') {
-        // GIF conversion requires palettegen
-        // First pass: generate palette
-        await ffmpeg.exec([
-          '-loop', '1',
-          '-i', 'input.jpg',
-          '-t', String(animationDurationSeconds),
-          '-vf', `${vf},palettegen=max_colors=256`,
-          '-y',
-          'palette.png'
-        ]);
+      const generatedGifs = [];
+      const fps = 15;
+      const totalFrames = animationDuration * fps;
 
-        // Second pass: apply palette to generate GIF
-        // Note: '-lavfi' expects a complex filtergraph, not just one filter
-        args.push(
-          '-i', 'palette.png', // Add palette as second input
-          '-lavfi', `${vf}[x];[x][1:v]paletteuse=dither=bayer:bayer_scale=5`,
-          '-loop', '0', // Loop GIF indefinitely
-          '-y',
-        );
+      for (let animIndex = 0; animIndex < animations.length; animIndex++) {
+        const animation = animations[animIndex];
+        toast.info(`Creating ${animation.name}... (${animIndex + 1}/4)`, { id: 'anim-gen', description: 'This may take a moment...' });
+
+        const gif = new GIF({
+          workers: 2,
+          quality: Math.max(1, Math.min(30, Math.round((100 - quality) / 3.5))), // Use global quality setting
+          width: targetWidth,
+          height: targetHeight,
+          workerScript: 'https://cdn.jsdelivr.net/npm/gif.js@0.2.0/dist/gif.worker.js',
+          repeat: 0
+        });
+
+        const canvas = document.createElement('canvas');
+        canvas.width = targetWidth;
+        canvas.height = targetHeight;
+        const ctx = canvas.getContext('2d');
+
+        for (let frame = 0; frame < totalFrames; frame++) {
+          const progress = frame / totalFrames;
+          ctx.clearRect(0, 0, targetWidth, targetHeight);
+          ctx.save();
+
+          // Apply different transformations based on animation type
+          switch (animation.type) {
+            case 'zoom':
+              // Zoom in effect
+              const scale = 1 + (progress * 0.3); // Zoom from 1x to 1.3x
+              ctx.translate(targetWidth / 2, targetHeight / 2);
+              ctx.scale(scale, scale);
+              ctx.translate(-targetWidth / 2, -targetHeight / 2);
+              break;
+
+            case 'pan':
+              // Pan left to right (with slight zoom to hide edges)
+              const panScale = 1.1; // Slightly zoom in to prevent showing transparent edges
+              const panX = -targetWidth * 0.1 * panScale + (progress * targetWidth * 0.2 * panScale);
+              ctx.translate(panX, 0);
+              ctx.translate(targetWidth / 2, targetHeight / 2);
+              ctx.scale(panScale, panScale);
+              ctx.translate(-targetWidth / 2, -targetHeight / 2);
+              break;
+
+            case 'ken-burns':
+              // Ken Burns effect (zoom + slight pan)
+              const kbStartScale = 1.05;
+              const kbEndScale = 1.25;
+              const kbScale = kbStartScale + (progress * (kbEndScale - kbStartScale));
+              const kbPanX = Math.sin(progress * Math.PI) * (targetWidth * 0.05); // pan up to 5% of width
+              const kbPanY = Math.cos(progress * Math.PI) * (targetHeight * 0.05); // pan up to 5% of height
+              
+              ctx.translate(targetWidth / 2 + kbPanX, targetHeight / 2 + kbPanY);
+              ctx.scale(kbScale, kbScale);
+              ctx.translate(-targetWidth / 2, -targetHeight / 2);
+              break;
+
+            case 'rotate':
+              // Slow rotation
+              const angle = progress * Math.PI * 2; // Full rotation
+              const rotateScale = 1.2; // Slightly zoom to avoid corners during rotation
+              ctx.translate(targetWidth / 2, targetHeight / 2);
+              ctx.rotate(angle * 0.1); // Slow rotation (10% speed over duration)
+              ctx.scale(rotateScale, rotateScale); 
+              ctx.translate(-targetWidth / 2, -targetHeight / 2);
+              break;
+          }
+
+          ctx.drawImage(img, 0, 0, targetWidth, targetHeight);
+          ctx.restore();
+
+          gif.addFrame(canvas, { delay: 1000 / fps, copy: true });
+        }
+
+        const gifBlob = await new Promise((resolve, reject) => {
+          gif.on('finished', (blob) => resolve(blob));
+          gif.on('error', (err) => reject(err));
+          gif.render();
+        });
+
+        const gifUrl = URL.createObjectURL(gifBlob);
+        generatedGifs.push({
+          name: animation.name,
+          blob: gifBlob,
+          url: gifUrl,
+          size: gifBlob.size
+        });
       }
+
+      setGeneratedAnimations(generatedGifs);
+      toast.success('4 animations created!', { id: 'anim-gen' });
       
-      args.push(outputFilename);
-
-      console.log('⚙️ Creating animation with args:', args.join(' '));
-      await ffmpeg.exec(args);
-
-      console.log('📤 Reading output file...');
-      const data = await ffmpeg.readFile(outputFilename);
-      const outputBlob = new Blob([data.buffer], { type: outputMimeType });
-      const compressedUrl = URL.createObjectURL(outputBlob);
-
-      console.log('🧹 Cleaning up...');
-      await ffmpeg.deleteFile('input.jpg');
-      await ffmpeg.deleteFile(outputFilename);
-      if (outputExt === 'gif') {
-        await ffmpeg.deleteFile('palette.png');
-      }
-
-      setCompressedPreview(compressedUrl);
-      setCompressedSize(outputBlob.size);
-      setCompressedBlob(outputBlob);
+      // Set the first one as the main preview
+      setCompressedPreview(generatedGifs[0].url);
+      setCompressedSize(generatedGifs[0].size);
+      setCompressedBlob(generatedGifs[0].blob);
       setProcessed(true);
-      setOutputFormat(outputExt);
+      setOutputFormat('gif');
 
       onProcessed({
         id: image.name,
         originalFile: image,
-        compressedBlob: outputBlob,
-        compressedUrl,
+        compressedBlob: generatedGifs[0].blob,
+        compressedUrl: generatedGifs[0].url,
         originalSize: image.size,
-        compressedSize: outputBlob.size,
-        format: outputExt,
-        filename: getOutputFilename(outputExt),
-        mediaType: outputExt === 'mp4' ? 'video' : 'image', // GIF is image, MP4 is video
-        fileFormat: outputExt
+        compressedSize: generatedGifs[0].size,
+        format: 'gif',
+        filename: getOutputFilename('gif'),
+        mediaType: 'image',
+        fileFormat: 'gif',
+        animations: generatedGifs // Include all 4 variations
       });
 
-      toast.dismiss();
-      toast.success('Animation created successfully!');
-      console.log('✅ Animation complete!');
-
     } catch (error) {
-      console.error('❌ Image to animation failed:', error);
-      toast.dismiss();
+      console.error('❌ Animation generation failed:', error);
+      toast.dismiss('anim-gen');
       toast.error('Animation creation failed: ' + error.message);
       throw error;
     }
@@ -1172,34 +736,31 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
     const currentCompressedFormat = outputFormat || format; 
 
     // Case 1: Image, and no specific format requested (user clicked general "Download")
+    // If it's an image and animation is enabled, use the specific animation download.
+    if (isImage && enableAnimation) {
+        setShowDownloadModal(true); // Open modal for animation options
+        return;
+    }
+
     if (mediaType === 'image' && formatOverride === null) {
       // For images, if no specific format is selected, open the options modal.
-      // NOTE: The prompt implies a modal allowing format selection. Since we cannot modify
-      // the external DownloadModal.jsx file, we will open the existing DownloadModal.
-      // This means it will proceed to download the image in its `currentCompressedFormat`
-      // without offering dynamic choices within the modal itself.
-      // If dynamic format selection is desired, the user should use the "Convert Format" buttons first.
       setShowDownloadModal(true);
       return;
     }
 
     // Case 2: Video, and no specific format requested. Download the currently compressed video.
-    // The prompt explicitly refers to 'mp4' for video here, but we should use the actual output format.
-    // If the original video was converted to GIF, `currentCompressedFormat` would be 'gif'.
     if (mediaType === 'video' && formatOverride === null) {
       performSingleMediaDownload(compressedBlob, currentCompressedFormat, 'video', getOutputFilename(currentCompressedFormat));
       return;
     }
 
     // Case 3: Audio, and no specific format requested. Download the currently compressed audio.
-    // The prompt refers to `fileFormat` which maps to `currentCompressedFormat`.
     if (mediaType === 'audio' && formatOverride === null) {
       performSingleMediaDownload(compressedBlob, currentCompressedFormat, 'audio', getOutputFilename(currentCompressedFormat));
       return;
     }
 
     // Case 4: Any media type, if a specific format is provided (e.g., from a convert button or a direct download button from a hypothetical image options modal).
-    // The `performSingleMediaDownload` function now handles on-the-fly conversion for images if the `formatOverride` differs.
     performSingleMediaDownload(compressedBlob, formatOverride, mediaType, getOutputFilename(formatOverride));
   };
 
@@ -1218,7 +779,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
         originalSize,
         compressedSize,
         fileName: getOutputFilename(), // Use new helper for filename
-        mediaType: isVideo || (isImage && enableAnimation && outputFormat === 'mp4') ? 'video' : isAudio ? 'audio' : 'image', // Adjust mediaType for animation
+        mediaType: isImage && enableAnimation ? 'image' : isVideo ? 'video' : isAudio ? 'audio' : 'image', // Animation output is always GIF (image)
         fileFormat: outputFormat || format
       });
     }
@@ -1244,19 +805,17 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
   const convertFormat = async (newFormat) => {
     if (!compressedPreview || processing) return;
     
-    // For video/audio/gif, just update the format state, actual conversion happens on re-process
-    // Also, if animation is enabled, only allow mp4/gif format change
+    // For video/audio/gif-to-mp4, these operations are no longer supported without FFmpeg.
     if (isVideo || isAudio || (isGif && newFormat === 'mp4') || (isVideo && newFormat === 'gif') || (isImage && enableAnimation)) {
-      setFormat(newFormat);
-      // If already processed, reset processed state so user can re-process with new format
-      if (processed) {
-        setProcessed(false);
-        setCompressedPreview(null);
-        setCompressedSize(0);
-        setOutputFormat(null);
+      if (isImage && enableAnimation) {
+          if (newFormat !== 'gif') {
+            toast.error('Animations can only be exported as GIF.');
+            return;
+          }
+      } else {
+        toast.error('Format conversion for this media type requires a media processor, which is currently unavailable.');
+        return;
       }
-      toast.info('Format changed. Click "Compress" or "Reprocess" to apply.');
-      return;
     }
 
     // For static images, convert on the fly if already compressed
@@ -1327,20 +886,64 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
   const displayCompressedExt = displayFormat.toUpperCase();
 
   let availableFormats = [];
-  if (isImage && !isGif && enableAnimation) { // NEW condition for animation
-    availableFormats = ['mp4', 'gif'];
+  if (isImage && !isGif && enableAnimation) {
+    availableFormats = ['gif']; // Only GIF for canvas-based animations
   } else if (isImage && !isGif) {
     availableFormats = ['jpg', 'png', 'webp', 'avif'];
   } else if (isGif) {
-    availableFormats = ['gif', 'mp4'];
+    availableFormats = ['gif']; // No MP4 conversion without FFmpeg
   } else if (isVideo) {
-    availableFormats = ['mp4', 'gif'];
+    availableFormats = ['mp4']; // No GIF conversion without FFmpeg
   } else if (isAudio) {
     availableFormats = ['mp3', 'wav'];
   }
 
-  const mediaIcon = isVideo ? Video : isAudio ? Music : isGif || (isImage && enableAnimation) ? Film : null; // Added animation for film icon
+  const mediaIcon = isVideo ? Video : isAudio ? Music : isGif || (isImage && enableAnimation) ? Film : null;
   const MediaIcon = mediaIcon;
+
+  // Update the download section to show all 4 animations
+  const downloadAnimation = (animIndex) => {
+    if (!generatedAnimations[animIndex]) return;
+    
+    const anim = generatedAnimations[animIndex];
+    const link = document.createElement('a');
+    link.href = anim.url;
+    const baseName = editableFilename.split('.').slice(0, -1).join('.') || editableFilename;
+    link.download = `${baseName}_${anim.name.toLowerCase().replace(/\s+/g, '_')}.gif`;
+    link.click();
+    toast.success(`${anim.name} downloaded!`);
+  };
+
+  const downloadAllAnimations = async () => {
+    if (generatedAnimations.length === 0) return;
+    
+    toast.info('Creating zip with all animations...');
+    const JSZip = (await import('https://cdn.jsdelivr.net/npm/jszip@3.10.1/+esm')).default;
+    const zip = new JSZip();
+
+    const baseName = editableFilename.split('.').slice(0, -1).join('.') || editableFilename;
+    generatedAnimations.forEach((anim) => {
+      const filename = `${baseName}_${anim.name.toLowerCase().replace(/\s+/g, '_')}.gif`;
+      zip.file(filename, anim.blob);
+    });
+
+    try {
+      const content = await zip.generateAsync({ type: 'blob' });
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(content);
+      link.download = `${baseName}_animations.zip`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(link.href);
+      
+      toast.success('All animations downloaded!');
+    } catch (error) {
+      console.error('Error zipping animations:', error);
+      toast.error('Failed to create ZIP file for animations.');
+    }
+  };
+
 
   return (
     <Card className="overflow-hidden bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 shadow-lg hover:shadow-xl transition-shadow">
@@ -1351,7 +954,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
               className="relative aspect-square rounded-lg overflow-hidden bg-slate-200 dark:bg-slate-800 cursor-pointer group"
               onClick={(isImage || isGif) && processed ? handleCompare : undefined}
             >
-              {(isGif || isVideo) && gifFrameCount > 0 && (
+              {(isGif || (isImage && enableAnimation)) && gifFrameCount > 0 && (
                 <Badge className="absolute -top-8 left-0 bg-slate-900/90 text-white text-xs px-3 py-1.5 font-bold flex items-center gap-1 shadow-lg z-10 rounded-md">
                   <Film className="w-3 h-3" />
                   {gifFrameCount} frames
@@ -1365,7 +968,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
                   className="w-full h-full object-cover transition-transform group-hover:scale-105" 
                 />
               ) : isVideo || (isImage && enableAnimation) ? ( // Render video tag for animations
-                <video src={preview} className="w-full h-full object-cover" controls muted loop />
+                <img src={preview} alt="Original" className="w-full h-full object-cover" /> // Animations are GIF now
               ) : isAudio ? (
                 <div className="w-full h-full flex flex-col items-center justify-center p-4">
                   <Music className="w-16 h-16 text-slate-400 mb-2" />
@@ -1398,7 +1001,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
               className="relative aspect-square rounded-lg overflow-hidden bg-slate-200 dark:bg-slate-800 cursor-pointer group"
               onClick={(isImage || isGif) ? handleCompare : undefined}
             >
-              {(isGif || isVideo) && gifFrameCount > 0 && (
+              {(isGif || (isImage && enableAnimation)) && (
                 <Badge className="absolute -top-8 left-0 bg-slate-900/90 text-white text-xs px-3 py-1.5 font-bold flex items-center gap-1 shadow-lg z-10 rounded-md">
                   <Film className="w-3 h-3" />
                   {gifFrameCount} frames
@@ -1412,7 +1015,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
                   className="w-full h-full object-cover transition-transform group-hover:scale-105" 
                 />
               ) : isVideo || (isImage && enableAnimation) ? ( // Render video tag for animations
-                <video src={compressedPreview} className="w-full h-full object-cover" controls muted loop />
+                <img src={compressedPreview} alt="Compressed" className="w-full h-full object-cover" /> // Animations are GIF now
               ) : isAudio ? (
                 <div className="w-full h-full flex flex-col items-center justify-center p-4">
                   <Music className="w-16 h-16 text-emerald-500 mb-2" />
@@ -1514,13 +1117,6 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
           </div>
         )}
 
-        {((isVideo || isAudio || (isGif && format === 'mp4')) || (isImage && enableAnimation && (format === 'mp4' || format === 'gif'))) && !ffmpegLoaded && (
-          <div className="flex items-center gap-2 text-sm text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/30 p-3 rounded-lg">
-            <Loader2 className="w-4 h-4 animate-spin flex-shrink-0" />
-            <span className="text-xs">Loading {isVideo ? 'video' : isAudio ? 'audio' : 'media'} processor...</span>
-          </div>
-        )}
-
         {/* Convert Format Selector - Show AFTER compression */}
         {processed && availableFormats.length > 0 && (
           <div className="space-y-2">
@@ -1529,7 +1125,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
             </label>
             <div className={cn(
               "grid gap-2",
-              availableFormats.length === 2 ? "grid-cols-2" : "grid-cols-4"
+              availableFormats.length === 1 ? "grid-cols-1" : availableFormats.length === 2 ? "grid-cols-2" : "grid-cols-4"
             )}>
               {availableFormats.map((fmt) => (
                 <Button
@@ -1559,7 +1155,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
             </label>
             <div className={cn(
               "grid gap-2",
-              availableFormats.length === 2 ? "grid-cols-2" : "grid-cols-4"
+              availableFormats.length === 1 ? "grid-cols-1" : availableFormats.length === 2 ? "grid-cols-2" : "grid-cols-4"
             )}>
               {availableFormats.map((fmt) => (
                 <Button
@@ -1595,7 +1191,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
           </CollapsibleTrigger>
           <CollapsibleContent className="space-y-4 mt-4">
             <TooltipProvider>
-              {!isAudio && (
+              {!(isAudio || (isImage && enableAnimation)) && ( // Don't show for audio or image animations
                 <div>
                   <div className="flex items-center gap-2 mb-2">
                     <label className="text-xs font-medium text-slate-700 dark:text-slate-300">
@@ -1615,7 +1211,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
                 </div>
               )}
 
-              {((isImage && !isGif && !enableAnimation) || isGif) && ( // Only show quality for static images / gifs (not animations)
+              {!(isVideo || isAudio) && ( // Show quality for images and GIFs (and animations)
                 <div>
                   <div className="flex items-center gap-2 mb-2">
                     <label className="text-xs font-medium text-slate-700 dark:text-slate-300">
@@ -1654,155 +1250,15 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
                 </div>
               )}
 
-              {(isVideo || (isImage && enableAnimation)) && ( // Show video settings for actual videos and image animations
-                <>
-                  <div>
-                    <div className="flex items-center gap-2 mb-2">
-                      <label className="text-xs font-medium text-slate-700 dark:text-slate-300">
-                        Encoding Speed
-                      </label>
-                    </div>
-                    <Select value={videoPreset} onValueChange={setVideoPreset} disabled={processing}>
-                      <SelectTrigger className="h-9">
-                        <SelectValue />
-                      </SelectTrigger>
-                    <SelectContent>
-                        <SelectItem value="ultrafast">Ultra Fast (Larger File)</SelectItem>
-                        <SelectItem value="superfast">Super Fast</SelectItem>
-                        <SelectItem value="veryfast">Very Fast</SelectItem>
-                        <SelectItem value="faster">Faster</SelectItem>
-                        <SelectItem value="fast">Fast</SelectItem>
-                        <SelectItem value="medium">Medium (Balanced)</SelectItem>
-                        <SelectItem value="slow">Slow (Better Compression)</SelectItem>
-                        <SelectItem value="slower">Slower</SelectItem>
-                        <SelectItem value="veryslow">Very Slow (Best Compression)</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  
-                  <div>
-                    <div className="flex items-center gap-2 mb-2">
-                      <label className="text-xs font-medium text-slate-700 dark:text-slate-300">
-                        Video Bitrate: {videoBitrate} kbps
-                      </label>
-                    </div>
-                    <Slider
-                      value={[videoBitrate]}
-                      onValueChange={(value) => setVideoBitrate(value[0])}
-                      min={500}
-                      max={8000}
-                      step={100}
-                      className="w-full"
-                      disabled={processing}
-                    />
-                  </div>
-                  
-                  <div>
-                    <div className="flex items-center gap-2 mb-2">
-                      <label className="text-xs font-medium text-slate-700 dark:text-slate-300">
-                        Frame Rate: {frameRate} fps
-                      </label>
-                    </div>
-                    <Slider
-                      value={[frameRate]}
-                      onValueChange={(value) => setFrameRate(value[0])}
-                      min={15}
-                      max={60}
-                      step={5}
-                      className="w-full"
-                      disabled={processing}
-                    />
-                  </div>
-                  
-                  <div>
-                    <div className="flex items-center gap-2 mb-2">
-                      <label className="text-xs font-medium text-slate-700 dark:text-slate-300">
-                        Keyframe Interval: {gopSize}
-                      </label>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <Info className="w-3 h-3 text-slate-400 cursor-help" />
-                        </TooltipTrigger>
-                        <TooltipContent className="max-w-xs">
-                          <p className="text-xs">Lower values = better seeking, larger file. Higher values = better compression.</p>
-                        </TooltipContent>
-                      </Tooltip>
-                    </div>
-                    <Slider
-                      value={[gopSize]}
-                      onValueChange={(value) => setGopSize(value[0])}
-                      min={30}
-                      max={300}
-                      step={10}
-                      className="w-full"
-                      disabled={processing}
-                    />
-                  </div>
-                </>
+              {(isVideo || isAudio) && (
+                <div className="bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800 rounded-lg p-3">
+                  <p className="text-xs text-red-700 dark:text-red-400">
+                    Video and Audio compression settings are currently unavailable as a media processor is not loaded.
+                  </p>
+                </div>
               )}
-
-              {isAudio && (
-                <>
-                  <div>
-                    <div className="flex items-center gap-2 mb-2">
-                      <label className="text-xs font-medium text-slate-700 dark:text-slate-300">
-                        Audio Quality
-                      </label>
-                    </div>
-                    <Select value={audioQuality} onValueChange={setAudioQuality} disabled={processing}>
-                      <SelectTrigger className="h-9">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="standard">Standard (Good)</SelectItem>
-                        <SelectItem value="high">High (Better)</SelectItem>
-                        <SelectItem value="lossless">Lossless (Best)</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  
-                  <div>
-                    <div className="flex items-center gap-2 mb-2">
-                      <label className="text-xs font-medium text-slate-700 dark:text-slate-300">
-                        Audio Bitrate: {audioBitrate} kbps
-                      </label>
-                    </div>
-                    <Slider
-                      value={[audioBitrate]}
-                      onValueChange={(value) => setAudioBitrate(value[0])}
-                      min={64}
-                      max={320}
-                      step={16}
-                      className="w-full"
-                      disabled={processing}
-                    />
-                  </div>
-                  
-                  <div>
-                    <div className="flex items-center gap-2 mb-2">
-                      <label className="text-xs font-medium text-slate-700 dark:text-slate-300">
-                        Sample Rate: {sampleRate / 1000} kHz
-                      </label>
-                    </div>
-                    <Select 
-                      value={String(sampleRate)} 
-                      onValueChange={(value) => setSampleRate(parseInt(value))} 
-                      disabled={processing}
-                    >
-                      <SelectTrigger className="h-9">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="22050">22.05 kHz (Low)</SelectItem>
-                        <SelectItem value="44100">44.1 kHz (CD Quality)</SelectItem>
-                        <SelectItem value="48000">48 kHz (Professional)</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </>
-              )}
-
-              {(isVideo || isGif || (isImage && !isGif && !enableAnimation)) && ( // Apply max width/height for static images as well, but not when animation is enabled (handled in animation settings)
+              
+              {(isImage && !isGif && !enableAnimation) && ( // Apply max width/height for static images. For animation, it's handled by processImageToAnimation
                 <div className="grid grid-cols-2 gap-2">
                   <div>
                     <div className="flex items-center gap-1 mb-1">
@@ -2063,7 +1519,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
                         <Info className="w-3 h-3 text-slate-400 cursor-help" />
                       </TooltipTrigger>
                       <TooltipContent className="max-w-xs">
-                        <p className="text-xs">Convert static image to animated MP4 or GIF with motion effects</p>
+                        <p className="text-xs">Creates 4 animated GIF variations with different motion effects</p>
                       </TooltipContent>
                     </Tooltip>
                   </div>
@@ -2072,28 +1528,19 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
                     onCheckedChange={(checked) => {
                       setEnableAnimation(checked);
                       if (checked) {
-                        // When animation is enabled, default to MP4 if not already MP4/GIF
-                        if (format !== 'mp4' && format !== 'gif') {
-                          setFormat('mp4');
-                          toast.info('Format changed to MP4 for animation');
-                        }
-                        // Disable compression/upscale settings
+                        setFormat('gif');
+                        setGeneratedAnimations([]); // Clear previous, if any
+                        toast.info('Format set to GIF for animation');
+                        // Reset image-specific settings that might conflict
                         setStripMetadata(true);
                         setNoiseReduction(false);
                         setEnableUpscale(false);
-                        setQuality(80); // Reset quality to a reasonable default for video
+                        setMaxWidth(null);
+                        setMaxHeight(null);
                       } else {
-                        // When animation is disabled, revert to a standard image format if current is MP4/GIF
-                        if (format === 'mp4' || format === 'gif') {
-                          setFormat('jpg'); // Default image format
-                          toast.info('Animation disabled. Format reset to JPG.');
-                        }
-                        // Also clear animation specific settings if disabling
-                        setAnimationType('auto');
-                        setLoopType('loop');
-                        setFrameRate(30); // Reset framerate for video if animation was using different
-                        setVideoBitrate(1000); // Reset video bitrate
-                        setQuality(80); // Reset quality to default
+                        setFormat('jpg');
+                        setGeneratedAnimations([]);
+                        toast.info('Animation disabled. Format reset to JPG.');
                       }
                     }}
                     disabled={processing}
@@ -2104,98 +1551,103 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
                   <>
                     <div>
                       <label className="text-xs font-medium text-slate-700 dark:text-slate-300 mb-2 block">
-                        Animation Type
+                        Animation Duration: {animationDuration}s
                       </label>
-                      <div className="grid grid-cols-3 gap-2">
-                        <Button
-                          size="sm"
-                          variant={animationType === 'auto' ? "default" : "outline"}
-                          onClick={() => setAnimationType('auto')}
-                          disabled={processing}
-                          className={cn(
-                            "text-xs h-9",
-                            animationType === 'auto' && "bg-emerald-600 hover:bg-emerald-700"
-                          )}
-                        >
-                          Auto
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant={animationType === 'low' ? "default" : "outline"}
-                          onClick={() => setAnimationType('low')}
-                          disabled={processing}
-                          className={cn(
-                            "text-xs h-9",
-                            animationType === 'low' && "bg-emerald-600 hover:bg-emerald-700"
-                          )}
-                        >
-                          Low Motion
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant={animationType === 'high' ? "default" : "outline"}
-                          onClick={() => setAnimationType('high')}
-                          disabled={processing}
-                          className={cn(
-                            "text-xs h-9",
-                            animationType === 'high' && "bg-emerald-600 hover:bg-emerald-700"
-                          )}
-                        >
-                          High Motion
-                        </Button>
-                      </div>
-                    </div>
-
-                    <div>
-                      <label className="text-xs font-medium text-slate-700 dark:text-slate-300 mb-2 block">
-                        Loop Settings
-                      </label>
-                      <div className="grid grid-cols-3 gap-2">
-                        <Button
-                          size="sm"
-                          variant={loopType === 'loop' ? "default" : "outline"}
-                          onClick={() => setLoopType('loop')}
-                          disabled={processing}
-                          className={cn(
-                            "text-xs h-9",
-                            loopType === 'loop' && "bg-emerald-600 hover:bg-emerald-700"
-                          )}
-                        >
-                          Continuous
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant={loopType === 'oscillate' ? "default" : "outline"}
-                          onClick={() => setLoopType('oscillate')}
-                          disabled={processing}
-                          className={cn(
-                            "text-xs h-9",
-                            loopType === 'oscillate' && "bg-emerald-600 hover:bg-emerald-700"
-                          )}
-                        >
-                          Oscillate
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant={loopType === 'random' ? "default" : "outline"}
-                          onClick={() => setLoopType('random')}
-                          disabled={processing}
-                          className={cn(
-                            "text-xs h-9",
-                            loopType === 'random' && "bg-emerald-600 hover:bg-emerald-700"
-                          )}
-                        >
-                          Random Pan
-                        </Button>
-                      </div>
+                      <Slider
+                        value={[animationDuration]}
+                        onValueChange={(value) => setAnimationDuration(value[0])}
+                        min={2}
+                        max={5}
+                        step={1}
+                        className="w-full"
+                        disabled={processing}
+                      />
                     </div>
 
                     <div className="bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 rounded-lg p-3">
-                      <p className="text-xs text-blue-700 dark:text-blue-400">
-                        <strong>Tip:</strong> Animation will create a looping {format.toUpperCase()} with smooth motion effects. 
-                        Higher motion creates more dramatic animations.
+                      <p className="text-xs text-blue-700 dark:text-blue-400 mb-2">
+                        <strong>🎬 Animation Styles:</strong>
                       </p>
+                      <ul className="text-xs text-blue-600 dark:text-blue-400 space-y-1 list-disc list-inside">
+                        <li><strong>Zoom In:</strong> Smooth zoom effect</li>
+                        <li><strong>Pan Left-Right:</strong> Horizontal panning</li>
+                        <li><strong>Ken Burns:</strong> Zoom + subtle pan</li>
+                        <li><strong>Rotate Slow:</strong> Gentle rotation</li>
+                      </ul>
                     </div>
+                    
+                    {/* Max Width/Height for animation */}
+                    <div className="grid grid-cols-2 gap-2">
+                      <div>
+                        <div className="flex items-center gap-1 mb-1">
+                          <label className="text-xs font-medium text-slate-700 dark:text-slate-300">
+                            Max Width (px)
+                          </label>
+                        </div>
+                        <input
+                          type="number"
+                          placeholder={originalImageDimensions.width || "Auto"}
+                          value={maxWidth || ''}
+                          onChange={(e) => setMaxWidth(e.target.value ? parseInt(e.target.value) : null)}
+                          className="w-full h-9 px-3 rounded-md border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 text-sm"
+                          disabled={processing}
+                        />
+                      </div>
+                      <div>
+                        <div className="flex items-center gap-1 mb-1">
+                          <label className="text-xs font-medium text-slate-700 dark:text-slate-300">
+                            Max Height (px)
+                          </label>
+                        </div>
+                        <input
+                          type="number"
+                          placeholder={originalImageDimensions.height || "Auto"}
+                          value={maxHeight || ''}
+                          onChange={(e) => setMaxHeight(e.target.value ? parseInt(e.target.value) : null)}
+                          className="w-full h-9 px-3 rounded-md border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 text-sm"
+                          disabled={processing}
+                        />
+                      </div>
+                    </div>
+
+
+                    {generatedAnimations.length > 0 && (
+                      <div className="space-y-2 pt-2 border-t border-slate-200 dark:border-slate-800">
+                        <div className="flex items-center justify-between mb-2">
+                          <label className="text-xs font-medium text-slate-700 dark:text-slate-300">
+                            Generated Animations ({generatedAnimations.length})
+                          </label>
+                          <Button
+                            onClick={downloadAllAnimations}
+                            size="sm"
+                            variant="outline"
+                            className="h-7 text-xs"
+                          >
+                            <Download className="w-3 h-3 mr-1" />
+                            All as ZIP
+                          </Button>
+                        </div>
+                        {generatedAnimations.map((anim, index) => (
+                          <div key={index} className="flex items-center justify-between bg-slate-50 dark:bg-slate-950 rounded-lg p-2 border border-slate-200 dark:border-slate-800">
+                            <div className="flex items-center gap-2">
+                              <img src={anim.url} alt={anim.name} className="w-12 h-12 rounded object-cover" />
+                              <div>
+                                <p className="text-xs font-medium text-slate-900 dark:text-white">{anim.name}</p>
+                                <p className="text-[10px] text-slate-500 dark:text-slate-400">{formatFileSize(anim.size)}</p>
+                              </div>
+                            </div>
+                            <Button
+                              onClick={() => downloadAnimation(index)}
+                              size="sm"
+                              variant="ghost"
+                              className="h-7 w-7 p-0"
+                            >
+                              <Download className="w-3 h-3" />
+                            </Button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </>
                 )}
               </TooltipProvider>
@@ -2207,7 +1659,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
           {!processed ? (
             <Button
               onClick={processMedia}
-              disabled={processing || (((isVideo || isAudio || (isGif && format === 'mp4')) || (isImage && enableAnimation && (format === 'mp4' || format === 'gif'))) && !ffmpegLoaded)}
+              disabled={processing || isVideo || isAudio || (isGif && format === 'mp4') || (isVideo && format === 'gif')}
               className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white"
             >
               {processing ? (
@@ -2267,8 +1719,11 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
           isOpen={showDownloadModal}
           onClose={() => setShowDownloadModal(false)}
           blob={compressedBlob}
-          originalFilename={getOutputFilename()} // Use new helper
+          originalFilename={getOutputFilename()}
           format={outputFormat || format}
+          generatedAnimations={isImage && enableAnimation ? generatedAnimations : null} // Pass animations if enabled
+          onDownloadAnimation={downloadAnimation}
+          onDownloadAllAnimations={downloadAllAnimations}
         />
       )}
     </Card>
