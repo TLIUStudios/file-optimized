@@ -70,7 +70,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
   // GIF-specific states
   const [gifFrameCount, setGifFrameCount] = useState(0);
   const [gifSettings, setGifSettings] = useState({ width: 0, height: 0, frames: [] });
-  
+
   // Video/Audio specific states
   const [videoBitrate, setVideoBitrate] = useState(1000);
   const [audioBitrate, setAudioBitrate] = useState(128);
@@ -79,49 +79,68 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
   const [videoResolution, setVideoResolution] = useState('original'); // 'original', '1080p', '720p', '480p'
   const [audioQuality, setAudioQuality] = useState('standard');
   const [gifOptimization, setGifOptimization] = useState('balanced');
-  
+
   // FFmpeg states
   const [ffmpegLoaded, setFfmpegLoaded] = useState(false);
   const [ffmpegLoading, setFfmpegLoading] = useState(false);
   const ffmpegRef = useRef(null);
-  
+
   const processMediaRef = useRef(null);
 
   // Load FFmpeg when video/audio is uploaded
   useEffect(() => {
-    if ((isVideo || isAudio || (isGif && format === 'mp4')) && !ffmpegLoaded && !ffmpegLoading) { // isGif added to trigger FFmpeg for GIF conversion
+    if ((isVideo || isAudio) && !ffmpegLoaded && !ffmpegLoading) {
       loadFFmpeg();
     }
-  }, [isVideo, isAudio, isGif, format, ffmpegLoaded, ffmpegLoading]);
+  }, [isVideo, isAudio, ffmpegLoaded, ffmpegLoading]);
 
   const loadFFmpeg = async () => {
     if (ffmpegLoading || ffmpegLoaded) return;
-    
+
     setFfmpegLoading(true);
-    toast.info('Loading video/audio processor...', { duration: Infinity, id: 'ffmpeg-load' });
-    
+    const toastId = toast.info('Loading video/audio processor (this may take 10-20 seconds)...', { duration: Infinity });
+
     try {
-      const { FFmpeg } = await import('https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@0.12.6/+esm');
-      const { toBlobURL } = await import('https://cdn.jsdelivr.net/npm/@ffmpeg/util@0.12.1/+esm');
-      
+      // Use unpkg.com for better CORS support
+      const { FFmpeg } = await import('https://unpkg.com/@ffmpeg/ffmpeg@0.12.6/dist/esm/index.js');
+      const { fetchFile } = await import('https://unpkg.com/@ffmpeg/util@0.12.1/dist/esm/index.js');
+
       const ffmpeg = new FFmpeg();
-      
-      const baseURL = 'https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.6/dist/umd';
-      await ffmpeg.load({
-        coreURL: await toBlobURL(`${baseURL}/ffmpeg-core.js`, 'text/javascript'),
-        wasmURL: await toBlobURL(`${baseURL}/ffmpeg-core.wasm`, 'application/wasm'),
-        workerURL: await toBlobURL(`${baseURL}/ffmpeg-core.worker.js`, 'text/javascript'),
+
+      // Log for debugging
+      ffmpeg.on('log', ({ message }) => {
+        console.log('FFmpeg:', message);
       });
-      
+
+      ffmpeg.on('progress', ({ progress, time }) => {
+        console.log(`FFmpeg Progress: ${(progress * 100).toFixed(2)}%`);
+      });
+
+      // Load FFmpeg with proper CORS handling
+      const baseURL = 'https://unpkg.com/@ffmpeg/core@0.12.4/dist/umd';
+
+      await ffmpeg.load({
+        coreURL: `${baseURL}/ffmpeg-core.js`,
+        wasmURL: `${baseURL}/ffmpeg-core.wasm`,
+      });
+
       ffmpegRef.current = ffmpeg;
       setFfmpegLoaded(true);
-      toast.dismiss('ffmpeg-load');
-      toast.success('Video/audio processor ready!');
+      setFfmpegLoading(false);
+      toast.dismiss(toastId);
+      toast.success('Video/audio processor ready! ✅');
     } catch (error) {
       console.error('Failed to load FFmpeg:', error);
-      toast.dismiss('ffmpeg-load');
-      toast.error('Failed to load video/audio processor: ' + error.message);
+      toast.dismiss(toastId);
       setFfmpegLoading(false);
+
+      // Show user-friendly error
+      const errorMessage = error.message?.includes('Worker')
+        ? 'Failed to load processor due to browser restrictions. Try using Chrome or Edge for video/audio compression.'
+        : 'Failed to load video/audio processor. Please refresh the page and try again.';
+
+      toast.error(errorMessage, { duration: 5000 });
+      setError(errorMessage);
     }
   };
 
@@ -131,7 +150,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
       setPreview(reader.result);
       setOriginalSize(image.size);
       setEditableFilename(image.name);
-      
+
       if (isImage && !isGif) {
         const img = new Image();
         img.onload = () => {
@@ -139,7 +158,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
         };
         img.src = reader.result;
       }
-      
+
       if (isGif) {
         try {
           await parseGif(reader.result);
@@ -149,7 +168,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
       }
     };
     reader.readAsDataURL(image);
-    
+
     if (isGif) {
       setFormat('gif');
     } else if (isVideo) {
@@ -179,11 +198,11 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
     try {
       const response = await fetch(dataUrl);
       const arrayBuffer = await response.arrayBuffer();
-      
+
       const { parseGIF, decompressFrames } = await import('https://cdn.jsdelivr.net/npm/gifuct-js@2.1.2/+esm');
       const gif = parseGIF(arrayBuffer);
       const frames = decompressFrames(gif, true);
-      
+
       setGifFrameCount(frames.length);
       setGifSettings({
         width: frames[0]?.dims?.width || 0,
@@ -247,7 +266,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
       setError(`Failed to process. ${error.message}`);
       toast.error('Processing failed: ' + error.message);
     }
-    
+
     setProcessing(false);
   };
 
@@ -269,22 +288,22 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
 
       // Build FFmpeg command based on settings
       const args = ['-i', `input.${inputExt}`];
-      
+
       // Video codec and quality
       args.push('-c:v', 'libx264');
       args.push('-preset', videoPreset);
       args.push('-crf', String(Math.round((100 - quality) / 4))); // 0-25 CRF scale
-      
+
       // Bitrate
       if (videoBitrate) {
         args.push('-b:v', `${videoBitrate}k`);
       }
-      
+
       // Frame rate
       if (frameRate) {
         args.push('-r', String(frameRate));
       }
-      
+
       // Resolution
       if (videoResolution !== 'original') {
         const resMap = {
@@ -294,11 +313,11 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
         };
         args.push('-vf', `scale=${resMap[videoResolution]}`);
       }
-      
+
       // Audio
       args.push('-c:a', 'aac');
       args.push('-b:a', `${audioBitrate}k`);
-      
+
       args.push('output.mp4');
 
       console.log('FFmpeg command:', args.join(' '));
@@ -306,7 +325,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
 
       const data = await ffmpeg.readFile('output.mp4');
       const blob = new Blob([data.buffer], { type: 'video/mp4' });
-      
+
       // Cleanup
       await ffmpeg.deleteFile(`input.${inputExt}`);
       await ffmpeg.deleteFile('output.mp4');
@@ -351,7 +370,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
 
       const outputExt = format;
       const args = ['-i', `input.${inputExt}`];
-      
+
       if (format === 'mp3') {
         args.push('-codec:a', 'libmp3lame');
         args.push('-b:a', `${audioBitrate}k`);
@@ -360,7 +379,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
         args.push('-codec:a', 'pcm_s16le'); // PCM 16-bit signed little-endian
         args.push('-ar', '44100'); // Default sample rate
       }
-      
+
       args.push(`output.${outputExt}`);
 
       await ffmpeg.exec(args);
@@ -368,7 +387,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
       const data = await ffmpeg.readFile(`output.${outputExt}`);
       const mimeType = format === 'mp3' ? 'audio/mpeg' : 'audio/wav';
       const blob = new Blob([data.buffer], { type: mimeType });
-      
+
       await ffmpeg.deleteFile(`input.${inputExt}`);
       await ffmpeg.deleteFile(`output.${outputExt}`);
 
@@ -412,7 +431,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
 
       const fps = Math.max(5, Math.round(frameRate / 2)); // Use half of desired frame rate, min 5
       const scale = maxWidth || 480; // Default to 480px width if not set
-      
+
       await ffmpeg.exec([
         '-i', `input.${inputExt}`,
         '-vf', `fps=${fps},scale=${scale}:-1:flags=lanczos,split[s0][s1];[s0]palettegen[p];[s1][p]paletteuse`,
@@ -422,7 +441,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
 
       const data = await ffmpeg.readFile('output.gif');
       const blob = new Blob([data.buffer], { type: 'image/gif' });
-      
+
       await ffmpeg.deleteFile(`input.${inputExt}`);
       await ffmpeg.deleteFile('output.gif');
 
@@ -475,7 +494,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
 
       const data = await ffmpeg.readFile('output.mp4');
       const blob = new Blob([data.buffer], { type: 'video/mp4' });
-      
+
       await ffmpeg.deleteFile('input.gif');
       await ffmpeg.deleteFile('output.mp4');
 
@@ -509,10 +528,10 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
   const processGif = async () => {
     try {
       console.log('🎞️ Starting GIF compression...');
-      
+
       const response = await fetch(preview);
       const originalBlob = await response.blob();
-      
+
       if (!gifSettings.frames || gifSettings.frames.length === 0) {
         const compressedUrl = URL.createObjectURL(originalBlob);
         setCompressedPreview(compressedUrl);
@@ -534,17 +553,17 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
           mediaType: 'image',
           fileFormat: 'gif'
         });
-        
+
         toast.info('GIF processed (animation preserved)');
         return;
       }
 
       let targetWidth = gifSettings.width;
       let targetHeight = gifSettings.height;
-      
+
       if (maxWidth || maxHeight) {
         const aspectRatio = gifSettings.width / gifSettings.height;
-        
+
         if (maxWidth && maxHeight) {
           const widthRatio = maxWidth / gifSettings.width;
           const heightRatio = maxHeight / gifSettings.height;
@@ -559,14 +578,14 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
           targetWidth = Math.round(maxHeight * aspectRatio);
         }
       }
-      
+
       let frameSkip = 1;
       if (gifOptimization === 'aggressive') {
         frameSkip = 2;
       } else if (gifOptimization === 'maximum') {
         frameSkip = 3;
       }
-      
+
       const canvas = document.createElement('canvas');
       canvas.width = targetWidth;
       canvas.height = targetHeight;
@@ -575,7 +594,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
       const processedFrames = [];
       const maxFrames = Math.min(gifSettings.frames.length, 400);
       let prevImageData = null;
-      
+
       for (let i = 0; i < maxFrames; i += frameSkip) {
         const frame = gifSettings.frames[i];
         if (!frame || !frame.patch || !frame.dims) continue;
@@ -585,27 +604,27 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
           frame.dims.width,
           frame.dims.height
         );
-        
+
         const tempCanvas = document.createElement('canvas');
         tempCanvas.width = frame.dims.width;
         tempCanvas.height = frame.dims.height;
         const tempCtx = tempCanvas.getContext('2d');
         if (!tempCtx) continue;
-        
+
         tempCtx.putImageData(imageData, 0, 0);
         ctx.clearRect(0, 0, targetWidth, targetHeight);
         ctx.drawImage(tempCanvas, 0, 0, targetWidth, targetHeight);
-        
+
         let delay = frame.delay ? Math.max(20, frame.delay * 10 * frameSkip) : 100 * frameSkip;
         const frameImageData = ctx.getImageData(0, 0, targetWidth, targetHeight);
-        
+
         if (gifOptimization !== 'balanced' && prevImageData) {
           const diff = calculateFrameDifference(prevImageData.data, frameImageData.data);
           if (diff < 0.05) continue;
         }
-        
+
         prevImageData = frameImageData;
-        processedFrames.push({ 
+        processedFrames.push({
           data: new Uint8ClampedArray(frameImageData.data),
           delay,
           width: targetWidth,
@@ -616,7 +635,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
       if (processedFrames.length === 0) throw new Error('No frames processed');
 
       const GIF = window.GIF;
-      
+
       let gifQuality;
       if (gifOptimization === 'balanced') {
         gifQuality = Math.max(1, Math.min(30, Math.round((100 - quality) / 3.5)));
@@ -625,7 +644,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
       } else {
         gifQuality = Math.max(10, Math.min(30, Math.round((100 - quality) / 2.5)));
       }
-      
+
       const gif = new GIF({
         workers: 2,
         quality: gifQuality,
@@ -643,10 +662,10 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
         frameCanvas.height = frameData.height;
         const frameCtx = frameCanvas.getContext('2d');
         if (!frameCtx) continue;
-        
+
         const imgData = new ImageData(frameData.data, frameData.width, frameData.height);
         frameCtx.putImageData(imgData, 0, 0);
-        
+
         gif.addFrame(frameCanvas, { delay: frameData.delay, copy: true, dispose: 2 });
       }
 
@@ -655,7 +674,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
         gif.on('error', reject);
         gif.render();
       });
-      
+
       const compressedUrl = URL.createObjectURL(gifBlob);
       setCompressedPreview(compressedUrl);
       setCompressedSize(gifBlob.size);
@@ -692,7 +711,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
   const calculateFrameDifference = (data1, data2) => {
     let diff = 0;
     for (let i = 0; i < data1.length; i += 4) {
-      diff += Math.abs(data1[i] - data2[i]) + Math.abs(data1[i+1] - data2[i+1]) + Math.abs(data1[i+2] - data2[i+2]);
+      diff += Math.abs(data1[i] - data2[i]) + Math.abs(data1[i + 1] - data2[i + 1]) + Math.abs(data1[i + 2] - data2[i + 2]);
     }
     return diff / (data1.length * 255);
   };
@@ -700,7 +719,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
   const processStaticImage = async () => {
     const img = new Image();
     img.src = preview;
-    
+
     await new Promise((resolve) => {
       img.onload = resolve;
     });
@@ -716,12 +735,12 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
       height = Math.round(img.height * (upscaleMultiplier / 100));
     } else if (maxWidth || maxHeight || enableUpscale) { // The '|| enableUpscale' here ensures the block is entered if only upscaling is enabled without specific dims/multiplier
       const aspectRatio = width / height;
-      
+
       if (maxWidth && maxHeight) {
         const widthRatio = maxWidth / img.width;
         const heightRatio = maxHeight / img.height;
         const ratio = enableUpscale ? Math.max(widthRatio, heightRatio) : Math.min(widthRatio, heightRatio);
-        
+
         width = Math.round(img.width * ratio);
         height = Math.round(img.height * ratio);
       } else if (maxWidth) {
@@ -744,23 +763,23 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
     canvas.height = height;
 
     const ctx = canvas.getContext('2d');
-    
+
     if (noiseReduction || enableUpscale) { // Added enableUpscale
       ctx.imageSmoothingEnabled = true;
       ctx.imageSmoothingQuality = 'high';
     }
-    
+
     ctx.drawImage(img, 0, 0, width, height);
 
     const mimeType = format === 'jpg' ? 'image/jpeg' : `image/${format}`;
-    
+
     let baseQuality = quality / 100;
     if (compressionMode === 'aggressive') {
       baseQuality = Math.max(0.5, baseQuality - 0.15);
     } else if (compressionMode === 'maximum') {
       baseQuality = Math.max(0.3, baseQuality - 0.3);
     }
-    
+
     let qualityValue = baseQuality;
     let blob = null;
     let attempts = 0;
@@ -830,7 +849,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
 
     try {
       console.log('🎬 Starting REAL AI animation generation...');
-      
+
       // Step 1: Upload image to get URL for AI
       toast.info('Step 1/3: Uploading image to AI...', { duration: Infinity, id: 'anim-gen' });
       const response = await fetch(preview);
@@ -839,7 +858,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
       // Assuming base44 is globally available as per instructions
       const uploadResult = await base44.integrations.Core.UploadFile({ file });
       const imageUrl = uploadResult.file_url;
-      
+
       // Step 2: AI analyzes image and generates animation concepts
       toast.info('Step 2/3: AI analyzing image...', { id: 'anim-gen' });
       // Assuming base44 is globally available as per instructions
@@ -916,7 +935,7 @@ Make animations dynamic with REAL motion - characters move, swing weapons, chang
       });
 
       console.log('✅ AI Analysis Complete:', analysisResult);
-      
+
       // Fix: Handle case where animations might not be an array
       let animationConcepts = [];
       if (Array.isArray(analysisResult.animations)) {
@@ -927,23 +946,23 @@ Make animations dynamic with REAL motion - characters move, swing weapons, chang
       } else {
         throw new Error('AI did not return valid animation concepts. Please try again.');
       }
-      
+
       if (animationConcepts.length === 0) {
         throw new Error('No animation concepts were generated. Please try again.');
       }
-      
+
       console.log(`✅ Got ${animationConcepts.length} animation concepts`);
-      
+
       // Step 3: Generate frames for each animation
       const generatedGifs = [];
       const framesPerAnimation = 10; // Reduced from 12 to 10 for faster processing
-      
+
       for (let animIndex = 0; animIndex < animationConcepts.length; animIndex++) {
         const anim = animationConcepts[animIndex];
         toast.info(`Step 3/3: Creating ${anim.name}... (${animIndex + 1}/4)`, { id: 'anim-gen' });
-        
+
         const frames = [];
-        
+
         // Frame 1: Use the ACTUAL uploaded image (not AI-generated)
         console.log(`✅ Frame 1/${framesPerAnimation}: Using original uploaded image`);
         frames.push({
@@ -951,55 +970,55 @@ Make animations dynamic with REAL motion - characters move, swing weapons, chang
           index: 0,
           isOriginal: true
         });
-        
+
         // Frames 2-10: Generate with AI (reduced from 2-12)
         for (let frameIndex = 1; frameIndex < framesPerAnimation; frameIndex++) {
           toast.info(`Creating ${anim.name}... Frame ${frameIndex + 1}/${framesPerAnimation}`, { id: 'anim-gen' });
-          
+
           try {
             const framePrompt = anim.frame_prompts[frameIndex - 1]; // frame_prompts array adjusted
-            
+
             // For frame 10 (last frame), explicitly reference returning to original pose
-            const enhancedPrompt = frameIndex === framesPerAnimation - 1 
+            const enhancedPrompt = frameIndex === framesPerAnimation - 1
               ? `${analysisResult.image_style} style. ${framePrompt}. CRITICAL: This is the final frame - the character/subject should return to the EXACT SAME pose as the original image for seamless looping. Match the original image's composition, character position, and pose exactly.`
               : `${analysisResult.image_style} style. ${framePrompt}. Match the style and quality of the original image exactly. Maintain consistent character features, lighting, and composition.`;
-            
+
             // Generate image for this frame
             // Assuming base44 is globally available as per instructions
             const frameResult = await base44.integrations.Core.GenerateImage({
               prompt: enhancedPrompt
             });
-            
+
             frames.push({
               url: frameResult.url,
               index: frameIndex,
               isOriginal: false
             });
-            
+
             console.log(`✅ Frame ${frameIndex + 1}/${framesPerAnimation} generated for ${anim.name}`);
           } catch (frameError) {
             console.error(`Failed to generate frame ${frameIndex + 1}:`, frameError);
             // Continue with other frames
           }
         }
-        
+
         if (frames.length < 2) { // Need at least original + 1 generated frame
           console.error(`Insufficient frames generated for ${anim.name}`);
           continue;
         }
-        
+
         toast.info(`${anim.name}: Combining ${frames.length} frames into GIF...`, { id: 'anim-gen' });
-        
+
         // Load all frame images with better error handling
         console.log(`📥 Loading ${frames.length} frame images...`);
         const loadedFrames = [];
-        
+
         for (let i = 0; i < frames.length; i++) {
           try {
             const frame = frames[i];
             const img = new Image();
             img.crossOrigin = 'anonymous';
-            
+
             await new Promise((resolve, reject) => {
               const timeout = setTimeout(() => reject(new Error('Image load timeout')), 30000);
               img.onload = () => {
@@ -1012,7 +1031,7 @@ Make animations dynamic with REAL motion - characters move, swing weapons, chang
               };
               img.src = frame.url;
             });
-            
+
             loadedFrames.push({ img, index: frame.index, isOriginal: frame.isOriginal });
             console.log(`✅ Loaded frame ${i + 1}/${frames.length}${frame.isOriginal ? ' (ORIGINAL IMAGE)' : ''}`);
           } catch (error) {
@@ -1020,12 +1039,12 @@ Make animations dynamic with REAL motion - characters move, swing weapons, chang
             // Continue with other frames
           }
         }
-        
+
         if (loadedFrames.length === 0) {
           console.error(`No frames could be loaded for ${anim.name}`);
           continue;
         }
-        
+
         // Sort frames by their original index to ensure correct order
         loadedFrames.sort((a, b) => a.index - b.index);
         console.log(`✅ All ${loadedFrames.length} frames loaded and sorted`);
@@ -1034,7 +1053,7 @@ Make animations dynamic with REAL motion - characters move, swing weapons, chang
         const firstImg = loadedFrames[0].img;
         let targetWidth = firstImg.width;
         let targetHeight = firstImg.height;
-        
+
         // More aggressive resizing for faster GIF rendering
         const maxDim = 600; // Reduced from 800
         if (targetWidth > maxDim || targetHeight > maxDim) {
@@ -1042,13 +1061,13 @@ Make animations dynamic with REAL motion - characters move, swing weapons, chang
           targetWidth = Math.round(targetWidth * scale);
           targetHeight = Math.round(targetHeight * scale);
         }
-        
+
         // Ensure even dimensions
         targetWidth = targetWidth % 2 === 0 ? targetWidth : targetWidth - 1;
         targetHeight = targetHeight % 2 === 0 ? targetHeight : targetHeight - 1;
-        
+
         console.log(`📐 Target GIF dimensions: ${targetWidth}x${targetHeight}`);
-        
+
         // Create GIF with optimized settings for faster rendering
         const GIF = window.GIF;
         const gif = new GIF({
@@ -1060,29 +1079,29 @@ Make animations dynamic with REAL motion - characters move, swing weapons, chang
           repeat: 0,
           dither: false // Disable dithering for speed
         });
-        
+
         const canvas = document.createElement('canvas');
         canvas.width = targetWidth;
         canvas.height = targetHeight;
         const ctx = canvas.getContext('2d', { willReadFrequently: true }); // Optimize canvas
-        
+
         // Add each frame to GIF
         const frameDelay = Math.round((animationDuration * 1000) / loadedFrames.length);
         console.log(`🎬 Adding ${loadedFrames.length} frames with ${frameDelay}ms delay each...`);
-        
+
         for (let i = 0; i < loadedFrames.length; i++) {
           const { img } = loadedFrames[i];
           ctx.clearRect(0, 0, targetWidth, targetHeight);
           ctx.drawImage(img, 0, 0, targetWidth, targetHeight);
           gif.addFrame(ctx, { delay: frameDelay, copy: true, dispose: 2 }); // Added dispose for efficiency
-          
+
           if (i % 3 === 0) {
             console.log(`📝 Added frame ${i + 1}/${loadedFrames.length} to GIF`);
           }
         }
-        
+
         console.log(`🎨 Rendering GIF... (this may take 30-90 seconds)`);
-        
+
         // Render GIF with extended timeout
         const gifBlob = await Promise.race([
           new Promise((resolve, reject) => {
@@ -1103,11 +1122,11 @@ Make animations dynamic with REAL motion - characters move, swing weapons, chang
             });
             gif.render();
           }),
-          new Promise((_, reject) => 
+          new Promise((_, reject) =>
             setTimeout(() => reject(new Error('GIF rendering timeout (120s)')), 120000) // Extended to 120 seconds
           )
         ]);
-        
+
         const gifUrl = URL.createObjectURL(gifBlob);
         generatedGifs.push({
           name: anim.name,
@@ -1117,18 +1136,18 @@ Make animations dynamic with REAL motion - characters move, swing weapons, chang
           description: anim.concept,
           frameCount: loadedFrames.length
         });
-        
+
         console.log(`✅ ${anim.name} complete! (${loadedFrames.length} frames, ${(gifBlob.size / 1024).toFixed(1)}KB)`);
       }
-      
+
       if (generatedGifs.length === 0) {
         throw new Error('No animations were generated successfully');
       }
-      
+
       setGeneratedAnimations(generatedGifs);
       toast.dismiss('anim-gen');
       toast.success(`${generatedGifs.length} AI animations created! 🎬`);
-      
+
       // Set the first one as preview
       setCompressedPreview(generatedGifs[0].url);
       setCompressedSize(generatedGifs[0].size);
@@ -1159,7 +1178,7 @@ Make animations dynamic with REAL motion - characters move, swing weapons, chang
     }
   };
 
-  const savingsPercent = processed 
+  const savingsPercent = processed
     ? ((1 - compressedSize / originalSize) * 100).toFixed(1)
     : 0;
 
@@ -1199,59 +1218,59 @@ Make animations dynamic with REAL motion - characters move, swing weapons, chang
     let finalFilename = filename || getOutputFilename(targetFormat);
 
     if (isImage && !isGif && !enableAnimation && targetFormat && targetFormat !== (outputFormat || format)) {
-        try {
-            const img = new Image();
-            img.src = compressedPreview;
-            await new Promise((resolve) => { img.onload = resolve; });
+      try {
+        const img = new Image();
+        img.src = compressedPreview;
+        await new Promise((resolve) => { img.onload = resolve; });
 
-            const canvas = document.createElement('canvas');
-            canvas.width = img.width;
-            canvas.height = img.height;
-            const ctx = canvas.getContext('2d');
-            ctx.drawImage(img, 0, 0);
+        const canvas = document.createElement('canvas');
+        canvas.width = img.width;
+        canvas.height = img.height;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0);
 
-            const mimeType = targetFormat === 'jpg' ? 'image/jpeg' : `image/${targetFormat}`;
-            const qualityValue = quality / 100; 
+        const mimeType = targetFormat === 'jpg' ? 'image/jpeg' : `image/${targetFormat}`;
+        const qualityValue = quality / 100;
 
-            const convertedBlob = await new Promise((resolve) => {
-                canvas.toBlob((b) => resolve(b), mimeType, qualityValue);
-            });
-            finalBlob = convertedBlob;
-        } catch (error) {
-            console.error("Error during on-the-fly image conversion for download:", error);
-            toast.error(`Failed to convert image to ${targetFormat} for download.`);
-            return;
-        }
+        const convertedBlob = await new Promise((resolve) => {
+          canvas.toBlob((b) => resolve(b), mimeType, qualityValue);
+        });
+        finalBlob = convertedBlob;
+      } catch (error) {
+        console.error("Error during on-the-fly image conversion for download:", error);
+        toast.error(`Failed to convert image to ${targetFormat} for download.`);
+        return;
+      }
     }
 
     try {
-        const url = URL.createObjectURL(finalBlob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = finalFilename;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
-        toast.success(`'${finalFilename}' downloaded!`);
+      const url = URL.createObjectURL(finalBlob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = finalFilename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      toast.success(`'${finalFilename}' downloaded!`);
     } catch (error) {
-        console.error("Error during download:", error);
-        toast.error("Failed to download file.");
+      console.error("Error during download:", error);
+      toast.error("Failed to download file.");
     }
   };
 
   const downloadMedia = async (formatOverride = null) => {
     if (!compressedBlob) {
-        toast.error("No processed media available for download.");
-        return;
+      toast.error("No processed media available for download.");
+      return;
     }
 
     const mediaType = isVideo ? 'video' : isAudio ? 'audio' : 'image';
-    const currentCompressedFormat = outputFormat || format; 
+    const currentCompressedFormat = outputFormat || format;
 
     if (isImage && enableAnimation) {
-        setShowDownloadModal(true);
-        return;
+      setShowDownloadModal(true);
+      return;
     }
 
     if (mediaType === 'image' && formatOverride === null) {
@@ -1298,7 +1317,7 @@ Make animations dynamic with REAL motion - characters move, swing weapons, chang
 
   const handleSaveEdit = (newImageUrl, newBlob) => {
     setPreview(newImageUrl);
-    setOriginalSize(newBlob.size); 
+    setOriginalSize(newBlob.size);
     if (processed) {
       setProcessed(false);
       setCompressedPreview(null);
@@ -1311,11 +1330,11 @@ Make animations dynamic with REAL motion - characters move, swing weapons, chang
 
   const convertFormat = async (newFormat) => {
     if (!compressedPreview || processing) return;
-    
+
     // If already in the target format, do nothing
     if (newFormat === (outputFormat || format)) {
-        toast.info(`Already in ${newFormat.toUpperCase()} format.`);
-        return;
+      toast.info(`Already in ${newFormat.toUpperCase()} format.`);
+      return;
     }
 
     // For image animations, only GIF is supported as output
@@ -1346,7 +1365,7 @@ Make animations dynamic with REAL motion - characters move, swing weapons, chang
     try {
       const img = new Image();
       img.src = compressedPreview;
-      
+
       await new Promise((resolve) => {
         img.onload = resolve;
       });
@@ -1368,7 +1387,7 @@ Make animations dynamic with REAL motion - characters move, swing weapons, chang
       setCompressedBlob(blob);
       setOutputFormat(newFormat);
       setFormat(newFormat); // Update the internal format state as well
-      
+
       onProcessed({
         id: image.name,
         originalFile: image,
@@ -1381,7 +1400,7 @@ Make animations dynamic with REAL motion - characters move, swing weapons, chang
         mediaType: 'image',
         fileFormat: newFormat
       });
-      
+
       toast.success(`Converted to ${newFormat.toUpperCase()}`);
     } catch (error) {
       console.error('Error converting format:', error);
@@ -1394,7 +1413,7 @@ Make animations dynamic with REAL motion - characters move, swing weapons, chang
 
   const downloadAnimation = (animIndex) => {
     if (!generatedAnimations[animIndex]) return;
-    
+
     const anim = generatedAnimations[animIndex];
     const link = document.createElement('a');
     link.href = anim.url;
@@ -1409,7 +1428,7 @@ Make animations dynamic with REAL motion - characters move, swing weapons, chang
 
   const downloadAllAnimations = async () => {
     if (generatedAnimations.length === 0) return;
-    
+
     toast.info('Creating zip with all animations...');
     const JSZip = (await import('https://cdn.jsdelivr.net/npm/jszip@3.10.1/+esm')).default;
     const zip = new JSZip();
@@ -1429,7 +1448,7 @@ Make animations dynamic with REAL motion - characters move, swing weapons, chang
       link.click();
       document.body.removeChild(link);
       URL.revokeObjectURL(link.href);
-      
+
       toast.success('All animations downloaded!');
     } catch (error) {
       console.error('Error zipping animations:', error);
@@ -1442,7 +1461,7 @@ Make animations dynamic with REAL motion - characters move, swing weapons, chang
       <div className="relative">
         <div className="grid grid-cols-2 gap-2 p-4 bg-slate-50 dark:bg-slate-950">
           {preview && (
-            <div 
+            <div
               className="relative aspect-square rounded-lg overflow-hidden bg-slate-200 dark:bg-slate-800 cursor-pointer group"
               onClick={(isImage || isGif) && processed ? handleCompare : undefined}
             >
@@ -1452,12 +1471,12 @@ Make animations dynamic with REAL motion - characters move, swing weapons, chang
                   {isImage && enableAnimation ? outputGifFrameCount : gifFrameCount} frames
                 </Badge>
               ) : null}
-              
+
               {(isImage && !enableAnimation) ? (
-                <LazyImage 
-                  src={preview} 
-                  alt="Original" 
-                  className="w-full h-full object-cover transition-transform group-hover:scale-105" 
+                <LazyImage
+                  src={preview}
+                  alt="Original"
+                  className="w-full h-full object-cover transition-transform group-hover:scale-105"
                 />
               ) : isVideo || (isImage && enableAnimation) ? ( // Render img tag for animations (as they are GIFs)
                 <img src={preview} alt="Original" className="w-full h-full object-cover" />
@@ -1489,7 +1508,7 @@ Make animations dynamic with REAL motion - characters move, swing weapons, chang
             </div>
           )}
           {compressedPreview ? (
-            <div 
+            <div
               className="relative aspect-square rounded-lg overflow-hidden bg-slate-200 dark:bg-slate-800 cursor-pointer group"
               onClick={(isImage || isGif) ? handleCompare : undefined}
             >
@@ -1499,12 +1518,12 @@ Make animations dynamic with REAL motion - characters move, swing weapons, chang
                   {outputGifFrameCount} frames
                 </Badge>
               ) : null}
-              
+
               {(isImage && !enableAnimation) ? (
-                <LazyImage 
-                  src={compressedPreview} 
-                  alt="Compressed" 
-                  className="w-full h-full object-cover transition-transform group-hover:scale-105" 
+                <LazyImage
+                  src={compressedPreview}
+                  alt="Compressed"
+                  className="w-full h-full object-cover transition-transform group-hover:scale-105"
                 />
               ) : isVideo || (isImage && enableAnimation) ? ( // Render img tag for animations (as they are GIFs)
                 <img src={compressedPreview} alt="Compressed" className="w-full h-full object-cover" />
@@ -1573,12 +1592,12 @@ Make animations dynamic with REAL motion - characters move, swing weapons, chang
               </Button>
             </div>
           ) : (
-            <div 
-              className="group flex items-center gap-2 mb-1 cursor-pointer bg-slate-50 dark:bg-slate-900 hover:bg-emerald-50 dark:hover:bg-emerald-950/30 border border-slate-200 dark:border-slate-800 hover:border-emerald-300 dark:hover:border-emerald-700 rounded px-3 py-2 transition-all" 
+            <div
+              className="group flex items-center gap-2 mb-1 cursor-pointer bg-slate-50 dark:bg-slate-900 hover:bg-emerald-50 dark:hover:bg-emerald-950/30 border border-slate-200 dark:border-slate-800 hover:border-emerald-300 dark:hover:border-emerald-700 rounded px-3 py-2 transition-all"
               onClick={() => setIsEditingFilename(true)}
             >
-              <p 
-                className="flex-1 font-medium text-sm text-slate-900 dark:text-white group-hover:text-emerald-600 dark:group-hover:text-emerald-400 truncate transition-colors" 
+              <p
+                className="flex-1 font-medium text-sm text-slate-900 dark:text-white group-hover:text-emerald-600 dark:group-hover:text-emerald-400 truncate transition-colors"
                 title={editableFilename}
               >
                 {editableFilename}
@@ -1868,7 +1887,7 @@ Make animations dynamic with REAL motion - characters move, swing weapons, chang
                       disabled={processing}
                     />
                   </div>
-                  
+
                   {isGif && (
                     <div>
                       <div className="flex items-center gap-2 mb-2">
@@ -1888,7 +1907,7 @@ Make animations dynamic with REAL motion - characters move, swing weapons, chang
                       </Select>
                     </div>
                   )}
-                  
+
                   {(isImage && !isGif && !enableAnimation) && (
                     <div className="grid grid-cols-2 gap-2">
                       <div>
@@ -1988,7 +2007,7 @@ Make animations dynamic with REAL motion - characters move, swing weapons, chang
                             let targetWidth = originalImageDimensions.width;
                             let targetHeight = originalImageDimensions.height;
                             const aspectRatio = targetWidth / targetHeight;
-                            
+
                             if (upscaleMultiplier) {
                               targetWidth = Math.round(originalImageDimensions.width * (upscaleMultiplier / 100));
                               targetHeight = Math.round(originalImageDimensions.height * (upscaleMultiplier / 100));
@@ -1996,7 +2015,7 @@ Make animations dynamic with REAL motion - characters move, swing weapons, chang
                               // For upscaling, we always take the maximum ratio to ensure the image meets or exceeds the target size
                               const widthRatio = maxWidth ? maxWidth / originalImageDimensions.width : 0;
                               const heightRatio = maxHeight ? maxHeight / originalImageDimensions.height : 0;
-                              
+
                               let ratio = 1;
                               if (maxWidth && maxHeight) {
                                 ratio = Math.max(widthRatio, heightRatio);
@@ -2005,11 +2024,11 @@ Make animations dynamic with REAL motion - characters move, swing weapons, chang
                               } else if (maxHeight) {
                                 ratio = heightRatio;
                               }
-                              
+
                               targetWidth = Math.round(originalImageDimensions.width * ratio);
                               targetHeight = Math.round(originalImageDimensions.height * ratio);
                             }
-                            
+
                             return `${targetWidth} × ${targetHeight}`;
                           })()}
                         </span>
@@ -2038,7 +2057,7 @@ Make animations dynamic with REAL motion - characters move, swing weapons, chang
                       setEnableUpscale(checked);
                       if (!checked) {
                         setUpscaleMultiplier(null);
-                        setMaxWidth(null); 
+                        setMaxWidth(null);
                         setMaxHeight(null);
                       }
                     }}
@@ -2236,13 +2255,13 @@ Make animations dynamic with REAL motion - characters move, swing weapons, chang
                         </li>
                       </ul>
                     </div>
-                    
+
                     <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-lg p-3">
                       <p className="text-xs text-amber-700 dark:text-amber-400">
                         <strong>⚠️ Note:</strong> Frame 1 uses your actual image, then AI generates frames 2-10 showing motion and returning to the original pose. Like Midjourney's animation - starts with YOUR image, not a recreation!
                       </p>
                     </div>
-                    
+
                     {generatedAnimations.length > 0 && (
                       <div className="space-y-2 pt-2 border-t border-slate-200 dark:border-slate-800">
                         <div className="flex items-center justify-between mb-2">
@@ -2260,9 +2279,9 @@ Make animations dynamic with REAL motion - characters move, swing weapons, chang
                           </Button>
                         </div>
                         {generatedAnimations.map((anim, index) => (
-                          <div 
-                            key={index} 
-                            className="flex items-center justify-between bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-950/30 dark:to-pink-950/30 rounded-lg p-3 border border-purple-200 dark:border-purple-800 hover:border-purple-400 dark:hover:border-purple-600 transition-colors cursor-pointer" 
+                          <div
+                            key={index}
+                            className="flex items-center justify-between bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-950/30 dark:to-pink-950/30 rounded-lg p-3 border border-purple-200 dark:border-purple-800 hover:border-purple-400 dark:hover:border-purple-600 transition-colors cursor-pointer"
                             onClick={() => downloadAnimation(index)}
                           >
                             <div className="flex items-center gap-3">
