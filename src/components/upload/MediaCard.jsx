@@ -52,7 +52,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
   const [animationSettingsOpen, setAnimationSettingsOpen] = useState(false);
   const [enableAnimation, setEnableAnimation] = useState(false);
   const [animationDuration, setAnimationDuration] = useState(5);
-  const [animationType, setAnimationType] = useState('zoom'); // 'zoom', 'slow-pan', 'breathe', 'drift'
+  const [animationType, setAnimationType] = useState('zoom'); // 'zoom', 'ripple', 'ken-burns', 'glow'
   const [generatedAnimations, setGeneratedAnimations] = useState([]);
 
   // GIF.js states (kept for regular GIF processing)
@@ -637,6 +637,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
       
       let targetWidth = gifSettings.width;
       let targetHeight = gifSettings.height;
+      let needsResize = false;
       
       // Calculate target dimensions if resize is requested
       if (maxWidth || maxHeight) {
@@ -650,24 +651,65 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
           if (ratio < 1) {
             targetWidth = Math.round(gifSettings.width * ratio);
             targetHeight = Math.round(gifSettings.height * ratio);
+            needsResize = true;
           }
         } else if (maxWidth && maxWidth < gifSettings.width) {
           targetWidth = maxWidth;
           targetHeight = Math.round(maxWidth / aspectRatio);
+          needsResize = true;
         } else if (maxHeight && maxHeight < gifSettings.height) {
           targetHeight = maxHeight;
           targetWidth = Math.round(maxHeight * aspectRatio);
+          needsResize = true;
         }
       }
       
-      console.log(`Target size: ${targetWidth}x${targetHeight}`);
+      // If no resize needed and quality is high, return original
+      if (!needsResize && quality >= 80) {
+        console.log('No resize needed and quality is high, using original GIF');
+        const compressedUrl = URL.createObjectURL(originalBlob);
+        setCompressedPreview(compressedUrl);
+        setCompressedSize(originalBlob.size);
+        setCompressedBlob(originalBlob);
+        setProcessed(true);
+        setOutputFormat('gif');
+        setOutputGifFrameCount(gifFrameCount);
+
+        onProcessed({
+          id: image.name,
+          originalFile: image,
+          compressedBlob: originalBlob,
+          compressedUrl,
+          originalSize: image.size,
+          compressedSize: originalBlob.size,
+          format: 'gif',
+          filename: getOutputFilename('gif'),
+          mediaType: 'image',
+          fileFormat: 'gif'
+        });
+        
+        toast.success('GIF ready (preserving original quality)');
+        return;
+      }
+
+      console.log(`Target size: ${targetWidth}x${targetHeight}, needsResize: ${needsResize}`);
       
-      // ALWAYS use high quality settings for good-looking GIFs
-      // Frame handling - keep most frames
-      const frameSkip = 1;
-      const maxFramesToProcess = Math.min(gifSettings.frames.length, 800);
+      // Frame handling based on quality
+      let frameSkip = 1;
+      let maxFramesToProcess = gifSettings.frames.length;
       
-      console.log(`Processing ${maxFramesToProcess} frames (keeping all frames for quality)`);
+      if (quality < 50) {
+        frameSkip = 2; // Skip every other frame for lower quality
+        maxFramesToProcess = Math.min(gifSettings.frames.length, 400);
+      } else if (quality < 80) {
+        frameSkip = 1;
+        maxFramesToProcess = Math.min(gifSettings.frames.length, 600);
+      } else {
+        frameSkip = 1;
+        maxFramesToProcess = Math.min(gifSettings.frames.length, 1000);
+      }
+      
+      console.log(`Processing with frameSkip=${frameSkip}, maxFrames=${maxFramesToProcess}, quality=${quality}`);
       
       const processedFrames = [];
       
@@ -736,11 +778,10 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
 
       const GIF = window.GIF;
       
-      // ALWAYS use excellent quality (1-3 range) for good-looking GIFs
-      // Minor compression only, prioritize visual quality
-      const gifQuality = Math.max(1, Math.min(3, Math.round((100 - quality) / 33)));
+      // Quality mapping: Higher user quality = lower gif.js quality number (better)
+      let gifQuality = Math.max(1, Math.round((100 - quality) / 10));
       
-      console.log(`GIF.js quality: ${gifQuality} (1=best, always high quality mode)`);
+      console.log(`GIF.js quality: ${gifQuality} (1=best, 30=worst), user quality: ${quality}%`);
       
       const gif = new GIF({
         workers: 4,
@@ -986,7 +1027,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
     });
   };
 
-  // Simple camera-effect animation using EXACT uploaded image
+  // Ultra-smooth professional animation effects
   const processImageToAnimation = async () => {
     if (!gifJsLoaded || !window.GIF || !workerBlobUrl) {
       toast.error('Animation library not ready. Please wait...');
@@ -1023,7 +1064,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
       width = width % 2 === 0 ? width : width - 1;
       height = height % 2 === 0 ? height : height - 1;
       
-      const totalFrames = 90; // 90 frames for ultra-smooth animation
+      const totalFrames = 120; // 120 frames for ultra-smooth animation
       const frames = [];
       
       console.log(`Generating ${totalFrames} frames with ${animationType} effect...`);
@@ -1042,41 +1083,63 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
           ? i / (totalFrames / 2) 
           : 2 - (i / (totalFrames / 2));
         
-        // Apply smooth easing (ease-in-out)
+        // Apply smooth easing (ease-in-out cubic)
         const progress = rawProgress < 0.5
-          ? 2 * rawProgress * rawProgress
-          : 1 - Math.pow(-2 * rawProgress + 2, 2) / 2;
+          ? 4 * rawProgress * rawProgress * rawProgress
+          : 1 - Math.pow(-2 * rawProgress + 2, 3) / 2;
         
         // Apply animation effect
         switch (animationType) {
           case 'zoom':
-            // Smooth zoom from 100% to 108% and back
-            const scale = 1 + (progress * 0.08);
+            // Smooth zoom from 100% to 110% and back
+            const scale = 1 + (progress * 0.1);
             ctx.translate(width / 2, height / 2);
             ctx.scale(scale, scale);
             ctx.translate(-width / 2, -height / 2);
             break;
             
-          case 'slow-pan':
-            // Ultra-slow horizontal pan
-            const panX = progress * (width * 0.05);
-            ctx.translate(-panX + (width * 0.025), 0);
-            break;
+          case 'ripple':
+            // Ripple distortion effect
+            const rippleStrength = progress * 10;
+            const rippleFrequency = 0.05;
             
-          case 'breathe':
-            // Gentle breathing effect (subtle scale pulse)
-            const breatheScale = 1 + (progress * 0.03);
+            // Draw image with ripple distortion
+            for (let y = 0; y < height; y++) {
+              const offsetX = Math.sin(y * rippleFrequency + progress * Math.PI * 2) * rippleStrength;
+              ctx.drawImage(img, offsetX, y, width, 1, 0, y, width, 1);
+            }
+            ctx.restore();
+            frames.push(canvas);
+            continue; // Skip normal drawing
+            
+          case 'ken-burns':
+            // Ken Burns effect (slow zoom + pan)
+            const kbScale = 1 + (progress * 0.15);
+            const kbPanX = progress * (width * 0.08);
+            const kbPanY = progress * (height * 0.05);
+            
             ctx.translate(width / 2, height / 2);
-            ctx.scale(breatheScale, breatheScale);
-            ctx.translate(-width / 2, -height / 2);
+            ctx.scale(kbScale, kbScale);
+            ctx.translate(-width / 2 - kbPanX + (width * 0.04), -height / 2 - kbPanY + (height * 0.025));
             break;
             
-          case 'drift':
-            // Diagonal drift (subtle movement)
-            const driftX = progress * (width * 0.03);
-            const driftY = progress * (height * 0.03);
-            ctx.translate(-driftX + (width * 0.015), -driftY + (height * 0.015));
-            break;
+          case 'glow':
+            // Subtle glow pulsing effect
+            const glowIntensity = progress * 0.3;
+            
+            // Draw image normally first
+            ctx.globalAlpha = 1;
+            ctx.drawImage(img, 0, 0, width, height);
+            
+            // Add glow layer
+            ctx.globalCompositeOperation = 'lighter';
+            ctx.globalAlpha = glowIntensity;
+            ctx.filter = 'blur(8px)';
+            ctx.drawImage(img, -4, -4, width + 8, height + 8);
+            
+            ctx.restore();
+            frames.push(canvas);
+            continue; // Skip normal drawing
         }
         
         ctx.imageSmoothingEnabled = true;
@@ -1086,7 +1149,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
         
         frames.push(canvas);
         
-        if (i % 15 === 0) {
+        if (i % 20 === 0) {
           console.log(`Generated frame ${i + 1}/${totalFrames}`);
         }
       }
@@ -1098,7 +1161,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
       const GIF = window.GIF;
       const gif = new GIF({
         workers: 4,
-        quality: 3,
+        quality: 5,
         width,
         height,
         workerScript: workerBlobUrl,
@@ -1113,7 +1176,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
       }
       
       const gifBlob = await new Promise((resolve, reject) => {
-        const timeout = setTimeout(() => reject(new Error('Timeout')), 120000);
+        const timeout = setTimeout(() => reject(new Error('Timeout')), 180000);
         gif.on('finished', (blob) => { clearTimeout(timeout); resolve(blob); });
         gif.on('error', (err) => { clearTimeout(timeout); reject(err); });
         gif.on('progress', (p) => {
@@ -1826,39 +1889,6 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
                     />
                   </div>
 
-                  {/* GIF Optimization section removed as logic is now hardcoded for quality in processGif */}
-                  {/* {isGif && (
-                    <div>
-                      <div className="flex items-center gap-2 mb-2">
-                        <label className="text-xs font-medium text-slate-700 dark:text-slate-300">
-                          GIF Optimization
-                        </label>
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Info className="w-3 h-3 text-slate-400 cursor-help" />
-                          </TooltipTrigger>
-                          <TooltipContent className="max-w-xs">
-                            <p className="text-xs">
-                              <strong>Quality:</strong> Best quality, all frames preserved<br/>
-                              <strong>Balanced:</strong> Good quality, some frames skipped<br/>
-                              <strong>Size:</strong> Smallest file, more compression
-                            </p>
-                          </TooltipContent>
-                        </Tooltip>
-                      </div>
-                      <Select value={gifOptimization} onValueChange={setGifOptimization} disabled={processing}>
-                        <SelectTrigger className="h-9">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="quality">Quality (Best Quality)</SelectItem>
-                          <SelectItem value="balanced">Balanced (Good Quality)</SelectItem>
-                          <SelectItem value="size">Size (Smallest File)</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  )} */}
-
                   {(isImage && !isGif) && (
                     <div className="grid grid-cols-2 gap-2">
                       <div>
@@ -2165,9 +2195,9 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
                         </SelectTrigger>
                         <SelectContent>
                           <SelectItem value="zoom">Smooth Zoom</SelectItem>
-                          <SelectItem value="slow-pan">Slow Pan</SelectItem>
-                          <SelectItem value="breathe">Gentle Breathe</SelectItem>
-                          <SelectItem value="drift">Subtle Drift</SelectItem>
+                          <SelectItem value="ripple">Ripple Effect</SelectItem>
+                          <SelectItem value="ken-burns">Ken Burns</SelectItem>
+                          <SelectItem value="glow">Glow Pulse</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
