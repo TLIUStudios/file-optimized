@@ -605,25 +605,23 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
 
 CRITICAL INSTRUCTIONS:
 - Frame 1 is ALWAYS the exact uploaded image (no generation needed)
-- Frames 2-11 show progressive motion/action
-- Frame 12 MUST return character/subject to the exact same pose as Frame 1 for seamless loop
+- Frames 2-9 show progressive motion/action
+- Frame 10 MUST return character/subject to the exact same pose as Frame 1 for seamless loop
 
 For each animation:
 1. Describe what's in this EXACT image (objects, people, poses, expressions, background)
 2. Create a cinematic animation concept that makes sense for THIS specific scene
-3. Provide frame descriptions for frames 2-12 ONLY (frame 1 is the original image):
+3. Provide frame descriptions for frames 2-10 ONLY (frame 1 is the original image):
    - Frame 2: Very slight change from original pose
-   - Frames 3-10: Progressive motion (character moves, performs action)
-   - Frame 11: Beginning to return to original pose
-   - Frame 12: EXACT same pose as Frame 1 (critical for seamless loop!)
+   - Frames 3-9: Progressive motion (character moves, performs action)
+   - Frame 10: EXACT same pose as Frame 1 (critical for seamless loop!)
 
 Example for image of "anime girl with sword":
 Frame 1: [Original image - not generated]
 Frame 2: Girl's eyes narrow slightly, grip tightens on sword handle
 Frame 3: Begins drawing sword from sheath, body starts to rotate
-Frame 4-10: [progressive sword swing motion]
-Frame 11: Sword returning to sheath, body rotating back
-Frame 12: EXACT same standing pose as Frame 1 - ready stance with sword at side
+Frame 4-9: [progressive sword swing motion]
+Frame 10: EXACT same standing pose as Frame 1 - ready stance with sword at side
 
 Output format:
 {
@@ -638,7 +636,7 @@ Output format:
         "Frame 2: [very slight change from original]",
         "Frame 3: [small motion begins]",
         ...
-        "Frame 12: [EXACT same pose as original image for perfect loop]"
+        "Frame 10: [EXACT same pose as original image for perfect loop]"
       ]
     }
   ]
@@ -675,7 +673,7 @@ Make animations dynamic with REAL motion - characters move, swing weapons, chang
       
       // Step 3: Generate frames for each animation
       const generatedGifs = [];
-      const framesPerAnimation = 12;
+      const framesPerAnimation = 10; // Reduced from 12 to 10 for faster processing
       
       for (let animIndex = 0; animIndex < animationConcepts.length; animIndex++) {
         const anim = animationConcepts[animIndex];
@@ -691,16 +689,16 @@ Make animations dynamic with REAL motion - characters move, swing weapons, chang
           isOriginal: true
         });
         
-        // Frames 2-12: Generate with AI
+        // Frames 2-10: Generate with AI (reduced from 2-12)
         for (let frameIndex = 1; frameIndex < framesPerAnimation; frameIndex++) {
           toast.info(`Creating ${anim.name}... Frame ${frameIndex + 1}/${framesPerAnimation}`, { id: 'anim-gen' });
           
           try {
-            const framePrompt = anim.frame_prompts[frameIndex -1]; // frame_prompts now starts at index 0 for Frame 2
+            const framePrompt = anim.frame_prompts[frameIndex - 1]; // frame_prompts array adjusted
             
-            // For frame 12, explicitly reference returning to original pose
+            // For frame 10 (last frame), explicitly reference returning to original pose
             const enhancedPrompt = frameIndex === framesPerAnimation - 1 
-              ? `${analysisResult.image_style} style. ${framePrompt}. CRITICAL: This is the final frame - the character/subject should return to the EXACT SAME pose as the original image based on description: "${analysisResult.subject_pose}". Match the original image's composition, character position, and pose exactly.`
+              ? `${analysisResult.image_style} style. ${framePrompt}. CRITICAL: This is the final frame - the character/subject should return to the EXACT SAME pose as the original image for seamless looping. Match the original image's composition, character position, and pose exactly.`
               : `${analysisResult.image_style} style. ${framePrompt}. Match the style and quality of the original image exactly. Maintain consistent character features, lighting, and composition.`;
             
             // Generate image for this frame
@@ -1824,7 +1822,7 @@ Make animations dynamic with REAL motion - characters move, swing weapons, chang
                         </li>
                         <li className="flex items-start gap-2">
                           <span className="text-purple-500 mt-0.5">🔄</span>
-                          <span><strong>Perfect loops:</strong> AI generates frames 2-11, then returns to your original image for seamless loop</span>
+                          <span><strong>Perfect loops:</strong> AI generates frames 2-9, then returns to your original image for seamless loop</span>
                         </li>
                         <li className="flex items-start gap-2">
                           <span className="text-purple-500 mt-0.5">🎨</span>
@@ -1832,14 +1830,14 @@ Make animations dynamic with REAL motion - characters move, swing weapons, chang
                         </li>
                         <li className="flex items-start gap-2">
                           <span className="text-purple-500 mt-0.5">⏱️</span>
-                          <span><strong>Processing time:</strong> 2-4 minutes (generates 44 unique frames - 11 per animation)</span>
+                          <span><strong>Processing time:</strong> 2-4 minutes (generates 36 unique frames - 9 per animation)</span>
                         </li>
                       </ul>
                     </div>
                     
                     <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-lg p-3">
                       <p className="text-xs text-amber-700 dark:text-amber-400">
-                        <strong>⚠️ Note:</strong> Frame 1 uses your actual image, then AI generates frames 2-12 showing motion and returning to the original pose. Like Midjourney's animation - starts with YOUR image, not a recreation!
+                        <strong>⚠️ Note:</strong> Frame 1 uses your actual image, then AI generates frames 2-10 showing motion and returning to the original pose. Like Midjourney's animation - starts with YOUR image, not a recreation!
                       </p>
                     </div>
                     
