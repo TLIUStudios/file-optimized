@@ -613,14 +613,16 @@ For each animation:
 2. Create a cinematic animation concept that makes sense for THIS specific scene
 3. Provide frame descriptions for frames 2-10 ONLY (frame 1 is the original image):
    - Frame 2: Very slight change from original pose
-   - Frames 3-9: Progressive motion (character moves, performs action)
-   - Frame 10: EXACT same pose as Frame 1 (critical for seamless loop!)
+   - Frames 3-8: Progressive motion (character moves, performs action)
+   - Frame 9: Beginning to return to original pose
+   - Frame 10: EXACT SAME pose as Frame 1 (critical for seamless loop!)
 
 Example for image of "anime girl with sword":
 Frame 1: [Original image - not generated]
 Frame 2: Girl's eyes narrow slightly, grip tightens on sword handle
 Frame 3: Begins drawing sword from sheath, body starts to rotate
-Frame 4-9: [progressive sword swing motion]
+Frame 4-8: [progressive sword swing motion]
+Frame 9: Sword returning to sheath, body rotating back
 Frame 10: EXACT same standing pose as Frame 1 - ready stance with sword at side
 
 Output format:
@@ -628,18 +630,20 @@ Output format:
   "scene_description": "Detailed description of EXACTLY what's in the uploaded image",
   "image_style": "art style (anime/photo/cartoon/3D/etc)",
   "subject_pose": "Exact pose/position of main subject in original image",
-  "animations": [
-    {
-      "name": "Animation Name",
-      "concept": "brief description",
-      "frame_prompts": [
-        "Frame 2: [very slight change from original]",
-        "Frame 3: [small motion begins]",
-        ...
-        "Frame 10: [EXACT same pose as original image for perfect loop]"
-      ]
+  "animations": {
+    "type": "array",
+    "items": {
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "concept": { "type": "string" },
+        "frame_prompts": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      }
     }
-  ]
+  }
 }
 
 Make animations dynamic with REAL motion - characters move, swing weapons, change expressions, etc!`,
