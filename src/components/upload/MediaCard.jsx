@@ -663,35 +663,48 @@ Make animations creative and dynamic - they should have real motion and action!`
         toast.info(`Step 3/3: Creating ${anim.name}... (${animIndex + 1}/4)`, { id: 'anim-gen' });
         
         const frames = [];
-        const totalFrames = Math.min(anim.frame_prompts.length, framesPerAnimation);
         
-        // Generate each frame with AI
-        for (let frameIndex = 0; frameIndex < totalFrames; frameIndex++) {
-          toast.info(`Creating ${anim.name}... Frame ${frameIndex + 1}/${totalFrames}`, { id: 'anim-gen' });
+        // Frame 1: Use the ACTUAL uploaded image (not AI-generated)
+        console.log(`✅ Frame 1/${framesPerAnimation}: Using original uploaded image`);
+        frames.push({
+          url: imageUrl, // The actual uploaded image
+          index: 0,
+          isOriginal: true
+        });
+        
+        // Frames 2-12: Generate with AI
+        for (let frameIndex = 1; frameIndex < framesPerAnimation; frameIndex++) {
+          toast.info(`Creating ${anim.name}... Frame ${frameIndex + 1}/${framesPerAnimation}`, { id: 'anim-gen' });
           
           try {
             const framePrompt = anim.frame_prompts[frameIndex];
             
+            // For frame 12, explicitly reference returning to original pose
+            const enhancedPrompt = frameIndex === framesPerAnimation - 1 
+              ? `${analysisResult.image_style} style. ${framePrompt}. CRITICAL: This is the final frame - the character/subject should return to the EXACT SAME pose as the original image for seamless looping. Match the original image's composition, character position, and pose exactly.`
+              : `${analysisResult.image_style} style. ${framePrompt}. Match the style and quality of the original image exactly. Maintain consistent character features, lighting, and composition.`;
+            
             // Generate image for this frame
             // Assuming base44 is globally available as per instructions
             const frameResult = await base44.integrations.Core.GenerateImage({
-              prompt: `${analysisResult.image_style} style. ${framePrompt}. Match the style and quality of the original image exactly. Maintain consistent character features, lighting, and composition.`
+              prompt: enhancedPrompt
             });
             
             frames.push({
               url: frameResult.url,
-              index: frameIndex
+              index: frameIndex,
+              isOriginal: false
             });
             
-            console.log(`✅ Frame ${frameIndex + 1}/${totalFrames} generated for ${anim.name}`);
+            console.log(`✅ Frame ${frameIndex + 1}/${framesPerAnimation} generated for ${anim.name}`);
           } catch (frameError) {
             console.error(`Failed to generate frame ${frameIndex + 1}:`, frameError);
             // Continue with other frames
           }
         }
         
-        if (frames.length === 0) {
-          console.error(`No frames generated for ${anim.name}`);
+        if (frames.length < 2) { // Need at least original + 1 generated frame
+          console.error(`Insufficient frames generated for ${anim.name}`);
           continue;
         }
         
@@ -720,8 +733,8 @@ Make animations creative and dynamic - they should have real motion and action!`
               img.src = frame.url;
             });
             
-            loadedFrames.push({ img, index: frame.index });
-            console.log(`✅ Loaded frame ${i + 1}/${frames.length}`);
+            loadedFrames.push({ img, index: frame.index, isOriginal: frame.isOriginal });
+            console.log(`✅ Loaded frame ${i + 1}/${frames.length}${frame.isOriginal ? ' (ORIGINAL IMAGE)' : ''}`);
           } catch (error) {
             console.error(`Failed to load frame ${i + 1}:`, error);
             // Continue with other frames
