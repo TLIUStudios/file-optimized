@@ -167,52 +167,6 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
   }, [autoProcess, processed, processing]);
 
   useEffect(() => {
-    if (enableAnimation && !gifJsLoaded) {
-      const loadGifJs = async () => {
-        try {
-          if (window.GIF && workerBlobUrl) {
-            setGifJsLoaded(true);
-            return;
-          }
-
-          console.log('📦 Loading GIF.js library...');
-
-          if (!window.GIF) {
-            await new Promise((resolve, reject) => {
-              const script = document.createElement('script');
-              script.src = 'https://cdn.jsdelivr.net/npm/gif.js@0.2.0/dist/gif.js';
-              script.onload = () => {
-                setTimeout(() => {
-                  if (window.GIF) resolve();
-                  else reject(new Error('GIF.js not available after script load'));
-                }, 100);
-              };
-              script.onerror = () => reject(new Error('Failed to load GIF.js'));
-              document.head.appendChild(script);
-            });
-          }
-
-          console.log('👷 Loading worker script...');
-          const workerResponse = await fetch('https://cdn.jsdelivr.net/npm/gif.js@0.2.0/dist/gif.worker.js');
-          const workerText = await workerResponse.text();
-          const workerBlob = new Blob([workerText], { type: 'application/javascript' });
-          const workerUrl = URL.createObjectURL(workerBlob);
-          
-          setWorkerBlobUrl(workerUrl);
-          setGifJsLoaded(true);
-          console.log('✅ GIF.js and worker loaded successfully');
-          toast.success('AI animation engine ready!');
-        } catch (error) {
-          console.error('Failed to load GIF.js:', error);
-          toast.error('Failed to load AI animation engine: ' + error.message);
-        }
-      };
-
-      loadGifJs();
-    }
-  }, [enableAnimation, gifJsLoaded, workerBlobUrl]);
-
-  useEffect(() => {
     return () => {
       if (workerBlobUrl) {
         URL.revokeObjectURL(workerBlobUrl);
@@ -985,7 +939,7 @@ Make animations dynamic with REAL motion - characters move, swing weapons, chang
       
       for (let animIndex = 0; animIndex < animationConcepts.length; animIndex++) {
         const anim = animationConcepts[animIndex];
-        toast.info(`Step 3/3: Creating ${anim.name}... (${animIndex + 1}/${animationConcepts.length})`, { id: 'anim-gen' });
+        toast.info(`Step 3/3: Creating ${anim.name}... (${animIndex + 1}/4)`, { id: 'anim-gen' });
         
         const frames = [];
         
