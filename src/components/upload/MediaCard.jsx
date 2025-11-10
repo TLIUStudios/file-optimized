@@ -51,7 +51,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
   // Animation states
   const [animationSettingsOpen, setAnimationSettingsOpen] = useState(false);
   const [enableAnimation, setEnableAnimation] = useState(false);
-  const [animationDuration, setAnimationDuration] = useState(3);
+  const [animationDuration, setAnimationDuration] = useState(5);
   const [animationType, setAnimationType] = useState('zoom'); // 'zoom', 'pan-right', 'pan-left', 'rotate'
   const [generatedAnimations, setGeneratedAnimations] = useState([]);
 
@@ -213,7 +213,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
 
   useEffect(() => {
     // Load GIF.js for both animations AND GIF compression
-    if ((enableAnimation || isGif) && !gifJsLoaded) {
+    if (((enableAnimation && isImage && !isGif) || isGif) && !gifJsLoaded) {
       const loadGifJs = async () => {
         try {
           if (window.GIF && workerBlobUrl) {
@@ -259,7 +259,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
 
       loadGifJs();
     }
-  }, [enableAnimation, isGif, gifJsLoaded, workerBlobUrl]);
+  }, [enableAnimation, isGif, gifJsLoaded, workerBlobUrl, isImage]);
 
   useEffect(() => {
     return () => {
@@ -606,34 +606,6 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
       const response = await fetch(preview);
       const originalBlob = await response.blob();
       
-      // If no resize dimensions are set, just return the original
-      if (!maxWidth && !maxHeight) {
-        console.log('No resize needed, using original GIF');
-        const compressedUrl = URL.createObjectURL(originalBlob);
-        setCompressedPreview(compressedUrl);
-        setCompressedSize(originalBlob.size);
-        setCompressedBlob(originalBlob);
-        setProcessed(true);
-        setOutputFormat('gif');
-        setOutputGifFrameCount(gifFrameCount);
-
-        onProcessed({
-          id: image.name,
-          originalFile: image,
-          compressedBlob: originalBlob,
-          compressedUrl,
-          originalSize: image.size,
-          compressedSize: originalBlob.size,
-          format: 'gif',
-          filename: getOutputFilename('gif'),
-          mediaType: 'image',
-          fileFormat: 'gif'
-        });
-        
-        toast.success('GIF ready (no compression needed - preserving original quality)');
-        return;
-      }
-      
       if (!gifSettings.frames || gifSettings.frames.length === 0) {
         console.warn('No frames found in GIF, using original');
         const compressedUrl = URL.createObjectURL(originalBlob);
@@ -665,9 +637,8 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
       
       let targetWidth = gifSettings.width;
       let targetHeight = gifSettings.height;
-      let needsResize = false;
       
-      // Calculate target dimensions
+      // Calculate target dimensions if resize is requested
       if (maxWidth || maxHeight) {
         const aspectRatio = gifSettings.width / gifSettings.height;
         
@@ -679,24 +650,38 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
           if (ratio < 1) {
             targetWidth = Math.round(gifSettings.width * ratio);
             targetHeight = Math.round(gifSettings.height * ratio);
-            needsResize = true;
           }
         } else if (maxWidth && maxWidth < gifSettings.width) {
           targetWidth = maxWidth;
           targetHeight = Math.round(maxWidth / aspectRatio);
-          needsResize = true;
         } else if (maxHeight && maxHeight < gifSettings.height) {
           targetHeight = maxHeight;
           targetWidth = Math.round(maxHeight * aspectRatio);
-          needsResize = true;
         }
       }
       
-      console.log(`Target size: ${targetWidth}x${targetHeight}, needsResize: ${needsResize}`);
+      console.log(`Target size: ${targetWidth}x${targetHeight}`);
       
-      // If no resize needed, return original
-      if (!needsResize) {
-        console.log('No resize needed, using original GIF');
+      // Frame handling based on optimization mode
+      let frameSkip = 1;
+      let maxFramesToProcess = gifSettings.frames.length;
+      
+      if (gifOptimization === 'balanced') {
+        frameSkip = 2;
+        maxFramesToProcess = Math.min(gifSettings.frames.length, 300);
+      } else if (gifOptimization === 'size') {
+        frameSkip = 3;
+        maxFramesToProcess = Math.min(gifSettings.frames.length, 200);
+      } else {
+        // Quality mode - ALL frames
+        frameSkip = 1;
+        maxFramesToProcess = Math.min(gifSettings.frames.length, 1000);
+      }
+      
+      // If no resize and 'quality' optimization, and no other specific optimization, just use original
+      let needsProcessing = (maxWidth || maxHeight) || (gifOptimization !== 'quality');
+      if (!needsProcessing) {
+        console.log('No resize or specific optimization needed, using original GIF.');
         const compressedUrl = URL.createObjectURL(originalBlob);
         setCompressedPreview(compressedUrl);
         setCompressedSize(originalBlob.size);
@@ -718,17 +703,11 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
           fileFormat: 'gif'
         });
         
-        toast.success('GIF ready (preserving original quality)');
+        toast.info('GIF ready (no optimization needed - preserving original quality)');
         return;
       }
-      
-      // Only proceed with re-encoding if resize is needed
-      console.log('Resizing GIF...');
-      
-      // Frame handling - keep ALL frames for quality
-      const frameSkip = 1;
-      const maxFramesToProcess = Math.min(gifSettings.frames.length, 1000);
-      
+
+
       console.log(`Processing with frameSkip=${frameSkip}, maxFrames=${maxFramesToProcess}`);
       
       const processedFrames = [];
@@ -775,7 +754,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
           frameCtx.imageSmoothingQuality = 'high';
           frameCtx.drawImage(tempCanvas, 0, 0, targetWidth, targetHeight);
           
-          const delay = frame.delay ? Math.max(20, frame.delay * 10) : 100;
+          const delay = frame.delay ? Math.max(20, Math.round(frame.delay * 10 * frameSkip)) : Math.round(100 * frameSkip);
           
           processedFrames.push({
             canvas: frameCanvas,
@@ -798,10 +777,22 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
 
       const GIF = window.GIF;
       
-      // BEST QUALITY SETTINGS - quality 1 is the best
-      const gifQuality = 1;
+      // Quality settings based on user's quality slider and optimization mode
+      let gifQuality = 10; // Default
       
-      console.log(`GIF.js quality: ${gifQuality} (1=best, 30=worst)`);
+      if (gifOptimization === 'quality') {
+        // Quality mode: Map quality slider (0-100) to gif.js quality (1-10)
+        // 100% quality = 1, 90% = 2, 80% = 3, etc.
+        gifQuality = Math.max(1, Math.round((100 - quality) / 10));
+      } else if (gifOptimization === 'balanced') {
+        // Balanced: 10-15
+        gifQuality = Math.max(10, Math.min(15, Math.round((100 - quality) / 6)));
+      } else {
+        // Size mode: 18-25 (more compression)
+        gifQuality = Math.max(18, Math.min(25, Math.round((100 - quality) / 4)));
+      }
+      
+      console.log(`GIF.js quality: ${gifQuality} (1=best, 30=worst), mode: ${gifOptimization}, user quality: ${quality}%`);
       
       const gif = new GIF({
         workers: 4,
@@ -884,9 +875,9 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
 
       const savings = ((1 - gifBlob.size / image.size) * 100).toFixed(1);
       if (gifBlob.size < image.size) {
-        toast.success(`GIF resized! ${processedFrames.length} frames, saved ${savings}%`);
+        toast.success(`GIF optimized! ${processedFrames.length} frames, saved ${savings}%`);
       } else {
-        toast.info(`GIF resized • ${processedFrames.length} frames`);
+        toast.info(`GIF processed • ${processedFrames.length} frames`);
       }
     } catch (error) {
       console.error('❌ GIF optimization failed:', error);
@@ -1084,7 +1075,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
       width = width % 2 === 0 ? width : width - 1;
       height = height % 2 === 0 ? height : height - 1;
       
-      const totalFrames = 20; // 20 frames for smooth animation
+      const totalFrames = 60; // 60 frames for ultra-smooth animation
       const frames = [];
       
       console.log(`Generating ${totalFrames} frames with ${animationType} effect...`);
@@ -1098,7 +1089,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
         ctx.clearRect(0, 0, width, height);
         ctx.save();
         
-        // Calculate progress (0 to 1 and back to 0 for loop)
+        // Calculate progress (0 to 1 and back to 0 for smooth loop)
         const progress = i < totalFrames / 2 
           ? i / (totalFrames / 2) 
           : 2 - (i / (totalFrames / 2));
@@ -1141,7 +1132,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
         
         frames.push(canvas);
         
-        if (i % 5 === 0) {
+        if (i % 10 === 0) {
           console.log(`Generated frame ${i + 1}/${totalFrames}`);
         }
       }
@@ -1168,7 +1159,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
       }
       
       const gifBlob = await new Promise((resolve, reject) => {
-        const timeout = setTimeout(() => reject(new Error('Timeout')), 60000);
+        const timeout = setTimeout(() => reject(new Error('Timeout')), 120000);
         gif.on('finished', (blob) => { clearTimeout(timeout); resolve(blob); });
         gif.on('error', (err) => { clearTimeout(timeout); reject(err); });
         gif.on('progress', (p) => {
@@ -2176,7 +2167,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
                         <Info className="w-3 h-3 text-slate-400 cursor-help" />
                       </TooltipTrigger>
                       <TooltipContent className="max-w-xs">
-                        <p className="text-xs">Creates a simple animated GIF using YOUR EXACT image with camera effects (zoom, pan, rotate). Fast & uses your actual uploaded image!</p>
+                        <p className="text-xs">Animate your image with camera effects - zoom, pan, or rotate</p>
                       </TooltipContent>
                     </Tooltip>
                   </div>
@@ -2234,36 +2225,11 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
                         value={[animationDuration]}
                         onValueChange={(value) => setAnimationDuration(value[0])}
                         min={2}
-                        max={5}
+                        max={10}
                         step={1}
                         className="w-full"
                         disabled={processing}
                       />
-                    </div>
-
-                    <div className="bg-gradient-to-br from-blue-50 to-cyan-50 dark:from-blue-950/30 dark:to-cyan-950/30 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
-                      <p className="text-xs text-blue-700 dark:text-blue-400 mb-2 font-semibold flex items-center gap-2">
-                        <Sparkles className="w-4 h-4" />
-                        <strong>Simple Camera Effects</strong>
-                      </p>
-                      <ul className="text-xs text-blue-600 dark:text-blue-400 space-y-1.5">
-                        <li className="flex items-start gap-2">
-                          <span className="text-blue-500 mt-0.5">✓</span>
-                          <span>Uses YOUR EXACT uploaded image</span>
-                        </li>
-                        <li className="flex items-start gap-2">
-                          <span className="text-blue-500 mt-0.5">✓</span>
-                          <span>Fast processing (no AI needed)</span>
-                        </li>
-                        <li className="flex items-start gap-2">
-                          <span className="text-blue-500 mt-0.5">✓</span>
-                          <span>Small file size</span>
-                        </li>
-                        <li className="flex items-start gap-2">
-                          <span className="text-blue-500 mt-0.5">✓</span>
-                          <span>Smooth 20-frame loop</span>
-                        </li>
-                      </ul>
                     </div>
                   </>
                 )}
@@ -2276,7 +2242,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
           {!processed ? (
             <Button
               onClick={processMedia}
-              disabled={processing || (isVideo && !ffmpegLoaded) || (isAudio && !ffmpegLoaded) || (isGif && format === 'mp4' && !ffmpegLoaded) || ((isGif || enableAnimation) && !gifJsLoaded)}
+              disabled={processing || (isVideo && !ffmpegLoaded) || (isAudio && !ffmpegLoaded) || (isGif && format === 'mp4' && !ffmpegLoaded) || (((isGif && format === 'gif') || (isImage && !isGif && enableAnimation)) && !gifJsLoaded)}
               className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white"
             >
               {processing ? (
@@ -2297,7 +2263,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
                 onClick={processMedia}
                 variant="outline"
                 className="flex-1"
-                disabled={processing || (isVideo && !ffmpegLoaded) || (isAudio && !ffmpegLoaded) || (isGif && format === 'mp4' && !ffmpegLoaded) || ((isGif || enableAnimation) && !gifJsLoaded)}
+                disabled={processing || (isVideo && !ffmpegLoaded) || (isAudio && !ffmpegLoaded) || (isGif && format === 'mp4' && !ffmpegLoaded) || (((isGif && format === 'gif') || (isImage && !isGif && enableAnimation)) && !gifJsLoaded)}
               >
                 <RefreshCcw className="w-4 h-4 mr-2" />
                 Reprocess
