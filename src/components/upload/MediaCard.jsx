@@ -54,6 +54,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
   const [animationDuration, setAnimationDuration] = useState(3); // seconds
   const [generatedAnimations, setGeneratedAnimations] = useState([]); // Store 4 variations
   const [gifJsLoaded, setGifJsLoaded] = useState(false);
+  const [workerBlobUrl, setWorkerBlobUrl] = useState(null); // Added for GIF.js worker
 
   // New state for editable filename
   const [editableFilename, setEditableFilename] = useState('');
@@ -125,48 +126,65 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
     }
   }, [autoProcess, processed, processing]);
 
-  // Load GIF.js library when animation is enabled
+  // Load GIF.js library and worker when animation is enabled
   useEffect(() => {
     if (enableAnimation && !gifJsLoaded) {
       const loadGifJs = async () => {
         try {
           // Check if already loaded
-          if (window.GIF) {
+          if (window.GIF && workerBlobUrl) {
             setGifJsLoaded(true);
             return;
           }
 
-          // Load gif.js
-          const script = document.createElement('script');
-          script.src = 'https://cdn.jsdelivr.net/npm/gif.js@0.2.0/dist/gif.js';
-          document.head.appendChild(script);
+          console.log('📦 Loading GIF.js library...');
 
-          await new Promise((resolve, reject) => {
-            script.onload = () => {
-              // Ensure the script has fully executed and GIF is available
-              setTimeout(() => {
-                if (window.GIF) resolve();
-                else reject(new Error('GIF.js not available after script load'));
-              }, 100); // Small delay to ensure execution
-            };
-            script.onerror = () => reject(new Error('Failed to load GIF.js'));
-          });
-
-          if (window.GIF) {
-            setGifJsLoaded(true);
-            console.log('✅ GIF.js loaded successfully');
-          } else {
-            throw new Error('GIF.js not available after loading');
+          // Load gif.js main library
+          if (!window.GIF) {
+            await new Promise((resolve, reject) => {
+              const script = document.createElement('script');
+              script.src = 'https://cdn.jsdelivr.net/npm/gif.js@0.2.0/dist/gif.js';
+              script.onload = () => {
+                // Ensure the script has fully executed and GIF is available
+                setTimeout(() => {
+                  if (window.GIF) resolve();
+                  else reject(new Error('GIF.js not available after script load'));
+                }, 100); // Small delay to ensure execution
+              };
+              script.onerror = () => reject(new Error('Failed to load GIF.js'));
+              document.head.appendChild(script);
+            });
           }
+
+          // Load worker script as text and create blob URL
+          console.log('👷 Loading worker script...');
+          const workerResponse = await fetch('https://cdn.jsdelivr.net/npm/gif.js@0.2.0/dist/gif.worker.js');
+          const workerText = await workerResponse.text();
+          const workerBlob = new Blob([workerText], { type: 'application/javascript' });
+          const workerUrl = URL.createObjectURL(workerBlob);
+          
+          setWorkerBlobUrl(workerUrl);
+          setGifJsLoaded(true);
+          console.log('✅ GIF.js and worker loaded successfully');
+          toast.success('Animation library ready!');
         } catch (error) {
           console.error('Failed to load GIF.js:', error);
-          toast.error('Failed to load animation library');
+          toast.error('Failed to load animation library: ' + error.message);
         }
       };
 
       loadGifJs();
     }
-  }, [enableAnimation, gifJsLoaded]);
+  }, [enableAnimation, gifJsLoaded, workerBlobUrl]); // workerBlobUrl added to dependencies
+
+  // Cleanup worker blob URL on unmount
+  useEffect(() => {
+    return () => {
+      if (workerBlobUrl) {
+        URL.revokeObjectURL(workerBlobUrl);
+      }
+    };
+  }, [workerBlobUrl]);
 
 
   const parseGif = async (dataUrl) => {
@@ -197,7 +215,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
 
     try {
       if (isImage && enableAnimation) {
-        if (!gifJsLoaded) {
+        if (!gifJsLoaded || !workerBlobUrl) { // Updated condition to check workerBlobUrl
           toast.error('Animation library still loading. Please wait a moment...');
           setProcessing(false);
           return;
@@ -367,7 +385,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
         quality: gifQuality,
         width: targetWidth,
         height: targetHeight,
-        workerScript: 'https://cdn.jsdelivr.net/npm/gif.js@0.2.0/dist/gif.worker.js',
+        workerScript: workerBlobUrl, // Ensure workerBlobUrl is used here too if GIF.js is available
         dither: gifOptimization === 'maximum' ? 'FloydSteinberg' : false,
         transparent: null,
         repeat: 0
@@ -558,8 +576,8 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
 
   // NEW: Generate 4 animated GIF variations using Canvas API only
   const processImageToAnimation = async () => {
-    if (!gifJsLoaded || !window.GIF) {
-      toast.error('Animation library not loaded yet. Please wait...');
+    if (!gifJsLoaded || !window.GIF || !workerBlobUrl) { // Updated condition to check workerBlobUrl
+      toast.error('Animation library not ready yet. Please wait...');
       return;
     }
 
@@ -605,14 +623,14 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
 
       for (let animIndex = 0; animIndex < animations.length; animIndex++) {
         const animation = animations[animIndex];
-        toast.info(`Creating ${animation.name}... (${animIndex + 1}/4)`, { id: 'anim-gen', description: 'This may take a moment...' });
+        toast.info(`Creating ${animation.name}... (${animIndex + 1}/4)`, { id: 'anim-gen' });
 
         const gif = new GIF({
           workers: 2,
           quality: 10, // Lower value means better quality but larger file for gif.js
           width: targetWidth,
           height: targetHeight,
-          workerScript: 'https://cdn.jsdelivr.net/npm/gif.js@0.2.0/dist/gif.worker.js',
+          workerScript: workerBlobUrl, // Use blob URL instead of CDN URL
           repeat: 0
         });
 
@@ -629,24 +647,21 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
           // Apply different transformations based on animation type
           switch (animation.type) {
             case 'zoom':
-              // Zoom in effect
-              const scale = 1 + (progress * 0.3); // Zoom from 1x to 1.3x
+              const scale = 1 + (progress * 0.3);
               ctx.translate(targetWidth / 2, targetHeight / 2);
               ctx.scale(scale, scale);
               ctx.translate(-targetWidth / 2, -targetHeight / 2);
               break;
 
             case 'pan':
-              // Pan left to right
-              const panX = -targetWidth * 0.1 + (progress * targetWidth * 0.2); // Pans from -10% to +10% of width
+              const panX = -targetWidth * 0.1 + (progress * targetWidth * 0.2);
               ctx.translate(panX, 0);
               break;
 
             case 'ken-burns':
-              // Ken Burns effect (zoom + slight pan)
-              const kbScale = 1 + (progress * 0.2); // Zoom from 1x to 1.2x
-              const kbPanX = Math.sin(progress * Math.PI) * 20; // pan left-right 20px
-              const kbPanY = Math.cos(progress * Math.PI) * 20; // pan up-down 20px
+              const kbScale = 1 + (progress * 0.2);
+              const kbPanX = Math.sin(progress * Math.PI) * 20;
+              const kbPanY = Math.cos(progress * Math.PI) * 20;
               
               ctx.translate(targetWidth / 2 + kbPanX, targetHeight / 2 + kbPanY);
               ctx.scale(kbScale, kbScale);
@@ -654,11 +669,10 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
               break;
 
             case 'rotate':
-              // Slow rotation
-              const angle = progress * Math.PI * 2; // Full rotation
+              const angle = progress * Math.PI * 2;
               ctx.translate(targetWidth / 2, targetHeight / 2);
-              ctx.rotate(angle * 0.1); // Slow rotation (10% speed over duration)
-              ctx.scale(1.2, 1.2); // Slightly zoom to avoid corners during rotation
+              ctx.rotate(angle * 0.1);
+              ctx.scale(1.2, 1.2);
               ctx.translate(-targetWidth / 2, -targetHeight / 2);
               break;
           }
