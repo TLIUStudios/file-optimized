@@ -4,7 +4,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Slider } from "@/components/ui/slider";
-import { Download, X, Loader2, CheckCircle2, ArrowRight, Settings2, AlertCircle, Info, Edit2, RefreshCcw, Sparkles, Film, Music, Video, ChevronDown, Check } from "lucide-react";
+import { Download, X, Loader2, CheckCircle2, ArrowRight, Settings2, AlertCircle, Info, Edit2, RefreshCcw, Sparkles, Film, Music, Video, ChevronDown, Check, Wand2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
@@ -22,6 +22,7 @@ import { base44 } from "@/api/base44Client";
 // Lazy load the editor and download modal
 const ImageEditor = lazy(() => import("./ImageEditor"));
 const DownloadModal = lazy(() => import("./DownloadModal"));
+const GifEditor = lazy(() => import("./GifEditor"));
 
 export default function MediaCard({ image, onRemove, onProcessed, onCompare, autoProcess }) {
   const [processing, setProcessing] = useState(false);
@@ -47,6 +48,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
   const [upscaleSettingsOpen, setUpscaleSettingsOpen] = useState(false);
   const [upscaleMultiplier, setUpscaleMultiplier] = useState(null);
   const [originalImageDimensions, setOriginalImageDimensions] = useState({ width: 0, height: 0 });
+  const [showGifEditor, setShowGifEditor] = useState(false);
 
   // Animation states
   const [animationSettingsOpen, setAnimationSettingsOpen] = useState(false);
@@ -54,6 +56,10 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
   const [animationDuration, setAnimationDuration] = useState(5);
   const [animationType, setAnimationType] = useState('zoom'); // 'zoom', 'ripple', 'ken-burns', 'glow'
   const [generatedAnimations, setGeneratedAnimations] = useState([]);
+
+  // Processing time states
+  const [processingStartTime, setProcessingStartTime] = useState(null);
+  const [estimatedTimeForFile, setEstimatedTimeForFile] = useState(null);
 
   // GIF.js states (kept for regular GIF processing)
   const [gifJsLoaded, setGifJsLoaded] = useState(false);
@@ -269,6 +275,35 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
     };
   }, [workerBlobUrl]);
 
+  // Update estimated time during processing
+  useEffect(() => {
+    if (processing && processingStartTime) {
+      const interval = setInterval(() => {
+        const elapsed = Date.now() - processingStartTime;
+        // Estimate based on file type and size
+        let estimatedTotal = 3000; // Default 3 seconds
+        
+        if (isGif) {
+          estimatedTotal = Math.max(5000, gifFrameCount * 50); // ~50ms per frame
+        } else if (isVideo) {
+          estimatedTotal = Math.max(10000, image.size / 100000); // Rough estimate
+        } else if (isImage && enableAnimation) {
+          estimatedTotal = 8000; // Animation takes ~8 seconds
+        } else if (isImage) {
+          estimatedTotal = 2000; // Simple image compression
+        }
+        
+        const remaining = Math.max(0, estimatedTotal - elapsed);
+        setEstimatedTimeForFile(Math.ceil(remaining / 1000));
+      }, 500);
+      
+      return () => clearInterval(interval);
+    } else {
+      setEstimatedTimeForFile(null);
+    }
+  }, [processing, processingStartTime, isGif, isVideo, isImage, enableAnimation, gifFrameCount, image.size]);
+
+
   const parseGif = async (dataUrl) => {
     try {
       const response = await fetch(dataUrl);
@@ -291,6 +326,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
 
   const processMedia = async () => {
     setProcessing(true);
+    setProcessingStartTime(Date.now());
     setError(null);
     setOutputFormat(null);
     setOutputGifFrameCount(0);
@@ -302,6 +338,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
         if (!ffmpegLoaded) {
           toast.error('Video processor still loading. Please wait...');
           setProcessing(false);
+          setProcessingStartTime(null);
           return;
         }
         if (format === 'gif') {
@@ -313,6 +350,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
         if (!ffmpegLoaded) {
           toast.error('Audio processor still loading. Please wait...');
           setProcessing(false);
+          setProcessingStartTime(null);
           return;
         }
         await processAudio();
@@ -320,6 +358,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
         if (!ffmpegLoaded && format === 'mp4') { // Only block if MP4 conversion is requested
           toast.error('Video processor still loading (needed for GIF to MP4 conversion). Please wait...');
           setProcessing(false);
+          setProcessingStartTime(null);
           return;
         }
         if (format === 'mp4') {
@@ -337,6 +376,8 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
     }
 
     setProcessing(false);
+    setProcessingStartTime(null);
+    setEstimatedTimeForFile(null);
   };
 
   useEffect(() => {
@@ -1262,20 +1303,25 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
   const mediaIcon = isVideo ? Video : isAudio ? Music : isGif ? Film : null;
   const MediaIcon = mediaIcon;
 
-  const performSingleMediaDownload = async (blob, targetFormat, mediaType, filename) => {
-    if (!blob) {
-      toast.error("No compressed file available to download.");
+  const performSingleMediaDownload = async (blobToDownload, targetFormat, mediaType, filename) => {
+    if (!blobToDownload) {
+      toast.error("No file data available to download.");
       return;
     }
 
-    let finalBlob = blob;
-    let finalFilename = filename || getOutputFilename(targetFormat);
+    let finalBlob = blobToDownload;
+    let finalFilename = filename;
 
-    if (isImage && !isGif && targetFormat && targetFormat !== (outputFormat || format) && !enableAnimation) {
+    // Check if targetFormat is different and media is image, then perform on-the-fly conversion
+    if (mediaType === 'image' && targetFormat && blobToDownload.type !== (targetFormat === 'jpg' ? 'image/jpeg' : `image/${targetFormat}`)) {
       try {
+        toast.info(`Converting to ${targetFormat.toUpperCase()} for download...`);
         const img = new Image();
-        img.src = compressedPreview;
-        await new Promise((resolve) => { img.onload = resolve; });
+        img.src = URL.createObjectURL(blobToDownload); // Create URL from blob to load into image element
+        await new Promise((resolve, reject) => {
+          img.onload = () => { URL.revokeObjectURL(img.src); resolve(); };
+          img.onerror = () => { URL.revokeObjectURL(img.src); reject(new Error('Failed to load image for conversion.')); };
+        });
 
         const canvas = document.createElement('canvas');
         canvas.width = img.width;
@@ -1284,19 +1330,26 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
         ctx.drawImage(img, 0, 0);
 
         const mimeType = targetFormat === 'jpg' ? 'image/jpeg' : `image/${targetFormat}`;
-        const qualityValue = quality / 100;
+        // Basic check for browser support to prevent errors on unsupported formats (e.g., AVIF on some browsers)
+        if (!canvas.toDataURL(mimeType).startsWith(`data:${mimeType}`)) {
+          throw new Error(`Browser does not support converting to ${targetFormat.toUpperCase()}.`);
+        }
 
-        const convertedBlob = await new Promise((resolve) => {
-          canvas.toBlob((b) => resolve(b), mimeType, qualityValue);
+        const convertedBlob = await new Promise((resolve, reject) => {
+          canvas.toBlob((b) => {
+            if (b) resolve(b);
+            else reject(new Error(`Failed to create ${targetFormat.toUpperCase()} image blob.`));
+          }, mimeType, quality / 100); // Use quality slider value
         });
         finalBlob = convertedBlob;
       } catch (error) {
         console.error("Error during on-the-fly image conversion for download:", error);
-        toast.error(`Failed to convert image to ${targetFormat} for download.`);
+        toast.error(`Failed to convert image to ${targetFormat} for download: ${error.message}`);
         return;
       }
     }
 
+    // Actual download using the finalBlob
     try {
       const url = URL.createObjectURL(finalBlob);
       const a = document.createElement('a');
@@ -1313,6 +1366,90 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
     }
   };
 
+  const downloadAllImageFormatsAsZip = async () => {
+    toast.info('Creating multi-format ZIP...');
+
+    try {
+      const JSZip = (await import('https://cdn.jsdelivr.net/npm/jszip@3.10.1/+esm')).default;
+      const zip = new JSZip();
+
+      const img = new Image();
+      img.src = compressedPreview; // Use compressedPreview (URL)
+
+      await new Promise((resolve, reject) => {
+        img.onload = resolve;
+        img.onerror = () => reject(new Error('Failed to load image for ZIP conversion.'));
+      });
+
+      const canvas = document.createElement('canvas');
+      canvas.width = img.width;
+      canvas.height = img.height;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(img, 0, 0);
+
+      const baseName = editableFilename.split('.')[0];
+      const imageFormatsForZip = [
+        { ext: 'jpg', mime: 'image/jpeg' },
+        { ext: 'png', mime: 'image/png' },
+        { ext: 'webp', mime: 'image/webp' },
+        { ext: 'avif', mime: 'image/avif' }
+      ];
+
+      for (const f of imageFormatsForZip) {
+        const blob = await new Promise((resolve) => {
+          if (canvas.toDataURL(f.mime).startsWith(`data:${f.mime}`)) {
+            canvas.toBlob(resolve, f.mime, 0.95);
+          } else {
+            console.warn(`Browser does not support converting to ${f.ext}. Skipping.`);
+            resolve(null);
+          }
+        });
+        if (blob) {
+          zip.file(`${baseName}.${f.ext}`, blob);
+        }
+      }
+
+      const content = await zip.generateAsync({ type: 'blob' });
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(content);
+      link.download = `${baseName}-all-formats.zip`;
+      link.click();
+      URL.revokeObjectURL(link.href);
+
+      toast.success('All formats downloaded!');
+    } catch (error) {
+      console.error('Error creating ZIP:', error);
+      toast.error('Failed to create multi-format ZIP: ' + error.message);
+    }
+  };
+
+  const downloadAllAnimationsAsZip = async () => {
+    toast.info('Creating animations ZIP...');
+    try {
+      const JSZip = (await import('https://cdn.jsdelivr.net/npm/jszip@3.10.1/+esm')).default;
+      const zip = new JSZip();
+
+      const baseName = editableFilename.split('.').slice(0, -1).join('.') || editableFilename;
+
+      for (const anim of generatedAnimations) {
+        const response = await fetch(anim.url);
+        const blob = await response.blob();
+        zip.file(`${baseName}_${anim.name.toLowerCase().replace(/\s+/g, '_')}.gif`, blob);
+      }
+
+      const content = await zip.generateAsync({ type: 'blob' });
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(content);
+      link.download = `${baseName}-animations.zip`;
+      link.click();
+      URL.revokeObjectURL(link.href);
+      toast.success('All animations downloaded!');
+    } catch (error) {
+      console.error('Error creating animations ZIP:', error);
+      toast.error('Failed to create animations ZIP: ' + error.message);
+    }
+  };
+
   const downloadMedia = async (formatOverride = null) => {
     if (!compressedBlob && generatedAnimations.length === 0) {
       toast.error("No processed file available for download.");
@@ -1322,22 +1459,22 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
     const mediaType = isVideo ? 'video' : isAudio ? 'audio' : 'image';
     const currentCompressedFormat = outputFormat || format;
 
+    if (generatedAnimations.length > 0) {
+      await downloadAllAnimationsAsZip();
+      return;
+    }
+
     if (mediaType === 'image' && formatOverride === null) {
       setShowDownloadModal(true);
       return;
     }
 
-    if (mediaType === 'video' && formatOverride === null) {
-      performSingleMediaDownload(compressedBlob, currentCompressedFormat, 'video', getOutputFilename(currentCompressedFormat));
-      return;
-    }
-
-    if (mediaType === 'audio' && formatOverride === null) {
-      performSingleMediaDownload(compressedBlob, currentCompressedFormat, 'audio', getOutputFilename(currentCompressedFormat));
-      return;
-    }
-
-    performSingleMediaDownload(compressedBlob, formatOverride, mediaType, getOutputFilename(formatOverride));
+    performSingleMediaDownload(
+      compressedBlob,
+      formatOverride || currentCompressedFormat,
+      mediaType,
+      getOutputFilename(formatOverride || currentCompressedFormat)
+    );
   };
 
   const getOutputFilename = (targetFormat = null) => {
@@ -1376,6 +1513,21 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
     setShowEditor(false);
     toast.success("Image edited successfully. Re-compress to apply changes.");
   };
+
+  const handleSaveGifEdit = (newBlob) => {
+    const newUrl = URL.createObjectURL(newBlob);
+    setPreview(newUrl);
+    setOriginalSize(newBlob.size);
+    setGifSettings(prev => ({ ...prev, frames: [], width: 0, height: 0 })); // Clear frames, they need re-parsing
+    parseGif(newUrl); // Re-parse the GIF frames from the new blob
+    setProcessed(false);
+    setCompressedPreview(null);
+    setCompressedSize(0);
+    setError(null);
+    setShowGifEditor(false);
+    toast.success("GIF edited successfully. Re-compress to finalize.");
+  };
+
 
   const convertFormat = async (newFormat) => {
     if (!compressedPreview || processing) return;
@@ -1506,6 +1658,19 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
                   <Edit2 className="w-3 h-3" />
                 </Button>
               )}
+              {isGif && (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setShowGifEditor(true);
+                  }}
+                  className="absolute top-2 right-2 bg-white/80 hover:bg-white dark:bg-slate-800/80 dark:hover:bg-slate-800 h-7 w-7 rounded-lg"
+                >
+                  <Wand2 className="w-3 h-3" />
+                </Button>
+              )}
             </div>
           )}
           {compressedPreview ? (
@@ -1618,6 +1783,11 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
                   -{savingsPercent}%
                 </Badge>
               </>
+            )}
+            {processing && estimatedTimeForFile !== null && (
+              <Badge variant="outline" className="border-blue-300 text-blue-700 dark:border-blue-700 dark:text-blue-400 ml-auto">
+                ~{estimatedTimeForFile}s
+              </Badge>
             )}
           </div>
         </div>
@@ -2279,6 +2449,15 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
           onClose={() => setShowEditor(false)}
           imageData={preview}
           onSave={handleSaveEdit}
+        />
+      )}
+
+      {showGifEditor && isGif && (
+        <GifEditor
+          isOpen={showGifEditor}
+          onClose={() => setShowGifEditor(false)}
+          gifData={preview}
+          onSave={handleSaveGifEdit}
         />
       )}
 
