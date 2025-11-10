@@ -13,6 +13,7 @@ import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
+  TooltipTrigger, // Added TooltipTrigger here
 } from "@/components/ui/tooltip";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
@@ -2505,12 +2506,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
                             {index === 3 && 'Maximum sharpness and clarity'}
                           </p>
                         </div>
-                        <div className={cn(
-                          "w-10 h-10 rounded-full flex items-center justify-center transition-all",
-                          selectedVariationIndex === index
-                            ? "bg-emerald-500 scale-110"
-                            : "bg-white/20 group-hover:bg-white/30"
-                        )}>
+                        <div className="w-10 h-10 rounded-full flex items-center justify-center transition-all">
                           {selectedVariationIndex === index ? (
                             <CheckCircle2 className="w-6 h-6 text-white" />
                           ) : (
