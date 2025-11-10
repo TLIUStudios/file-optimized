@@ -1513,7 +1513,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
                 </>
               )}
 
-              isAudio && (
+              {isAudio && (
                 <>
                   <div>
                     <div className="flex items-center gap-2 mb-2">
