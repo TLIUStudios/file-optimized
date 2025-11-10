@@ -14,7 +14,6 @@ import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
-  TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
@@ -1912,15 +1911,44 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
           </CollapsibleTrigger>
           <CollapsibleContent className="space-y-4 mt-4">
             <TooltipProvider>
-              {/* Loading state for FFmpeg */}
+              {/* Loading state for FFmpeg - ONLY show for video/audio files */}
               {(isVideo || isAudio || (isGif && format === 'mp4')) && ffmpegLoading && (
-                <div className="bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800 rounded-lg p-3">
+                <div className="bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 rounded-lg p-3">
                   <div className="flex items-center gap-2">
-                    <Loader2 className="w-4 h-4 animate-spin text-emerald-600" />
-                    <p className="text-xs text-emerald-700 dark:text-emerald-400">
-                      <strong>⚡ Loading video/audio processor...</strong>
+                    <Loader2 className="w-4 h-4 animate-spin text-blue-600" />
+                    <p className="text-xs text-blue-700 dark:text-blue-400">
+                      <strong>Loading video/audio processor...</strong>
                     </p>
                   </div>
+                </div>
+              )}
+              
+              {/* FFmpeg load error - ONLY show for video/audio files */}
+              {(isVideo || isAudio || (isGif && format === 'mp4')) && ffmpegLoadError && !ffmpegLoading && (
+                <div className="bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800 rounded-lg p-3">
+                  <div className="flex items-center gap-2 mb-2">
+                    <AlertCircle className="w-4 h-4 text-red-600" />
+                    <p className="text-xs text-red-700 dark:text-red-400 font-semibold">
+                      Video/audio processor unavailable
+                    </p>
+                  </div>
+                  <p className="text-xs text-red-600 dark:text-red-400 mb-2">
+                    Try refreshing the page or using Chrome/Edge browser
+                  </p>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => {
+                      setFfmpegLoadError(null);
+                      setFfmpegLoading(false);
+                      setFfmpegLoaded(false);
+                      setTimeout(() => loadFFmpeg(), 100);
+                    }}
+                    className="text-xs h-7"
+                  >
+                    <RefreshCcw className="w-3 h-3 mr-1" />
+                    Retry
+                  </Button>
                 </div>
               )}
 
