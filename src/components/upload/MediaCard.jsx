@@ -673,7 +673,23 @@ Make animations dynamic with REAL motion - characters move, swing weapons, chang
       });
 
       console.log('✅ AI Analysis Complete:', analysisResult);
-      const animationConcepts = analysisResult.animations.slice(0, 4); // Ensure we only get 4
+      
+      // Fix: Handle case where animations might not be an array
+      let animationConcepts = [];
+      if (Array.isArray(analysisResult.animations)) {
+        animationConcepts = analysisResult.animations.slice(0, 4);
+      } else if (analysisResult.animations && typeof analysisResult.animations === 'object') {
+        // If it's an object, try to convert it to an array
+        animationConcepts = Object.values(analysisResult.animations).slice(0, 4);
+      } else {
+        throw new Error('AI did not return valid animation concepts. Please try again.');
+      }
+      
+      if (animationConcepts.length === 0) {
+        throw new Error('No animation concepts were generated. Please try again.');
+      }
+      
+      console.log(`✅ Got ${animationConcepts.length} animation concepts`);
       
       // Step 3: Generate frames for each animation
       const generatedGifs = [];
