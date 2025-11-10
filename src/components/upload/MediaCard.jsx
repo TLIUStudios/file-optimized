@@ -615,7 +615,7 @@ For each animation:
    - Frame 2: Very slight change from original pose
    - Frames 3-10: Progressive motion (character moves, performs action)
    - Frame 11: Beginning to return to original pose
-   - Frame 12: EXACT SAME pose as Frame 1 (critical for seamless loop!)
+   - Frame 12: EXACT same pose as Frame 1 (critical for seamless loop!)
 
 Example for image of "anime girl with sword":
 Frame 1: [Original image - not generated]
@@ -774,8 +774,8 @@ Make animations dynamic with REAL motion - characters move, swing weapons, chang
         let targetWidth = firstImg.width;
         let targetHeight = firstImg.height;
         
-        // Resize if needed
-        const maxDim = 800;
+        // More aggressive resizing for faster GIF rendering
+        const maxDim = 600; // Reduced from 800
         if (targetWidth > maxDim || targetHeight > maxDim) {
           const scale = maxDim / Math.max(targetWidth, targetHeight);
           targetWidth = Math.round(targetWidth * scale);
@@ -788,21 +788,22 @@ Make animations dynamic with REAL motion - characters move, swing weapons, chang
         
         console.log(`📐 Target GIF dimensions: ${targetWidth}x${targetHeight}`);
         
-        // Create GIF with timeout protection
+        // Create GIF with optimized settings for faster rendering
         const GIF = window.GIF;
         const gif = new GIF({
-          workers: 2,
-          quality: 10,
+          workers: 4, // Increased from 2
+          quality: 15, // Increased from 10 (higher = faster but lower quality)
           width: targetWidth,
           height: targetHeight,
           workerScript: workerBlobUrl,
-          repeat: 0
+          repeat: 0,
+          dither: false // Disable dithering for speed
         });
         
         const canvas = document.createElement('canvas');
         canvas.width = targetWidth;
         canvas.height = targetHeight;
-        const ctx = canvas.getContext('2d');
+        const ctx = canvas.getContext('2d', { willReadFrequently: true }); // Optimize canvas
         
         // Add each frame to GIF
         const frameDelay = Math.round((animationDuration * 1000) / loadedFrames.length);
@@ -812,16 +813,16 @@ Make animations dynamic with REAL motion - characters move, swing weapons, chang
           const { img } = loadedFrames[i];
           ctx.clearRect(0, 0, targetWidth, targetHeight);
           ctx.drawImage(img, 0, 0, targetWidth, targetHeight);
-          gif.addFrame(canvas, { delay: frameDelay, copy: true });
+          gif.addFrame(ctx, { delay: frameDelay, copy: true, dispose: 2 }); // Added dispose for efficiency
           
           if (i % 3 === 0) {
             console.log(`📝 Added frame ${i + 1}/${loadedFrames.length} to GIF`);
           }
         }
         
-        console.log(`🎨 Rendering GIF... (this may take 30-60 seconds)`);
+        console.log(`🎨 Rendering GIF... (this may take 30-90 seconds)`);
         
-        // Render GIF with timeout
+        // Render GIF with extended timeout
         const gifBlob = await Promise.race([
           new Promise((resolve, reject) => {
             gif.on('finished', (blob) => {
@@ -833,14 +834,16 @@ Make animations dynamic with REAL motion - characters move, swing weapons, chang
               reject(error);
             });
             gif.on('progress', (progress) => {
-              if (progress % 0.2 < 0.01) { // Log every 20%
-                console.log(`⏳ GIF rendering progress: ${(progress * 100).toFixed(0)}%`);
+              const percent = (progress * 100).toFixed(0);
+              if (progress % 0.1 < 0.01) { // Log every 10%
+                console.log(`⏳ GIF rendering progress: ${percent}%`);
+                toast.info(`${anim.name}: ${percent}% complete...`, { id: 'anim-gen' });
               }
             });
             gif.render();
           }),
           new Promise((_, reject) => 
-            setTimeout(() => reject(new Error('GIF rendering timeout (60s)')), 60000)
+            setTimeout(() => reject(new Error('GIF rendering timeout (120s)')), 120000) // Extended to 120 seconds
           )
         ]);
         
