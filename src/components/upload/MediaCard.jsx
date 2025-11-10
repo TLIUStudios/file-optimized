@@ -4,7 +4,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Slider } from "@/components/ui/slider";
-import { Download, X, Loader2, CheckCircle2, ArrowRight, Settings2, AlertCircle, Info, Edit2, RefreshCcw, Sparkles, Film, Music, Video, ChevronDown } from "lucide-react";
+import { Download, X, Loader2, CheckCircle2, ArrowRight, Settings2, AlertCircle, Info, Edit2, RefreshCcw, Sparkles, Film, Music, Video, ChevronDown, Check } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
@@ -49,6 +49,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
 
   // New state for editable filename
   const [editableFilename, setEditableFilename] = useState('');
+  const [isEditingFilename, setIsEditingFilename] = useState(false);
 
   // Media type detection
   const isImage = image.type.startsWith('image/');
@@ -1216,9 +1217,47 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
 
       <div className="p-4 space-y-4">
         <div>
-          <p className="font-medium text-sm text-slate-900 dark:text-white truncate" title={image.name}>
-            {image.name}
-          </p>
+          {isEditingFilename ? (
+            <div className="flex items-center gap-2 mb-1">
+              <input
+                type="text"
+                value={editableFilename}
+                onChange={(e) => setEditableFilename(e.target.value)}
+                className="flex-1 text-sm font-medium text-slate-900 dark:text-white bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded px-2 py-1"
+                onBlur={() => setIsEditingFilename(false)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    setIsEditingFilename(false);
+                    toast.success('Filename updated!');
+                  }
+                  if (e.key === 'Escape') {
+                    setEditableFilename(image.name);
+                    setIsEditingFilename(false);
+                  }
+                }}
+                autoFocus
+              />
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={() => {
+                  setIsEditingFilename(false);
+                  toast.success('Filename updated!');
+                }}
+                className="h-7 w-7 p-0 flex-shrink-0"
+              >
+                <Check className="w-4 h-4 text-emerald-600" />
+              </Button>
+            </div>
+          ) : (
+            <p 
+              className="font-medium text-sm text-slate-900 dark:text-white truncate cursor-pointer hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors" 
+              title={editableFilename}
+              onClick={() => setIsEditingFilename(true)}
+            >
+              {editableFilename}
+            </p>
+          )}
           <div className="flex items-center gap-2 mt-1 text-xs text-slate-500 dark:text-slate-400">
             <span>{formatFileSize(originalSize)}</span>
             {processed && (
@@ -1469,7 +1508,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
                 </>
               )}
 
-              {isAudio && (
+              isAudio && (
                 <>
                   <div>
                     <div className="flex items-center gap-2 mb-2">
