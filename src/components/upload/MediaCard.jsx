@@ -1804,35 +1804,39 @@ Make animations dynamic with REAL motion - characters move, swing weapons, chang
                     <div className="bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-950/30 dark:to-pink-950/30 border border-purple-200 dark:border-purple-800 rounded-lg p-4">
                       <p className="text-xs text-purple-700 dark:text-purple-400 mb-3 font-semibold flex items-center gap-2">
                         <Sparkles className="w-4 h-4" />
-                        <strong>Real AI-Generated Motion</strong>
+                        <strong>Real AI-Generated Motion (Like Midjourney!)</strong>
                       </p>
                       <ul className="text-xs text-purple-600 dark:text-purple-400 space-y-2">
                         <li className="flex items-start gap-2">
+                          <span className="text-purple-500 mt-0.5">🎯</span>
+                          <span><strong>Starts with YOUR image:</strong> Frame 1 is your exact uploaded image (not AI-generated)</span>
+                        </li>
+                        <li className="flex items-start gap-2">
                           <span className="text-purple-500 mt-0.5">🎬</span>
-                          <span><strong>Context-aware:</strong> AI understands your image (anime, photo, art) and creates matching animations</span>
+                          <span><strong>Context-aware motion:</strong> AI understands your image and creates matching animations</span>
                         </li>
                         <li className="flex items-start gap-2">
                           <span className="text-purple-500 mt-0.5">✨</span>
-                          <span><strong>Real motion:</strong> Subjects actually move - swing swords, wave hands, change expressions, etc.</span>
+                          <span><strong>Real movement:</strong> Characters swing swords, wave, change expressions - actual motion!</span>
                         </li>
                         <li className="flex items-start gap-2">
                           <span className="text-purple-500 mt-0.5">🔄</span>
-                          <span><strong>Seamless loops:</strong> AI generates 12 frames that flow from start back to start</span>
+                          <span><strong>Perfect loops:</strong> AI generates frames 2-11, then returns to your original image for seamless loop</span>
                         </li>
                         <li className="flex items-start gap-2">
                           <span className="text-purple-500 mt-0.5">🎨</span>
-                          <span><strong>Style matching:</strong> Generated frames match your image's art style and quality</span>
+                          <span><strong>Style matching:</strong> Generated frames match your image's style perfectly</span>
                         </li>
                         <li className="flex items-start gap-2">
                           <span className="text-purple-500 mt-0.5">⏱️</span>
-                          <span><strong>Processing time:</strong> 2-5 minutes (generates 48 unique images)</span>
+                          <span><strong>Processing time:</strong> 2-4 minutes (generates 44 unique frames - 11 per animation)</span>
                         </li>
                       </ul>
                     </div>
                     
                     <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-lg p-3">
                       <p className="text-xs text-amber-700 dark:text-amber-400">
-                        <strong>⚠️ Note:</strong> This uses advanced AI to generate actual motion frames. It will take 2-5 minutes to create all 4 animations. Perfect for single images, not bulk processing.
+                        <strong>⚠️ Note:</strong> Frame 1 uses your actual image, then AI generates frames 2-12 showing motion and returning to the original pose. Like Midjourney's animation - starts with YOUR image, not a recreation!
                       </p>
                     </div>
                     
