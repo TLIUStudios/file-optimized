@@ -50,11 +50,11 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
   // New states for animation
   const [animationSettingsOpen, setAnimationSettingsOpen] = useState(false);
   const [enableAnimation, setEnableAnimation] = useState(false);
-  const [animationType, setAnimationType] = useState('all'); // 'all', 'zoom', 'pan', 'rotate', 'ken-burns' - This state is now mostly illustrative, as variations are AI-generated
   const [animationDuration, setAnimationDuration] = useState(3); // seconds
   const [generatedAnimations, setGeneratedAnimations] = useState([]); // Store 4 variations
   const [gifJsLoaded, setGifJsLoaded] = useState(false);
   const [workerBlobUrl, setWorkerBlobUrl] = useState(null); // Added for GIF.js worker
+  const [outputGifFrameCount, setOutputGifFrameCount] = useState(0); // State to store frame count of output GIF
 
   // New state for editable filename
   const [editableFilename, setEditableFilename] = useState('');
@@ -212,6 +212,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
     setError(null);
     setOutputFormat(null);
     setGeneratedAnimations([]); // Clear previous animations
+    setOutputGifFrameCount(0); // Clear output frame count
 
     try {
       if (isImage && enableAnimation) {
@@ -275,6 +276,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
         setCompressedBlob(originalBlob); // ADDED
         setProcessed(true);
         setOutputFormat('gif');
+        setOutputGifFrameCount(gifFrameCount); // Set output frame count for direct GIF processing
 
         onProcessed({
           id: image.name,
@@ -416,6 +418,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
       setCompressedBlob(gifBlob); // ADDED
       setProcessed(true);
       setOutputFormat('gif');
+      setOutputGifFrameCount(processedFrames.length); // Set output frame count for processed GIF
 
       onProcessed({
         id: image.name,
@@ -574,159 +577,215 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
     });
   };
 
-  // Generate AI-powered animation variations like Midjourney
+  // Generate REAL AI-powered animation variations like Midjourney
   const processImageToAnimation = async () => {
     if (!gifJsLoaded || !window.GIF || !workerBlobUrl) {
-      toast.error('AI animation engine not ready yet. Please wait...');
+      toast.error('Animation library not ready yet. Please wait...');
       return;
     }
 
     try {
-      console.log('✨ Starting AI animation generation...');
-      toast.info('AI is analyzing your image and creating 4 unique animations...', { duration: Infinity, id: 'anim-gen' });
+      console.log('🎬 Starting REAL AI animation generation...');
+      
+      // Step 1: Upload image to get URL for AI
+      toast.info('Step 1/3: Uploading image to AI...', { duration: Infinity, id: 'anim-gen' });
+      const response = await fetch(preview);
+      const blob = await response.blob();
+      const file = new File([blob], 'image.jpg', { type: blob.type });
+      // Assuming base44 is globally available as per instructions
+      const uploadResult = await base44.integrations.Core.UploadFile({ file });
+      const imageUrl = uploadResult.file_url;
+      
+      // Step 2: AI analyzes image and generates animation concepts
+      toast.info('Step 2/3: AI analyzing image...', { id: 'anim-gen' });
+      // Assuming base44 is globally available as per instructions
+      const analysisResult = await base44.integrations.Core.InvokeLLM({
+        prompt: `Analyze this image in detail and create 4 unique, creative animation concepts that would bring it to life.
 
-      const img = new Image();
-      img.src = preview;
-      await new Promise((resolve) => { img.onload = resolve; });
+For each animation:
+1. Describe what's happening in the scene (be specific about objects, people, style)
+2. Create a cinematic animation concept that makes sense for this image
+3. Provide 12 detailed frame descriptions that show progressive motion from start back to start (seamless loop)
 
-      // Calculate target resolution
-      let targetWidth = originalImageDimensions.width;
-      let targetHeight = originalImageDimensions.height;
+Output format:
+{
+  "scene_description": "detailed description of what's in the image",
+  "image_style": "art style/medium (e.g., anime, realistic photo, cartoon, 3D render)",
+  "animations": [
+    {
+      "name": "Animation 1 Name",
+      "concept": "brief description of the animation concept",
+      "frame_prompts": [
+        "Frame 1: [original scene]",
+        "Frame 2: [slight change]",
+        ...
+        "Frame 12: [returns to frame 1 pose]"
+      ]
+    }
+  ]
+}
 
-      if (maxWidth && maxWidth < targetWidth) {
-        targetWidth = maxWidth;
-        targetHeight = Math.round(maxWidth / (originalImageDimensions.width / originalImageDimensions.height));
-      } else if (maxHeight && maxHeight < targetHeight) {
-        targetHeight = maxHeight;
-        targetWidth = Math.round(maxHeight * (originalImageDimensions.width / originalImageDimensions.height));
-      }
-
-      // Ensure even dimensions and reasonable size
-      targetWidth = Math.max(320, Math.min(800, targetWidth));
-      targetHeight = Math.max(240, Math.min(600, targetHeight));
-      targetWidth = targetWidth % 2 === 0 ? targetWidth : targetWidth - 1;
-      targetHeight = targetHeight % 2 === 0 ? targetHeight : targetHeight - 1;
-
-      const GIF = window.GIF;
-      const fps = 15;
-      const totalFrames = animationDuration * fps;
-
-      // Define base animation types with common progress and transformation logic
-      const animationTypes = [
-        {
-          type: 'zoom',
-          getProgress: (raw) => raw < 0.5 ? raw * 2 : (1 - raw) * 2, // 0 to 1 then 1 to 0
-          transform: (ctx, progress, w, h, params) => {
-            const scale = 1 + (progress * params.intensity);
-            ctx.translate(w / 2 + params.offsetX, h / 2 + params.offsetY);
-            ctx.scale(scale, scale);
-            ctx.translate(-w / 2, -h / 2);
-          }
-        },
-        {
-          type: 'pan',
-          getProgress: (raw) => raw < 0.5 ? raw * 2 : (1 - raw) * 2,
-          transform: (ctx, progress, w, h, params) => {
-            const panX = params.horizontal ? (progress - 0.5) * w * params.range : 0;
-            const panY = params.vertical ? (progress - 0.5) * h * params.range : 0;
-            ctx.translate(panX, panY);
-          }
-        },
-        {
-          type: 'rotate',
-          getProgress: (raw) => raw < 0.5 ? raw * 2 : (1 - raw) * 2,
-          transform: (ctx, progress, w, h, params) => {
-            const angle = progress * Math.PI * 2 * params.direction;
-            const scale = 1 + (Math.abs(Math.sin(progress * Math.PI)) * params.scaleVar); // Subtle breathing scale
-            ctx.translate(w / 2, h / 2);
-            ctx.rotate(angle * params.speed);
-            ctx.scale(scale, scale);
-            ctx.translate(-w / 2, -h / 2);
-          }
-        },
-        {
-          type: 'complex',
-          getProgress: (raw) => raw < 0.5 ? raw * 2 : (1 - raw) * 2,
-          transform: (ctx, progress, w, h, params) => {
-            const scale = 1 + (progress * params.zoom);
-            const panX = Math.sin(progress * Math.PI * params.panFreq) * params.panAmount;
-            const panY = Math.cos(progress * Math.PI * params.panFreq * 1.3) * params.panAmount;
-            const rotation = Math.sin(progress * Math.PI * 2) * params.rotAmount;
-            
-            ctx.translate(w / 2 + panX, h / 2 + panY);
-            ctx.rotate(rotation);
-            ctx.scale(scale, scale);
-            ctx.translate(-w / 2, -h / 2);
+Make animations creative and dynamic - they should have real motion and action!`,
+        file_urls: [imageUrl],
+        response_json_schema: {
+          type: "object",
+          properties: {
+            scene_description: { type: "string" },
+            image_style: { type: "string" },
+            animations: {
+              type: "array",
+              items: {
+                type: "object",
+                properties: {
+                  name: { type: "string" },
+                  concept: { type: "string" },
+                  frame_prompts: {
+                    type: "array",
+                    items: { type: "string" }
+                  }
+                }
+              }
+            }
           }
         }
-      ];
+      });
 
-      // Generate 4 unique AI-powered animation variations
+      console.log('✅ AI Analysis Complete:', analysisResult);
+      const animationConcepts = analysisResult.animations.slice(0, 4); // Ensure we only get 4
+      
+      // Step 3: Generate frames for each animation
       const generatedGifs = [];
-      for (let animIndex = 0; animIndex < 4; animIndex++) {
-        const animType = animationTypes[animIndex];
-        const animName = `Animation ${animIndex + 1}`;
+      const framesPerAnimation = 12;
+      
+      for (let animIndex = 0; animIndex < animationConcepts.length; animIndex++) {
+        const anim = animationConcepts[animIndex];
+        toast.info(`Step 3/3: Creating ${anim.name}... (${animIndex + 1}/4)`, { id: 'anim-gen' });
         
-        toast.info(`AI creating ${animName}... (${animIndex + 1}/4)`, { id: 'anim-gen' });
+        const frames = [];
+        const totalFrames = Math.min(anim.frame_prompts.length, framesPerAnimation);
+        
+        // Generate each frame with AI
+        for (let frameIndex = 0; frameIndex < totalFrames; frameIndex++) {
+          toast.info(`Creating ${anim.name}... Frame ${frameIndex + 1}/${totalFrames}`, { id: 'anim-gen' });
+          
+          try {
+            const framePrompt = anim.frame_prompts[frameIndex];
+            
+            // Generate image for this frame
+            // Assuming base44 is globally available as per instructions
+            const frameResult = await base44.integrations.Core.GenerateImage({
+              prompt: `${analysisResult.image_style} style. ${framePrompt}. Match the style and quality of the original image exactly. Maintain consistent character features, lighting, and composition.`
+            });
+            
+            frames.push({
+              url: frameResult.url,
+              index: frameIndex
+            });
+            
+            console.log(`✅ Frame ${frameIndex + 1}/${totalFrames} generated for ${anim.name}`);
+          } catch (frameError) {
+            console.error(`Failed to generate frame ${frameIndex + 1}:`, frameError);
+            // Continue with other frames
+          }
+        }
+        
+        if (frames.length === 0) {
+          console.error(`No frames generated for ${anim.name}`);
+          continue;
+        }
+        
+        toast.info(`${anim.name}: Combining ${frames.length} frames into GIF...`, { id: 'anim-gen' });
+        
+        // Load all frame images
+        const loadedFrames = await Promise.all(frames.map(async (frame) => {
+          const img = new Image();
+          img.crossOrigin = 'anonymous'; // Required for canvas.drawImage with external images
+          return new Promise((resolve, reject) => {
+            img.onload = () => resolve({ img, index: frame.index });
+            img.onerror = () => reject(new Error(`Failed to load frame image: ${frame.url}`));
+            img.src = frame.url;
+          });
+        }));
+        
+        // Sort frames by their original index to ensure correct order
+        loadedFrames.sort((a, b) => a.index - b.index);
 
-        // Generate random but aesthetically pleasing parameters for each animation
-        const params = generateAnimationParams(animType.type, animIndex);
-
+        // Determine target dimensions
+        const firstImg = loadedFrames[0].img;
+        let targetWidth = firstImg.width;
+        let targetHeight = firstImg.height;
+        
+        // Resize if needed
+        const maxDim = 800;
+        if (targetWidth > maxDim || targetHeight > maxDim) {
+          const scale = maxDim / Math.max(targetWidth, targetHeight);
+          targetWidth = Math.round(targetWidth * scale);
+          targetHeight = Math.round(targetHeight * scale);
+        }
+        
+        // Ensure even dimensions
+        targetWidth = targetWidth % 2 === 0 ? targetWidth : targetWidth - 1;
+        targetHeight = targetHeight % 2 === 0 ? targetHeight : targetHeight - 1;
+        
+        // Create GIF
+        const GIF = window.GIF;
         const gif = new GIF({
           workers: 2,
-          quality: 10, // Lower value means better quality but larger file for gif.js
+          quality: 10,
           width: targetWidth,
           height: targetHeight,
-          workerScript: workerBlobUrl, // Use blob URL instead of CDN URL
+          workerScript: workerBlobUrl,
           repeat: 0
         });
-
+        
         const canvas = document.createElement('canvas');
         canvas.width = targetWidth;
         canvas.height = targetHeight;
         const ctx = canvas.getContext('2d');
-
-        for (let frame = 0; frame < totalFrames; frame++) {
-          const rawProgress = frame / totalFrames;
-          const progress = animType.getProgress(rawProgress);
-          
+        
+        // Add each frame to GIF
+        const frameDelay = Math.round((animationDuration * 1000) / loadedFrames.length);
+        for (const { img } of loadedFrames) {
           ctx.clearRect(0, 0, targetWidth, targetHeight);
-          ctx.save();
-
-          animType.transform(ctx, progress, targetWidth, targetHeight, params);
-
           ctx.drawImage(img, 0, 0, targetWidth, targetHeight);
-          ctx.restore();
-
-          gif.addFrame(canvas, { delay: 1000 / fps, copy: true });
+          gif.addFrame(canvas, { delay: frameDelay, copy: true });
         }
-
+        
+        // Render GIF
         const gifBlob = await new Promise((resolve, reject) => {
           gif.on('finished', resolve);
           gif.on('error', reject);
           gif.render();
         });
-
+        
         const gifUrl = URL.createObjectURL(gifBlob);
         generatedGifs.push({
-          name: animName,
+          name: anim.name,
           blob: gifBlob,
           url: gifUrl,
           size: gifBlob.size,
-          description: getAnimationDescription(animType.type, params)
+          description: anim.concept,
+          frameCount: loadedFrames.length
         });
+        
+        console.log(`✅ ${anim.name} complete! (${loadedFrames.length} frames)`);
       }
-
+      
+      if (generatedGifs.length === 0) {
+        throw new Error('No animations were generated successfully');
+      }
+      
       setGeneratedAnimations(generatedGifs);
       toast.dismiss('anim-gen');
-      toast.success('4 AI animations created!');
+      toast.success(`${generatedGifs.length} AI animations created! 🎬`);
       
-      // Set the first one as the main preview
+      // Set the first one as preview
       setCompressedPreview(generatedGifs[0].url);
       setCompressedSize(generatedGifs[0].size);
       setCompressedBlob(generatedGifs[0].blob);
       setProcessed(true);
       setOutputFormat('gif');
+      setOutputGifFrameCount(generatedGifs[0].frameCount); // Set output frame count for the main preview
 
       onProcessed({
         id: image.name,
@@ -739,70 +798,46 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
         filename: getOutputFilename('gif'),
         mediaType: 'image',
         fileFormat: 'gif',
-        animations: generatedGifs // Include all 4 variations
+        animations: generatedGifs
       });
 
     } catch (error) {
-      console.error('❌ Animation generation failed:', error);
+      console.error('❌ AI Animation generation failed:', error);
       toast.dismiss('anim-gen');
-      toast.error('Animation creation failed: ' + error.message);
+      toast.error('AI Animation failed: ' + error.message);
       throw error;
     }
   };
 
-  // Generate unique parameters for each animation type
-  const generateAnimationParams = (type, index) => {
-    // Create pseudo-random but consistent variations based on index
-    // Using a seed to make it deterministic for the same index
-    const seed = index * 123.456 + new Date().getSeconds(); // Added seconds to make it slightly less predictable on rapid re-runs
-    const random = (min, max) => min + ((Math.sin(seed + (index * 7)) + 1) / 2) * (max - min); // Factor in index
-    
-    switch (type) {
-      case 'zoom':
-        return {
-          intensity: random(0.12, 0.25),
-          offsetX: random(-10, 10),
-          offsetY: random(-10, 10)
-        };
-      case 'pan':
-        return {
-          horizontal: index % 2 === 0,
-          vertical: index % 2 === 1,
-          range: random(0.15, 0.3)
-        };
-      case 'rotate':
-        return {
-          speed: random(0.03, 0.08),
-          direction: index % 2 === 0 ? 1 : -1,
-          scaleVar: random(0.05, 0.12)
-        };
-      case 'complex':
-        return {
-          zoom: random(0.08, 0.18),
-          panFreq: random(1.5, 3),
-          panAmount: random(10, 25),
-          rotAmount: random(0.02, 0.06)
-        };
-      default:
-        return {};
-    }
+  const savingsPercent = processed 
+    ? ((1 - compressedSize / originalSize) * 100).toFixed(1)
+    : 0;
+
+  const formatFileSize = (bytes) => {
+    if (bytes < 1024) return bytes + ' B';
+    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+    return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
   };
 
-  // Get description for animation type
-  const getAnimationDescription = (type, params) => {
-    switch (type) {
-      case 'zoom':
-        return 'Smooth zoom effect';
-      case 'pan':
-        return params.horizontal ? 'Horizontal drift' : 'Vertical float';
-      case 'rotate':
-        return 'Gentle rotation with scale';
-      case 'complex':
-        return 'Cinematic motion blend';
-      default:
-        return 'Dynamic motion';
-    }
-  };
+  const originalExt = image.name.split('.').pop().toUpperCase();
+  const displayFormat = outputFormat || format;
+  const displayCompressedExt = displayFormat.toUpperCase();
+
+  let availableFormats = [];
+  if (isImage && !isGif && enableAnimation) {
+    availableFormats = ['gif']; // Only GIF for AI animations
+  } else if (isImage && !isGif) {
+    availableFormats = ['jpg', 'png', 'webp', 'avif'];
+  } else if (isGif) {
+    availableFormats = ['gif']; // No MP4 conversion without FFmpeg
+  } else if (isVideo) {
+    availableFormats = ['mp4']; // No GIF conversion without FFmpeg
+  } else if (isAudio) {
+    availableFormats = ['mp3', 'wav'];
+  }
+
+  const mediaIcon = isVideo ? Video : isAudio ? Music : isGif || (isImage && enableAnimation) ? Film : null;
+  const MediaIcon = mediaIcon;
 
   // Helper function for actual download logic
   const performSingleMediaDownload = async (blob, targetFormat, mediaType, filename) => {
@@ -1007,36 +1042,6 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
     }
   };
 
-  const savingsPercent = processed 
-    ? ((1 - compressedSize / originalSize) * 100).toFixed(1)
-    : 0;
-
-  const formatFileSize = (bytes) => {
-    if (bytes < 1024) return bytes + ' B';
-    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
-    return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
-  };
-
-  const originalExt = image.name.split('.').pop().toUpperCase();
-  const displayFormat = outputFormat || format;
-  const displayCompressedExt = displayFormat.toUpperCase();
-
-  let availableFormats = [];
-  if (isImage && !isGif && enableAnimation) {
-    availableFormats = ['gif']; // Only GIF for canvas-based animations
-  } else if (isImage && !isGif) {
-    availableFormats = ['jpg', 'png', 'webp', 'avif'];
-  } else if (isGif) {
-    availableFormats = ['gif']; // No MP4 conversion without FFmpeg
-  } else if (isVideo) {
-    availableFormats = ['mp4']; // No GIF conversion without FFmpeg
-  } else if (isAudio) {
-    availableFormats = ['mp3', 'wav'];
-  }
-
-  const mediaIcon = isVideo ? Video : isAudio ? Music : isGif || (isImage && enableAnimation) ? Film : null;
-  const MediaIcon = mediaIcon;
-
   // Update the download section to show all 4 animations
   const downloadAnimation = (animIndex) => {
     if (!generatedAnimations[animIndex]) return;
@@ -1093,12 +1098,12 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
               className="relative aspect-square rounded-lg overflow-hidden bg-slate-200 dark:bg-slate-800 cursor-pointer group"
               onClick={(isImage || isGif) && processed ? handleCompare : undefined}
             >
-              {(isGif || (isImage && enableAnimation)) && gifFrameCount > 0 && (
+              {(isGif && gifFrameCount > 0) || (isImage && enableAnimation && outputGifFrameCount > 0) ? (
                 <Badge className="absolute -top-8 left-0 bg-slate-900/90 text-white text-xs px-3 py-1.5 font-bold flex items-center gap-1 shadow-lg z-10 rounded-md">
                   <Film className="w-3 h-3" />
-                  {gifFrameCount} frames
+                  {isImage && enableAnimation ? outputGifFrameCount : gifFrameCount} frames
                 </Badge>
-              )}
+              ) : null}
               
               {(isImage && !enableAnimation) ? (
                 <LazyImage 
@@ -1106,8 +1111,8 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
                   alt="Original" 
                   className="w-full h-full object-cover transition-transform group-hover:scale-105" 
                 />
-              ) : isVideo || (isImage && enableAnimation) ? ( // Render video tag for animations
-                <img src={preview} alt="Original" className="w-full h-full object-cover" /> // Animations are GIF now
+              ) : isVideo || (isImage && enableAnimation) ? ( // Render img tag for animations (as they are GIFs)
+                <img src={preview} alt="Original" className="w-full h-full object-cover" />
               ) : isAudio ? (
                 <div className="w-full h-full flex flex-col items-center justify-center p-4">
                   <Music className="w-16 h-16 text-slate-400 mb-2" />
@@ -1140,12 +1145,12 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
               className="relative aspect-square rounded-lg overflow-hidden bg-slate-200 dark:bg-slate-800 cursor-pointer group"
               onClick={(isImage || isGif) ? handleCompare : undefined}
             >
-              {(isGif || (isImage && enableAnimation)) && (
+              {(isGif && outputGifFrameCount > 0) || (isImage && enableAnimation && outputGifFrameCount > 0) ? (
                 <Badge className="absolute -top-8 left-0 bg-slate-900/90 text-white text-xs px-3 py-1.5 font-bold flex items-center gap-1 shadow-lg z-10 rounded-md">
                   <Film className="w-3 h-3" />
-                  {gifFrameCount} frames
+                  {outputGifFrameCount} frames
                 </Badge>
-              )}
+              ) : null}
               
               {(isImage && !enableAnimation) ? (
                 <LazyImage 
@@ -1153,8 +1158,8 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
                   alt="Compressed" 
                   className="w-full h-full object-cover transition-transform group-hover:scale-105" 
                 />
-              ) : isVideo || (isImage && enableAnimation) ? ( // Render video tag for animations
-                <img src={compressedPreview} alt="Compressed" className="w-full h-full object-cover" /> // Animations are GIF now
+              ) : isVideo || (isImage && enableAnimation) ? ( // Render img tag for animations (as they are GIFs)
+                <img src={compressedPreview} alt="Compressed" className="w-full h-full object-cover" />
               ) : isAudio ? (
                 <div className="w-full h-full flex flex-col items-center justify-center p-4">
                   <Music className="w-16 h-16 text-emerald-500 mb-2" />
@@ -1658,7 +1663,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
                         <Info className="w-3 h-3 text-slate-400 cursor-help" />
                       </TooltipTrigger>
                       <TooltipContent className="max-w-xs">
-                        <p className="text-xs">AI generates 4 unique animated GIF variations with seamless looping</p>
+                        <p className="text-xs">AI analyzes your image and generates 4 unique animated GIF variations with REAL motion - subjects actually move and perform actions!</p>
                       </TooltipContent>
                     </Tooltip>
                   </div>
@@ -1669,11 +1674,13 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
                       if (checked) {
                         setFormat('gif');
                         setGeneratedAnimations([]);
-                        toast.info('Format set to GIF for animation. Loading AI animation engine...');
+                        setOutputGifFrameCount(0); // Clear output frame count
+                        toast.info('Format set to GIF for animation. Loading AI library...');
                       } else {
                         setFormat('jpg');
                         setGeneratedAnimations([]);
-                        toast.info('AI Animation disabled. Format reset to JPG.');
+                        setOutputGifFrameCount(0); // Clear output frame count
+                        toast.info('Animation disabled. Format reset to JPG.');
                       }
                     }}
                     disabled={processing}
@@ -1704,40 +1711,50 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
                         max={5}
                         step={1}
                         className="w-full"
-                        disabled={processing || !gifJsLoaded}
+                        disabled={processing}
                       />
                     </div>
 
-                    <div className="bg-gradient-to-br from-emerald-50 to-teal-50 dark:from-emerald-950/30 dark:to-teal-950/30 border border-emerald-200 dark:border-emerald-800 rounded-lg p-4">
-                      <p className="text-xs text-emerald-700 dark:text-emerald-400 mb-3 font-semibold flex items-center gap-2">
+                    <div className="bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-950/30 dark:to-pink-950/30 border border-purple-200 dark:border-purple-800 rounded-lg p-4">
+                      <p className="text-xs text-purple-700 dark:text-purple-400 mb-3 font-semibold flex items-center gap-2">
                         <Sparkles className="w-4 h-4" />
-                        <strong>AI-Generated Animations</strong>
+                        <strong>Real AI-Generated Motion</strong>
                       </p>
-                      <ul className="text-xs text-emerald-600 dark:text-emerald-400 space-y-2">
+                      <ul className="text-xs text-purple-600 dark:text-purple-400 space-y-2">
                         <li className="flex items-start gap-2">
-                          <span className="text-emerald-500 mt-0.5">✨</span>
-                          <span><strong>Unique variations:</strong> Each animation has different motion parameters</span>
+                          <span className="text-purple-500 mt-0.5">🎬</span>
+                          <span><strong>Context-aware:</strong> AI understands your image (anime, photo, art) and creates matching animations</span>
                         </li>
                         <li className="flex items-start gap-2">
-                          <span className="text-emerald-500 mt-0.5">🔄</span>
-                          <span><strong>Seamless loops:</strong> Start and end frames match perfectly</span>
+                          <span className="text-purple-500 mt-0.5">✨</span>
+                          <span><strong>Real motion:</strong> Subjects actually move - swing swords, wave hands, change expressions, etc.</span>
                         </li>
                         <li className="flex items-start gap-2">
-                          <span className="text-emerald-500 mt-0.5">🎨</span>
-                          <span><strong>Cinematic effects:</strong> Zoom, pan, rotate, and complex motion blends</span>
+                          <span className="text-purple-500 mt-0.5">🔄</span>
+                          <span><strong>Seamless loops:</strong> AI generates 12 frames that flow from start back to start</span>
                         </li>
                         <li className="flex items-start gap-2">
-                          <span className="text-emerald-500 mt-0.5">⚡</span>
-                          <span><strong>Fast generation:</strong> All 4 variations in seconds</span>
+                          <span className="text-purple-500 mt-0.5">🎨</span>
+                          <span><strong>Style matching:</strong> Generated frames match your image's art style and quality</span>
+                        </li>
+                        <li className="flex items-start gap-2">
+                          <span className="text-purple-500 mt-0.5">⏱️</span>
+                          <span><strong>Processing time:</strong> 2-5 minutes (generates 48 unique images)</span>
                         </li>
                       </ul>
+                    </div>
+                    
+                    <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-lg p-3">
+                      <p className="text-xs text-amber-700 dark:text-amber-400">
+                        <strong>⚠️ Note:</strong> This uses advanced AI to generate actual motion frames. It will take 2-5 minutes to create all 4 animations. Perfect for single images, not bulk processing.
+                      </p>
                     </div>
                     
                     {generatedAnimations.length > 0 && (
                       <div className="space-y-2 pt-2 border-t border-slate-200 dark:border-slate-800">
                         <div className="flex items-center justify-between mb-2">
                           <label className="text-xs font-medium text-slate-700 dark:text-slate-300">
-                            Generated Animations ({generatedAnimations.length})
+                            Generated AI Animations ({generatedAnimations.length})
                           </label>
                           <Button
                             onClick={downloadAllAnimations}
@@ -1750,15 +1767,25 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
                           </Button>
                         </div>
                         {generatedAnimations.map((anim, index) => (
-                          <div key={index} className="flex items-center justify-between bg-slate-50 dark:bg-slate-950 rounded-lg p-2 border border-slate-200 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-900 transition-colors cursor-pointer" onClick={() => downloadAnimation(index)}>
-                            <div className="flex items-center gap-2">
-                              <img src={anim.url} alt={anim.name} className="w-12 h-12 rounded object-cover" />
+                          <div 
+                            key={index} 
+                            className="flex items-center justify-between bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-950/30 dark:to-pink-950/30 rounded-lg p-3 border border-purple-200 dark:border-purple-800 hover:border-purple-400 dark:hover:border-purple-600 transition-colors cursor-pointer" 
+                            onClick={() => downloadAnimation(index)}
+                          >
+                            <div className="flex items-center gap-3">
+                              <div className="relative">
+                                <img src={anim.url} alt={anim.name} className="w-16 h-16 rounded-lg object-cover border-2 border-purple-300 dark:border-purple-700" />
+                                <div className="absolute -top-1 -right-1 bg-purple-600 text-white text-[10px] font-bold rounded-full w-5 h-5 flex items-center justify-center">
+                                  {anim.frameCount}
+                                </div>
+                              </div>
                               <div>
-                                <p className="text-xs font-medium text-slate-900 dark:text-white">{anim.name}</p>
-                                <p className="text-[10px] text-slate-500 dark:text-slate-400">{anim.description} • {formatFileSize(anim.size)}</p>
+                                <p className="text-sm font-semibold text-slate-900 dark:text-white">{anim.name}</p>
+                                <p className="text-[10px] text-purple-600 dark:text-purple-400 mt-0.5">{anim.description}</p>
+                                <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-1">{anim.frameCount} AI frames • {formatFileSize(anim.size)}</p>
                               </div>
                             </div>
-                            <Download className="w-3 h-3 text-slate-400" />
+                            <Download className="w-4 h-4 text-purple-600 dark:text-purple-400" />
                           </div>
                         ))}
                       </div>
