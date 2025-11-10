@@ -48,11 +48,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
   const [upscaleMultiplier, setUpscaleMultiplier] = useState(null);
   const [originalImageDimensions, setOriginalImageDimensions] = useState({ width: 0, height: 0 });
 
-  // Animation states
-  const [animationSettingsOpen, setAnimationSettingsOpen] = useState(false);
-  const [enableAnimation, setEnableAnimation] = useState(false);
-  const [animationDuration, setAnimationDuration] = useState(3);
-  const [generatedAnimations, setGeneratedAnimations] = useState([]);
+  // GIF.js states (kept for regular GIF processing)
   const [gifJsLoaded, setGifJsLoaded] = useState(false);
   const [workerBlobUrl, setWorkerBlobUrl] = useState(null);
   const [outputGifFrameCount, setOutputGifFrameCount] = useState(0);
@@ -209,8 +205,8 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
   }, [autoProcess, processed, processing]);
 
   useEffect(() => {
-    // Load GIF.js for both animations AND GIF compression
-    if ((enableAnimation || isGif) && !gifJsLoaded) {
+    // Load GIF.js for GIF compression
+    if (isGif && !gifJsLoaded) {
       const loadGifJs = async () => {
         try {
           if (window.GIF && workerBlobUrl) {
@@ -244,11 +240,6 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
           setWorkerBlobUrl(workerUrl);
           setGifJsLoaded(true);
           console.log('✅ GIF.js and worker loaded successfully');
-
-          // Only show success toast for animations, not regular GIF compression
-          if (enableAnimation) {
-            toast.success('AI animation engine ready!');
-          }
         } catch (error) {
           console.error('Failed to load GIF.js:', error);
           toast.error('Failed to load GIF processor: ' + error.message);
@@ -257,7 +248,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
 
       loadGifJs();
     }
-  }, [enableAnimation, isGif, gifJsLoaded, workerBlobUrl]);
+  }, [isGif, gifJsLoaded, workerBlobUrl]);
 
   useEffect(() => {
     return () => {
@@ -291,18 +282,10 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
     setProcessing(true);
     setError(null);
     setOutputFormat(null);
-    setGeneratedAnimations([]);
     setOutputGifFrameCount(0);
 
     try {
-      if (isImage && enableAnimation) {
-        if (!gifJsLoaded || !workerBlobUrl) {
-          toast.error('AI animation engine still loading. Please wait a moment...');
-          setProcessing(false);
-          return;
-        }
-        await processImageToAnimation();
-      } else if (isVideo) {
+      if (isVideo) {
         if (!ffmpegLoaded) {
           toast.error('Video processor still loading. Please wait...');
           setProcessing(false);
@@ -600,7 +583,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
 
   const processGif = async () => {
     try {
-      console.log('🎞️ Starting HIGH-QUALITY GIF optimization...');
+      console.log('🎞️ Starting GIF optimization...');
       
       if (!gifJsLoaded || !window.GIF || !workerBlobUrl) {
         toast.error('GIF processor still loading. Please wait...');
@@ -611,6 +594,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
       const originalBlob = await response.blob();
       
       if (!gifSettings.frames || gifSettings.frames.length === 0) {
+        console.warn('No frames found in GIF, using original');
         const compressedUrl = URL.createObjectURL(originalBlob);
         setCompressedPreview(compressedUrl);
         setCompressedSize(originalBlob.size);
@@ -632,14 +616,16 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
           fileFormat: 'gif'
         });
         
-        toast.info('GIF processed (no frames to optimize)');
+        toast.info('GIF processed (no optimization needed)');
         return;
       }
 
+      console.log(`Original GIF: ${gifSettings.frames.length} frames, ${gifSettings.width}x${gifSettings.height}`);
+      
       let targetWidth = gifSettings.width;
       let targetHeight = gifSettings.height;
       
-      // Only resize if dimensions are set AND would make it smaller
+      // Only resize if dimensions are explicitly set AND would make it smaller
       if (maxWidth || maxHeight) {
         const aspectRatio = gifSettings.width / gifSettings.height;
         
@@ -648,7 +634,6 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
           const heightRatio = maxHeight / gifSettings.height;
           const ratio = Math.min(widthRatio, heightRatio);
           
-          // Only apply if it makes the image smaller
           if (ratio < 1) {
             targetWidth = Math.round(gifSettings.width * ratio);
             targetHeight = Math.round(gifSettings.height * ratio);
@@ -662,108 +647,116 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
         }
       }
       
-      console.log(`Processing GIF: ${gifSettings.frames.length} frames, ${targetWidth}x${targetHeight}`);
+      console.log(`Target size: ${targetWidth}x${targetHeight}`);
       
       // Frame handling based on optimization mode
       let frameSkip = 1;
       let maxFramesToProcess = gifSettings.frames.length;
       
       if (gifOptimization === 'balanced') {
-        frameSkip = 2; // Keep every other frame
+        frameSkip = 2;
         maxFramesToProcess = Math.min(gifSettings.frames.length, 300);
       } else if (gifOptimization === 'size') {
-        frameSkip = 3; // Keep every third frame
+        frameSkip = 3;
         maxFramesToProcess = Math.min(gifSettings.frames.length, 200);
       } else {
-        // Quality mode - keep ALL frames up to 600
+        // Quality mode - ALL frames
         frameSkip = 1;
-        maxFramesToProcess = Math.min(gifSettings.frames.length, 600);
+        maxFramesToProcess = Math.min(gifSettings.frames.length, 1000);
       }
       
-      const canvas = document.createElement('canvas');
-      canvas.width = targetWidth;
-      canvas.height = targetHeight;
-      const ctx = canvas.getContext('2d', { 
-        willReadFrequently: true,
-        alpha: true
-      });
-
-      const processedFrames = [];
-      let prevImageData = null;
+      console.log(`Processing with frameSkip=${frameSkip}, maxFrames=${maxFramesToProcess}`);
       
-      console.log(`Frame skip: ${frameSkip}, Max frames: ${maxFramesToProcess}`);
+      const processedFrames = [];
       
       for (let i = 0; i < maxFramesToProcess; i += frameSkip) {
         const frame = gifSettings.frames[i];
-        if (!frame || !frame.patch || !frame.dims) continue;
+        if (!frame || !frame.patch || !frame.dims) {
+          console.warn(`Skipping invalid frame ${i}`);
+          continue;
+        }
 
         try {
+          // Create canvas for this frame
+          const frameCanvas = document.createElement('canvas');
+          frameCanvas.width = targetWidth;
+          frameCanvas.height = targetHeight;
+          const frameCtx = frameCanvas.getContext('2d', { 
+            willReadFrequently: true,
+            alpha: true 
+          });
+          
+          if (!frameCtx) {
+            console.error(`Failed to get context for frame ${i}`);
+            continue;
+          }
+          
+          // Create temp canvas with original frame size
+          const tempCanvas = document.createElement('canvas');
+          tempCanvas.width = frame.dims.width;
+          tempCanvas.height = frame.dims.height;
+          const tempCtx = tempCanvas.getContext('2d', { alpha: true });
+          
+          if (!tempCtx) {
+            console.error(`Failed to get temp context for frame ${i}`);
+            continue;
+          }
+          
+          // Put frame data on temp canvas
           const imageData = new ImageData(
             new Uint8ClampedArray(frame.patch),
             frame.dims.width,
             frame.dims.height
           );
-          
-          const tempCanvas = document.createElement('canvas');
-          tempCanvas.width = frame.dims.width;
-          tempCanvas.height = frame.dims.height;
-          const tempCtx = tempCanvas.getContext('2d', { alpha: true });
-          if (!tempCtx) continue;
-          
           tempCtx.putImageData(imageData, 0, 0);
-          ctx.clearRect(0, 0, targetWidth, targetHeight);
           
-          // Use high-quality image rendering
-          ctx.imageSmoothingEnabled = true;
-          ctx.imageSmoothingQuality = 'high';
-          ctx.drawImage(tempCanvas, 0, 0, targetWidth, targetHeight);
+          // Draw to target size with high quality
+          frameCtx.imageSmoothingEnabled = true;
+          frameCtx.imageSmoothingQuality = 'high';
+          frameCtx.drawImage(tempCanvas, 0, 0, targetWidth, targetHeight);
+          
+          // Get the processed frame data
+          // const processedImageData = frameCtx.getImageData(0, 0, targetWidth, targetHeight); // Not strictly needed
           
           const delay = frame.delay ? Math.max(20, frame.delay * 10 * frameSkip) : 100 * frameSkip;
-          const frameImageData = ctx.getImageData(0, 0, targetWidth, targetHeight);
           
-          // Only skip duplicate frames in 'size' mode
-          if (gifOptimization === 'size' && prevImageData) {
-            const diff = calculateFrameDifference(prevImageData.data, frameImageData.data);
-            if (diff < 0.02) continue; // Very similar frame
-          }
-          
-          prevImageData = frameImageData;
-          processedFrames.push({ 
-            data: new Uint8ClampedArray(frameImageData.data),
-            delay,
-            width: targetWidth,
-            height: targetHeight
+          processedFrames.push({
+            canvas: frameCanvas,
+            delay: delay
           });
+          
+          if (i % 20 === 0) {
+            console.log(`Processed frame ${i + 1}/${maxFramesToProcess}`);
+          }
         } catch (frameError) {
-          console.warn(`Error processing frame ${i}:`, frameError);
-          continue;
+          console.error(`Error processing frame ${i}:`, frameError);
         }
       }
 
       if (processedFrames.length === 0) {
-        throw new Error('No frames could be processed');
+        throw new Error('No frames could be processed. Using original GIF.');
       }
 
-      console.log(`Processed ${processedFrames.length} frames, creating GIF...`);
+      console.log(`Successfully processed ${processedFrames.length} frames, creating GIF...`);
 
       const GIF = window.GIF;
       
-      // QUALITY-FIRST SETTINGS
-      // gif.js quality: 1 = best, 30 = worst
-      let gifQuality = 1; // Default to BEST quality
+      // Quality settings - LOWER number = BETTER quality in gif.js
+      let gifQuality = 10; // Default middle quality
       
       if (gifOptimization === 'quality') {
-        // Quality mode: 1-3 (near perfect)
-        gifQuality = Math.max(1, Math.round((100 - quality) / 33));
+        // Quality mode: 1-5 (best quality)
+        gifQuality = Math.max(1, Math.min(5, Math.round((100 - quality) / 20)));
       } else if (gifOptimization === 'balanced') {
-        // Balanced mode: 5-10
-        gifQuality = Math.max(5, Math.min(10, Math.round((100 - quality) / 10)));
+        // Balanced: 8-12
+        gifQuality = Math.max(8, Math.min(12, Math.round((100 - quality) / 8)));
       } else {
-        // Size mode: 10-20
-        gifQuality = Math.max(10, Math.min(20, Math.round((100 - quality) / 5)));
+        // Size mode: 15-20
+        gifQuality = Math.max(15, Math.min(20, Math.round((100 - quality) / 5)));
       }
       
-      console.log(`GIF quality setting: ${gifQuality} (1=best, 30=worst)`);
+      console.log(`GIF.js quality: ${gifQuality} (1=best, 30=worst)`);
+      console.log(`GIF optimization mode: ${gifOptimization}`);
       
       const gif = new GIF({
         workers: 4,
@@ -771,63 +764,59 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
         width: targetWidth,
         height: targetHeight,
         workerScript: workerBlobUrl,
-        dither: false, // No dithering = cleaner colors
-        transparent: null,
         repeat: 0,
-        background: '#000000'
+        transparent: 0x00, // Transparent color
+        background: '#FFFFFF', // White background
+        dither: false // No dithering
       });
 
-      // Add frames
+      // Add all processed frames
       for (let i = 0; i < processedFrames.length; i++) {
-        const frameData = processedFrames[i];
-        
-        const frameCanvas = document.createElement('canvas');
-        frameCanvas.width = frameData.width;
-        frameCanvas.height = frameData.height;
-        const frameCtx = frameCanvas.getContext('2d', { alpha: true });
-        if (!frameCtx) continue;
-        
-        const imgData = new ImageData(frameData.data, frameData.width, frameData.height);
-        frameCtx.putImageData(imgData, 0, 0);
-        
-        gif.addFrame(frameCanvas, { 
-          delay: frameData.delay, 
-          copy: true, 
-          dispose: 2 // Restore to background
+        const { canvas, delay } = processedFrames[i];
+        gif.addFrame(canvas, { 
+          delay: delay,
+          copy: true,
+          dispose: 2
         });
         
-        if (i % 50 === 0) {
-          console.log(`Added frame ${i + 1}/${processedFrames.length}`);
+        if (i % 20 === 0) {
+          console.log(`Added frame ${i + 1}/${processedFrames.length} to GIF`);
         }
       }
 
-      console.log('Rendering GIF...');
+      console.log('All frames added, rendering GIF...');
       
       const gifBlob = await new Promise((resolve, reject) => {
         const timeout = setTimeout(() => {
-          reject(new Error('GIF rendering timeout'));
-        }, 180000); // 3 minutes
+          console.error('GIF rendering timeout');
+          reject(new Error('GIF rendering timeout after 3 minutes'));
+        }, 180000);
         
         gif.on('finished', (blob) => {
           clearTimeout(timeout);
+          console.log(`✅ GIF rendered successfully: ${(blob.size / 1024).toFixed(1)}KB`);
           resolve(blob);
         });
         
         gif.on('error', (error) => {
           clearTimeout(timeout);
+          console.error('GIF rendering error:', error);
           reject(error);
         });
         
         gif.on('progress', (p) => {
           if (p % 0.1 < 0.01) {
-            console.log(`GIF render progress: ${(p * 100).toFixed(0)}%`);
+            const percent = (p * 100).toFixed(0);
+            console.log(`GIF render progress: ${percent}%`);
           }
         });
         
         gif.render();
       });
       
-      console.log(`✅ GIF created: ${(gifBlob.size / 1024).toFixed(1)}KB`);
+      if (!gifBlob || gifBlob.size === 0) {
+        throw new Error('GIF rendering produced empty result');
+      }
       
       const compressedUrl = URL.createObjectURL(gifBlob);
       setCompressedPreview(compressedUrl);
@@ -852,23 +841,47 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
 
       const savings = ((1 - gifBlob.size / image.size) * 100).toFixed(1);
       if (gifBlob.size < image.size) {
-        toast.success(`GIF optimized! ${processedFrames.length} frames preserved, saved ${savings}%`);
+        toast.success(`GIF optimized! ${processedFrames.length} frames, saved ${savings}%`);
       } else {
-        toast.info(`GIF optimized • ${processedFrames.length} frames preserved (quality prioritized)`);
+        toast.info(`GIF processed • ${processedFrames.length} frames (quality prioritized)`);
       }
     } catch (error) {
       console.error('❌ GIF optimization failed:', error);
-      throw error;
+      console.error('Error details:', error.stack);
+      
+      // Fallback to original if processing fails
+      try {
+        const response = await fetch(preview);
+        const originalBlob = await response.blob();
+        const compressedUrl = URL.createObjectURL(originalBlob);
+        
+        setCompressedPreview(compressedUrl);
+        setCompressedSize(originalBlob.size);
+        setCompressedBlob(originalBlob);
+        setProcessed(true);
+        setOutputFormat('gif');
+        
+        onProcessed({
+          id: image.name,
+          originalFile: image,
+          compressedBlob: originalBlob,
+          compressedUrl,
+          originalSize: image.size,
+          compressedSize: originalBlob.size,
+          format: 'gif',
+          filename: getOutputFilename('gif'),
+          mediaType: 'image',
+          fileFormat: 'gif'
+        });
+        
+        toast.warning('GIF optimization failed, using original file');
+      } catch (fallbackError) {
+        console.error('Fallback also failed:', fallbackError);
+        throw error;
+      }
     }
   };
 
-  const calculateFrameDifference = (data1, data2) => {
-    let diff = 0;
-    for (let i = 0; i < data1.length; i += 4) {
-      diff += Math.abs(data1[i] - data2[i]) + Math.abs(data1[i + 1] - data2[i + 1]) + Math.abs(data1[i + 2] - data2[i + 2]);
-    }
-    return diff / (data1.length * 255);
-  };
 
   const processStaticImage = async () => {
     const img = new Image();
@@ -948,7 +961,6 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
         );
       });
 
-      // Changed condition: now it's `enableUpscale || blob.size < image.size`
       if (enableUpscale || blob.size < image.size || attempts === maxAttempts - 1) {
         break;
       }
@@ -994,339 +1006,6 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
     });
   };
 
-  // MIDJOURNEY-STYLE AI Animation: Uses ACTUAL uploaded image as base
-  const processImageToAnimation = async () => {
-    if (!gifJsLoaded || !window.GIF || !workerBlobUrl) {
-      toast.error('Animation library not ready. Please wait...');
-      return;
-    }
-
-    try {
-      console.log('🎬 Starting Midjourney-style animation...');
-      
-      // Step 1: Upload the ACTUAL image
-      toast.info('Step 1/3: Analyzing your image...', { duration: Infinity, id: 'anim-gen' });
-      
-      const response = await fetch(preview);
-      const blob = await response.blob();
-      const file = new File([blob], 'image.jpg', { type: blob.type });
-      
-      const uploadResult = await base44.integrations.Core.UploadFile({ file });
-      if (!uploadResult?.file_url) {
-        throw new Error('Failed to upload image');
-      }
-      
-      const originalImageUrl = uploadResult.file_url;
-      console.log('✅ Original image uploaded');
-      
-      // Step 2: AI creates animation concepts based on THIS EXACT IMAGE
-      toast.info('Step 2/3: Creating animation concepts...', { id: 'anim-gen' });
-      
-      const analysisResult = await base44.integrations.Core.InvokeLLM({
-        prompt: `Analyze this EXACT image in EXTREME detail. You will create 2 SIMPLE animation concepts.
-
-CRITICAL RULES:
-1. The ACTUAL uploaded image will be used as frame 1 (0%) and frame 10 (100%)
-2. You only describe frames 2-9 (the in-between motion)
-3. Animations MUST be SUBTLE and match EXACTLY what's in the image
-4. NO adding new objects, changing clothes, different backgrounds, or style changes
-5. Focus on MINIMAL motion that makes sense for THIS scene
-
-Good animation types for most images:
-- Camera movement: "Camera slowly zooms in" / "Camera pans right"
-- Subtle breathing: "Character's chest rises and falls slightly"
-- Hair/cloth movement: "Hair sways gently in breeze"
-- Lighting changes: "Lighting softly brightens"
-- Eye movement: "Eyes look slightly left/right"
-
-For each animation, provide:
-- name: Short name (e.g. "Gentle Zoom", "Soft Breeze")
-- concept: One sentence describing the motion
-- frames: Array of 8 frame descriptions for frames 2-9
-  * Each frame should describe ONE tiny change from the previous frame
-  * Frame 2: Very subtle start of motion
-  * Frames 3-8: Gradual progression
-  * Frame 9: Almost back to original (preparing for loop to frame 10=frame 1)
-
-EXAMPLE for "person standing":
-Frame 2: Character's shoulders rise 2% (breathing in slightly)
-Frame 3: Shoulders rise 3% more (breath continues)
-Frame 4: Shoulders at peak (full breath in)
-Frame 5: Shoulders begin to lower 2% (breath out starts)
-Frame 6: Shoulders lower 3% more
-Frame 7: Shoulders nearly at original position
-Frame 8: Shoulders at 95% original position
-Frame 9: Shoulders return to exact original position`,
-        file_urls: [originalImageUrl],
-        response_json_schema: {
-          type: "object",
-          properties: {
-            image_analysis: {
-              type: "object",
-              properties: {
-                main_subject: { type: "string" },
-                pose_description: { type: "string" },
-                style: { type: "string" },
-                colors: { type: "string" },
-                lighting: { type: "string" }
-              }
-            },
-            animations: {
-              type: "array",
-              minItems: 2,
-              maxItems: 2,
-              items: {
-                type: "object",
-                properties: {
-                  name: { type: "string" },
-                  concept: { type: "string" },
-                  frames: {
-                    type: "array",
-                    minItems: 8,
-                    maxItems: 8,
-                    items: { type: "string" }
-                  }
-                },
-                required: ["name", "concept", "frames"]
-              }
-            }
-          },
-          required: ["image_analysis", "animations"]
-        }
-      });
-
-      console.log('✅ AI Analysis:', analysisResult);
-
-      if (!analysisResult?.animations || analysisResult.animations.length === 0) {
-        throw new Error('Could not create animations for this image');
-      }
-
-      const animations = Array.isArray(analysisResult.animations) 
-        ? analysisResult.animations 
-        : Object.values(analysisResult.animations);
-
-      const imageAnalysis = analysisResult.image_analysis || {};
-      
-      console.log(`✅ Creating ${animations.length} animations`);
-
-      // Step 3: Generate animations
-      const generatedGifs = [];
-
-      for (let animIndex = 0; animIndex < animations.length; animIndex++) {
-        const anim = animations[animIndex];
-        
-        if (!anim?.name || !anim?.frames || anim.frames.length < 8) {
-          console.warn(`Invalid animation ${animIndex + 1}`);
-          continue;
-        }
-
-        try {
-          console.log(`\n🎨 Creating: ${anim.name}`);
-          toast.info(`Step 3/3: ${anim.name} (${animIndex + 1}/${animations.length})...`, { id: 'anim-gen' });
-
-          const allFrames = [];
-          
-          // Frame 1: ACTUAL uploaded image
-          allFrames.push({ 
-            url: originalImageUrl, 
-            index: 0, 
-            isOriginal: true 
-          });
-          console.log(`Frame 1/10: Using ACTUAL uploaded image`);
-          
-          // Frames 2-9: AI-generated interpolations
-          for (let frameIndex = 0; frameIndex < 8; frameIndex++) {
-            const frameDesc = anim.frames[frameIndex];
-            
-            if (!frameDesc || frameDesc.trim().length === 0) {
-              console.warn(`Empty frame ${frameIndex + 2}, skipping`);
-              continue;
-            }
-
-            try {
-              console.log(`Generating frame ${frameIndex + 2}/10...`);
-              toast.info(`${anim.name}: Frame ${frameIndex + 2}/10...`, { id: 'anim-gen' });
-
-              // ULTRA-DETAILED prompt to maintain consistency
-              const framePrompt = `Create frame ${frameIndex + 2} of an animation based on this reference image.
-
-CRITICAL CONSISTENCY REQUIREMENTS:
-- Main subject: ${imageAnalysis.main_subject || 'same as reference'}
-- Pose base: ${imageAnalysis.pose_description || 'same as reference'}  
-- Style: ${imageAnalysis.style || 'exact same style'}
-- Colors: ${imageAnalysis.colors || 'exact same colors'}
-- Lighting: ${imageAnalysis.lighting || 'exact same lighting'}
-
-THIS FRAME'S SUBTLE CHANGE:
-${frameDesc}
-
-RULES:
-- Keep EXACT same subject, face, clothes, background
-- ONLY apply the tiny change described above
-- NO other changes whatsoever
-- Match reference image quality and detail
-- This is frame ${frameIndex + 2} of 10 in a seamless loop`;
-
-              const frameResult = await base44.integrations.Core.GenerateImage({
-                prompt: framePrompt,
-                file_urls: [originalImageUrl] // Always reference original
-              });
-
-              if (frameResult?.url) {
-                allFrames.push({ 
-                  url: frameResult.url, 
-                  index: frameIndex + 1, 
-                  isOriginal: false 
-                });
-                console.log(`✅ Frame ${frameIndex + 2} generated`);
-              }
-            } catch (frameError) {
-              console.error(`Failed frame ${frameIndex + 2}:`, frameError);
-            }
-          }
-
-          // Frame 10: ACTUAL uploaded image again (perfect loop)
-          allFrames.push({ 
-            url: originalImageUrl, 
-            index: 9, 
-            isOriginal: true 
-          });
-          console.log(`Frame 10/10: Using ACTUAL uploaded image (loop)`);
-
-          if (allFrames.length < 4) {
-            console.warn(`Not enough frames for ${anim.name}: ${allFrames.length}`);
-            continue;
-          }
-
-          console.log(`✅ Loading ${allFrames.length} images...`);
-          toast.info(`${anim.name}: Loading frames...`, { id: 'anim-gen' });
-
-          // Load all images
-          const loadedFrames = [];
-          for (const frame of allFrames) {
-            try {
-              const img = new Image();
-              img.crossOrigin = 'anonymous';
-              await new Promise((resolve, reject) => {
-                const timeout = setTimeout(() => reject(new Error('Timeout')), 30000);
-                img.onload = () => { clearTimeout(timeout); resolve(); };
-                img.onerror = () => { clearTimeout(timeout); reject(); };
-                img.src = frame.url;
-              });
-              loadedFrames.push({ img, index: frame.index, isOriginal: frame.isOriginal });
-            } catch (loadError) {
-              console.error(`Failed to load frame:`, loadError);
-            }
-          }
-
-          if (loadedFrames.length < 3) {
-            console.warn(`Only ${loadedFrames.length} frames loaded`);
-            continue;
-          }
-
-          loadedFrames.sort((a, b) => a.index - b.index);
-          console.log(`✅ ${loadedFrames.length} frames loaded`);
-
-          // Create HIGH QUALITY GIF
-          toast.info(`${anim.name}: Creating GIF...`, { id: 'anim-gen' });
-
-          const firstImg = loadedFrames[0].img;
-          let width = Math.min(firstImg.width, 800);
-          let height = Math.min(firstImg.height, 800);
-          width = width % 2 === 0 ? width : width - 1;
-          height = height % 2 === 0 ? height : height - 1;
-
-          const GIF = window.GIF;
-          const gif = new GIF({
-            workers: 4,
-            quality: 3, // High quality (1-10, lower = better)
-            width,
-            height,
-            workerScript: workerBlobUrl,
-            repeat: 0,
-            dither: false
-          });
-
-          const canvas = document.createElement('canvas');
-          canvas.width = width;
-          canvas.height = height;
-          const ctx = canvas.getContext('2d', { willReadFrequently: true });
-
-          const frameDelay = Math.round((animationDuration * 1000) / loadedFrames.length);
-          
-          for (const { img } of loadedFrames) {
-            ctx.clearRect(0, 0, width, height);
-            ctx.imageSmoothingEnabled = true;
-            ctx.imageSmoothingQuality = 'high';
-            ctx.drawImage(img, 0, 0, width, height);
-            gif.addFrame(ctx, { delay: frameDelay, copy: true, dispose: 2 });
-          }
-
-          const gifBlob = await new Promise((resolve, reject) => {
-            const timeout = setTimeout(() => reject(new Error('Timeout')), 120000);
-            gif.on('finished', (blob) => { clearTimeout(timeout); resolve(blob); });
-            gif.on('error', (err) => { clearTimeout(timeout); reject(err); });
-            gif.on('progress', (p) => {
-              if (p % 0.2 < 0.01) {
-                toast.info(`${anim.name}: ${(p * 100).toFixed(0)}%...`, { id: 'anim-gen' });
-              }
-            });
-            gif.render();
-          });
-
-          const gifUrl = URL.createObjectURL(gifBlob);
-          generatedGifs.push({
-            name: anim.name,
-            blob: gifBlob,
-            url: gifUrl,
-            size: gifBlob.size,
-            description: anim.concept,
-            frameCount: loadedFrames.length
-          });
-
-          console.log(`✅ ${anim.name} complete! (${(gifBlob.size / 1024).toFixed(1)}KB)`);
-        } catch (animError) {
-          console.error(`Failed ${anim.name}:`, animError);
-        }
-      }
-
-      if (generatedGifs.length === 0) {
-        throw new Error('Could not create any animations. Try a different image.');
-      }
-
-      setGeneratedAnimations(generatedGifs);
-      toast.dismiss('anim-gen');
-      toast.success(`${generatedGifs.length} animation${generatedGifs.length > 1 ? 's' : ''} created! 🎬`);
-
-      setCompressedPreview(generatedGifs[0].url);
-      setCompressedSize(generatedGifs[0].size);
-      setCompressedBlob(generatedGifs[0].blob);
-      setProcessed(true);
-      setOutputFormat('gif');
-      setOutputGifFrameCount(generatedGifs[0].frameCount);
-
-      onProcessed({
-        id: image.name,
-        originalFile: image,
-        compressedBlob: generatedGifs[0].blob,
-        compressedUrl: generatedGifs[0].url,
-        originalSize: image.size,
-        compressedSize: generatedGifs[0].size,
-        format: 'gif',
-        filename: getOutputFilename('gif'),
-        mediaType: 'image',
-        fileFormat: 'gif',
-        animations: generatedGifs
-      });
-
-    } catch (error) {
-      console.error('❌ Animation failed:', error);
-      toast.dismiss('anim-gen');
-      toast.error('Animation failed: ' + error.message);
-      throw error;
-    }
-  };
-
   const savingsPercent = processed
     ? ((1 - compressedSize / originalSize) * 100).toFixed(1)
     : 0;
@@ -1342,9 +1021,7 @@ RULES:
   const displayCompressedExt = displayFormat.toUpperCase();
 
   let availableFormats = [];
-  if (isImage && !isGif && enableAnimation) {
-    availableFormats = ['gif'];
-  } else if (isImage && !isGif) {
+  if (isImage && !isGif) {
     availableFormats = ['jpg', 'png', 'webp', 'avif'];
   } else if (isGif) {
     availableFormats = ffmpegLoaded ? ['gif', 'mp4'] : ['gif'];
@@ -1354,7 +1031,7 @@ RULES:
     availableFormats = ['mp3', 'wav'];
   }
 
-  const mediaIcon = isVideo ? Video : isAudio ? Music : isGif || (isImage && enableAnimation) ? Film : null;
+  const mediaIcon = isVideo ? Video : isAudio ? Music : isGif ? Film : null;
   const MediaIcon = mediaIcon;
 
   const performSingleMediaDownload = async (blob, targetFormat, mediaType, filename) => {
@@ -1366,7 +1043,7 @@ RULES:
     let finalBlob = blob;
     let finalFilename = filename || getOutputFilename(targetFormat);
 
-    if (isImage && !isGif && !enableAnimation && targetFormat && targetFormat !== (outputFormat || format)) {
+    if (isImage && !isGif && targetFormat && targetFormat !== (outputFormat || format)) {
       try {
         const img = new Image();
         img.src = compressedPreview;
@@ -1410,17 +1087,12 @@ RULES:
 
   const downloadMedia = async (formatOverride = null) => {
     if (!compressedBlob) {
-      toast.error("No processed media available for download.");
+      toast.error("No processed file available for download.");
       return;
     }
 
     const mediaType = isVideo ? 'video' : isAudio ? 'audio' : 'image';
     const currentCompressedFormat = outputFormat || format;
-
-    if (isImage && enableAnimation) {
-      setShowDownloadModal(true);
-      return;
-    }
 
     if (mediaType === 'image' && formatOverride === null) {
       setShowDownloadModal(true);
@@ -1454,7 +1126,7 @@ RULES:
         originalSize,
         compressedSize,
         fileName: getOutputFilename(),
-        mediaType: isImage && enableAnimation ? 'image' : isVideo ? 'video' : isAudio ? 'audio' : 'image',
+        mediaType: isVideo ? 'video' : isAudio ? 'audio' : 'image',
         fileFormat: outputFormat || format
       });
     }
@@ -1484,15 +1156,6 @@ RULES:
     if (newFormat === (outputFormat || format)) {
       toast.info(`Already in ${newFormat.toUpperCase()} format.`);
       return;
-    }
-
-    // For image animations, only GIF is supported as output
-    if (isImage && enableAnimation) {
-      if (newFormat !== 'gif') {
-        toast.error('Animations can only be exported as GIF.');
-        return;
-      }
-      return; // If format is already gif and animation enabled, nothing else to do.
     }
 
     // For video/audio/GIF conversions that require FFmpeg, we trigger a full re-process.
@@ -1560,51 +1223,6 @@ RULES:
     }
   };
 
-  const downloadAnimation = (animIndex) => {
-    if (!generatedAnimations[animIndex]) return;
-
-    const anim = generatedAnimations[animIndex];
-    const link = document.createElement('a');
-    link.href = anim.url;
-    const baseName = editableFilename.split('.').slice(0, -1).join('.') || editableFilename;
-    link.download = `${baseName}_${anim.name.toLowerCase().replace(/\s+/g, '_')}.gif`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(link.href);
-    toast.success(`${anim.name} downloaded!`);
-  };
-
-  const downloadAllAnimations = async () => {
-    if (generatedAnimations.length === 0) return;
-
-    toast.info('Creating zip with all animations...');
-    const JSZip = (await import('https://cdn.jsdelivr.net/npm/jszip@3.10.1/+esm')).default;
-    const zip = new JSZip();
-
-    const baseName = editableFilename.split('.').slice(0, -1).join('.') || editableFilename;
-    generatedAnimations.forEach((anim) => {
-      const filename = `${baseName}_${anim.name.toLowerCase().replace(/\s+/g, '_')}.gif`;
-      zip.file(filename, anim.blob);
-    });
-
-    try {
-      const content = await zip.generateAsync({ type: 'blob' });
-      const link = document.createElement('a');
-      link.href = URL.createObjectURL(content);
-      link.download = `${baseName}-animations.zip`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      URL.revokeObjectURL(link.href);
-
-      toast.success('All animations downloaded!');
-    } catch (error) {
-      console.error('Error zipping animations:', error);
-      toast.error('Failed to create ZIP file for animations.');
-    }
-  };
-
   return (
     <Card className="overflow-hidden bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 shadow-lg hover:shadow-xl transition-shadow">
       <div className="relative">
@@ -1614,21 +1232,21 @@ RULES:
               className="relative aspect-square rounded-lg overflow-hidden bg-slate-200 dark:bg-slate-800 cursor-pointer group"
               onClick={(isImage || isGif) && processed ? handleCompare : undefined}
             >
-              {(isGif && gifFrameCount > 0) || (isImage && enableAnimation && outputGifFrameCount > 0) ? (
+              {(isGif && gifFrameCount > 0) ? (
                 <Badge className="absolute -top-8 left-0 bg-slate-900/90 text-white text-xs px-3 py-1.5 font-bold flex items-center gap-1 shadow-lg z-10 rounded-md">
                   <Film className="w-3 h-3" />
-                  {isImage && enableAnimation ? outputGifFrameCount : gifFrameCount} frames
+                  {gifFrameCount} frames
                 </Badge>
               ) : null}
 
-              {(isImage && !enableAnimation) ? (
+              {isImage ? (
                 <LazyImage
                   src={preview}
                   alt="Original"
                   className="w-full h-full object-cover transition-transform group-hover:scale-105"
                 />
-              ) : isVideo || (isImage && enableAnimation) ? ( // Render img tag for animations (as they are GIFs)
-                <img src={preview} alt="Original" className="w-full h-full object-cover" />
+              ) : isVideo ? (
+                <video src={preview} controls muted loop className="w-full h-full object-cover"></video>
               ) : isAudio ? (
                 <div className="w-full h-full flex flex-col items-center justify-center p-4">
                   <Music className="w-16 h-16 text-slate-400 mb-2" />
@@ -1661,21 +1279,21 @@ RULES:
               className="relative aspect-square rounded-lg overflow-hidden bg-slate-200 dark:bg-slate-800 cursor-pointer group"
               onClick={(isImage || isGif) ? handleCompare : undefined}
             >
-              {(isGif && outputGifFrameCount > 0) || (isImage && enableAnimation && outputGifFrameCount > 0) ? (
+              {(isGif && outputGifFrameCount > 0) ? (
                 <Badge className="absolute -top-8 left-0 bg-slate-900/90 text-white text-xs px-3 py-1.5 font-bold flex items-center gap-1 shadow-lg z-10 rounded-md">
                   <Film className="w-3 h-3" />
                   {outputGifFrameCount} frames
                 </Badge>
               ) : null}
 
-              {(isImage && !enableAnimation) ? (
+              {isImage ? (
                 <LazyImage
                   src={compressedPreview}
                   alt="Compressed"
                   className="w-full h-full object-cover transition-transform group-hover:scale-105"
                 />
-              ) : isVideo || (isImage && enableAnimation) ? ( // Render img tag for animations (as they are GIFs)
-                <img src={compressedPreview} alt="Compressed" className="w-full h-full object-cover" />
+              ) : isVideo ? (
+                <video src={compressedPreview} controls muted loop className="w-full h-full object-cover"></video>
               ) : isAudio ? (
                 <div className="w-full h-full flex flex-col items-center justify-center p-4">
                   <Music className="w-16 h-16 text-emerald-500 mb-2" />
@@ -1999,8 +1617,8 @@ RULES:
                 </>
               )}
 
-              {/* Image/GIF Specific Settings (when not video, audio, or AI animation) */}
-              {!(isAudio || isVideo || (isImage && enableAnimation)) && (
+              {/* Image/GIF Specific Settings (when not video or audio) */}
+              {!(isAudio || isVideo) && (
                 <>
                   <div>
                     <div className="flex items-center gap-2 mb-2">
@@ -2069,7 +1687,7 @@ RULES:
                     </div>
                   )}
 
-                  {(isImage && !isGif && !enableAnimation) && (
+                  {(isImage && !isGif) && (
                     <div className="grid grid-cols-2 gap-2">
                       <div>
                         <div className="flex items-center gap-1 mb-1">
@@ -2104,7 +1722,7 @@ RULES:
                     </div>
                   )}
 
-                  {(isImage && !isGif && !enableAnimation) && (
+                  {(isImage && !isGif) && (
                     <div className="space-y-3 pt-2 border-t border-slate-200 dark:border-slate-800">
                       <div className="flex items-center justify-between">
                         <label className="text-xs font-medium text-slate-700 dark:text-slate-300">
@@ -2135,7 +1753,7 @@ RULES:
           </CollapsibleContent>
         </Collapsible>
 
-        {(isImage && !isGif && !enableAnimation) && ( // Upscale settings only for static images, not for animations
+        {(isImage && !isGif) && (
           <Collapsible open={upscaleSettingsOpen} onOpenChange={setUpscaleSettingsOpen}>
             <CollapsibleTrigger asChild>
               <Button variant="outline" className="w-full justify-between" size="sm">
@@ -2306,175 +1924,11 @@ RULES:
           </Collapsible>
         )}
 
-        {(isImage && !isGif) && (
-          <Collapsible open={animationSettingsOpen} onOpenChange={setAnimationSettingsOpen}>
-            <CollapsibleTrigger asChild>
-              <Button variant="outline" className="w-full justify-between" size="sm">
-                <span className="flex items-center gap-2">
-                  <Sparkles className="w-4 h-4" />
-                  AI Animation {!gifJsLoaded && enableAnimation && <span className="text-xs text-slate-500">(Loading...)</span>}
-                </span>
-                <ChevronDown className={cn(
-                  "w-4 h-4 transition-transform duration-200",
-                  animationSettingsOpen && "rotate-180"
-                )} />
-              </Button>
-            </CollapsibleTrigger>
-            <CollapsibleContent className="space-y-4 mt-4">
-              <TooltipProvider>
-                <div className="flex items-center justify-between pb-2 border-b border-slate-200 dark:border-slate-800">
-                  <div className="flex items-center gap-2">
-                    <label className="text-xs font-medium text-slate-700 dark:text-slate-300">
-                      Enable AI Animation
-                    </label>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Info className="w-3 h-3 text-slate-400 cursor-help" />
-                      </TooltipTrigger>
-                      <TooltipContent className="max-w-xs">
-                        <p className="text-xs">AI analyzes your image and generates 4 unique animated GIF variations with REAL motion - subjects actually move and perform actions!</p>
-                      </TooltipContent>
-                    </Tooltip>
-                  </div>
-                  <Switch
-                    checked={enableAnimation}
-                    onCheckedChange={(checked) => {
-                      setEnableAnimation(checked);
-                      if (checked) {
-                        setFormat('gif');
-                        setGeneratedAnimations([]);
-                        setOutputGifFrameCount(0); // Clear output frame count
-                        toast.info('Format set to GIF for animation. Loading AI library...');
-                      } else {
-                        setFormat('jpg');
-                        setGeneratedAnimations([]);
-                        setOutputGifFrameCount(0); // Clear output frame count
-                        toast.info('Animation disabled. Format reset to JPG.');
-                      }
-                    }}
-                    disabled={processing}
-                  />
-                </div>
-
-                {enableAnimation && (
-                  <>
-                    {!gifJsLoaded && (
-                      <div className="bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800 rounded-lg p-3">
-                        <p className="text-xs text-emerald-700 dark:text-emerald-400">
-                          <strong>⚡ Loading AI animation engine...</strong>
-                        </p>
-                        <p className="text-xs text-emerald-600 dark:text-emerald-400 mt-1">
-                          Please wait a moment before processing.
-                        </p>
-                      </div>
-                    )}
-
-                    <div>
-                      <label className="text-xs font-medium text-slate-700 dark:text-slate-300 mb-2 block">
-                        Animation Duration: {animationDuration}s
-                      </label>
-                      <Slider
-                        value={[animationDuration]}
-                        onValueChange={(value) => setAnimationDuration(value[0])}
-                        min={2}
-                        max={5}
-                        step={1}
-                        className="w-full"
-                        disabled={processing}
-                      />
-                    </div>
-
-                    <div className="bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-950/30 dark:to-pink-950/30 border border-purple-200 dark:border-purple-800 rounded-lg p-4">
-                      <p className="text-xs text-purple-700 dark:text-purple-400 mb-3 font-semibold flex items-center gap-2">
-                        <Sparkles className="w-4 h-4" />
-                        <strong>Real AI-Generated Motion (Like Midjourney!)</strong>
-                      </p>
-                      <ul className="text-xs text-purple-600 dark:text-purple-400 space-y-2">
-                        <li className="flex items-start gap-2">
-                          <span className="text-purple-500 mt-0.5">🎯</span>
-                          <span><strong>Starts with YOUR image:</strong> Frame 1 is your exact uploaded image (not AI-generated)</span>
-                        </li>
-                        <li className="flex items-start gap-2">
-                          <span className="text-purple-500 mt-0.5">🎬</span>
-                          <span><strong>Context-aware motion:</strong> AI understands your image and creates matching animations</span>
-                        </li>
-                        <li className="flex items-start gap-2">
-                          <span className="text-purple-500 mt-0.5">✨</span>
-                          <span><strong>Real movement:</strong> Characters swing swords, wave, change expressions - actual motion!</span>
-                        </li>
-                        <li className="flex items-start gap-2">
-                          <span className="text-purple-500 mt-0.5">🔄</span>
-                          <span><strong>Perfect loops:</strong> AI generates frames 2-9, then returns to your original image for seamless loop</span>
-                        </li>
-                        <li className="flex items-start gap-2">
-                          <span className="text-purple-500 mt-0.5">🎨</span>
-                          <span><strong>Style matching:</strong> Generated frames match your image's style perfectly</span>
-                        </li>
-                        <li className="flex items-start gap-2">
-                          <span className="text-purple-500 mt-0.5">⏱️</span>
-                          <span><strong>Processing time:</strong> 2-3 minutes (generates 36 unique frames - 9 per animation)</span>
-                        </li>
-                      </ul>
-                    </div>
-
-                    <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-lg p-3">
-                      <p className="text-xs text-amber-700 dark:text-amber-400">
-                        <strong>⚠️ Note:</strong> Frame 1 uses your actual image, then AI generates frames 2-10 showing motion and returning to the original pose. Like Midjourney's animation - starts with YOUR image, not a recreation!
-                      </p>
-                    </div>
-
-                    {generatedAnimations.length > 0 && (
-                      <div className="space-y-2 pt-2 border-t border-slate-200 dark:border-slate-800">
-                        <div className="flex items-center justify-between mb-2">
-                          <label className="text-xs font-medium text-slate-700 dark:text-slate-300">
-                            Generated AI Animations ({generatedAnimations.length})
-                          </label>
-                          <Button
-                            onClick={downloadAllAnimations}
-                            size="sm"
-                            variant="outline"
-                            className="h-7 text-xs"
-                          >
-                            <Download className="w-3 h-3 mr-1" />
-                            All as ZIP
-                          </Button>
-                        </div>
-                        {generatedAnimations.map((anim, index) => (
-                          <div
-                            key={index}
-                            className="flex items-center justify-between bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-950/30 dark:to-pink-950/30 rounded-lg p-3 border border-purple-200 dark:border-purple-800 hover:border-purple-400 dark:hover:border-purple-600 transition-colors cursor-pointer"
-                            onClick={() => downloadAnimation(index)}
-                          >
-                            <div className="flex items-center gap-3">
-                              <div className="relative">
-                                <img src={anim.url} alt={anim.name} className="w-16 h-16 rounded-lg object-cover border-2 border-purple-300 dark:border-purple-700" />
-                                <div className="absolute -top-1 -right-1 bg-purple-600 text-white text-[10px] font-bold rounded-full w-5 h-5 flex items-center justify-center">
-                                  {anim.frameCount}
-                                </div>
-                              </div>
-                              <div>
-                                <p className="text-sm font-semibold text-slate-900 dark:text-white">{anim.name}</p>
-                                <p className="text-[10px] text-purple-600 dark:text-purple-400 mt-0.5">{anim.description}</p>
-                                <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-1">{anim.frameCount} AI frames • {formatFileSize(anim.size)}</p>
-                              </div>
-                            </div>
-                            <Download className="w-4 h-4 text-purple-600 dark:text-purple-400" />
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </>
-                )}
-              </TooltipProvider>
-            </CollapsibleContent>
-          </Collapsible>
-        )}
-
         <div className="flex gap-2">
           {!processed ? (
             <Button
               onClick={processMedia}
-              disabled={processing || (isVideo && !ffmpegLoaded) || (isAudio && !ffmpegLoaded) || (isGif && format === 'mp4' && !ffmpegLoaded) || (enableAnimation && !gifJsLoaded)}
+              disabled={processing || (isVideo && !ffmpegLoaded) || (isAudio && !ffmpegLoaded) || (isGif && format === 'mp4' && !ffmpegLoaded) || (isGif && !gifJsLoaded)}
               className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white"
             >
               {processing ? (
@@ -2485,7 +1939,7 @@ RULES:
               ) : (
                 <>
                   {MediaIcon && <MediaIcon className="w-4 h-4 mr-2" />}
-                  Compress {isVideo ? 'Video' : isAudio ? 'Audio' : isGif ? 'GIF' : (isImage && enableAnimation) ? 'Animation' : 'Image'}
+                  Compress {isVideo ? 'Video' : isAudio ? 'Audio' : isGif ? 'GIF' : 'Image'}
                 </>
               )}
             </Button>
@@ -2495,7 +1949,7 @@ RULES:
                 onClick={processMedia}
                 variant="outline"
                 className="flex-1"
-                disabled={processing || (isVideo && !ffmpegLoaded) || (isAudio && !ffmpegLoaded) || (isGif && format === 'mp4' && !ffmpegLoaded) || (enableAnimation && !gifJsLoaded)}
+                disabled={processing || (isVideo && !ffmpegLoaded) || (isAudio && !ffmpegLoaded) || (isGif && format === 'mp4' && !ffmpegLoaded) || (isGif && !gifJsLoaded)}
               >
                 <RefreshCcw className="w-4 h-4 mr-2" />
                 Reprocess
@@ -2536,9 +1990,7 @@ RULES:
           blob={compressedBlob}
           originalFilename={getOutputFilename()}
           format={outputFormat || format}
-          generatedAnimations={isImage && enableAnimation ? generatedAnimations : null} // Pass animations if enabled
-          onDownloadAnimation={downloadAnimation}
-          onDownloadAllAnimations={downloadAllAnimations}
+          generatedAnimations={null}
         />
       )}
     </Card>
