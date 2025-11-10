@@ -48,16 +48,16 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
   const [upscaleMultiplier, setUpscaleMultiplier] = useState(null);
   const [originalImageDimensions, setOriginalImageDimensions] = useState({ width: 0, height: 0 });
 
-  // New states for animation
+  // Animation states
   const [animationSettingsOpen, setAnimationSettingsOpen] = useState(false);
   const [enableAnimation, setEnableAnimation] = useState(false);
-  const [animationDuration, setAnimationDuration] = useState(3); // seconds
-  const [generatedAnimations, setGeneratedAnimations] = useState([]); // Store 4 variations
+  const [animationDuration, setAnimationDuration] = useState(3);
+  const [generatedAnimations, setGeneratedAnimations] = useState([]);
   const [gifJsLoaded, setGifJsLoaded] = useState(false);
-  const [workerBlobUrl, setWorkerBlobUrl] = useState(null); // Added for GIF.js worker
-  const [outputGifFrameCount, setOutputGifFrameCount] = useState(0); // State to store frame count of output GIF
+  const [workerBlobUrl, setWorkerBlobUrl] = useState(null);
+  const [outputGifFrameCount, setOutputGifFrameCount] = useState(0);
 
-  // New state for editable filename
+  // Editable filename
   const [editableFilename, setEditableFilename] = useState('');
   const [isEditingFilename, setIsEditingFilename] = useState(false);
 
@@ -71,26 +71,66 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
   const [gifFrameCount, setGifFrameCount] = useState(0);
   const [gifSettings, setGifSettings] = useState({ width: 0, height: 0, frames: [] });
   
-  // Video/Audio specific states (These will not be used without FFmpeg, but kept for consistency if re-added)
+  // Video/Audio specific states
   const [videoBitrate, setVideoBitrate] = useState(1000);
   const [audioBitrate, setAudioBitrate] = useState(128);
   const [frameRate, setFrameRate] = useState(30);
   const [videoPreset, setVideoPreset] = useState('medium');
-  const [gopSize, setGopSize] = useState(250);
-  const [sampleRate, setSampleRate] = useState(44100);
+  const [videoResolution, setVideoResolution] = useState('original'); // 'original', '1080p', '720p', '480p'
   const [audioQuality, setAudioQuality] = useState('standard');
   const [gifOptimization, setGifOptimization] = useState('balanced');
   
+  // FFmpeg states
+  const [ffmpegLoaded, setFfmpegLoaded] = useState(false);
+  const [ffmpegLoading, setFfmpegLoading] = useState(false);
+  const ffmpegRef = useRef(null);
+  
   const processMediaRef = useRef(null);
+
+  // Load FFmpeg when video/audio is uploaded
+  useEffect(() => {
+    if ((isVideo || isAudio || isGif) && !ffmpegLoaded && !ffmpegLoading) { // isGif added to trigger FFmpeg for GIF conversion
+      loadFFmpeg();
+    }
+  }, [isVideo, isAudio, isGif, ffmpegLoaded, ffmpegLoading]);
+
+  const loadFFmpeg = async () => {
+    if (ffmpegLoading || ffmpegLoaded) return;
+    
+    setFfmpegLoading(true);
+    toast.info('Loading video/audio processor...', { duration: Infinity, id: 'ffmpeg-load' });
+    
+    try {
+      const { FFmpeg } = await import('https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@0.12.6/+esm');
+      const { toBlobURL } = await import('https://cdn.jsdelivr.net/npm/@ffmpeg/util@0.12.1/+esm');
+      
+      const ffmpeg = new FFmpeg();
+      
+      const baseURL = 'https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.6/dist/umd';
+      await ffmpeg.load({
+        coreURL: await toBlobURL(`${baseURL}/ffmpeg-core.js`, 'text/javascript'),
+        wasmURL: await toBlobURL(`${baseURL}/ffmpeg-core.wasm`, 'application/wasm'),
+      });
+      
+      ffmpegRef.current = ffmpeg;
+      setFfmpegLoaded(true);
+      toast.dismiss('ffmpeg-load');
+      toast.success('Video/audio processor ready!');
+    } catch (error) {
+      console.error('Failed to load FFmpeg:', error);
+      toast.dismiss('ffmpeg-load');
+      toast.error('Failed to load video/audio processor: ' + error.message);
+      setFfmpegLoading(false);
+    }
+  };
 
   useEffect(() => {
     const reader = new FileReader();
     reader.onloadend = async () => {
       setPreview(reader.result);
       setOriginalSize(image.size);
-      setEditableFilename(image.name); // Initialize editable filename
+      setEditableFilename(image.name);
       
-      // Load image dimensions for static images
       if (isImage && !isGif) {
         const img = new Image();
         img.onload = () => {
@@ -109,7 +149,6 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
     };
     reader.readAsDataURL(image);
     
-    // Set default formats based on media type
     if (isGif) {
       setFormat('gif');
     } else if (isVideo) {
@@ -117,7 +156,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
     } else if (isAudio) {
       setFormat('mp3');
     } else if (isImage) {
-      setFormat('jpg'); // Default to jpg for images
+      setFormat('jpg');
     }
   }, [image, isGif, isVideo, isAudio, isImage]);
 
@@ -127,12 +166,10 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
     }
   }, [autoProcess, processed, processing]);
 
-  // Load GIF.js library and worker when animation is enabled
   useEffect(() => {
     if (enableAnimation && !gifJsLoaded) {
       const loadGifJs = async () => {
         try {
-          // Check if already loaded
           if (window.GIF && workerBlobUrl) {
             setGifJsLoaded(true);
             return;
@@ -140,24 +177,21 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
 
           console.log('📦 Loading GIF.js library...');
 
-          // Load gif.js main library
           if (!window.GIF) {
             await new Promise((resolve, reject) => {
               const script = document.createElement('script');
               script.src = 'https://cdn.jsdelivr.net/npm/gif.js@0.2.0/dist/gif.js';
               script.onload = () => {
-                // Ensure the script has fully executed and GIF is available
                 setTimeout(() => {
                   if (window.GIF) resolve();
                   else reject(new Error('GIF.js not available after script load'));
-                }, 100); // Small delay to ensure execution
+                }, 100);
               };
               script.onerror = () => reject(new Error('Failed to load GIF.js'));
               document.head.appendChild(script);
             });
           }
 
-          // Load worker script as text and create blob URL
           console.log('👷 Loading worker script...');
           const workerResponse = await fetch('https://cdn.jsdelivr.net/npm/gif.js@0.2.0/dist/gif.worker.js');
           const workerText = await workerResponse.text();
@@ -176,9 +210,8 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
 
       loadGifJs();
     }
-  }, [enableAnimation, gifJsLoaded, workerBlobUrl]); // workerBlobUrl added to dependencies
+  }, [enableAnimation, gifJsLoaded, workerBlobUrl]);
 
-  // Cleanup worker blob URL on unmount
   useEffect(() => {
     return () => {
       if (workerBlobUrl) {
@@ -186,7 +219,6 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
       }
     };
   }, [workerBlobUrl]);
-
 
   const parseGif = async (dataUrl) => {
     try {
@@ -212,35 +244,46 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
     setProcessing(true);
     setError(null);
     setOutputFormat(null);
-    setGeneratedAnimations([]); // Clear previous animations
-    setOutputGifFrameCount(0); // Clear output frame count
+    setGeneratedAnimations([]);
+    setOutputGifFrameCount(0);
 
     try {
       if (isImage && enableAnimation) {
-        if (!gifJsLoaded || !workerBlobUrl) { // Updated condition to check workerBlobUrl
+        if (!gifJsLoaded || !workerBlobUrl) {
           toast.error('AI animation engine still loading. Please wait a moment...');
           setProcessing(false);
           return;
         }
         await processImageToAnimation();
-      } else if (isGif && format === 'mp4') {
-        toast.error('GIF to MP4 conversion requires a video processor, which is currently unavailable. Please select GIF format.');
-        setProcessing(false);
-        return;
-      } else if (isVideo && format === 'gif') {
-        toast.error('Video to GIF conversion requires a video processor, which is currently unavailable. Please select MP4 format.');
-        setProcessing(false);
-        return;
       } else if (isVideo) {
-        toast.error('Video compression requires a video processor, which is currently unavailable.');
-        setProcessing(false);
-        return;
+        if (!ffmpegLoaded) {
+          toast.error('Video processor still loading. Please wait...');
+          setProcessing(false);
+          return;
+        }
+        if (format === 'gif') {
+          await convertVideoToGif();
+        } else {
+          await processVideo();
+        }
       } else if (isAudio) {
-        toast.error('Audio compression requires an audio processor, which is currently unavailable.');
-        setProcessing(false);
-        return;
+        if (!ffmpegLoaded) {
+          toast.error('Audio processor still loading. Please wait...');
+          setProcessing(false);
+          return;
+        }
+        await processAudio();
       } else if (isGif) {
-        await processGif();
+        if (!ffmpegLoaded) {
+          toast.error('Video processor still loading (needed for GIF conversions). Please wait...');
+          setProcessing(false);
+          return;
+        }
+        if (format === 'mp4') {
+          await convertGifToMp4();
+        } else {
+          await processGif();
+        }
       } else if (isImage) {
         await processStaticImage();
       }
@@ -257,11 +300,256 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
     processMediaRef.current = processMedia;
   });
 
-  // These functions are defunct without FFmpeg. The processMedia will now toast errors.
-  const convertGifToMp4 = async () => { /* Not implemented without FFmpeg */ };
-  const convertMp4ToGif = async () => { /* Not implemented without FFmpeg */ };
-  const processVideo = async () => { /* Not implemented without FFmpeg */ };
-  const processAudio = async () => { /* Not implemented without FFmpeg */ };
+  // Video processing with FFmpeg
+  const processVideo = async () => {
+    try {
+      console.log('🎥 Starting video compression...');
+      const ffmpeg = ffmpegRef.current;
+      if (!ffmpeg) throw new Error('FFmpeg not loaded');
+
+      // Write input file
+      const inputData = new Uint8Array(await image.arrayBuffer());
+      const inputExt = image.name.split('.').pop();
+      await ffmpeg.writeFile(`input.${inputExt}`, inputData);
+
+      // Build FFmpeg command based on settings
+      const args = ['-i', `input.${inputExt}`];
+      
+      // Video codec and quality
+      args.push('-c:v', 'libx264');
+      args.push('-preset', videoPreset);
+      args.push('-crf', String(Math.round((100 - quality) / 4))); // 0-25 CRF scale
+      
+      // Bitrate
+      if (videoBitrate) {
+        args.push('-b:v', `${videoBitrate}k`);
+      }
+      
+      // Frame rate
+      if (frameRate) {
+        args.push('-r', String(frameRate));
+      }
+      
+      // Resolution
+      if (videoResolution !== 'original') {
+        const resMap = {
+          '1080p': '1920:-1', // -1 maintains aspect ratio
+          '720p': '1280:-1',
+          '480p': '854:-1'
+        };
+        args.push('-vf', `scale=${resMap[videoResolution]}`);
+      }
+      
+      // Audio
+      args.push('-c:a', 'aac');
+      args.push('-b:a', `${audioBitrate}k`);
+      
+      args.push('output.mp4');
+
+      console.log('FFmpeg command:', args.join(' '));
+      await ffmpeg.exec(args);
+
+      const data = await ffmpeg.readFile('output.mp4');
+      const blob = new Blob([data.buffer], { type: 'video/mp4' });
+      
+      // Cleanup
+      await ffmpeg.deleteFile(`input.${inputExt}`);
+      await ffmpeg.deleteFile('output.mp4');
+
+      const compressedUrl = URL.createObjectURL(blob);
+      setCompressedPreview(compressedUrl);
+      setCompressedSize(blob.size);
+      setCompressedBlob(blob);
+      setProcessed(true);
+      setOutputFormat('mp4');
+
+      onProcessed({
+        id: image.name,
+        originalFile: image,
+        compressedBlob: blob,
+        compressedUrl,
+        originalSize: image.size,
+        compressedSize: blob.size,
+        format: 'mp4',
+        filename: getOutputFilename('mp4'),
+        mediaType: 'video',
+        fileFormat: 'mp4'
+      });
+
+      const savings = ((1 - blob.size / image.size) * 100).toFixed(1);
+      toast.success(`Video compressed! Saved ${savings}%`);
+    } catch (error) {
+      console.error('Video processing failed:', error);
+      throw error;
+    }
+  };
+
+  // Audio processing with FFmpeg
+  const processAudio = async () => {
+    try {
+      console.log('🎵 Starting audio compression...');
+      const ffmpeg = ffmpegRef.current;
+      if (!ffmpeg) throw new Error('FFmpeg not loaded');
+
+      const inputExt = image.name.split('.').pop();
+      await ffmpeg.writeFile(`input.${inputExt}`, new Uint8Array(await image.arrayBuffer()));
+
+      const outputExt = format;
+      const args = ['-i', `input.${inputExt}`];
+      
+      if (format === 'mp3') {
+        args.push('-codec:a', 'libmp3lame');
+        args.push('-b:a', `${audioBitrate}k`);
+        args.push('-q:a', audioQuality === 'high' ? '0' : audioQuality === 'standard' ? '2' : '4');
+      } else if (format === 'wav') {
+        args.push('-codec:a', 'pcm_s16le'); // PCM 16-bit signed little-endian
+        args.push('-ar', '44100'); // Default sample rate
+      }
+      
+      args.push(`output.${outputExt}`);
+
+      await ffmpeg.exec(args);
+
+      const data = await ffmpeg.readFile(`output.${outputExt}`);
+      const mimeType = format === 'mp3' ? 'audio/mpeg' : 'audio/wav';
+      const blob = new Blob([data.buffer], { type: mimeType });
+      
+      await ffmpeg.deleteFile(`input.${inputExt}`);
+      await ffmpeg.deleteFile(`output.${outputExt}`);
+
+      const compressedUrl = URL.createObjectURL(blob);
+      setCompressedPreview(compressedUrl);
+      setCompressedSize(blob.size);
+      setCompressedBlob(blob);
+      setProcessed(true);
+      setOutputFormat(format);
+
+      onProcessed({
+        id: image.name,
+        originalFile: image,
+        compressedBlob: blob,
+        compressedUrl,
+        originalSize: image.size,
+        compressedSize: blob.size,
+        format,
+        filename: getOutputFilename(format),
+        mediaType: 'audio',
+        fileFormat: format
+      });
+
+      const savings = ((1 - blob.size / image.size) * 100).toFixed(1);
+      toast.success(`Audio compressed! Saved ${savings}%`);
+    } catch (error) {
+      console.error('Audio processing failed:', error);
+      throw error;
+    }
+  };
+
+  // Convert video to GIF
+  const convertVideoToGif = async () => {
+    try {
+      console.log('🎬 Converting video to GIF...');
+      const ffmpeg = ffmpegRef.current;
+      if (!ffmpeg) throw new Error('FFmpeg not loaded');
+
+      const inputExt = image.name.split('.').pop();
+      await ffmpeg.writeFile(`input.${inputExt}`, new Uint8Array(await image.arrayBuffer()));
+
+      const fps = Math.max(5, Math.round(frameRate / 2)); // Use half of desired frame rate, min 5
+      const scale = maxWidth || 480; // Default to 480px width if not set
+      
+      await ffmpeg.exec([
+        '-i', `input.${inputExt}`,
+        '-vf', `fps=${fps},scale=${scale}:-1:flags=lanczos,split[s0][s1];[s0]palettegen[p];[s1][p]paletteuse`,
+        '-loop', '0',
+        'output.gif'
+      ]);
+
+      const data = await ffmpeg.readFile('output.gif');
+      const blob = new Blob([data.buffer], { type: 'image/gif' });
+      
+      await ffmpeg.deleteFile(`input.${inputExt}`);
+      await ffmpeg.deleteFile('output.gif');
+
+      const compressedUrl = URL.createObjectURL(blob);
+      setCompressedPreview(compressedUrl);
+      setCompressedSize(blob.size);
+      setCompressedBlob(blob);
+      setProcessed(true);
+      setOutputFormat('gif');
+
+      onProcessed({
+        id: image.name,
+        originalFile: image,
+        compressedBlob: blob,
+        compressedUrl,
+        originalSize: image.size,
+        compressedSize: blob.size,
+        format: 'gif',
+        filename: getOutputFilename('gif'),
+        mediaType: 'image',
+        fileFormat: 'gif'
+      });
+
+      toast.success('Video converted to GIF!');
+    } catch (error) {
+      console.error('Video to GIF conversion failed:', error);
+      throw error;
+    }
+  };
+
+  // Convert GIF to MP4
+  const convertGifToMp4 = async () => {
+    try {
+      console.log('🎞️ Converting GIF to MP4...');
+      const ffmpeg = ffmpegRef.current;
+      if (!ffmpeg) throw new Error('FFmpeg not loaded');
+
+      const response = await fetch(preview);
+      const gifBlob = await response.blob();
+      await ffmpeg.writeFile('input.gif', new Uint8Array(await gifBlob.arrayBuffer()));
+
+      // Basic conversion settings, could be expanded
+      await ffmpeg.exec([
+        '-i', 'input.gif',
+        '-movflags', 'faststart',
+        '-pix_fmt', 'yuv420p',
+        '-vf', 'scale=trunc(iw/2)*2:trunc(ih/2)*2', // Ensure even dimensions for compatibility
+        'output.mp4'
+      ]);
+
+      const data = await ffmpeg.readFile('output.mp4');
+      const blob = new Blob([data.buffer], { type: 'video/mp4' });
+      
+      await ffmpeg.deleteFile('input.gif');
+      await ffmpeg.deleteFile('output.mp4');
+
+      const compressedUrl = URL.createObjectURL(blob);
+      setCompressedPreview(compressedUrl);
+      setCompressedSize(blob.size);
+      setCompressedBlob(blob);
+      setProcessed(true);
+      setOutputFormat('mp4');
+
+      onProcessed({
+        id: image.name,
+        originalFile: image,
+        compressedBlob: blob,
+        compressedUrl,
+        originalSize: image.size,
+        compressedSize: blob.size,
+        format: 'mp4',
+        filename: getOutputFilename('mp4'),
+        mediaType: 'video',
+        fileFormat: 'mp4'
+      });
+
+      toast.success('GIF converted to MP4!');
+    } catch (error) {
+      console.error('GIF to MP4 conversion failed:', error);
+      throw error;
+    }
+  };
 
   const processGif = async () => {
     try {
@@ -697,7 +985,7 @@ Make animations dynamic with REAL motion - characters move, swing weapons, chang
       
       for (let animIndex = 0; animIndex < animationConcepts.length; animIndex++) {
         const anim = animationConcepts[animIndex];
-        toast.info(`Step 3/3: Creating ${anim.name}... (${animIndex + 1}/4)`, { id: 'anim-gen' });
+        toast.info(`Step 3/3: Creating ${anim.name}... (${animIndex + 1}/${animationConcepts.length})`, { id: 'anim-gen' });
         
         const frames = [];
         
@@ -936,9 +1224,9 @@ Make animations dynamic with REAL motion - characters move, swing weapons, chang
   } else if (isImage && !isGif) {
     availableFormats = ['jpg', 'png', 'webp', 'avif'];
   } else if (isGif) {
-    availableFormats = ['gif']; // No MP4 conversion without FFmpeg
+    availableFormats = ['gif', 'mp4']; // Now supports MP4 conversion
   } else if (isVideo) {
-    availableFormats = ['mp4']; // No GIF conversion without FFmpeg
+    availableFormats = ['mp4', 'gif']; // Now supports GIF conversion
   } else if (isAudio) {
     availableFormats = ['mp3', 'wav'];
   }
@@ -1020,25 +1308,21 @@ Make animations dynamic with REAL motion - characters move, swing weapons, chang
         return;
     }
 
-    if (mediaType === 'image' && formatOverride === null) {
+    if (mediaType === 'image' && formatOverride === null && !isGif) {
       // For images, if no specific format is selected, open the options modal.
       setShowDownloadModal(true);
       return;
     }
 
     // Case 2: Video, and no specific format requested. Download the currently compressed video.
-    if (mediaType === 'video' && formatOverride === null) {
-      performSingleMediaDownload(compressedBlob, currentCompressedFormat, 'video', getOutputFilename(currentCompressedFormat));
-      return;
-    }
-
     // Case 3: Audio, and no specific format requested. Download the currently compressed audio.
-    if (mediaType === 'audio' && formatOverride === null) {
-      performSingleMediaDownload(compressedBlob, currentCompressedFormat, 'audio', getOutputFilename(currentCompressedFormat));
+    // Case 4: GIF, and no specific format requested. Download the currently compressed GIF.
+    if ((mediaType === 'video' || mediaType === 'audio' || isGif) && formatOverride === null) {
+      performSingleMediaDownload(compressedBlob, currentCompressedFormat, mediaType, getOutputFilename(currentCompressedFormat));
       return;
     }
 
-    // Case 4: Any media type, if a specific format is provided (e.g., from a convert button or a direct download button from a hypothetical image options modal).
+    // Case 5: Any media type, if a specific format is provided (e.g., from a convert button or a direct download button from a hypothetical image options modal).
     performSingleMediaDownload(compressedBlob, formatOverride, mediaType, getOutputFilename(formatOverride));
   };
 
@@ -1081,69 +1365,189 @@ Make animations dynamic with REAL motion - characters move, swing weapons, chang
   };
 
   const convertFormat = async (newFormat) => {
-    if (!compressedPreview || processing) return;
+    if (!compressedBlob || processing) return;
     
-    // For video/audio/gif-to-mp4, these operations are no longer supported without FFmpeg.
-    if (isVideo || isAudio || (isGif && newFormat === 'mp4') || (isVideo && newFormat === 'gif') || (isImage && enableAnimation)) {
-      if (isImage && enableAnimation) {
-          if (newFormat !== 'gif') {
-            toast.error('Animations can only be exported as GIF.');
-            return;
-          }
-      } else {
-        toast.error('Format conversion for this media type requires a media processor, which is currently unavailable.');
+    // For image animations, only GIF is supported as output
+    if (isImage && enableAnimation) {
+      if (newFormat !== 'gif') {
+        toast.error('Animations can only be exported as GIF.');
         return;
       }
     }
 
-    // For static images, convert on the fly if already compressed
+    // If already in the target format, do nothing
+    if (newFormat === (outputFormat || format)) {
+        toast.info(`Already in ${newFormat.toUpperCase()} format.`);
+        return;
+    }
+
     setProcessing(true);
     setError(null);
-
+    
     try {
-      const img = new Image();
-      img.src = compressedPreview;
-      
-      await new Promise((resolve) => {
-        img.onload = resolve;
-      });
+      if (isImage && !isGif && !enableAnimation) { // Static image conversion
+        const img = new Image();
+        img.src = compressedPreview;
+        
+        await new Promise((resolve) => {
+          img.onload = resolve;
+        });
 
-      const canvas = document.createElement('canvas');
-      canvas.width = img.width;
-      canvas.height = img.height;
-      const ctx = canvas.getContext('2d');
-      ctx.drawImage(img, 0, 0);
+        const canvas = document.createElement('canvas');
+        canvas.width = img.width;
+        canvas.height = img.height;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0);
 
-      const mimeType = newFormat === 'jpg' ? 'image/jpeg' : `image/${newFormat}`;
-      const blob = await new Promise((resolve) => {
-        canvas.toBlob((b) => resolve(b), mimeType, quality / 100);
-      });
+        const mimeType = newFormat === 'jpg' ? 'image/jpeg' : `image/${newFormat}`;
+        const blob = await new Promise((resolve) => {
+          canvas.toBlob((b) => resolve(b), mimeType, quality / 100);
+        });
 
-      const url = URL.createObjectURL(blob);
-      setCompressedPreview(url);
-      setCompressedSize(blob.size);
-      setCompressedBlob(blob); // ADDED
-      setOutputFormat(newFormat);
-      setFormat(newFormat); // Update the internal format state as well
-      
-      onProcessed({
-        id: image.name,
-        originalFile: image,
-        compressedBlob: blob,
-        compressedUrl: url,
-        originalSize: originalSize,
-        compressedSize: blob.size,
-        format: newFormat,
-        filename: getOutputFilename(newFormat), // Use new helper
-        mediaType: 'image',
-        fileFormat: newFormat
-      });
-      
-      toast.success(`Converted to ${newFormat.toUpperCase()}`);
+        const url = URL.createObjectURL(blob);
+        setCompressedPreview(url);
+        setCompressedSize(blob.size);
+        setCompressedBlob(blob); // ADDED
+        setOutputFormat(newFormat);
+        setFormat(newFormat); // Update the internal format state as well
+        
+        onProcessed({
+          id: image.name,
+          originalFile: image,
+          compressedBlob: blob,
+          compressedUrl: url,
+          originalSize: originalSize,
+          compressedSize: blob.size,
+          format: newFormat,
+          filename: getOutputFilename(newFormat), // Use new helper
+          mediaType: 'image',
+          fileFormat: newFormat
+        });
+        
+        toast.success(`Converted to ${newFormat.toUpperCase()}`);
+      } else if ((isGif && newFormat === 'mp4') || (isVideo && newFormat === 'gif')) { // FFmpeg conversions
+          if (!ffmpegLoaded) {
+              toast.error('Video processor not loaded. Please wait or reload.');
+              setProcessing(false);
+              return;
+          }
+          let convertedBlob;
+          let newMediaType;
+          if (isGif && newFormat === 'mp4') {
+              // Read current compressed GIF blob
+              const gifBlob = compressedBlob;
+              await ffmpegRef.current.writeFile('input.gif', new Uint8Array(await gifBlob.arrayBuffer()));
+              await ffmpegRef.current.exec([
+                  '-i', 'input.gif',
+                  '-movflags', 'faststart',
+                  '-pix_fmt', 'yuv420p',
+                  '-vf', 'scale=trunc(iw/2)*2:trunc(ih/2)*2',
+                  'output.mp4'
+              ]);
+              const data = await ffmpegRef.current.readFile('output.mp4');
+              convertedBlob = new Blob([data.buffer], { type: 'video/mp4' });
+              newMediaType = 'video';
+              await ffmpegRef.current.deleteFile('input.gif');
+              await ffmpegRef.current.deleteFile('output.mp4');
+          } else if (isVideo && newFormat === 'gif') {
+              // Read current compressed video blob
+              const videoBlob = compressedBlob;
+              await ffmpegRef.current.writeFile('input.mp4', new Uint8Array(await videoBlob.arrayBuffer()));
+              const fps = Math.max(5, Math.round(frameRate / 2));
+              const scale = maxWidth || 480;
+              await ffmpegRef.current.exec([
+                  '-i', 'input.mp4',
+                  '-vf', `fps=${fps},scale=${scale}:-1:flags=lanczos,split[s0][s1];[s0]palettegen[p];[s1][p]paletteuse`,
+                  '-loop', '0',
+                  'output.gif'
+              ]);
+              const data = await ffmpegRef.current.readFile('output.gif');
+              convertedBlob = new Blob([data.buffer], { type: 'image/gif' });
+              newMediaType = 'image';
+              await ffmpegRef.current.deleteFile('input.mp4');
+              await ffmpegRef.current.deleteFile('output.gif');
+          } else {
+              throw new Error("Unsupported FFmpeg conversion for this media type.");
+          }
+          
+          const url = URL.createObjectURL(convertedBlob);
+          setCompressedPreview(url);
+          setCompressedSize(convertedBlob.size);
+          setCompressedBlob(convertedBlob);
+          setOutputFormat(newFormat);
+          setFormat(newFormat);
+          
+          onProcessed({
+            id: image.name,
+            originalFile: image,
+            compressedBlob: convertedBlob,
+            compressedUrl: url,
+            originalSize: originalSize,
+            compressedSize: convertedBlob.size,
+            format: newFormat,
+            filename: getOutputFilename(newFormat),
+            mediaType: newMediaType,
+            fileFormat: newFormat
+          });
+          toast.success(`Converted to ${newFormat.toUpperCase()}`);
+
+      } else if (isAudio) { // Audio conversion
+          if (!ffmpegLoaded) {
+              toast.error('Audio processor not loaded. Please wait or reload.');
+              setProcessing(false);
+              return;
+          }
+          // Use the current compressed audio blob as input
+          const inputExt = (outputFormat || format);
+          await ffmpegRef.current.writeFile(`input.${inputExt}`, new Uint8Array(await compressedBlob.arrayBuffer()));
+
+          const outputExt = newFormat;
+          const args = ['-i', `input.${inputExt}`];
+          
+          if (newFormat === 'mp3') {
+            args.push('-codec:a', 'libmp3lame');
+            args.push('-b:a', `${audioBitrate}k`);
+            args.push('-q:a', audioQuality === 'high' ? '0' : audioQuality === 'standard' ? '2' : '4');
+          } else if (newFormat === 'wav') {
+            args.push('-codec:a', 'pcm_s16le');
+            args.push('-ar', '44100');
+          }
+          
+          args.push(`output.${outputExt}`);
+          await ffmpegRef.current.exec(args);
+
+          const data = await ffmpegRef.current.readFile(`output.${outputExt}`);
+          const mimeType = newFormat === 'mp3' ? 'audio/mpeg' : 'audio/wav';
+          const convertedBlob = new Blob([data.buffer], { type: mimeType });
+
+          await ffmpegRef.current.deleteFile(`input.${inputExt}`);
+          await ffmpegRef.current.deleteFile(`output.${outputExt}`);
+
+          const url = URL.createObjectURL(convertedBlob);
+          setCompressedPreview(url);
+          setCompressedSize(convertedBlob.size);
+          setCompressedBlob(convertedBlob);
+          setOutputFormat(newFormat);
+          setFormat(newFormat);
+          
+          onProcessed({
+            id: image.name,
+            originalFile: image,
+            compressedBlob: convertedBlob,
+            compressedUrl: url,
+            originalSize: originalSize,
+            compressedSize: convertedBlob.size,
+            format: newFormat,
+            filename: getOutputFilename(newFormat),
+            mediaType: 'audio',
+            fileFormat: newFormat
+          });
+          toast.success(`Converted to ${newFormat.toUpperCase()}`);
+      }
     } catch (error) {
       console.error('Error converting format:', error);
       setError('Failed to convert format');
-      toast.error('Failed to convert format');
+      toast.error('Failed to convert format: ' + error.message);
     } finally {
       setProcessing(false);
     }
@@ -1384,7 +1788,7 @@ Make animations dynamic with REAL motion - characters move, swing weapons, chang
                   size="sm"
                   variant={displayFormat === fmt ? "default" : "outline"}
                   onClick={() => convertFormat(fmt)}
-                  disabled={displayFormat === fmt || processing}
+                  disabled={displayFormat === fmt || processing || ffmpegLoading}
                   className={cn(
                     "relative text-xs h-9",
                     displayFormat === fmt && "bg-emerald-600 hover:bg-emerald-700"
@@ -1414,7 +1818,7 @@ Make animations dynamic with REAL motion - characters move, swing weapons, chang
                   size="sm"
                   variant={format === fmt ? "default" : "outline"}
                   onClick={() => setFormat(fmt)}
-                  disabled={processing}
+                  disabled={processing || ffmpegLoading}
                   className={cn(
                     "relative text-xs h-9",
                     format === fmt && "bg-emerald-600 hover:bg-emerald-700"
@@ -1442,7 +1846,7 @@ Make animations dynamic with REAL motion - characters move, swing weapons, chang
           </CollapsibleTrigger>
           <CollapsibleContent className="space-y-4 mt-4">
             <TooltipProvider>
-              {!(isAudio || (isImage && enableAnimation)) && ( // Don't show for audio or image animations
+              {!(isAudio || (isImage && enableAnimation) || isVideo) && ( // Don't show for audio or image animations or video (video has its own compression settings)
                 <div>
                   <div className="flex items-center gap-2 mb-2">
                     <label className="text-xs font-medium text-slate-700 dark:text-slate-300">
@@ -1462,7 +1866,7 @@ Make animations dynamic with REAL motion - characters move, swing weapons, chang
                 </div>
               )}
 
-              {!(isVideo || isAudio) && ( // Show quality for images and GIFs (and animations)
+              {!(isAudio) && ( // Show quality for images, GIFs, video (and animations). Audio has its own quality setting
                 <div>
                   <div className="flex items-center gap-2 mb-2">
                     <label className="text-xs font-medium text-slate-700 dark:text-slate-300">
@@ -1501,11 +1905,116 @@ Make animations dynamic with REAL motion - characters move, swing weapons, chang
                 </div>
               )}
 
-              {(isVideo || isAudio) && (
-                <div className="bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800 rounded-lg p-3">
-                  <p className="text-xs text-red-700 dark:text-red-400">
-                    Video and Audio compression settings are currently unavailable as a media processor is not loaded.
-                  </p>
+              {isVideo && (
+                <div className="space-y-3">
+                  <div className="flex items-center gap-2 mb-2">
+                    <label className="text-xs font-medium text-slate-700 dark:text-slate-300">
+                      Video Bitrate ({videoBitrate} kbps)
+                    </label>
+                  </div>
+                  <Slider
+                    value={[videoBitrate]}
+                    onValueChange={(value) => setVideoBitrate(value[0])}
+                    min={100}
+                    max={5000}
+                    step={100}
+                    className="w-full"
+                    disabled={processing}
+                  />
+
+                  <div>
+                    <div className="flex items-center gap-2 mb-2">
+                      <label className="text-xs font-medium text-slate-700 dark:text-slate-300">
+                        Frame Rate
+                      </label>
+                    </div>
+                    <Select value={String(frameRate)} onValueChange={(val) => setFrameRate(parseInt(val))} disabled={processing}>
+                      <SelectTrigger className="h-9">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="24">24 fps</SelectItem>
+                        <SelectItem value="30">30 fps</SelectItem>
+                        <SelectItem value="60">60 fps</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div>
+                    <div className="flex items-center gap-2 mb-2">
+                      <label className="text-xs font-medium text-slate-700 dark:text-slate-300">
+                        Video Resolution
+                      </label>
+                    </div>
+                    <Select value={videoResolution} onValueChange={setVideoResolution} disabled={processing}>
+                      <SelectTrigger className="h-9">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="original">Original</SelectItem>
+                        <SelectItem value="1080p">1920x1080 (1080p)</SelectItem>
+                        <SelectItem value="720p">1280x720 (720p)</SelectItem>
+                        <SelectItem value="480p">854x480 (480p)</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div>
+                    <div className="flex items-center gap-2 mb-2">
+                      <label className="text-xs font-medium text-slate-700 dark:text-slate-300">
+                        Video Preset
+                      </label>
+                    </div>
+                    <Select value={videoPreset} onValueChange={setVideoPreset} disabled={processing}>
+                      <SelectTrigger className="h-9">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="ultrafast">Ultrafast (Larger file, faster processing)</SelectItem>
+                        <SelectItem value="fast">Fast</SelectItem>
+                        <SelectItem value="medium">Medium (Default)</SelectItem>
+                        <SelectItem value="slow">Slow</SelectItem>
+                        <SelectItem value="veryslow">Very Slow (Smaller file, slower processing)</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+              )}
+              
+              {isAudio && (
+                <div className="space-y-3">
+                  <div className="flex items-center gap-2 mb-2">
+                    <label className="text-xs font-medium text-slate-700 dark:text-slate-300">
+                      Audio Bitrate ({audioBitrate} kbps)
+                    </label>
+                  </div>
+                  <Slider
+                    value={[audioBitrate]}
+                    onValueChange={(value) => setAudioBitrate(value[0])}
+                    min={32}
+                    max={320}
+                    step={16}
+                    className="w-full"
+                    disabled={processing}
+                  />
+
+                  <div>
+                    <div className="flex items-center gap-2 mb-2">
+                      <label className="text-xs font-medium text-slate-700 dark:text-slate-300">
+                        Audio Quality
+                      </label>
+                    </div>
+                    <Select value={audioQuality} onValueChange={setAudioQuality} disabled={processing}>
+                      <SelectTrigger className="h-9">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="high">High</SelectItem>
+                        <SelectItem value="standard">Standard</SelectItem>
+                        <SelectItem value="low">Low</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </div>
               )}
               
@@ -1912,7 +2421,7 @@ Make animations dynamic with REAL motion - characters move, swing weapons, chang
           {!processed ? (
             <Button
               onClick={processMedia}
-              disabled={processing || isVideo || isAudio || (isGif && format === 'mp4') || (isVideo && format === 'gif') || (enableAnimation && !gifJsLoaded)}
+              disabled={processing || (isVideo && !ffmpegLoaded) || (isAudio && !ffmpegLoaded) || (isGif && !ffmpegLoaded && format === 'mp4') || (enableAnimation && !gifJsLoaded)}
               className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white"
             >
               {processing ? (
@@ -1933,7 +2442,7 @@ Make animations dynamic with REAL motion - characters move, swing weapons, chang
                 onClick={processMedia}
                 variant="outline"
                 className="flex-1"
-                disabled={processing || (enableAnimation && !gifJsLoaded)}
+                disabled={processing || (isVideo && !ffmpegLoaded) || (isAudio && !ffmpegLoaded) || (isGif && !ffmpegLoaded && format === 'mp4') || (enableAnimation && !gifJsLoaded)}
               >
                 <RefreshCcw className="w-4 h-4 mr-2" />
                 Reprocess
