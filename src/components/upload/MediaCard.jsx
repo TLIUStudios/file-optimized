@@ -700,7 +700,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
           needsResize = true;
         } else if (maxHeight && maxHeight < gifSettings.height) {
           targetHeight = maxHeight;
-          targetWidth = Math.round(maxHeight / aspectRatio);
+          targetWidth = Math.round(maxHeight * aspectRatio);
           needsResize = true;
         }
       }
@@ -1780,7 +1780,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
                   disabled={displayFormat === fmt || processing || (ffmpegLoading && (isVideo || isAudio || (isGif && fmt === 'mp4')))}
                   className={cn(
                     "relative text-xs h-9",
-                    displayFormat === fmt && "bg-emerald-600 hover:bg-emerald-700"
+                    format === fmt && "bg-emerald-600 hover:bg-emerald-700"
                   )}
                 >
                   {fmt.toUpperCase()}
@@ -2398,9 +2398,19 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
         </div>
 
         {processed && !error && (
-          <div className="flex items-center gap-2 text-sm text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/30 p-3 rounded-lg">
+          <div className={cn(
+            "flex items-center gap-2 text-sm p-3 rounded-lg",
+            compressedSize < originalSize 
+              ? "text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/30"
+              : "text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-950/30"
+          )}>
             <CheckCircle2 className="w-4 h-4" />
-            <span>Saved {formatFileSize(originalSize - compressedSize)}</span>
+            <span>
+              {compressedSize < originalSize 
+                ? `Saved ${formatFileSize(originalSize - compressedSize)}`
+                : `Added (+${formatFileSize(compressedSize - originalSize)})`
+              }
+            </span>
           </div>
         )}
       </div>
