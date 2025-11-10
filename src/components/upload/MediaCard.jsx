@@ -53,6 +53,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
   const [animationType, setAnimationType] = useState('all'); // 'all', 'zoom', 'pan', 'rotate', 'ken-burns'
   const [animationDuration, setAnimationDuration] = useState(3); // seconds
   const [generatedAnimations, setGeneratedAnimations] = useState([]); // Store 4 variations
+  const [gifJsLoaded, setGifJsLoaded] = useState(false);
 
   // New state for editable filename
   const [editableFilename, setEditableFilename] = useState('');
@@ -124,6 +125,50 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
     }
   }, [autoProcess, processed, processing]);
 
+  // Load GIF.js library when animation is enabled
+  useEffect(() => {
+    if (enableAnimation && !gifJsLoaded) {
+      const loadGifJs = async () => {
+        try {
+          // Check if already loaded
+          if (window.GIF) {
+            setGifJsLoaded(true);
+            return;
+          }
+
+          // Load gif.js
+          const script = document.createElement('script');
+          script.src = 'https://cdn.jsdelivr.net/npm/gif.js@0.2.0/dist/gif.js';
+          document.head.appendChild(script);
+
+          await new Promise((resolve, reject) => {
+            script.onload = () => {
+              // Ensure the script has fully executed and GIF is available
+              setTimeout(() => {
+                if (window.GIF) resolve();
+                else reject(new Error('GIF.js not available after script load'));
+              }, 100); // Small delay to ensure execution
+            };
+            script.onerror = () => reject(new Error('Failed to load GIF.js'));
+          });
+
+          if (window.GIF) {
+            setGifJsLoaded(true);
+            console.log('✅ GIF.js loaded successfully');
+          } else {
+            throw new Error('GIF.js not available after loading');
+          }
+        } catch (error) {
+          console.error('Failed to load GIF.js:', error);
+          toast.error('Failed to load animation library');
+        }
+      };
+
+      loadGifJs();
+    }
+  }, [enableAnimation, gifJsLoaded]);
+
+
   const parseGif = async (dataUrl) => {
     try {
       const response = await fetch(dataUrl);
@@ -152,6 +197,11 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
 
     try {
       if (isImage && enableAnimation) {
+        if (!gifJsLoaded) {
+          toast.error('Animation library still loading. Please wait a moment...');
+          setProcessing(false);
+          return;
+        }
         await processImageToAnimation();
       } else if (isGif && format === 'mp4') {
         toast.error('GIF to MP4 conversion requires a video processor, which is currently unavailable. Please select GIF format.');
@@ -301,7 +351,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
 
       if (processedFrames.length === 0) throw new Error('No frames processed');
 
-      const GIF = (await import('https://cdn.jsdelivr.net/npm/gif.js@0.2.0/dist/gif.js')).default;
+      const GIF = window.GIF;
       
       let gifQuality;
       if (gifOptimization === 'balanced') {
@@ -508,6 +558,11 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
 
   // NEW: Generate 4 animated GIF variations using Canvas API only
   const processImageToAnimation = async () => {
+    if (!gifJsLoaded || !window.GIF) {
+      toast.error('Animation library not loaded yet. Please wait...');
+      return;
+    }
+
     try {
       console.log('✨ Starting animation generation...');
       toast.info('Creating 4 animation variations...', { duration: Infinity, id: 'anim-gen' });
@@ -528,20 +583,20 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
         targetWidth = Math.round(maxHeight * (originalImageDimensions.width / originalImageDimensions.height));
       }
 
-      // Ensure even dimensions
+      // Ensure even dimensions and reasonable size
+      targetWidth = Math.max(320, Math.min(800, targetWidth));
+      targetHeight = Math.max(240, Math.min(600, targetHeight));
       targetWidth = targetWidth % 2 === 0 ? targetWidth : targetWidth - 1;
       targetHeight = targetHeight % 2 === 0 ? targetHeight : targetHeight - 1;
-      if (targetWidth <= 0) targetWidth = 640;
-      if (targetHeight <= 0) targetHeight = 480;
-
-      const GIF = (await import('https://cdn.jsdelivr.net/npm/gif.js@0.2.0/dist/gif.js')).default;
+      
+      const GIF = window.GIF;
       
       // Define 4 animation styles
       const animations = [
         { name: 'Zoom In', type: 'zoom' },
-        { name: 'Pan Left-Right', type: 'pan' },
+        { name: 'Pan Right', type: 'pan' },
         { name: 'Ken Burns', type: 'ken-burns' },
-        { name: 'Rotate Slow', type: 'rotate' }
+        { name: 'Rotate', type: 'rotate' }
       ];
 
       const generatedGifs = [];
@@ -554,7 +609,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
 
         const gif = new GIF({
           workers: 2,
-          quality: Math.max(1, Math.min(30, Math.round((100 - quality) / 3.5))), // Use global quality setting
+          quality: 10, // Lower value means better quality but larger file for gif.js
           width: targetWidth,
           height: targetHeight,
           workerScript: 'https://cdn.jsdelivr.net/npm/gif.js@0.2.0/dist/gif.worker.js',
@@ -582,22 +637,16 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
               break;
 
             case 'pan':
-              // Pan left to right (with slight zoom to hide edges)
-              const panScale = 1.1; // Slightly zoom in to prevent showing transparent edges
-              const panX = -targetWidth * 0.1 * panScale + (progress * targetWidth * 0.2 * panScale);
+              // Pan left to right
+              const panX = -targetWidth * 0.1 + (progress * targetWidth * 0.2); // Pans from -10% to +10% of width
               ctx.translate(panX, 0);
-              ctx.translate(targetWidth / 2, targetHeight / 2);
-              ctx.scale(panScale, panScale);
-              ctx.translate(-targetWidth / 2, -targetHeight / 2);
               break;
 
             case 'ken-burns':
               // Ken Burns effect (zoom + slight pan)
-              const kbStartScale = 1.05;
-              const kbEndScale = 1.25;
-              const kbScale = kbStartScale + (progress * (kbEndScale - kbStartScale));
-              const kbPanX = Math.sin(progress * Math.PI) * (targetWidth * 0.05); // pan up to 5% of width
-              const kbPanY = Math.cos(progress * Math.PI) * (targetHeight * 0.05); // pan up to 5% of height
+              const kbScale = 1 + (progress * 0.2); // Zoom from 1x to 1.2x
+              const kbPanX = Math.sin(progress * Math.PI) * 20; // pan left-right 20px
+              const kbPanY = Math.cos(progress * Math.PI) * 20; // pan up-down 20px
               
               ctx.translate(targetWidth / 2 + kbPanX, targetHeight / 2 + kbPanY);
               ctx.scale(kbScale, kbScale);
@@ -607,10 +656,9 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
             case 'rotate':
               // Slow rotation
               const angle = progress * Math.PI * 2; // Full rotation
-              const rotateScale = 1.2; // Slightly zoom to avoid corners during rotation
               ctx.translate(targetWidth / 2, targetHeight / 2);
               ctx.rotate(angle * 0.1); // Slow rotation (10% speed over duration)
-              ctx.scale(rotateScale, rotateScale); 
+              ctx.scale(1.2, 1.2); // Slightly zoom to avoid corners during rotation
               ctx.translate(-targetWidth / 2, -targetHeight / 2);
               break;
           }
@@ -910,7 +958,10 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
     link.href = anim.url;
     const baseName = editableFilename.split('.').slice(0, -1).join('.') || editableFilename;
     link.download = `${baseName}_${anim.name.toLowerCase().replace(/\s+/g, '_')}.gif`;
+    document.body.appendChild(link); // Added for cross-browser compatibility
     link.click();
+    document.body.removeChild(link); // Added for cross-browser compatibility
+    URL.revokeObjectURL(link.href);
     toast.success(`${anim.name} downloaded!`);
   };
 
@@ -932,9 +983,9 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
       const link = document.createElement('a');
       link.href = URL.createObjectURL(content);
       link.download = `${baseName}_animations.zip`;
-      document.body.appendChild(link);
+      document.body.appendChild(link); // Added for cross-browser compatibility
       link.click();
-      document.body.removeChild(link);
+      document.body.removeChild(link); // Added for cross-browser compatibility
       URL.revokeObjectURL(link.href);
       
       toast.success('All animations downloaded!');
@@ -1499,7 +1550,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
               <Button variant="outline" className="w-full justify-between" size="sm">
                 <span className="flex items-center gap-2">
                   <Film className="w-4 h-4" />
-                  Animation Settings
+                  Animation Settings {!gifJsLoaded && enableAnimation && <span className="text-xs text-slate-500">(Loading...)</span>}
                 </span>
                 <ChevronDown className={cn(
                   "w-4 h-4 transition-transform duration-200",
@@ -1530,13 +1581,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
                       if (checked) {
                         setFormat('gif');
                         setGeneratedAnimations([]); // Clear previous, if any
-                        toast.info('Format set to GIF for animation');
-                        // Reset image-specific settings that might conflict
-                        setStripMetadata(true);
-                        setNoiseReduction(false);
-                        setEnableUpscale(false);
-                        setMaxWidth(null);
-                        setMaxHeight(null);
+                        toast.info('Format set to GIF for animation. Loading animation library...');
                       } else {
                         setFormat('jpg');
                         setGeneratedAnimations([]);
@@ -1549,6 +1594,14 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
 
                 {enableAnimation && (
                   <>
+                    {!gifJsLoaded && (
+                      <div className="bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 rounded-lg p-3">
+                        <p className="text-xs text-blue-700 dark:text-blue-400">
+                          Loading animation library... Please wait a moment before processing.
+                        </p>
+                      </div>
+                    )}
+
                     <div>
                       <label className="text-xs font-medium text-slate-700 dark:text-slate-300 mb-2 block">
                         Animation Duration: {animationDuration}s
@@ -1560,7 +1613,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
                         max={5}
                         step={1}
                         className="w-full"
-                        disabled={processing}
+                        disabled={processing || !gifJsLoaded}
                       />
                     </div>
 
@@ -1570,47 +1623,12 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
                       </p>
                       <ul className="text-xs text-blue-600 dark:text-blue-400 space-y-1 list-disc list-inside">
                         <li><strong>Zoom In:</strong> Smooth zoom effect</li>
-                        <li><strong>Pan Left-Right:</strong> Horizontal panning</li>
+                        <li><strong>Pan Right:</strong> Horizontal panning</li>
                         <li><strong>Ken Burns:</strong> Zoom + subtle pan</li>
-                        <li><strong>Rotate Slow:</strong> Gentle rotation</li>
+                        <li><strong>Rotate:</strong> Gentle rotation</li>
                       </ul>
                     </div>
                     
-                    {/* Max Width/Height for animation */}
-                    <div className="grid grid-cols-2 gap-2">
-                      <div>
-                        <div className="flex items-center gap-1 mb-1">
-                          <label className="text-xs font-medium text-slate-700 dark:text-slate-300">
-                            Max Width (px)
-                          </label>
-                        </div>
-                        <input
-                          type="number"
-                          placeholder={originalImageDimensions.width || "Auto"}
-                          value={maxWidth || ''}
-                          onChange={(e) => setMaxWidth(e.target.value ? parseInt(e.target.value) : null)}
-                          className="w-full h-9 px-3 rounded-md border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 text-sm"
-                          disabled={processing}
-                        />
-                      </div>
-                      <div>
-                        <div className="flex items-center gap-1 mb-1">
-                          <label className="text-xs font-medium text-slate-700 dark:text-slate-300">
-                            Max Height (px)
-                          </label>
-                        </div>
-                        <input
-                          type="number"
-                          placeholder={originalImageDimensions.height || "Auto"}
-                          value={maxHeight || ''}
-                          onChange={(e) => setMaxHeight(e.target.value ? parseInt(e.target.value) : null)}
-                          className="w-full h-9 px-3 rounded-md border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 text-sm"
-                          disabled={processing}
-                        />
-                      </div>
-                    </div>
-
-
                     {generatedAnimations.length > 0 && (
                       <div className="space-y-2 pt-2 border-t border-slate-200 dark:border-slate-800">
                         <div className="flex items-center justify-between mb-2">
@@ -1659,7 +1677,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
           {!processed ? (
             <Button
               onClick={processMedia}
-              disabled={processing || isVideo || isAudio || (isGif && format === 'mp4') || (isVideo && format === 'gif')}
+              disabled={processing || isVideo || isAudio || (isGif && format === 'mp4') || (isVideo && format === 'gif') || (enableAnimation && !gifJsLoaded)}
               className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white"
             >
               {processing ? (
@@ -1680,7 +1698,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
                 onClick={processMedia}
                 variant="outline"
                 className="flex-1"
-                disabled={processing}
+                disabled={processing || (enableAnimation && !gifJsLoaded)}
               >
                 <RefreshCcw className="w-4 h-4 mr-2" />
                 Reprocess
