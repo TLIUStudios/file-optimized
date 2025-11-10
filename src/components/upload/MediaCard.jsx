@@ -13,11 +13,10 @@ import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
-  TooltipTrigger, // Added TooltipTrigger here
+  TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
-import { Dialog, DialogContent } from "@/components/ui/dialog";
 
 // Lazy load the editor and download modal
 const ImageEditor = lazy(() => import("./ImageEditor"));
@@ -47,13 +46,6 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
   const [upscaleSettingsOpen, setUpscaleSettingsOpen] = useState(false);
   const [upscaleMultiplier, setUpscaleMultiplier] = useState(null);
   const [originalImageDimensions, setOriginalImageDimensions] = useState({ width: 0, height: 0 });
-
-  // AI Enhancement for upscaling
-  const [aiEnhancement, setAiEnhancement] = useState(false);
-  const [aiUpscaleMode, setAiUpscaleMode] = useState('standard'); // 'standard', 'enhanced', 'maximum'
-  const [showVariationsModal, setShowVariationsModal] = useState(false);
-  const [generatedVariations, setGeneratedVariations] = useState([]);
-  const [selectedVariationIndex, setSelectedVariationIndex] = useState(null);
 
   // New state for editable filename
   const [editableFilename, setEditableFilename] = useState('');
@@ -781,7 +773,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
       // Use multiplier
       width = Math.round(img.width * (upscaleMultiplier / 100));
       height = Math.round(img.height * (upscaleMultiplier / 100));
-    } else if (maxWidth || maxHeight || enableUpscale) {
+    } else if (maxWidth || maxHeight || enableUpscale) { // The '|| enableUpscale' here ensures the block is entered if only upscaling is enabled without specific dims/multiplier
       const aspectRatio = width / height;
       
       if (maxWidth && maxHeight) {
@@ -792,11 +784,14 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
         width = Math.round(img.width * ratio);
         height = Math.round(img.height * ratio);
       } else if (maxWidth) {
+        // If enabling upscale and maxWidth is set, apply it.
+        // If not enabling upscale, only apply if maxWidth is less than current width (downscale).
         if (enableUpscale || maxWidth < width) {
           width = maxWidth;
           height = Math.round(maxWidth / aspectRatio);
         }
       } else if (maxHeight) {
+        // Similar logic for maxHeight
         if (enableUpscale || maxHeight < height) {
           height = maxHeight;
           width = Math.round(maxHeight * aspectRatio);
@@ -806,75 +801,15 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
 
     canvas.width = width;
     canvas.height = height;
-    const ctx = canvas.getContext('2d', { willReadFrequently: true }); // Added willReadFrequently
 
-    // Enhanced upscaling with AI-like processing
-    if (enableUpscale && aiEnhancement && width > img.width) {
-      if (aiUpscaleMode === 'maximum') {
-        // Generate multiple variations for user to choose
-        toast.info('Generating HD variations...', { id: 'ai-enhance', duration: Infinity });
-        
-        const variations = [];
-        const variationConfigs = [
-          { name: 'Balanced', sharpness: 2.0, clarity: 0.3, bilateral: 1.0 },
-          { name: 'Sharp Details', sharpness: 2.8, clarity: 0.5, bilateral: 0.7 },
-          { name: 'Smooth & Clean', sharpness: 1.5, clarity: 0.2, bilateral: 1.3 },
-          { name: 'Ultra Sharp', sharpness: 3.2, clarity: 0.6, bilateral: 0.5 },
-        ];
-        
-        for (let i = 0; i < variationConfigs.length; i++) {
-          const config = variationConfigs[i];
-          const variationCanvas = document.createElement('canvas');
-          variationCanvas.width = width;
-          variationCanvas.height = height;
-          const variationCtx = variationCanvas.getContext('2d', { willReadFrequently: true });
-          
-          await applyMaximumQualityUpscale(img, variationCanvas, variationCtx, width, height, config);
-          
-          const blob = await new Promise((resolve) => {
-            variationCanvas.toBlob(resolve, 'image/png', 0.95);
-          });
-          
-          variations.push({
-            name: config.name,
-            url: URL.createObjectURL(blob),
-            blob: blob,
-            canvas: variationCanvas
-          });
-        }
-        
-        setGeneratedVariations(variations);
-        setShowVariationsModal(true);
-        toast.dismiss('ai-enhance');
-        
-        // Wait for user selection - this will be handled by modal
-        return; // IMPORTANT: return here to prevent further processing until user selects
-      } else if (aiUpscaleMode === 'enhanced') {
-        toast.info('Applying Enhanced AI...', { id: 'ai-enhance', duration: Infinity }); // Updated toast
-        await applyEnhancedUpscale(img, canvas, ctx, width, height);
-        toast.dismiss('ai-enhance');
-        toast.success('Enhanced AI applied!', { duration: 2000 });
-      } else {
-        toast.info('Applying Standard AI...', { id: 'ai-enhance', duration: Infinity }); // Updated toast
-        ctx.imageSmoothingEnabled = true;
-        ctx.imageSmoothingQuality = 'high';
-        ctx.drawImage(img, 0, 0, width, height);
-        
-        let imageData = ctx.getImageData(0, 0, width, height);
-        imageData = applyUnsharpMask(imageData, width, height, 1.5, 1);
-        imageData = enhanceDetails(imageData, width, height);
-        ctx.putImageData(imageData, 0, 0);
-        
-        toast.dismiss('ai-enhance');
-        toast.success('Standard AI Enhancement applied!', { duration: 2000 });
-      }
-    } else if (noiseReduction || enableUpscale) {
+    const ctx = canvas.getContext('2d');
+    
+    if (noiseReduction || enableUpscale) { // Added enableUpscale
       ctx.imageSmoothingEnabled = true;
       ctx.imageSmoothingQuality = 'high';
-      ctx.drawImage(img, 0, 0, width, height);
-    } else {
-      ctx.drawImage(img, 0, 0, width, height);
     }
+    
+    ctx.drawImage(img, 0, 0, width, height);
 
     const mimeType = format === 'jpg' ? 'image/jpeg' : `image/${format}`;
     
@@ -899,6 +834,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
         );
       });
 
+      // Changed condition: now it's `enableUpscale || blob.size < image.size`
       if (enableUpscale || blob.size < image.size || attempts === maxAttempts - 1) {
         break;
       }
@@ -907,7 +843,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
       attempts++;
     }
 
-    if (!enableUpscale && blob.size >= image.size) {
+    if (!enableUpscale && blob.size >= image.size) { // Only show error if not upscaling and size increased
       const fallbackQuality = compressionMode === 'maximum' ? 0.4 : 0.6;
       blob = await new Promise((resolve) => {
         canvas.toBlob(
@@ -926,7 +862,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
     const compressedUrl = URL.createObjectURL(blob);
     setCompressedPreview(compressedUrl);
     setCompressedSize(blob.size);
-    setCompressedBlob(blob);
+    setCompressedBlob(blob); // ADDED
     setProcessed(true);
     setOutputFormat(format);
 
@@ -938,429 +874,10 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
       originalSize: image.size,
       compressedSize: blob.size,
       format,
-      filename: getOutputFilename(format),
+      filename: getOutputFilename(format), // Use new helper
       mediaType: 'image',
       fileFormat: format
     });
-  };
-
-  // Handle variation selection from modal
-  const handleVariationSelected = async (variationIndex) => {
-    const variation = generatedVariations[variationIndex];
-    setSelectedVariationIndex(variationIndex);
-    
-    // Convert selected variation to final format
-    const mimeType = format === 'jpg' ? 'image/jpeg' : `image/${format}`;
-    const finalBlob = await new Promise((resolve) => {
-      // Use the canvas from the selected variation, then convert to the desired output format
-      variation.canvas.toBlob(resolve, mimeType, quality / 100);
-    });
-    
-    const compressedUrl = URL.createObjectURL(finalBlob);
-    setCompressedPreview(compressedUrl);
-    setCompressedSize(finalBlob.size);
-    setCompressedBlob(finalBlob);
-    setProcessed(true);
-    setOutputFormat(format); // Use the currently selected output format
-    setShowVariationsModal(false);
-
-    onProcessed({
-      id: image.name,
-      originalFile: image,
-      compressedBlob: finalBlob,
-      compressedUrl,
-      originalSize: image.size, // Original size remains the same
-      compressedSize: finalBlob.size,
-      format, // Use the currently selected output format
-      filename: getOutputFilename(format),
-      mediaType: 'image',
-      fileFormat: format
-    });
-    
-    toast.success(`Selected: ${variation.name}`, { duration: 2000 });
-    
-    // Cleanup unused variations. Important to revoke URLs.
-    generatedVariations.forEach((v, i) => {
-      if (i !== variationIndex) {
-        URL.revokeObjectURL(v.url);
-      }
-    });
-    setGeneratedVariations([]); // Clear variations state after selection
-    setSelectedVariationIndex(null); // Reset selection
-  };
-
-  // Maximum Quality Upscaling - Multi-pass with advanced techniques
-  const applyMaximumQualityUpscale = async (img, canvas, ctx, targetWidth, targetHeight, config = { sharpness: 2.0, clarity: 0.3, bilateral: 1.0 }) => {
-    // Step 1: Lanczos-like resampling with multiple passes
-    const tempCanvas = document.createElement('canvas');
-    const tempCtx = tempCanvas.getContext('2d', { willReadFrequently: true });
-    
-    let currentIntermediateWidth = img.width;
-    let currentIntermediateHeight = img.height;
-    
-    // Progressive upscaling (multiple passes for better quality)
-    const passes = 3;
-    const totalScaleFactor = targetWidth / img.width;
-    const scaleFactorPerPass = Math.pow(totalScaleFactor, 1 / passes);
-    
-    tempCanvas.width = currentIntermediateWidth;
-    tempCanvas.height = currentIntermediateHeight;
-    tempCtx.drawImage(img, 0, 0);
-    
-    for (let pass = 0; pass < passes; pass++) {
-      const nextIntermediateWidth = Math.round(currentIntermediateWidth * scaleFactorPerPass);
-      const nextIntermediateHeight = Math.round(currentIntermediateHeight * scaleFactorPerPass);
-      
-      const newCanvas = document.createElement('canvas');
-      const newCtx = newCanvas.getContext('2d', { willReadFrequently: true });
-      newCanvas.width = nextIntermediateWidth;
-      newCanvas.height = nextIntermediateHeight;
-      
-      newCtx.imageSmoothingEnabled = true;
-      newCtx.imageSmoothingQuality = 'high';
-      newCtx.drawImage(tempCanvas, 0, 0, nextIntermediateWidth, nextIntermediateHeight);
-      
-      // Apply sharpening after each pass
-      let imageData = newCtx.getImageData(0, 0, nextIntermediateWidth, nextIntermediateHeight);
-      imageData = applyUnsharpMask(imageData, nextIntermediateWidth, nextIntermediateHeight, config.sharpness, 0.5);
-      newCtx.putImageData(imageData, 0, 0);
-      
-      tempCanvas.width = nextIntermediateWidth;
-      tempCanvas.height = nextIntermediateHeight;
-      tempCtx.clearRect(0, 0, nextIntermediateWidth, nextIntermediateHeight);
-      tempCtx.drawImage(newCanvas, 0, 0);
-
-      currentIntermediateWidth = nextIntermediateWidth;
-      currentIntermediateHeight = nextIntermediateHeight;
-    }
-    
-    // Step 2: Transfer to main canvas
-    ctx.clearRect(0, 0, targetWidth, targetHeight);
-    ctx.drawImage(tempCanvas, 0, 0, targetWidth, targetHeight);
-    
-    // Step 3: Advanced enhancement pipeline with config
-    let imageData = ctx.getImageData(0, 0, targetWidth, targetHeight);
-    
-    // De-pixelation: Bilateral filter to smooth while preserving edges
-    imageData = applyBilateralFilter(imageData, targetWidth, targetHeight, config.bilateral);
-    
-    // Super sharpening
-    imageData = applyUnsharpMask(imageData, targetWidth, targetHeight, config.sharpness + 0.5, 0.3);
-    
-    // Edge enhancement
-    imageData = enhanceDetails(imageData, targetWidth, targetHeight, 1.5);
-    
-    // Denoising
-    imageData = applySelectiveGaussian(imageData, targetWidth, targetHeight);
-    
-    // Final clarity boost
-    imageData = applyClarity(imageData, targetWidth, targetHeight, config.clarity);
-    
-    ctx.putImageData(imageData, 0, 0);
-  };
-
-  // Enhanced Upscaling - Balanced quality and speed
-  const applyEnhancedUpscale = async (img, canvas, ctx, targetWidth, targetHeight) => {
-    // Two-pass upscaling
-    const tempCanvas = document.createElement('canvas');
-    const tempCtx = tempCanvas.getContext('2d', { willReadFrequently: true });
-    
-    const midWidth = Math.round((img.width + targetWidth) / 2);
-    const midHeight = Math.round((img.height + targetHeight) / 2);
-    
-    tempCanvas.width = midWidth;
-    tempCanvas.height = midHeight;
-    tempCtx.imageSmoothingEnabled = true;
-    tempCtx.imageSmoothingQuality = 'high';
-    tempCtx.drawImage(img, 0, 0, midWidth, midHeight);
-    
-    ctx.drawImage(tempCanvas, 0, 0, targetWidth, targetHeight);
-    
-    let imageData = ctx.getImageData(0, 0, targetWidth, targetHeight);
-    
-    // Apply enhancements
-    imageData = applyUnsharpMask(imageData, targetWidth, targetHeight, 2.0, 0.5);
-    imageData = enhanceDetails(imageData, targetWidth, targetHeight, 1.2);
-    imageData = applyBilateralFilter(imageData, targetWidth, targetHeight, 0.7);
-    
-    ctx.putImageData(imageData, 0, 0);
-  };
-
-  // Bilateral Filter - Smooths while preserving edges (de-pixelation)
-  const applyBilateralFilter = (imageData, width, height, intensity = 1.0) => {
-    const data = new Uint8ClampedArray(imageData.data); // Copy original data to modify
-    const originalData = imageData.data; // Keep reference to original for calculations
-    const radius = 3;
-    const sigmaColor = 50 * intensity;
-    const sigmaSpace = 50 * intensity;
-    
-    for (let y = radius; y < height - radius; y++) {
-      for (let x = radius; x < width - radius; x++) {
-        for (let c = 0; c < 3; c++) { // Iterate over R, G, B channels
-          const centerIdx = (y * width + x) * 4 + c;
-          const centerValue = originalData[centerIdx]; // Use original data for center pixel
-          
-          let sum = 0;
-          let weightSum = 0;
-          
-          for (let ky = -radius; ky <= radius; ky++) {
-            for (let kx = -radius; kx <= radius; kx++) {
-              const px = x + kx;
-              const py = y + ky;
-
-              // Ensure kernel is within bounds
-              if (px >= 0 && px < width && py >= 0 && py < height) {
-                const idx = (py * width + px) * 4 + c;
-                const value = originalData[idx];
-                
-                const spatialDist = kx * kx + ky * ky;
-                const colorDist = (value - centerValue) * (value - centerValue);
-                
-                const spatialWeight = Math.exp(-spatialDist / (2 * sigmaSpace * sigmaSpace));
-                const colorWeight = Math.exp(-colorDist / (2 * sigmaColor * sigmaColor));
-                const weight = spatialWeight * colorWeight;
-                
-                sum += value * weight;
-                weightSum += weight;
-              }
-            }
-          }
-          
-          // Avoid division by zero
-          if (weightSum > 0) {
-            data[centerIdx] = sum / weightSum;
-          } else {
-            data[centerIdx] = centerValue; // Fallback to original value
-          }
-        }
-      }
-    }
-    
-    imageData.data.set(data); // Apply modified data back to the ImageData object
-    return imageData;
-  };
-
-  // Selective Gaussian - Blur non-edge regions
-  const applySelectiveGaussian = (imageData, width, height) => {
-    // Create a copy of the imageData for blurring to avoid modifying it during edge detection
-    const originalImageData = new ImageData(new Uint8ClampedArray(imageData.data), width, height);
-    const edges = detectEdges(originalImageData, width, height);
-    const blurredData = gaussianBlur(originalImageData, width, height, 0.8);
-    
-    const outputData = new Uint8ClampedArray(imageData.data.length);
-
-    for (let i = 0; i < imageData.data.length; i += 4) {
-      const pixelIndex = i / 4;
-      const edgeStrength = edges[pixelIndex]; // Value from 0 (no edge) to 1 (strong edge)
-      
-      for (let c = 0; c < 3; c++) { // RGB channels
-        // Blend between original and blurred based on edge strength
-        // Closer to 1 (strong edge), more original pixel. Closer to 0 (no edge), more blurred pixel.
-        outputData[i + c] = imageData.data[i + c] * edgeStrength + blurredData[i + c] * (1 - edgeStrength);
-      }
-      outputData[i + 3] = imageData.data[i + 3]; // Alpha channel unchanged
-    }
-    
-    imageData.data.set(outputData);
-    return imageData;
-  };
-
-  // Detect edges for selective processing
-  const detectEdges = (imageData, width, height) => {
-    const edges = new Float32Array(width * height);
-    const data = imageData.data;
-    
-    for (let y = 1; y < height - 1; y++) {
-      for (let x = 1; x < width - 1; x++) {
-        let gx = 0, gy = 0;
-        
-        for (let c = 0; c < 3; c++) { // Check all RGB channels
-          // Simple gradient approximation (e.g., central difference)
-          const idx = (y * width + x) * 4 + c;
-          const left = data[idx - 4];
-          const right = data[idx + 4];
-          const top = data[idx - width * 4];
-          const bottom = data[idx + width * 4];
-          
-          gx += (right || 0) - (left || 0); // Handle potential undefined at borders for safety
-          gy += (bottom || 0) - (top || 0);
-        }
-        
-        const magnitude = Math.sqrt(gx * gx + gy * gy) / 3; // Average magnitude over channels
-        edges[y * width + x] = Math.min(1, magnitude / 100); // Normalize to 0-1 range
-      }
-    }
-    
-    return edges;
-  };
-
-  // Clarity enhancement
-  const applyClarity = (imageData, width, height, intensity = 0.3) => {
-    const data = new Uint8ClampedArray(imageData.data); // Copy original data to modify
-    const originalData = imageData.data; // Keep reference to original for calculations
-    
-    const radius = 2; // Size of local neighborhood
-    
-    // Increase local contrast
-    for (let y = radius; y < height - radius; y++) {
-      for (let x = radius; x < width - radius; x++) {
-        for (let c = 0; c < 3; c++) {
-          const idx = (y * width + x) * 4 + c;
-          
-          // Calculate local average
-          let sum = 0;
-          let count = 0;
-          for (let ky = -radius; ky <= radius; ky++) {
-            for (let kx = -radius; kx <= radius; kx++) {
-              const currentPixelIdx = ((y + ky) * width + (x + kx)) * 4 + c;
-              if (y + ky >= 0 && y + ky < height && x + kx >= 0 && x + kx < width) { // Boundary check
-                sum += originalData[currentPixelIdx];
-                count++;
-              }
-            }
-          }
-          const avg = count > 0 ? sum / count : originalData[idx];
-          
-          // Increase contrast relative to local average
-          const diff = originalData[idx] - avg;
-          data[idx] = Math.min(255, Math.max(0, originalData[idx] + diff * intensity)); // 0.3 is contrast strength
-        }
-      }
-    }
-    imageData.data.set(data);
-    return imageData;
-  };
-
-  // Unsharp mask for AI-like sharpening
-  const applyUnsharpMask = (imageData, width, height, amount, threshold) => {
-    const data = imageData.data;
-    const blurred = gaussianBlur(imageData, width, height, 1.0);
-    const outputData = new Uint8ClampedArray(data); // Create new array for output
-
-    for (let i = 0; i < data.length; i += 4) {
-      for (let j = 0; j < 3; j++) { // RGB channels
-        const diff = data[i + j] - blurred[i + j];
-        if (Math.abs(diff) > threshold) {
-          outputData[i + j] = Math.min(255, Math.max(0, data[i + j] + diff * amount));
-        } else {
-          outputData[i + j] = data[i + j]; // Keep original if diff is below threshold
-        }
-      }
-      outputData[i + 3] = data[i + 3]; // Alpha channel
-    }
-    imageData.data.set(outputData);
-    return imageData;
-  };
-
-  // Gaussian blur helper
-  const gaussianBlur = (imageData, width, height, sigma) => {
-    const data = new Uint8ClampedArray(imageData.data);
-    const kernel = generateGaussianKernel(sigma);
-    const kernelSize = kernel.length;
-    const half = Math.floor(kernelSize / 2);
-    
-    const tempImageData = new Uint8ClampedArray(imageData.data); // Store results of horizontal pass
-
-    // Horizontal pass
-    for (let y = 0; y < height; y++) {
-      for (let x = 0; x < width; x++) {
-        for (let c = 0; c < 3; c++) {
-          let sum = 0;
-          let weightSum = 0;
-          
-          for (let k = -half; k <= half; k++) {
-            const px = Math.min(width - 1, Math.max(0, x + k));
-            const idx = (y * width + px) * 4 + c;
-            sum += imageData.data[idx] * kernel[k + half];
-            weightSum += kernel[k + half];
-          }
-          
-          const idx = (y * width + x) * 4 + c;
-          tempImageData[idx] = sum / weightSum;
-        }
-      }
-    }
-
-    // Vertical pass
-    for (let y = 0; y < height; y++) {
-      for (let x = 0; x < width; x++) {
-        for (let c = 0; c < 3; c++) {
-          let sum = 0;
-          let weightSum = 0;
-
-          for (let k = -half; k <= half; k++) {
-            const py = Math.min(height - 1, Math.max(0, y + k));
-            const idx = (py * width + x) * 4 + c;
-            sum += tempImageData[idx] * kernel[k + half]; // Use horizontal pass results
-            weightSum += kernel[k + half];
-          }
-          
-          const idx = (y * width + x) * 4 + c;
-          data[idx] = sum / weightSum;
-        }
-      }
-    }
-    
-    return data;
-  };
-
-  // Generate Gaussian kernel
-  const generateGaussianKernel = (sigma) => {
-    const size = Math.ceil(sigma * 3) * 2 + 1;
-    const kernel = [];
-    const mean = Math.floor(size / 2);
-    let sum = 0;
-    
-    for (let i = 0; i < size; i++) {
-      const x = i - mean;
-      const value = Math.exp(-0.5 * (x * x) / (sigma * sigma));
-      kernel.push(value);
-      sum += value;
-    }
-    
-    // Normalize
-    for (let i = 0; i < size; i++) {
-      kernel[i] /= sum;
-    }
-    
-    return kernel;
-  };
-
-  // Enhance details with edge detection
-  const enhanceDetails = (imageData, width, height, strength = 1.0) => {
-    const data = imageData.data;
-    const enhanced = new Uint8ClampedArray(data);
-    
-    // Sobel edge detection for detail enhancement
-    const sobelX = [-1, 0, 1, -2, 0, 2, -1, 0, 1];
-    const sobelY = [-1, -2, -1, 0, 0, 0, 1, 2, 1];
-    
-    for (let y = 1; y < height - 1; y++) {
-      for (let x = 1; x < width - 1; x++) {
-        for (let c = 0; c < 3; c++) {
-          let gx = 0;
-          let gy = 0;
-          
-          for (let ky = -1; ky <= 1; ky++) {
-            for (let kx = -1; kx <= 1; kx++) {
-              const idx = ((y + ky) * width + (x + kx)) * 4 + c;
-              const kernelIdx = (ky + 1) * 3 + (kx + 1);
-              gx += data[idx] * sobelX[kernelIdx];
-              gy += data[idx] * sobelY[kernelIdx];
-            }
-          }
-          
-          const magnitude = Math.sqrt(gx * gx + gy * gy);
-          const idx = (y * width + x) * 4 + c;
-          
-          // Add edge enhancement (subtle)
-          enhanced[idx] = Math.min(255, Math.max(0, data[idx] + magnitude * 0.3 * strength));
-        }
-      }
-    }
-    
-    imageData.data.set(enhanced);
-    return imageData;
   };
 
   // Helper function for actual download logic
@@ -1771,7 +1288,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
 
         {(isVideo || isAudio || (isGif && format === 'mp4')) && !ffmpegLoaded && (
           <div className="flex items-center gap-2 text-sm text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/30 p-3 rounded-lg">
-            <Loader2 className="w-4 h-4 mr-2 animate-spin flex-shrink-0" />
+            <Loader2 className="w-4 h-4 animate-spin flex-shrink-0" />
             <span className="text-xs">Loading {isVideo ? 'video' : isAudio ? 'audio' : 'media'} processor...</span>
           </div>
         )}
@@ -1850,8 +1367,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
           </CollapsibleTrigger>
           <CollapsibleContent className="space-y-4 mt-4">
             <TooltipProvider>
-              {/* Compression Mode - Images and GIFs only */}
-              {(isImage || isGif) && !isVideo && !isAudio && (
+              {!isAudio && (
                 <div>
                   <div className="flex items-center gap-2 mb-2">
                     <label className="text-xs font-medium text-slate-700 dark:text-slate-300">
@@ -1871,8 +1387,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
                 </div>
               )}
 
-              {/* Quality Slider - Images and GIFs */}
-              {(isImage || isGif) && !isVideo && !isAudio && (
+              {(isImage || isGif) && (
                 <div>
                   <div className="flex items-center gap-2 mb-2">
                     <label className="text-xs font-medium text-slate-700 dark:text-slate-300">
@@ -1891,7 +1406,6 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
                 </div>
               )}
               
-              {/* GIF Optimization - GIFs only */}
               {isGif && (
                 <div>
                   <div className="flex items-center gap-2 mb-2">
@@ -1912,7 +1426,6 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
                 </div>
               )}
 
-              {/* Video Settings - Videos only */}
               {isVideo && (
                 <>
                   <div>
@@ -1924,7 +1437,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
                     <Select value={videoPreset} onValueChange={setVideoPreset} disabled={processing}>
                       <SelectTrigger className="h-9">
                         <SelectValue />
-                    </SelectTrigger>
+                      </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="ultrafast">Ultra Fast (Larger File)</SelectItem>
                         <SelectItem value="superfast">Super Fast</SelectItem>
@@ -2000,8 +1513,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
                 </>
               )}
 
-              {/* Audio Settings - Audio only */}
-              {isAudio && (
+              isAudio && (
                 <>
                   <div>
                     <div className="flex items-center gap-2 mb-2">
@@ -2062,8 +1574,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
                 </>
               )}
 
-              {/* Max Width/Height - Videos, GIFs, and Images */}
-              {(isVideo || isGif || (isImage && !isGif)) && (
+              {(isVideo || isGif || (isImage && !isGif)) && ( // Apply max width/height for static images as well
                 <div className="grid grid-cols-2 gap-2">
                   <div>
                     <div className="flex items-center gap-1 mb-1">
@@ -2098,8 +1609,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
                 </div>
               )}
 
-              {/* Strip Metadata & Noise Reduction - Static images only (not GIF, not video, not audio) */}
-              {isImage && !isGif && !isVideo && !isAudio && (
+              {(isImage && !isGif) && (
                 <div className="space-y-3 pt-2 border-t border-slate-200 dark:border-slate-800">
                   <div className="flex items-center justify-between">
                     <label className="text-xs font-medium text-slate-700 dark:text-slate-300">
@@ -2128,7 +1638,6 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
           </CollapsibleContent>
         </Collapsible>
 
-        {/* Upscale Settings - Static images only */}
         {(isImage && !isGif) && (
           <Collapsible open={upscaleSettingsOpen} onOpenChange={setUpscaleSettingsOpen}>
             <CollapsibleTrigger asChild>
@@ -2161,27 +1670,27 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
                           {(() => {
                             let targetWidth = originalImageDimensions.width;
                             let targetHeight = originalImageDimensions.height;
+                            const aspectRatio = targetWidth / targetHeight;
                             
-                            if (enableUpscale && upscaleMultiplier) {
+                            if (upscaleMultiplier) {
                               targetWidth = Math.round(originalImageDimensions.width * (upscaleMultiplier / 100));
                               targetHeight = Math.round(originalImageDimensions.height * (upscaleMultiplier / 100));
-                            } else if (enableUpscale && (maxWidth || maxHeight)) {
-                              const aspectRatio = originalImageDimensions.width / originalImageDimensions.height;
+                            } else if (maxWidth || maxHeight) {
+                              // For upscaling, we always take the maximum ratio to ensure the image meets or exceeds the target size
+                              const widthRatio = maxWidth ? maxWidth / originalImageDimensions.width : 0;
+                              const heightRatio = maxHeight ? maxHeight / originalImageDimensions.height : 0;
                               
+                              let ratio = 1;
                               if (maxWidth && maxHeight) {
-                                const widthRatio = maxWidth / originalImageDimensions.width;
-                                const heightRatio = maxHeight / originalImageDimensions.height;
-                                const ratio = Math.max(widthRatio, heightRatio); // Upscale if needed
-                                
-                                targetWidth = Math.round(originalImageDimensions.width * ratio);
-                                targetHeight = Math.round(originalImageDimensions.height * ratio);
+                                ratio = Math.max(widthRatio, heightRatio);
                               } else if (maxWidth) {
-                                targetWidth = maxWidth;
-                                targetHeight = Math.round(maxWidth / aspectRatio);
+                                ratio = widthRatio;
                               } else if (maxHeight) {
-                                targetHeight = maxHeight;
-                                targetWidth = Math.round(maxHeight * aspectRatio);
+                                ratio = heightRatio;
                               }
+                              
+                              targetWidth = Math.round(originalImageDimensions.width * ratio);
+                              targetHeight = Math.round(originalImageDimensions.height * ratio);
                             }
                             
                             return `${targetWidth} × ${targetHeight}`;
@@ -2212,9 +1721,12 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
                       setEnableUpscale(checked);
                       if (!checked) {
                         setUpscaleMultiplier(null);
+                        // Clear custom dimensions when disabling upscale only if they were set for upscaling
+                        // If they were set as "Max Width/Height" in compression settings, they should persist
+                        // This logic becomes a bit tricky with shared state. For now, we clear them for simplicity.
+                        // A better approach might be separate states for upscale dimensions vs compression dimensions.
                         setMaxWidth(null); 
                         setMaxHeight(null);
-                        setAiEnhancement(false);
                       }
                     }}
                     disabled={processing}
@@ -2223,89 +1735,6 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
 
                 {enableUpscale && (
                   <>
-                    {/* AI Enhancement Toggle */}
-                    <div className="bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-950/30 dark:to-pink-950/30 border border-purple-200 dark:border-purple-800 rounded-lg p-3">
-                      <div className="flex items-center justify-between mb-2">
-                        <div className="flex items-center gap-2">
-                          <Sparkles className="w-4 h-4 text-purple-600 dark:text-purple-400" />
-                          <label className="text-xs font-bold text-purple-900 dark:text-purple-300">
-                            AI Enhancement
-                          </label>
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <Info className="w-3 h-3 text-purple-500 cursor-help" />
-                            </TooltipTrigger>
-                            <TooltipContent className="max-w-xs">
-                              <p className="text-xs">
-                                <strong>Standard:</strong> Basic sharpening and enhancement
-                                <br/><strong>Enhanced:</strong> Multi-pass upscaling with edge preservation
-                                <br/><strong>Maximum:</strong> Advanced de-pixelation, super resolution with bilateral filtering
-                                <br/><br/>
-                                Maximum mode applies sophisticated algorithms to transform low-res pixelated images into HD quality!
-                              </p>
-                            </TooltipContent>
-                          </Tooltip>
-                        </div>
-                        <Switch
-                          checked={aiEnhancement}
-                          onCheckedChange={setAiEnhancement}
-                          disabled={processing}
-                        />
-                      </div>
-                      
-                      {aiEnhancement && (
-                        <div className="space-y-2 mt-3">
-                          <label className="text-[10px] font-semibold text-purple-800 dark:text-purple-300 uppercase tracking-wide">
-                            Enhancement Level
-                          </label>
-                          <div className="grid grid-cols-3 gap-2">
-                            <Button
-                              size="sm"
-                              variant={aiUpscaleMode === 'standard' ? "default" : "outline"}
-                              onClick={() => setAiUpscaleMode('standard')}
-                              disabled={processing}
-                              className={cn(
-                                "text-xs h-8",
-                                aiUpscaleMode === 'standard' ? "bg-purple-600 hover:bg-purple-700" : "hover:bg-purple-50 dark:hover:bg-purple-950/50"
-                              )}
-                            >
-                              Standard
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant={aiUpscaleMode === 'enhanced' ? "default" : "outline"}
-                              onClick={() => setAiUpscaleMode('enhanced')}
-                              disabled={processing}
-                              className={cn(
-                                "text-xs h-8",
-                                aiUpscaleMode === 'enhanced' ? "bg-purple-600 hover:bg-purple-700" : "hover:bg-purple-50 dark:hover:bg-purple-950/50"
-                              )}
-                            >
-                              Enhanced
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant={aiUpscaleMode === 'maximum' ? "default" : "outline"}
-                              onClick={() => setAiUpscaleMode('maximum')}
-                              disabled={processing}
-                              className={cn(
-                                "text-xs h-8",
-                                aiUpscaleMode === 'maximum' ? "bg-purple-600 hover:bg-purple-700" : "hover:bg-purple-50 dark:hover:bg-purple-950/50"
-                              )}
-                            >
-                              <Sparkles className="w-3 h-3 mr-1" />
-                              Maximum
-                            </Button>
-                          </div>
-                          <p className="text-[10px] text-purple-700 dark:text-purple-400 mt-2">
-                            {aiUpscaleMode === 'standard' && '⚡ Fast processing with basic enhancement'}
-                            {aiUpscaleMode === 'enhanced' && '✨ Multi-pass upscaling with edge preservation'}
-                            {aiUpscaleMode === 'maximum' && '🚀 De-pixelation + Super Resolution (slower but best quality)'}
-                          </p>
-                        </div>
-                      )}
-                    </div>
-
                     <div>
                       <label className="text-xs font-medium text-slate-700 dark:text-slate-300 mb-2 block">
                         Upscale Multiplier
@@ -2318,6 +1747,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
                             variant={upscaleMultiplier === multiplier ? "default" : "outline"}
                             onClick={() => {
                               setUpscaleMultiplier(multiplier);
+                              // Clear manual dimensions when using multiplier
                               setMaxWidth(null);
                               setMaxHeight(null);
                             }}
@@ -2349,7 +1779,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
                             onChange={(e) => {
                               setMaxWidth(e.target.value ? parseInt(e.target.value) : null);
                               if (e.target.value) {
-                                setUpscaleMultiplier(null);
+                                setUpscaleMultiplier(null); // Clear multiplier if custom dimension is set
                               }
                             }}
                             className="w-full h-9 px-3 rounded-md border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 text-sm"
@@ -2367,7 +1797,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
                             onChange={(e) => {
                               setMaxHeight(e.target.value ? parseInt(e.target.value) : null);
                               if (e.target.value) {
-                                setUpscaleMultiplier(null);
+                                setUpscaleMultiplier(null); // Clear multiplier if custom dimension is set
                               }
                             }}
                             className="w-full h-9 px-3 rounded-md border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 text-sm"
@@ -2432,121 +1862,6 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
           </div>
         )}
       </div>
-
-      {showVariationsModal && generatedVariations.length > 0 && (
-        <Dialog open={showVariationsModal} onOpenChange={(open) => {
-          if (!open) {
-            // Cleanup on close
-            generatedVariations.forEach(v => URL.revokeObjectURL(v.url));
-            setGeneratedVariations([]);
-            setShowVariationsModal(false);
-            setProcessing(false);
-            setSelectedVariationIndex(null); // Reset selected index on close
-          }
-        }}>
-          <DialogContent className="max-w-6xl w-[95vw] max-h-[95vh] p-0 bg-slate-50 dark:bg-slate-950 overflow-hidden [&>button]:hidden">
-            <div className="p-6 border-b border-slate-200 dark:border-slate-800">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h2 className="text-xl font-bold text-slate-900 dark:text-white mb-1">
-                    Choose Your HD Version
-                  </h2>
-                  <p className="text-sm text-slate-600 dark:text-slate-400">
-                    AI generated {generatedVariations.length} variations - select the one that looks best to you
-                  </p>
-                </div>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => {
-                    generatedVariations.forEach(v => URL.revokeObjectURL(v.url));
-                    setGeneratedVariations([]);
-                    setShowVariationsModal(false);
-                    setProcessing(false);
-                    setSelectedVariationIndex(null);
-                  }}
-                  className="hover:bg-red-100 dark:hover:bg-red-950 hover:text-red-600 dark:hover:text-red-400"
-                >
-                  <X className="w-5 h-5" />
-                </Button>
-              </div>
-            </div>
-
-            <div className="p-6 overflow-y-auto max-h-[calc(95vh-140px)]">
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-6">
-                {generatedVariations.map((variation, index) => (
-                  <div
-                    key={index}
-                    className={cn(
-                      "relative group cursor-pointer rounded-xl overflow-hidden border-2 transition-all",
-                      selectedVariationIndex === index
-                        ? "border-emerald-500 ring-4 ring-emerald-500/20"
-                        : "border-slate-200 dark:border-slate-800 hover:border-emerald-400 dark:hover:border-emerald-600"
-                    )}
-                    onClick={() => setSelectedVariationIndex(index)} // Only select, not finalize here
-                  >
-                    <div className="aspect-square bg-slate-100 dark:bg-slate-900 flex items-center justify-center p-4">
-                      <img
-                        src={variation.url}
-                        alt={variation.name}
-                        className="max-w-full max-h-full object-contain"
-                      />
-                    </div>
-                    
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-                    
-                    <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/80 to-transparent">
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <h3 className="text-white font-bold text-lg">{variation.name}</h3>
-                          <p className="text-white/80 text-xs">
-                            {index === 0 && 'Recommended for most images'}
-                            {index === 1 && 'Best for text and fine details'}
-                            {index === 2 && 'Best for photos and portraits'}
-                            {index === 3 && 'Maximum sharpness and clarity'}
-                          </p>
-                        </div>
-                        <div className="w-10 h-10 rounded-full flex items-center justify-center transition-all">
-                          {selectedVariationIndex === index ? (
-                            <CheckCircle2 className="w-6 h-6 text-white" />
-                          ) : (
-                            <Sparkles className="w-6 h-6 text-white" />
-                          )}
-                        </div>
-                      </div>
-                    </div>
-
-                    {selectedVariationIndex === index && (
-                      <div className="absolute top-4 right-4">
-                        <Badge className="bg-emerald-500 text-white font-bold shadow-lg">
-                          Selected
-                        </Badge>
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
-
-              <div className="mt-6 flex justify-center">
-                <Button
-                  onClick={() => {
-                    if (selectedVariationIndex !== null) {
-                      handleVariationSelected(selectedVariationIndex);
-                    } else {
-                      toast.error('Please select a variation');
-                    }
-                  }}
-                  disabled={selectedVariationIndex === null}
-                  className="bg-emerald-600 hover:bg-emerald-700 text-white px-8"
-                >
-                  <CheckCircle2 className="w-4 h-4 mr-2" />
-                  Use Selected Version
-                </Button>
-              </div>
-            </div>
-          </DialogContent>
-        </Dialog>
-      )}
 
       {showEditor && isImage && !isGif && (
         <ImageEditor
