@@ -24,6 +24,7 @@ export default function GifEditor({ isOpen, onClose, gifData, onSave }) {
 
   useEffect(() => {
     if (isOpen && gifData) {
+      console.log('🎨 GIF Editor opened');
       loadGifFrames();
     }
     return () => {
@@ -59,7 +60,7 @@ export default function GifEditor({ isOpen, onClose, gifData, onSave }) {
 
   const loadGifFrames = async () => {
     try {
-      console.log('📦 Loading GIF frames for editor...');
+      console.log('📦 Loading GIF frames...');
       const response = await fetch(gifData);
       const arrayBuffer = await response.arrayBuffer();
 
@@ -67,30 +68,31 @@ export default function GifEditor({ isOpen, onClose, gifData, onSave }) {
       const gif = parseGIF(arrayBuffer);
       const decompressed = decompressFrames(gif, true);
 
-      console.log(`✅ Loaded ${decompressed.length} frames`);
+      console.log(`✅ ${decompressed.length} frames loaded`);
 
-      // Create background canvas for proper frame accumulation
-      // Using willReadFrequently: false for better performance if context isn't read often
-      // which it isn't, as we're drawing to it and then drawing it to another canvas.
+      if (decompressed.length === 0) {
+        throw new Error('No frames found in GIF');
+      }
+
+      // Get canvas dimensions from first frame
+      const canvasWidth = decompressed[0].dims.width;
+      const canvasHeight = decompressed[0].dims.height;
+
+      // Background canvas for accumulation
       const bgCanvas = document.createElement('canvas');
-      bgCanvas.width = decompressed[0].dims.width;
-      bgCanvas.height = decompressed[0].dims.height;
-      const bgCtx = bgCanvas.getContext('2d', { willReadFrequently: false });
+      bgCanvas.width = canvasWidth;
+      bgCanvas.height = canvasHeight;
+      const bgCtx = bgCanvas.getContext('2d', { alpha: true });
 
       const loadedFrames = [];
 
       for (let i = 0; i < decompressed.length; i++) {
         const frame = decompressed[i];
         
-        // Handle disposal method (How the previous frame should be treated)
-        // Disposal method 2: Restore to background color.
-        // For animated GIFs, this usually means clearing the portion of the canvas
-        // covered by the previous frame to transparent or the GIF's background color.
-        // Here, we effectively clear the area used by the previous frame.
+        // Handle disposal
         if (i > 0) {
           const prevFrame = decompressed[i - 1];
           if (prevFrame.disposalType === 2) {
-            // Clear previous frame area
             bgCtx.clearRect(
               prevFrame.dims.left || 0,
               prevFrame.dims.top || 0,
@@ -100,11 +102,11 @@ export default function GifEditor({ isOpen, onClose, gifData, onSave }) {
           }
         }
 
-        // Draw current frame patch to a temporary canvas
+        // Draw frame patch
         const tempCanvas = document.createElement('canvas');
         tempCanvas.width = frame.dims.width;
         tempCanvas.height = frame.dims.height;
-        const tempCtx = tempCanvas.getContext('2d');
+        const tempCtx = tempCanvas.getContext('2d', { alpha: true });
         
         const imageData = new ImageData(
           new Uint8ClampedArray(frame.patch),
@@ -113,30 +115,29 @@ export default function GifEditor({ isOpen, onClose, gifData, onSave }) {
         );
         tempCtx.putImageData(imageData, 0, 0);
 
-        // Draw the temporary patch canvas onto the background canvas
         bgCtx.drawImage(
           tempCanvas,
           frame.dims.left || 0,
           frame.dims.top || 0
         );
 
-        // Create a final frame canvas that represents the current state of the entire GIF
+        // Copy to final canvas
         const frameCanvas = document.createElement('canvas');
-        frameCanvas.width = bgCanvas.width;
-        frameCanvas.height = bgCanvas.height;
-        const frameCtx = frameCanvas.getContext('2d');
-        frameCtx.drawImage(bgCanvas, 0, 0); // Copy the accumulated state
+        frameCanvas.width = canvasWidth;
+        frameCanvas.height = canvasHeight;
+        const frameCtx = frameCanvas.getContext('2d', { alpha: true });
+        frameCtx.drawImage(bgCanvas, 0, 0);
 
         loadedFrames.push({
-          id: i, // Use index as id for now
+          id: i,
           canvas: frameCanvas,
-          delay: frame.delay * 10 || 100, // gifuct-js delay is in 100ths of a second, so multiply by 10 for ms
-          width: bgCanvas.width,
-          height: bgCanvas.height
+          delay: frame.delay * 10 || 100,
+          width: canvasWidth,
+          height: canvasHeight
         });
 
         if (i % 10 === 0) {
-          console.log(`Processed frame ${i + 1}/${decompressed.length}`);
+          console.log(`Loaded frame ${i + 1}/${decompressed.length}`);
         }
       }
 
@@ -144,27 +145,32 @@ export default function GifEditor({ isOpen, onClose, gifData, onSave }) {
       setGlobalDelay(loadedFrames[0]?.delay || 100);
       setCurrentFrame(0);
       
-      // Draw first frame immediately after loading
+      // Draw first frame immediately
       setTimeout(() => {
         if (canvasRef.current && loadedFrames.length > 0) {
           const canvas = canvasRef.current;
-          canvas.width = loadedFrames[0].width;
-          canvas.height = loadedFrames[0].height;
+          const firstFrame = loadedFrames[0];
+          canvas.width = firstFrame.width;
+          canvas.height = firstFrame.height;
           const ctx = canvas.getContext('2d');
-          ctx.drawImage(loadedFrames[0].canvas, 0, 0);
+          ctx.drawImage(firstFrame.canvas, 0, 0);
+          console.log(`✅ Canvas ready: ${canvas.width}x${canvas.height}`);
         }
-      }, 100); // Small delay to ensure canvasRef is available
-
+      }, 100);
+      
       toast.success(`Loaded ${loadedFrames.length} frames`);
     } catch (error) {
-      console.error('❌ Error loading GIF:', error);
-      toast.error('Failed to load GIF frames: ' + error.message);
+      console.error('❌ Failed to load GIF:', error);
+      toast.error('Failed to load GIF: ' + error.message);
     }
   };
 
   const drawFrame = (frameIndex) => {
     const canvas = canvasRef.current;
-    if (!canvas || !frames[frameIndex]) return;
+    if (!canvas || !frames[frameIndex]) {
+      console.warn('Canvas or frame not ready');
+      return;
+    }
 
     const frame = frames[frameIndex];
     canvas.width = frame.width;
