@@ -69,7 +69,7 @@ export default function ImageCard({ image, onRemove, onProcessed, onCompare, aut
 
   // Auto-process when autoProcess is triggered
   useEffect(() => {
-    if (autoProcess && !processed && !processing && processImageRef.current) {
+    if (autoProcess > 0 && !processed && !processing && processImageRef.current) {
       processImageRef.current();
     }
   }, [autoProcess, processed, processing]);
