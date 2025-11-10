@@ -709,7 +709,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
 
   const processGif = async () => {
     try {
-      console.log('🎞️ Starting GIF optimization with PERFECT balance...');
+      console.log('🎞️ Starting GIF optimization with PERFECT quality...');
 
       if (!gifJsLoaded || !window.GIF || !workerBlobUrl) {
         toast.error('GIF processor still loading. Please wait...');
@@ -748,50 +748,17 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
 
       console.log(`Original GIF: ${gifSettings.frames.length} frames, ${gifSettings.width}x${gifSettings.height}`);
 
-      // SMART dimension optimization - reduce ONLY if very large
-      let targetWidth = gifSettings.width;
-      let targetHeight = gifSettings.height;
+      // KEEP ORIGINAL DIMENSIONS - NO REDUCTION
+      const targetWidth = gifSettings.width;
+      const targetHeight = gifSettings.height;
       
-      // Only reduce if GIF is larger than 600px on longest side
-      const longestSide = Math.max(gifSettings.width, gifSettings.height);
-      if (longestSide > 600) {
-        const scale = 600 / longestSide;
-        targetWidth = Math.round(gifSettings.width * scale);
-        targetHeight = Math.round(gifSettings.height * scale);
-        console.log(`Optimizing dimensions: ${gifSettings.width}x${gifSettings.height} → ${targetWidth}x${targetHeight} for better file size`);
-      } else {
-        console.log(`Keeping original dimensions: ${targetWidth}x${targetHeight} (under 600px)`);
-      }
-
-      // Apply user-defined dimension limits if set
-      if (maxWidth || maxHeight) {
-        const aspectRatio = gifSettings.width / gifSettings.height;
-
-        if (maxWidth && maxHeight) {
-          const widthRatio = maxWidth / gifSettings.width;
-          const heightRatio = maxHeight / gifSettings.height;
-          const ratio = Math.min(widthRatio, heightRatio);
-
-          if (ratio < 1) {
-            targetWidth = Math.round(gifSettings.width * ratio);
-            targetHeight = Math.round(gifSettings.height * ratio);
-          }
-        } else if (maxWidth && maxWidth < targetWidth) {
-          targetWidth = maxWidth;
-          targetHeight = Math.round(maxWidth / aspectRatio);
-        } else if (maxHeight && maxHeight < targetHeight) {
-          targetHeight = maxHeight;
-          targetWidth = Math.round(maxHeight * aspectRatio);
-        }
-      }
-
-      console.log(`Final target size: ${targetWidth}x${targetHeight}`);
+      console.log(`Keeping EXACT original dimensions: ${targetWidth}x${targetHeight}`);
 
       // KEEP ALL FRAMES for smooth animation - NO SKIPPING
       const framesToProcess = gifSettings.frames;
       const maxFrames = Math.min(framesToProcess.length, 500);
 
-      console.log(`Processing ALL ${maxFrames} frames for smooth animation...`);
+      console.log(`Processing ALL ${maxFrames} frames with EXACT original timing...`);
 
       // Create background canvas for proper frame accumulation
       const backgroundCanvas = document.createElement('canvas');
@@ -820,10 +787,10 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
             if (prevFrame && prevFrame.disposalType === 2) {
               // Disposal 2: clear previous frame area
               backgroundCtx.clearRect(
-                Math.round((prevFrame.dims.left / gifSettings.width) * targetWidth),
-                Math.round((prevFrame.dims.top / gifSettings.height) * targetHeight),
-                Math.round((prevFrame.dims.width / gifSettings.width) * targetWidth),
-                Math.round((prevFrame.dims.height / gifSettings.height) * targetHeight)
+                prevFrame.dims.left || 0,
+                prevFrame.dims.top || 0,
+                prevFrame.dims.width,
+                prevFrame.dims.height
               );
             }
             // Disposal 1 or 0: keep frame (do nothing)
@@ -848,21 +815,15 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
           );
           tempCtx.putImageData(imageData, 0, 0);
 
-          // Calculate scaled position and size
-          const scaledLeft = Math.round((frame.dims.left / gifSettings.width) * targetWidth);
-          const scaledTop = Math.round((frame.dims.top / gifSettings.height) * targetHeight);
-          const scaledWidth = Math.round((frame.dims.width / gifSettings.width) * targetWidth);
-          const scaledHeight = Math.round((frame.dims.height / gifSettings.height) * targetHeight);
-
-          // Draw scaled patch onto background
+          // Draw at ORIGINAL position and size (NO SCALING)
           backgroundCtx.imageSmoothingEnabled = true;
           backgroundCtx.imageSmoothingQuality = 'high';
           backgroundCtx.drawImage(
             tempCanvas,
-            scaledLeft,
-            scaledTop,
-            scaledWidth,
-            scaledHeight
+            frame.dims.left || 0,
+            frame.dims.top || 0,
+            frame.dims.width,
+            frame.dims.height
           );
 
           // Create output frame by copying current background
@@ -876,8 +837,8 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
 
           outputCtx.drawImage(backgroundCanvas, 0, 0);
 
-          // Keep original delay for smooth animation
-          const delay = frame.delay ? Math.max(20, frame.delay * 10) : 100;
+          // Keep EXACT original delay - NO MODIFICATION
+          const delay = frame.delay ? frame.delay * 10 : 100; // Convert centiseconds to milliseconds
 
           processedFrames.push({
             canvas: outputCanvas,
@@ -885,7 +846,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
           });
 
           if (i % 20 === 0) {
-            console.log(`✅ Processed frame ${i + 1}/${maxFrames}`);
+            console.log(`✅ Processed frame ${i + 1}/${maxFrames} (delay: ${delay}ms)`);
           }
         } catch (frameError) {
           console.error(`Error processing frame ${i}:`, frameError);
@@ -900,20 +861,19 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
 
       const GIF = window.GIF;
 
-      // OPTIMAL QUALITY: 10 = excellent quality + much smaller file size
-      // (1 is best but creates huge files, 10 is the sweet spot)
+      // Use quality 10 for good balance (1 = best quality but huge files)
       const gifQuality = 10;
 
-      console.log(`GIF.js encoding with quality ${gifQuality} (10=optimal balance of quality+size)`);
+      console.log(`GIF.js encoding with quality ${gifQuality}, original resolution and frame rate`);
 
       const gif = new GIF({
         workers: 4,
-        quality: gifQuality, // OPTIMAL quality for balance
+        quality: gifQuality,
         width: targetWidth,
         height: targetHeight,
         workerScript: workerBlobUrl,
         repeat: 0,
-        dither: false, // No dithering for cleaner look
+        dither: false,
         transparent: null
       });
 
@@ -926,11 +886,11 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
         });
 
         if (i % 20 === 0) {
-          console.log(`Added frame ${i + 1}/${processedFrames.length} to encoder`);
+          console.log(`Added frame ${i + 1}/${processedFrames.length} (${delay}ms delay) to encoder`);
         }
       }
 
-      console.log('✨ All frames added, encoding GIF with optimal quality...');
+      console.log('✨ All frames added, encoding GIF with original timing and resolution...');
 
       const gifBlob = await new Promise((resolve, reject) => {
         const timeout = setTimeout(() => {
@@ -985,14 +945,11 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
       });
 
       const savings = ((1 - gifBlob.size / image.size) * 100).toFixed(1);
-      const dimensionChange = longestSide > 600 
-        ? `Optimized to ${targetWidth}x${targetHeight} • ` 
-        : `Original ${targetWidth}x${targetHeight} kept • `;
 
       if (gifBlob.size < image.size) {
-        toast.success(`✨ GIF optimized! ${processedFrames.length} frames • ${dimensionChange}Saved ${savings}% • Excellent quality`);
+        toast.success(`✨ GIF optimized! ${processedFrames.length} frames • Original ${targetWidth}x${targetHeight} • Original frame rate • Saved ${savings}%`);
       } else {
-        toast.warning(`GIF processed but file size increased. Try adjusting quality settings or use a different format.`);
+        toast.warning(`GIF processed but file size increased. The GIF may already be optimally compressed.`);
       }
     } catch (error) {
       console.error('❌ GIF optimization failed:', error);
@@ -2004,7 +1961,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
                     </h4>
                   </div>
                   <p className="text-xs text-emerald-700 dark:text-emerald-400 mb-3">
-                    Settings optimized for best quality + file size reduction
+                    Settings optimized for best quality and original timing/resolution.
                   </p>
 
                   <div className="space-y-2">
@@ -2020,7 +1977,12 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
 
                     <div className="flex items-center justify-between py-2 px-3 bg-white/50 dark:bg-slate-900/50 rounded-lg">
                       <span className="text-xs text-slate-700 dark:text-slate-300">Resolution</span>
-                      <Badge className="bg-emerald-600 text-white text-xs">Smart Auto-Reduce (Max 600px)</Badge>
+                      <Badge className="bg-emerald-600 text-white text-xs">Original Resolution</Badge>
+                    </div>
+
+                    <div className="flex items-center justify-between py-2 px-3 bg-white/50 dark:bg-slate-900/50 rounded-lg">
+                      <span className="text-xs text-slate-700 dark:text-slate-300">Frame Rate</span>
+                      <Badge className="bg-emerald-600 text-white text-xs">Original Frame Rate</Badge>
                     </div>
 
                     <div className="flex items-center justify-between py-2 px-3 bg-white/50 dark:bg-slate-900/50 rounded-lg">
@@ -2036,7 +1998,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
 
                   <p className="text-xs text-emerald-600 dark:text-emerald-400 mt-3 flex items-center gap-1">
                     <Info className="w-3 h-3" />
-                    Optimized for excellent visual quality with significant file size reduction.
+                    Optimized for excellent visual quality while preserving original timing and dimensions.
                   </p>
                 </div>
               )}
