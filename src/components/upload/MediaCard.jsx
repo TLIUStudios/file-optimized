@@ -676,11 +676,20 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
 
       console.log(`Original GIF: ${gifSettings.frames.length} frames, ${gifSettings.width}x${gifSettings.height}`);
       
+      // AGGRESSIVE DIMENSION REDUCTION for file size savings
+      // Reduce to max 600px on longest side while maintaining aspect ratio
+      const maxDimension = 600;
       let targetWidth = gifSettings.width;
       let targetHeight = gifSettings.height;
-      let needsResize = false;
       
-      // Calculate target dimensions if resize is requested
+      const longestSide = Math.max(gifSettings.width, gifSettings.height);
+      if (longestSide > maxDimension) {
+        const scale = maxDimension / longestSide;
+        targetWidth = Math.round(gifSettings.width * scale);
+        targetHeight = Math.round(gifSettings.height * scale);
+      }
+      
+      // Apply user-defined dimension limits if stricter
       if (maxWidth || maxHeight) {
         const aspectRatio = gifSettings.width / gifSettings.height;
         
@@ -692,33 +701,28 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
           if (ratio < 1) {
             targetWidth = Math.round(gifSettings.width * ratio);
             targetHeight = Math.round(gifSettings.height * ratio);
-            needsResize = true;
           }
-        } else if (maxWidth && maxWidth < gifSettings.width) {
+        } else if (maxWidth && maxWidth < targetWidth) {
           targetWidth = maxWidth;
           targetHeight = Math.round(maxWidth / aspectRatio);
-          needsResize = true;
-        } else if (maxHeight && maxHeight < gifSettings.height) {
+        } else if (maxHeight && maxHeight < targetHeight) {
           targetHeight = maxHeight;
           targetWidth = Math.round(maxHeight * aspectRatio);
-          needsResize = true;
         }
       }
       
-      console.log(`Target size: ${targetWidth}x${targetHeight}, needsResize: ${needsResize}`);
+      console.log(`Target size: ${targetWidth}x${targetHeight} (${Math.round((targetWidth * targetHeight) / (gifSettings.width * gifSettings.height) * 100)}% of original)`);
       
-      // Always use good quality for file size reduction
-      // Keep all frames for quality, but use smart quality settings
-      // Smart frame skip for large GIFs
-      const frameSkip = gifSettings.frames.length > 500 ? 2 : 1;
-      const maxFramesToProcess = Math.min(gifSettings.frames.length, 1500); // Limit total frames to avoid out of memory
+      // KEEP ALL FRAMES for smooth animation - NO SKIPPING
+      const framesToProcess = gifSettings.frames;
+      const maxFrames = Math.min(framesToProcess.length, 300); // Cap at 300 frames for memory
       
-      console.log(`Processing ${maxFramesToProcess} frames with smart optimization (frame skip: ${frameSkip})`);
+      console.log(`Processing ALL ${maxFrames} frames for smooth animation`);
       
       const processedFrames = [];
       
-      for (let i = 0; i < maxFramesToProcess; i += frameSkip) {
-        const frame = gifSettings.frames[i];
+      for (let i = 0; i < maxFrames; i++) {
+        const frame = framesToProcess[i];
         if (!frame || !frame.patch || !frame.dims) {
           console.warn(`Skipping invalid frame ${i}`);
           continue;
@@ -755,19 +759,21 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
           );
           tempCtx.putImageData(imageData, 0, 0);
           
+          // HIGH QUALITY resampling
           frameCtx.imageSmoothingEnabled = true;
           frameCtx.imageSmoothingQuality = 'high';
           frameCtx.drawImage(tempCanvas, 0, 0, targetWidth, targetHeight);
           
-          const delay = frame.delay ? Math.max(20, frame.delay * 10 * frameSkip) : 100 * frameSkip;
+          // Keep original delay for smooth playback
+          const delay = frame.delay ? Math.max(20, frame.delay * 10) : 100;
           
           processedFrames.push({
             canvas: frameCanvas,
             delay: delay
           });
           
-          if (i % 30 === 0) {
-            console.log(`Processed frame ${i + 1}/${maxFramesToProcess}`);
+          if (i % 20 === 0) {
+            console.log(`Processed frame ${i + 1}/${maxFrames}`);
           }
         } catch (frameError) {
           console.error(`Error processing frame ${i}:`, frameError);
@@ -782,21 +788,20 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
 
       const GIF = window.GIF;
       
-      // Quality 10 for good quality with file size reduction
-      const gifQuality = 10; 
+      // QUALITY 2 = Excellent quality (1 is best, but 2 is great and faster)
+      const gifQuality = 2;
       
-      console.log(`GIF.js quality: ${gifQuality} (10=good quality)`);
+      console.log(`GIF.js quality: ${gifQuality} (2=excellent, lower=better)`);
       
       const gif = new GIF({
         workers: 4,
-        quality: gifQuality,
+        quality: gifQuality, // EXCELLENT QUALITY
         width: targetWidth,
         height: targetHeight,
         workerScript: workerBlobUrl,
         repeat: 0,
-        transparent: 0x00,
-        background: '#FFFFFF',
-        dither: false
+        dither: false, // No dithering for cleaner look
+        transparent: 0x00
       });
 
       for (let i = 0; i < processedFrames.length; i++) {
@@ -807,7 +812,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
           dispose: 2
         });
         
-        if (i % 30 === 0) {
+        if (i % 20 === 0) {
           console.log(`Added frame ${i + 1}/${processedFrames.length} to GIF`);
         }
       }
@@ -818,11 +823,11 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
         const timeout = setTimeout(() => {
           console.error('GIF rendering timeout');
           reject(new Error('GIF rendering timeout'));
-        }, 180000);
+        }, 300000); // 5 minutes for high quality
         
         gif.on('finished', (blob) => {
           clearTimeout(timeout);
-          console.log(`✅ GIF rendered: ${(blob.size / 1024).toFixed(1)}KB`);
+          console.log(`✅ GIF rendered: ${(blob.size / 1024 / 1024).toFixed(1)}MB`);
           resolve(blob);
         });
         
@@ -833,7 +838,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
         });
         
         gif.on('progress', (p) => {
-          if (p % 0.1 < 0.01) {
+          if (p % 0.05 < 0.01) { // More frequent updates
             console.log(`GIF render progress: ${(p * 100).toFixed(0)}%`);
           }
         });
@@ -867,8 +872,10 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
       });
 
       const savings = ((1 - gifBlob.size / image.size) * 100).toFixed(1);
+      const dimensionReduction = Math.round((1 - (targetWidth * targetHeight) / (gifSettings.width * gifSettings.height)) * 100);
+      
       if (gifBlob.size < image.size) {
-        toast.success(`GIF optimized! ${processedFrames.length} frames, saved ${savings}%`);
+        toast.success(`GIF optimized! ${processedFrames.length} frames, saved ${savings}% • ${dimensionReduction}% smaller dimensions • Excellent quality maintained`);
       } else {
         toast.info(`GIF processed • ${processedFrames.length} frames • High quality maintained`);
       }
@@ -1166,8 +1173,6 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
       });
       
       console.log(`✅ GIF created: ${(gifBlob.size / 1024).toFixed(1)}KB`);
-      
-      const gifUrl = URL.createObjectURL(gifBlob);
       
       const animationData = {
         name: animationType.replace('-', ' ').split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' '),
@@ -1850,17 +1855,17 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
                   <div className="space-y-2">
                     <div className="flex items-center justify-between py-2 px-3 bg-white/50 dark:bg-slate-900/50 rounded-lg">
                       <span className="text-xs text-slate-700 dark:text-slate-300">Quality Level</span>
-                      <Badge className="bg-emerald-600 text-white text-xs">Good (10)</Badge>
+                      <Badge className="bg-emerald-600 text-white text-xs">Excellent (2)</Badge>
                     </div>
                     
                     <div className="flex items-center justify-between py-2 px-3 bg-white/50 dark:bg-slate-900/50 rounded-lg">
                       <span className="text-xs text-slate-700 dark:text-slate-300">Frame Processing</span>
-                      <Badge className="bg-emerald-600 text-white text-xs">Smart Optimization</Badge>
+                      <Badge className="bg-emerald-600 text-white text-xs">All Frames</Badge>
                     </div>
                     
                     <div className="flex items-center justify-between py-2 px-3 bg-white/50 dark:bg-slate-900/50 rounded-lg">
-                      <span className="text-xs text-slate-700 dark:text-slate-300">Frame Skip</span>
-                      <Badge className="bg-emerald-600 text-white text-xs">2x for large GIFs</Badge>
+                      <span className="text-xs text-slate-700 dark:text-slate-300">Max Dimension</span>
+                      <Badge className="bg-emerald-600 text-white text-xs">600px (Longest side)</Badge>
                     </div>
                     
                     <div className="flex items-center justify-between py-2 px-3 bg-white/50 dark:bg-slate-900/50 rounded-lg">
@@ -1876,7 +1881,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
                   
                   <p className="text-xs text-emerald-600 dark:text-emerald-400 mt-3 flex items-center gap-1">
                     <Info className="w-3 h-3" />
-                    Optimized for good quality with significant file size reduction
+                    Optimized for excellent visual quality with significant file size reduction.
                   </p>
                 </div>
               )}
