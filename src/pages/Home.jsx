@@ -32,6 +32,8 @@ export default function Home() {
   const [isDragActive, setIsDragActive] = useState(false);
   const [comparisonData, setComparisonData] = useState(null);
   const [autoProcessTrigger, setAutoProcessTrigger] = useState(0);
+  const [processingStartTime, setProcessingStartTime] = useState(null);
+  const [estimatedTimeRemaining, setEstimatedTimeRemaining] = useState(null);
 
   const handleFilesSelected = (files) => {
     const newFiles = Array.from(files).map(file => ({
@@ -62,10 +64,28 @@ export default function Home() {
   };
 
   const handleImageProcessed = (id, data) => {
-    setProcessedImages(prev => ({
-      ...prev,
-      [id]: data
-    }));
+    setProcessedImages(prev => {
+      const newProcessed = {
+        ...prev,
+        [id]: data
+      };
+      
+      // Update time estimation
+      if (processingStartTime && Object.keys(newProcessed).length < images.length) {
+        const elapsed = Date.now() - processingStartTime;
+        const processedCount = Object.keys(newProcessed).length;
+        const avgTimePerImage = processedCount > 0 ? elapsed / processedCount : 0;
+        const remainingImages = images.length - processedCount;
+        const remaining = remainingImages * avgTimePerImage;
+        setEstimatedTimeRemaining(Math.max(0, Math.ceil(remaining / 1000))); // Ensure non-negative
+      } else {
+        // All images processed or processing not active
+        setEstimatedTimeRemaining(null);
+        setProcessingStartTime(null);
+      }
+      
+      return newProcessed;
+    });
   };
 
   const handleCompare = (data) => {
@@ -75,6 +95,8 @@ export default function Home() {
   const clearAll = () => {
     setImages([]);
     setProcessedImages({});
+    setProcessingStartTime(null);
+    setEstimatedTimeRemaining(null);
   };
 
   const processAllImages = async () => {
@@ -85,6 +107,9 @@ export default function Home() {
       return;
     }
     
+    setProcessingStartTime(Date.now());
+    // Initial estimate: 3 seconds per image (can be adjusted)
+    setEstimatedTimeRemaining(unprocessedImages.length * 3); 
     toast.info(`Processing ${unprocessedImages.length} images...`);
     setAutoProcessTrigger(prev => prev + 1);
   };
@@ -234,6 +259,17 @@ export default function Home() {
                       <p className="text-sm text-slate-500 dark:text-slate-400">Total Savings</p>
                       <p className="text-2xl font-bold text-emerald-600 dark:text-emerald-400">
                         {savingsPercent}%
+                      </p>
+                    </div>
+                  </>
+                )}
+                {estimatedTimeRemaining !== null && (
+                  <>
+                    <div className="h-12 w-px bg-slate-200 dark:bg-slate-800 hidden sm:block" />
+                    <div>
+                      <p className="text-sm text-slate-500 dark:text-slate-400">Time Remaining</p>
+                      <p className="text-2xl font-bold text-blue-600 dark:text-blue-400">
+                        ~{estimatedTimeRemaining}s
                       </p>
                     </div>
                   </>
