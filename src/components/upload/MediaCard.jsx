@@ -2,13 +2,13 @@
 import { useState, useEffect, lazy, useRef } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } => from "@/components/ui/select";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Slider } from "@/components/ui/slider";
 import { Download, X, Loader2, CheckCircle2, ArrowRight, Settings2, AlertCircle, Info, Edit2, RefreshCcw, Sparkles, Film, Music, Video, ChevronDown, Check, Wand2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import LazyImage from "./LazyImage";
 import {
   Tooltip,
@@ -55,7 +55,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
   const [animationSettingsOpen, setAnimationSettingsOpen] = useState(false);
   const [enableAnimation, setEnableAnimation] = useState(false);
   const [animationDuration, setAnimationDuration] = useState(5);
-  const [animationType, setAnimationType] = useState('zoom'); // 'zoom', 'ripple', 'ken-burns', 'glow'
+  const [animationType, setAnimationType] = useState('zoom'); // 'zoom', 'glow'
   const [generatedAnimations, setGeneratedAnimations] = useState([]);
 
   // Processing time states
@@ -70,6 +70,10 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
   // Editable filename
   const [editableFilename, setIsEditingFilename] = useState('');
   const [isEditingFilename, setEditableFilename] = useState(false);
+
+  // Add metadata viewer state
+  const [showMetadataViewer, setShowMetadataViewer] = useState(false);
+  const [fileMetadata, setFileMetadata] = useState(null);
 
   // Media type detection
   const isImage = image.type.startsWith('image/');
@@ -100,10 +104,11 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
 
   // Load FFmpeg when video/audio is uploaded - IMPROVED ERROR HANDLING
   useEffect(() => {
-    if ((isVideo || isAudio) && !ffmpegLoaded && !ffmpegLoading && !ffmpegLoadError) {
+    // Check if FFmpeg is needed for current media type or format (e.g., GIF to MP4)
+    if ((isVideo || isAudio || (isGif && format === 'mp4')) && !ffmpegLoaded && !ffmpegLoading && !ffmpegLoadError) {
       loadFFmpeg();
     }
-  }, [isVideo, isAudio, ffmpegLoaded, ffmpegLoading, ffmpegLoadError]);
+  }, [isVideo, isAudio, isGif, format, ffmpegLoaded, ffmpegLoading, ffmpegLoadError]);
 
   const loadFFmpeg = async () => {
     if (ffmpegLoading || ffmpegLoaded) return;
@@ -322,6 +327,75 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
       });
     } catch (error) {
       console.error('Error parsing GIF:', error);
+    }
+  };
+
+  const getAspectRatio = (width, height) => {
+    if (!width || !height) return "N/A";
+    const commonDivisor = (a, b) => b === 0 ? a : commonDivisor(b, a % b);
+    const divisor = commonDivisor(width, height);
+    const ratioW = width / divisor;
+    const ratioH = height / divisor;
+
+    // Provide common named ratios for better UX
+    const ratioFloat = width / height;
+    if (Math.abs(ratioFloat - 1) < 0.01) return "1:1 (Square)";
+    if (Math.abs(ratioFloat - 16/9) < 0.01) return "16:9 (Widescreen)";
+    if (Math.abs(ratioFloat - 4/3) < 0.01) return "4:3 (Standard)";
+    if (Math.abs(ratioFloat - 3/2) < 0.01) return "3:2";
+    if (Math.abs(ratioFloat - 21/9) < 0.01) return "21:9 (Ultrawide)";
+    if (Math.abs(ratioFloat - 9/16) < 0.01) return "9:16 (Vertical)";
+
+    // Fallback for less common ratios, simplify if numbers are large
+    if (ratioW > 100 || ratioH > 100) {
+      return `${ratioFloat.toFixed(2)}:1`;
+    }
+    return `${ratioW}:${ratioH}`;
+  };
+
+  // Add function to extract metadata
+  const extractMetadata = async () => {
+    try {
+      const metadata = {
+        name: editableFilename,
+        type: image.type,
+        size: formatFileSize(originalSize),
+        lastModified: new Date(image.lastModified).toLocaleString(),
+      };
+
+      if (isImage && !isGif) {
+        const img = new Image();
+        img.src = preview;
+        await new Promise((resolve, reject) => {
+          img.onload = resolve;
+          img.onerror = () => reject(new Error('Failed to load image for metadata.'));
+        });
+        metadata.width = img.width;
+        metadata.height = img.height;
+        metadata.aspectRatio = getAspectRatio(img.width, img.height);
+      } else if (isGif) {
+        metadata.width = gifSettings.width || 'N/A';
+        metadata.height = gifSettings.height || 'N/A';
+        metadata.frames = gifFrameCount || 'N/A';
+        metadata.aspectRatio = getAspectRatio(gifSettings.width, gifSettings.height);
+      } else if (isVideo) {
+        metadata.format = 'Video File';
+      } else if (isAudio) {
+        metadata.format = 'Audio File';
+      }
+
+      if (processed) {
+        metadata.compressedSize = formatFileSize(compressedSize);
+        metadata.savings = `${savingsPercent}%`;
+        metadata.compressedFormat = displayCompressedExt;
+        if (outputGifFrameCount > 0) metadata.compressedFrames = outputGifFrameCount;
+      }
+
+      setFileMetadata(metadata);
+      setShowMetadataViewer(true);
+    } catch (error) {
+      console.error('Error extracting metadata:', error);
+      toast.error('Failed to extract metadata: ' + error.message);
     }
   };
 
@@ -1751,6 +1825,16 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
           </div>
         </div>
 
+        {/* Metadata Viewer button */}
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={extractMetadata}
+          className="w-full justify-center mt-3 text-xs"
+        >
+          <Info className="w-3 h-3 mr-1" /> View Metadata
+        </Button>
+
         {error && (
           <div className="flex items-center gap-2 text-sm text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/30 p-3 rounded-lg">
             <AlertCircle className="w-4 h-4 flex-shrink-0" />
@@ -2484,6 +2568,30 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
           format={outputFormat || format}
           generatedAnimations={generatedAnimations.length > 0 ? generatedAnimations : null}
         />
+      )}
+
+      {showMetadataViewer && fileMetadata && (
+        <Dialog open={showMetadataViewer} onOpenChange={setShowMetadataViewer}>
+          <DialogContent className="sm:max-w-[425px]">
+            <DialogHeader>
+              <DialogTitle>File Metadata</DialogTitle>
+              <DialogDescription>
+                Detailed information about your file.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-2 text-sm">
+              {Object.entries(fileMetadata).map(([key, value]) => (
+                <div key={key} className="contents">
+                  <span className="font-medium text-slate-600 dark:text-slate-400">
+                    {key.replace(/([A-Z])/g, ' $1').trim().split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')}:
+                  </span>
+                  <span className="text-slate-900 dark:text-white">{String(value)}</span>
+                </div>
+              ))}
+            </div>
+            <Button onClick={() => setShowMetadataViewer(false)}>Close</Button>
+          </DialogContent>
+        </Dialog>
       )}
     </Card>
   );
