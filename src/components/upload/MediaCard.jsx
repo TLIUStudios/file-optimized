@@ -48,14 +48,21 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
   const [upscaleMultiplier, setUpscaleMultiplier] = useState(null);
   const [originalImageDimensions, setOriginalImageDimensions] = useState({ width: 0, height: 0 });
 
+  // Animation states
+  const [animationSettingsOpen, setAnimationSettingsOpen] = useState(false);
+  const [enableAnimation, setEnableAnimation] = useState(false);
+  const [animationDuration, setAnimationDuration] = useState(3);
+  const [animationType, setAnimationType] = useState('zoom'); // 'zoom', 'pan-right', 'pan-left', 'rotate'
+  const [generatedAnimations, setGeneratedAnimations] = useState([]);
+
   // GIF.js states (kept for regular GIF processing)
   const [gifJsLoaded, setGifJsLoaded] = useState(false);
   const [workerBlobUrl, setWorkerBlobUrl] = useState(null);
   const [outputGifFrameCount, setOutputGifFrameCount] = useState(0);
 
   // Editable filename
-  const [editableFilename, setEditableFilename] = useState('');
-  const [isEditingFilename, setIsEditingFilename] = useState(false);
+  const [editableFilename, setIsEditingFilename] = useState('');
+  const [isEditingFilename, setEditableFilename] = useState(false);
 
   // Media type detection
   const isImage = image.type.startsWith('image/');
@@ -167,7 +174,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
     reader.onloadend = async () => {
       setPreview(reader.result);
       setOriginalSize(image.size);
-      setEditableFilename(image.name);
+      setIsEditingFilename(image.name);
 
       if (isImage && !isGif) {
         const img = new Image();
@@ -205,8 +212,8 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
   }, [autoProcess, processed, processing]);
 
   useEffect(() => {
-    // Load GIF.js for GIF compression
-    if (isGif && !gifJsLoaded) {
+    // Load GIF.js for both animations AND GIF compression
+    if ((enableAnimation || isGif) && !gifJsLoaded) {
       const loadGifJs = async () => {
         try {
           if (window.GIF && workerBlobUrl) {
@@ -240,6 +247,10 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
           setWorkerBlobUrl(workerUrl);
           setGifJsLoaded(true);
           console.log('✅ GIF.js and worker loaded successfully');
+
+          if (enableAnimation) {
+            toast.success('Animation engine ready!');
+          }
         } catch (error) {
           console.error('Failed to load GIF.js:', error);
           toast.error('Failed to load GIF processor: ' + error.message);
@@ -248,7 +259,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
 
       loadGifJs();
     }
-  }, [isGif, gifJsLoaded, workerBlobUrl]);
+  }, [enableAnimation, isGif, gifJsLoaded, workerBlobUrl]);
 
   useEffect(() => {
     return () => {
@@ -285,7 +296,9 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
     setOutputGifFrameCount(0);
 
     try {
-      if (isVideo) {
+      if (isImage && !isGif && enableAnimation) { // NEW: Handle simple animation
+        await processImageToAnimation();
+      } else if (isVideo) {
         if (!ffmpegLoaded) {
           toast.error('Video processor still loading. Please wait...');
           setProcessing(false);
@@ -593,6 +606,34 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
       const response = await fetch(preview);
       const originalBlob = await response.blob();
       
+      // If no resize dimensions are set, just return the original
+      if (!maxWidth && !maxHeight) {
+        console.log('No resize needed, using original GIF');
+        const compressedUrl = URL.createObjectURL(originalBlob);
+        setCompressedPreview(compressedUrl);
+        setCompressedSize(originalBlob.size);
+        setCompressedBlob(originalBlob);
+        setProcessed(true);
+        setOutputFormat('gif');
+        setOutputGifFrameCount(gifFrameCount);
+
+        onProcessed({
+          id: image.name,
+          originalFile: image,
+          compressedBlob: originalBlob,
+          compressedUrl,
+          originalSize: image.size,
+          compressedSize: originalBlob.size,
+          format: 'gif',
+          filename: getOutputFilename('gif'),
+          mediaType: 'image',
+          fileFormat: 'gif'
+        });
+        
+        toast.success('GIF ready (no compression needed - preserving original quality)');
+        return;
+      }
+      
       if (!gifSettings.frames || gifSettings.frames.length === 0) {
         console.warn('No frames found in GIF, using original');
         const compressedUrl = URL.createObjectURL(originalBlob);
@@ -616,7 +657,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
           fileFormat: 'gif'
         });
         
-        toast.info('GIF processed (no optimization needed)');
+        toast.info('GIF processed (no frames to optimize)');
         return;
       }
 
@@ -624,8 +665,9 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
       
       let targetWidth = gifSettings.width;
       let targetHeight = gifSettings.height;
+      let needsResize = false;
       
-      // Only resize if dimensions are explicitly set AND would make it smaller
+      // Calculate target dimensions
       if (maxWidth || maxHeight) {
         const aspectRatio = gifSettings.width / gifSettings.height;
         
@@ -637,33 +679,55 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
           if (ratio < 1) {
             targetWidth = Math.round(gifSettings.width * ratio);
             targetHeight = Math.round(gifSettings.height * ratio);
+            needsResize = true;
           }
         } else if (maxWidth && maxWidth < gifSettings.width) {
           targetWidth = maxWidth;
           targetHeight = Math.round(maxWidth / aspectRatio);
+          needsResize = true;
         } else if (maxHeight && maxHeight < gifSettings.height) {
           targetHeight = maxHeight;
           targetWidth = Math.round(maxHeight * aspectRatio);
+          needsResize = true;
         }
       }
       
-      console.log(`Target size: ${targetWidth}x${targetHeight}`);
+      console.log(`Target size: ${targetWidth}x${targetHeight}, needsResize: ${needsResize}`);
       
-      // Frame handling based on optimization mode
-      let frameSkip = 1;
-      let maxFramesToProcess = gifSettings.frames.length;
-      
-      if (gifOptimization === 'balanced') {
-        frameSkip = 2;
-        maxFramesToProcess = Math.min(gifSettings.frames.length, 300);
-      } else if (gifOptimization === 'size') {
-        frameSkip = 3;
-        maxFramesToProcess = Math.min(gifSettings.frames.length, 200);
-      } else {
-        // Quality mode - ALL frames
-        frameSkip = 1;
-        maxFramesToProcess = Math.min(gifSettings.frames.length, 1000);
+      // If no resize needed, return original
+      if (!needsResize) {
+        console.log('No resize needed, using original GIF');
+        const compressedUrl = URL.createObjectURL(originalBlob);
+        setCompressedPreview(compressedUrl);
+        setCompressedSize(originalBlob.size);
+        setCompressedBlob(originalBlob);
+        setProcessed(true);
+        setOutputFormat('gif');
+        setOutputGifFrameCount(gifFrameCount);
+
+        onProcessed({
+          id: image.name,
+          originalFile: image,
+          compressedBlob: originalBlob,
+          compressedUrl,
+          originalSize: image.size,
+          compressedSize: originalBlob.size,
+          format: 'gif',
+          filename: getOutputFilename('gif'),
+          mediaType: 'image',
+          fileFormat: 'gif'
+        });
+        
+        toast.success('GIF ready (preserving original quality)');
+        return;
       }
+      
+      // Only proceed with re-encoding if resize is needed
+      console.log('Resizing GIF...');
+      
+      // Frame handling - keep ALL frames for quality
+      const frameSkip = 1;
+      const maxFramesToProcess = Math.min(gifSettings.frames.length, 1000);
       
       console.log(`Processing with frameSkip=${frameSkip}, maxFrames=${maxFramesToProcess}`);
       
@@ -677,7 +741,6 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
         }
 
         try {
-          // Create canvas for this frame
           const frameCanvas = document.createElement('canvas');
           frameCanvas.width = targetWidth;
           frameCanvas.height = targetHeight;
@@ -691,7 +754,6 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
             continue;
           }
           
-          // Create temp canvas with original frame size
           const tempCanvas = document.createElement('canvas');
           tempCanvas.width = frame.dims.width;
           tempCanvas.height = frame.dims.height;
@@ -702,7 +764,6 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
             continue;
           }
           
-          // Put frame data on temp canvas
           const imageData = new ImageData(
             new Uint8ClampedArray(frame.patch),
             frame.dims.width,
@@ -710,15 +771,11 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
           );
           tempCtx.putImageData(imageData, 0, 0);
           
-          // Draw to target size with high quality
           frameCtx.imageSmoothingEnabled = true;
           frameCtx.imageSmoothingQuality = 'high';
           frameCtx.drawImage(tempCanvas, 0, 0, targetWidth, targetHeight);
           
-          // Get the processed frame data
-          // const processedImageData = frameCtx.getImageData(0, 0, targetWidth, targetHeight); // Not strictly needed
-          
-          const delay = frame.delay ? Math.max(20, frame.delay * 10 * frameSkip) : 100 * frameSkip;
+          const delay = frame.delay ? Math.max(20, frame.delay * 10) : 100;
           
           processedFrames.push({
             canvas: frameCanvas,
@@ -734,29 +791,17 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
       }
 
       if (processedFrames.length === 0) {
-        throw new Error('No frames could be processed. Using original GIF.');
+        throw new Error('No frames could be processed');
       }
 
       console.log(`Successfully processed ${processedFrames.length} frames, creating GIF...`);
 
       const GIF = window.GIF;
       
-      // Quality settings - LOWER number = BETTER quality in gif.js
-      let gifQuality = 10; // Default middle quality
-      
-      if (gifOptimization === 'quality') {
-        // Quality mode: 1-5 (best quality)
-        gifQuality = Math.max(1, Math.min(5, Math.round((100 - quality) / 20)));
-      } else if (gifOptimization === 'balanced') {
-        // Balanced: 8-12
-        gifQuality = Math.max(8, Math.min(12, Math.round((100 - quality) / 8)));
-      } else {
-        // Size mode: 15-20
-        gifQuality = Math.max(15, Math.min(20, Math.round((100 - quality) / 5)));
-      }
+      // BEST QUALITY SETTINGS - quality 1 is the best
+      const gifQuality = 1;
       
       console.log(`GIF.js quality: ${gifQuality} (1=best, 30=worst)`);
-      console.log(`GIF optimization mode: ${gifOptimization}`);
       
       const gif = new GIF({
         workers: 4,
@@ -765,12 +810,11 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
         height: targetHeight,
         workerScript: workerBlobUrl,
         repeat: 0,
-        transparent: 0x00, // Transparent color
-        background: '#FFFFFF', // White background
-        dither: false // No dithering
+        transparent: 0x00,
+        background: '#FFFFFF',
+        dither: false
       });
 
-      // Add all processed frames
       for (let i = 0; i < processedFrames.length; i++) {
         const { canvas, delay } = processedFrames[i];
         gif.addFrame(canvas, { 
@@ -789,12 +833,12 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
       const gifBlob = await new Promise((resolve, reject) => {
         const timeout = setTimeout(() => {
           console.error('GIF rendering timeout');
-          reject(new Error('GIF rendering timeout after 3 minutes'));
+          reject(new Error('GIF rendering timeout'));
         }, 180000);
         
         gif.on('finished', (blob) => {
           clearTimeout(timeout);
-          console.log(`✅ GIF rendered successfully: ${(blob.size / 1024).toFixed(1)}KB`);
+          console.log(`✅ GIF rendered: ${(blob.size / 1024).toFixed(1)}KB`);
           resolve(blob);
         });
         
@@ -806,8 +850,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
         
         gif.on('progress', (p) => {
           if (p % 0.1 < 0.01) {
-            const percent = (p * 100).toFixed(0);
-            console.log(`GIF render progress: ${percent}%`);
+            console.log(`GIF render progress: ${(p * 100).toFixed(0)}%`);
           }
         });
         
@@ -841,15 +884,14 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
 
       const savings = ((1 - gifBlob.size / image.size) * 100).toFixed(1);
       if (gifBlob.size < image.size) {
-        toast.success(`GIF optimized! ${processedFrames.length} frames, saved ${savings}%`);
+        toast.success(`GIF resized! ${processedFrames.length} frames, saved ${savings}%`);
       } else {
-        toast.info(`GIF processed • ${processedFrames.length} frames (quality prioritized)`);
+        toast.info(`GIF resized • ${processedFrames.length} frames`);
       }
     } catch (error) {
       console.error('❌ GIF optimization failed:', error);
-      console.error('Error details:', error.stack);
       
-      // Fallback to original if processing fails
+      // Fallback to original
       try {
         const response = await fetch(preview);
         const originalBlob = await response.blob();
@@ -876,12 +918,11 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
         
         toast.warning('GIF optimization failed, using original file');
       } catch (fallbackError) {
-        console.error('Fallback also failed:', fallbackError);
+        console.error('Fallback failed:', fallbackError);
         throw error;
       }
     }
   };
-
 
   const processStaticImage = async () => {
     const img = new Image();
@@ -1006,6 +1047,185 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
     });
   };
 
+  // Simple camera-effect animation using EXACT uploaded image
+  const processImageToAnimation = async () => {
+    if (!gifJsLoaded || !window.GIF || !workerBlobUrl) {
+      toast.error('Animation library not ready. Please wait...');
+      return;
+    }
+
+    try {
+      console.log(`🎬 Creating ${animationType} animation...`);
+      toast.info('Creating animation from your image...', { duration: Infinity, id: 'anim-gen' });
+      
+      // Load the original image
+      const img = new Image();
+      img.src = preview;
+      
+      await new Promise((resolve, reject) => {
+        img.onload = resolve;
+        img.onerror = () => reject(new Error('Failed to load image'));
+      });
+      
+      console.log(`✅ Image loaded: ${img.width}x${img.height}`);
+      
+      // Prepare canvas
+      let width = Math.min(img.width, 800);
+      let height = Math.min(img.height, 800);
+      
+      // Maintain aspect ratio
+      if (img.width > width || img.height > height) {
+        const ratio = Math.min(width / img.width, height / img.height);
+        width = Math.round(img.width * ratio);
+        height = Math.round(img.height * ratio);
+      }
+      
+      // Ensure even dimensions
+      width = width % 2 === 0 ? width : width - 1;
+      height = height % 2 === 0 ? height : height - 1;
+      
+      const totalFrames = 20; // 20 frames for smooth animation
+      const frames = [];
+      
+      console.log(`Generating ${totalFrames} frames with ${animationType} effect...`);
+      
+      for (let i = 0; i < totalFrames; i++) {
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        
+        ctx.clearRect(0, 0, width, height);
+        ctx.save();
+        
+        // Calculate progress (0 to 1 and back to 0 for loop)
+        const progress = i < totalFrames / 2 
+          ? i / (totalFrames / 2) 
+          : 2 - (i / (totalFrames / 2));
+        
+        // Apply animation effect
+        switch (animationType) {
+          case 'zoom':
+            // Zoom from 100% to 110% and back
+            const scale = 1 + (progress * 0.1);
+            ctx.translate(width / 2, height / 2);
+            ctx.scale(scale, scale);
+            ctx.translate(-width / 2, -height / 2);
+            break;
+            
+          case 'pan-right':
+            // Pan right and back
+            const panX = progress * (width * 0.1);
+            ctx.translate(-panX, 0);
+            break;
+            
+          case 'pan-left':
+            // Pan left and back
+            const panLeft = progress * (width * 0.1);
+            ctx.translate(panLeft, 0);
+            break;
+            
+          case 'rotate':
+            // Rotate slightly and back
+            const angle = progress * (Math.PI / 36); // 5 degrees
+            ctx.translate(width / 2, height / 2);
+            ctx.rotate(angle);
+            ctx.translate(-width / 2, -height / 2);
+            break;
+        }
+        
+        ctx.imageSmoothingEnabled = true;
+        ctx.imageSmoothingQuality = 'high';
+        ctx.drawImage(img, 0, 0, width, height);
+        ctx.restore();
+        
+        frames.push(canvas);
+        
+        if (i % 5 === 0) {
+          console.log(`Generated frame ${i + 1}/${totalFrames}`);
+        }
+      }
+      
+      console.log(`✅ All frames generated, creating GIF...`);
+      toast.info('Rendering GIF...', { id: 'anim-gen' });
+      
+      // Create GIF
+      const GIF = window.GIF;
+      const gif = new GIF({
+        workers: 4,
+        quality: 5,
+        width,
+        height,
+        workerScript: workerBlobUrl,
+        repeat: 0,
+        dither: false
+      });
+      
+      const frameDelay = Math.round((animationDuration * 1000) / totalFrames);
+      
+      for (const canvas of frames) {
+        gif.addFrame(canvas, { delay: frameDelay, copy: true, dispose: 2 });
+      }
+      
+      const gifBlob = await new Promise((resolve, reject) => {
+        const timeout = setTimeout(() => reject(new Error('Timeout')), 60000);
+        gif.on('finished', (blob) => { clearTimeout(timeout); resolve(blob); });
+        gif.on('error', (err) => { clearTimeout(timeout); reject(err); });
+        gif.on('progress', (p) => {
+          if (p % 0.2 < 0.01) {
+            toast.info(`Rendering: ${(p * 100).toFixed(0)}%...`, { id: 'anim-gen' });
+          }
+        });
+        gif.render();
+      });
+      
+      console.log(`✅ GIF created: ${(gifBlob.size / 1024).toFixed(1)}KB`);
+      
+      const gifUrl = URL.createObjectURL(gifBlob);
+      
+      const animationData = {
+        name: animationType.replace('-', ' ').split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' '),
+        blob: gifBlob,
+        url: gifUrl,
+        size: gifBlob.size,
+        description: `${animationType} effect applied to your image`,
+        frameCount: totalFrames
+      };
+      
+      setGeneratedAnimations([animationData]);
+      
+      setCompressedPreview(gifUrl);
+      setCompressedSize(gifBlob.size);
+      setCompressedBlob(gifBlob);
+      setProcessed(true);
+      setOutputFormat('gif');
+      setOutputGifFrameCount(totalFrames);
+      
+      onProcessed({
+        id: image.name,
+        originalFile: image,
+        compressedBlob: gifBlob,
+        compressedUrl: gifUrl,
+        originalSize: image.size,
+        compressedSize: gifBlob.size,
+        format: 'gif',
+        filename: getOutputFilename('gif'),
+        mediaType: 'image',
+        fileFormat: 'gif',
+        animations: [animationData]
+      });
+      
+      toast.dismiss('anim-gen');
+      toast.success(`Animation created! (${totalFrames} frames)`);
+      
+    } catch (error) {
+      console.error('❌ Animation failed:', error);
+      toast.dismiss('anim-gen');
+      toast.error('Animation failed: ' + error.message);
+      throw error;
+    }
+  };
+
   const savingsPercent = processed
     ? ((1 - compressedSize / originalSize) * 100).toFixed(1)
     : 0;
@@ -1022,7 +1242,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
 
   let availableFormats = [];
   if (isImage && !isGif) {
-    availableFormats = ['jpg', 'png', 'webp', 'avif'];
+    availableFormats = enableAnimation ? ['gif'] : ['jpg', 'png', 'webp', 'avif'];
   } else if (isGif) {
     availableFormats = ffmpegLoaded ? ['gif', 'mp4'] : ['gif'];
   } else if (isVideo) {
@@ -1043,7 +1263,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
     let finalBlob = blob;
     let finalFilename = filename || getOutputFilename(targetFormat);
 
-    if (isImage && !isGif && targetFormat && targetFormat !== (outputFormat || format)) {
+    if (isImage && !isGif && targetFormat && targetFormat !== (outputFormat || format) && !enableAnimation) {
       try {
         const img = new Image();
         img.src = compressedPreview;
@@ -1086,7 +1306,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
   };
 
   const downloadMedia = async (formatOverride = null) => {
-    if (!compressedBlob) {
+    if (!compressedBlob && generatedAnimations.length === 0) {
       toast.error("No processed file available for download.");
       return;
     }
@@ -1157,6 +1377,12 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
       toast.info(`Already in ${newFormat.toUpperCase()} format.`);
       return;
     }
+    
+    if (enableAnimation && newFormat !== 'gif') {
+      toast.error('Cannot convert format while animation is enabled.');
+      return;
+    }
+
 
     // For video/audio/GIF conversions that require FFmpeg, we trigger a full re-process.
     // This handles: isVideo to gif, isGif to mp4, isAudio to mp3/wav, or (re)processing video/audio
@@ -1333,15 +1559,15 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
                 value={editableFilename}
                 onChange={(e) => setEditableFilename(e.target.value)}
                 className="flex-1 text-sm font-medium text-slate-900 dark:text-white bg-slate-50 dark:bg-slate-900 border border-emerald-300 dark:border-emerald-700 rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                onBlur={() => setIsEditingFilename(false)}
+                onBlur={() => setEditableFilename(false)}
                 onKeyDown={(e) => {
                   if (e.key === 'Enter') {
-                    setIsEditingFilename(false);
+                    setEditableFilename(false);
                     toast.success('Filename updated!');
                   }
                   if (e.key === 'Escape') {
-                    setEditableFilename(image.name);
-                    setIsEditingFilename(false);
+                    setIsEditingFilename(image.name);
+                    setEditableFilename(false);
                   }
                 }}
                 autoFocus
@@ -1350,7 +1576,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
                 size="sm"
                 variant="ghost"
                 onClick={() => {
-                  setIsEditingFilename(false);
+                  setEditableFilename(false);
                   toast.success('Filename updated!');
                 }}
                 className="h-7 w-7 p-0 flex-shrink-0"
@@ -1361,7 +1587,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
           ) : (
             <div
               className="group flex items-center gap-2 mb-1 cursor-pointer bg-slate-50 dark:bg-slate-900 hover:bg-emerald-50 dark:hover:bg-emerald-950/30 border border-slate-200 dark:border-slate-800 hover:border-emerald-300 dark:hover:border-emerald-700 rounded px-3 py-2 transition-all"
-              onClick={() => setIsEditingFilename(true)}
+              onClick={() => setEditableFilename(true)}
             >
               <p
                 className="flex-1 font-medium text-sm text-slate-900 dark:text-white group-hover:text-emerald-600 dark:group-hover:text-emerald-400 truncate transition-colors"
@@ -1618,7 +1844,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
               )}
 
               {/* Image/GIF Specific Settings (when not video or audio) */}
-              {!(isAudio || isVideo) && (
+              {!(isAudio || isVideo || enableAnimation) && (
                 <>
                   <div>
                     <div className="flex items-center gap-2 mb-2">
@@ -1924,11 +2150,133 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
           </Collapsible>
         )}
 
+        {(isImage && !isGif) && (
+          <Collapsible open={animationSettingsOpen} onOpenChange={setAnimationSettingsOpen}>
+            <CollapsibleTrigger asChild>
+              <Button variant="outline" className="w-full justify-between" size="sm">
+                <span className="flex items-center gap-2">
+                  <Sparkles className="w-4 h-4" />
+                  Simple Animation {!gifJsLoaded && enableAnimation && <span className="text-xs text-slate-500">(Loading...)</span>}
+                </span>
+                <ChevronDown className={cn(
+                  "w-4 h-4 transition-transform duration-200",
+                  animationSettingsOpen && "rotate-180"
+                )} />
+              </Button>
+            </CollapsibleTrigger>
+            <CollapsibleContent className="space-y-4 mt-4">
+              <TooltipProvider>
+                <div className="flex items-center justify-between pb-2 border-b border-slate-200 dark:border-slate-800">
+                  <div className="flex items-center gap-2">
+                    <label className="text-xs font-medium text-slate-700 dark:text-slate-300">
+                      Enable Animation
+                    </label>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Info className="w-3 h-3 text-slate-400 cursor-help" />
+                      </TooltipTrigger>
+                      <TooltipContent className="max-w-xs">
+                        <p className="text-xs">Creates a simple animated GIF using YOUR EXACT image with camera effects (zoom, pan, rotate). Fast & uses your actual uploaded image!</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </div>
+                  <Switch
+                    checked={enableAnimation}
+                    onCheckedChange={(checked) => {
+                      setEnableAnimation(checked);
+                      if (checked) {
+                        setFormat('gif');
+                        setGeneratedAnimations([]);
+                        setOutputGifFrameCount(0);
+                        toast.info('Format set to GIF. Click Compress to create animation!');
+                      } else {
+                        setFormat('jpg');
+                        setGeneratedAnimations([]);
+                        setOutputGifFrameCount(0);
+                      }
+                    }}
+                    disabled={processing}
+                  />
+                </div>
+
+                {enableAnimation && (
+                  <>
+                    {!gifJsLoaded && (
+                      <div className="bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800 rounded-lg p-3">
+                        <p className="text-xs text-emerald-700 dark:text-emerald-400">
+                          <strong>⚡ Loading animation engine...</strong>
+                        </p>
+                      </div>
+                    )}
+
+                    <div>
+                      <label className="text-xs font-medium text-slate-700 dark:text-slate-300 mb-2 block">
+                        Animation Type
+                      </label>
+                      <Select value={animationType} onValueChange={setAnimationType} disabled={processing}>
+                        <SelectTrigger className="h-9">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="zoom">Zoom In/Out</SelectItem>
+                          <SelectItem value="pan-right">Pan Right</SelectItem>
+                          <SelectItem value="pan-left">Pan Left</SelectItem>
+                          <SelectItem value="rotate">Gentle Rotate</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div>
+                      <label className="text-xs font-medium text-slate-700 dark:text-slate-300 mb-2 block">
+                        Animation Duration: {animationDuration}s
+                      </label>
+                      <Slider
+                        value={[animationDuration]}
+                        onValueChange={(value) => setAnimationDuration(value[0])}
+                        min={2}
+                        max={5}
+                        step={1}
+                        className="w-full"
+                        disabled={processing}
+                      />
+                    </div>
+
+                    <div className="bg-gradient-to-br from-blue-50 to-cyan-50 dark:from-blue-950/30 dark:to-cyan-950/30 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
+                      <p className="text-xs text-blue-700 dark:text-blue-400 mb-2 font-semibold flex items-center gap-2">
+                        <Sparkles className="w-4 h-4" />
+                        <strong>Simple Camera Effects</strong>
+                      </p>
+                      <ul className="text-xs text-blue-600 dark:text-blue-400 space-y-1.5">
+                        <li className="flex items-start gap-2">
+                          <span className="text-blue-500 mt-0.5">✓</span>
+                          <span>Uses YOUR EXACT uploaded image</span>
+                        </li>
+                        <li className="flex items-start gap-2">
+                          <span className="text-blue-500 mt-0.5">✓</span>
+                          <span>Fast processing (no AI needed)</span>
+                        </li>
+                        <li className="flex items-start gap-2">
+                          <span className="text-blue-500 mt-0.5">✓</span>
+                          <span>Small file size</span>
+                        </li>
+                        <li className="flex items-start gap-2">
+                          <span className="text-blue-500 mt-0.5">✓</span>
+                          <span>Smooth 20-frame loop</span>
+                        </li>
+                      </ul>
+                    </div>
+                  </>
+                )}
+              </TooltipProvider>
+            </CollapsibleContent>
+          </Collapsible>
+        )}
+
         <div className="flex gap-2">
           {!processed ? (
             <Button
               onClick={processMedia}
-              disabled={processing || (isVideo && !ffmpegLoaded) || (isAudio && !ffmpegLoaded) || (isGif && format === 'mp4' && !ffmpegLoaded) || (isGif && !gifJsLoaded)}
+              disabled={processing || (isVideo && !ffmpegLoaded) || (isAudio && !ffmpegLoaded) || (isGif && format === 'mp4' && !ffmpegLoaded) || ((isGif || enableAnimation) && !gifJsLoaded)}
               className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white"
             >
               {processing ? (
@@ -1939,7 +2287,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
               ) : (
                 <>
                   {MediaIcon && <MediaIcon className="w-4 h-4 mr-2" />}
-                  Compress {isVideo ? 'Video' : isAudio ? 'Audio' : isGif ? 'GIF' : 'Image'}
+                  {enableAnimation ? 'Create Animation' : (isVideo ? 'Compress Video' : isAudio ? 'Compress Audio' : isGif ? 'Compress GIF' : 'Compress Image')}
                 </>
               )}
             </Button>
@@ -1949,7 +2297,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
                 onClick={processMedia}
                 variant="outline"
                 className="flex-1"
-                disabled={processing || (isVideo && !ffmpegLoaded) || (isAudio && !ffmpegLoaded) || (isGif && format === 'mp4' && !ffmpegLoaded) || (isGif && !gifJsLoaded)}
+                disabled={processing || (isVideo && !ffmpegLoaded) || (isAudio && !ffmpegLoaded) || (isGif && format === 'mp4' && !ffmpegLoaded) || ((isGif || enableAnimation) && !gifJsLoaded)}
               >
                 <RefreshCcw className="w-4 h-4 mr-2" />
                 Reprocess
@@ -1990,7 +2338,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
           blob={compressedBlob}
           originalFilename={getOutputFilename()}
           format={outputFormat || format}
-          generatedAnimations={null}
+          generatedAnimations={generatedAnimations.length > 0 ? generatedAnimations : null}
         />
       )}
     </Card>
