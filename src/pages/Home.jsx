@@ -348,6 +348,7 @@ export default function Home() {
             fileName={comparisonData.fileName}
             mediaType={comparisonData.mediaType}
             fileFormat={comparisonData.fileFormat}
+            generatedAnimations={comparisonData.animations || null}
           />
         </Suspense>
       )}

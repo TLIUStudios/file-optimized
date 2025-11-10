@@ -80,7 +80,8 @@ export default function ImageComparisonModal({
   compressedSize,
   fileName,
   mediaType = 'image',
-  fileFormat = 'webp'
+  fileFormat = 'webp',
+  generatedAnimations = null // Add this prop for animation variations
 }) {
   const [sliderPosition, setSliderPosition] = useState(50);
   const [isDragging, setIsDragging] = useState(false);
@@ -413,7 +414,39 @@ export default function ImageComparisonModal({
     }
   };
 
+  const downloadAllAnimationsAsZip = async () => {
+    toast.info('Creating animations ZIP...');
+    try {
+      const JSZip = (await import('https://cdn.jsdelivr.net/npm/jszip@3.10.1/+esm')).default;
+      const zip = new JSZip();
+
+      const baseName = editableFilename.split('.').slice(0, -1).join('.') || editableFilename;
+
+      for (const anim of generatedAnimations) {
+        const response = await fetch(anim.url);
+        const blob = await response.blob();
+        zip.file(`${baseName}_${anim.name.toLowerCase().replace(/\s+/g, '_')}.gif`, blob);
+      }
+
+      const content = await zip.generateAsync({ type: 'blob' });
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(content);
+      link.download = `${baseName}-animations.zip`;
+      link.click();
+      URL.revokeObjectURL(link.href);
+      toast.success('All animations downloaded!');
+    } catch (error) {
+      console.error('Error creating animations ZIP:', error);
+      toast.error('Failed to create animations ZIP: ' + error.message);
+    }
+  };
+
   const downloadMedia = async (format = null) => {
+    if (isAnimationVariations && generatedAnimations) {
+      await downloadAllAnimationsAsZip();
+      return;
+    }
+
     if (mediaType === 'image' && !format) {
       // For images, if no specific format is selected, open the options modal
       setShowDownloadModalForImage(true);
@@ -567,6 +600,10 @@ export default function ImageComparisonModal({
 
   const hasAnyMetadata = aiTitle || aiDescription || aiCategory || aiMood || aiAltText || aiTags;
 
+  // Check if we're displaying animated variations
+  const isAnimationVariations = generatedAnimations && generatedAnimations.length > 0;
+
+
   if (!isOpen) return null;
 
   return (
@@ -575,7 +612,7 @@ export default function ImageComparisonModal({
         {/* Top Bar */}
         <div className="absolute top-0 left-0 right-0 z-[100] flex items-center justify-between px-4 py-3 bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm border-b border-slate-200 dark:border-slate-800">
           <div className="flex items-center gap-3">
-            {mediaType === 'image' && (
+            {mediaType === 'image' && !isAnimationVariations && (
               <>
                 <Button
                   variant="secondary"
@@ -615,9 +652,9 @@ export default function ImageComparisonModal({
                 className="bg-emerald-600 hover:bg-emerald-700 text-white h-8 px-3 text-xs"
               >
                 <DownloadIcon className="w-3 h-3 mr-1" />
-                Download
+                Download {isAnimationVariations ? 'All' : ''}
               </Button>
-              {availableFormats.map((fmt) => (
+              {!isAnimationVariations && availableFormats.map((fmt) => (
                 <Button
                   key={fmt}
                   onClick={() => downloadMedia(fmt)}
@@ -643,8 +680,72 @@ export default function ImageComparisonModal({
         <div className="flex flex-col lg:flex-row h-full overflow-hidden pt-[60px]">
           {/* Left Side - Media Display */}
           <div className="flex-1 relative overflow-hidden flex flex-col min-h-0">
-            {mediaType === 'image' ? (
-              // Image comparison specific UI
+            {isAnimationVariations ? (
+              // Animation Variations Grid (2x2)
+              <div className="relative w-full h-full bg-slate-100 dark:bg-slate-900 flex items-center justify-center p-4">
+                <div className="grid grid-cols-2 gap-4 w-full max-w-5xl">
+                  {generatedAnimations.map((anim, index) => (
+                    <div
+                      key={index}
+                      className="relative aspect-video bg-slate-200 dark:bg-slate-800 rounded-lg overflow-hidden group cursor-pointer hover:ring-2 hover:ring-emerald-500 transition-all"
+                      onClick={() => {
+                        const link = document.createElement('a');
+                        link.href = anim.url;
+                        const baseName = editableFilename.split('.').slice(0, -1).join('.') || editableFilename;
+                        link.download = `${baseName}_${anim.name.toLowerCase().replace(/\s+/g, '_')}.gif`;
+                        link.click();
+                        toast.success(`${anim.name} downloaded!`);
+                      }}
+                    >
+                      <img
+                        src={anim.url}
+                        alt={anim.name}
+                        className="w-full h-full object-contain"
+                      />
+
+                      {/* Overlay */}
+                      <div className="absolute inset-0 bg-gradient-to-t from-slate-900/80 via-slate-900/0 to-slate-900/0 opacity-0 group-hover:opacity-100 transition-opacity" />
+
+                      {/* Label */}
+                      <div className="absolute top-3 left-3">
+                        <Badge className="bg-emerald-600 text-white font-semibold">
+                          {anim.name}
+                        </Badge>
+                      </div>
+
+                      {/* Size */}
+                      <div className="absolute top-3 right-3">
+                        <Badge className="bg-slate-900/80 text-white text-xs">
+                          {formatFileSize(anim.size)}
+                        </Badge>
+                      </div>
+
+                      {/* Number Label */}
+                      <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                        <div className="text-white text-[120px] font-bold opacity-20 group-hover:opacity-10 transition-opacity">
+                          {index + 1}
+                        </div>
+                      </div>
+
+                      {/* Download Icon on Hover */}
+                      <div className="absolute bottom-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <div className="bg-emerald-600 rounded-full p-2">
+                          <DownloadIcon className="w-5 h-5 text-white" />
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Bottom instruction bar */}
+                <div className="absolute bottom-0 left-0 right-0 h-16 bg-slate-100/80 dark:bg-slate-900/80 backdrop-blur-sm border-t border-slate-200 dark:border-slate-800 flex items-center justify-center">
+                  <div className="px-4 py-2 bg-emerald-600/80 backdrop-blur-sm rounded-lg text-white text-sm font-medium">
+                    Click any animation to download
+                  </div>
+                </div>
+              </div>
+            ) : mediaType === 'image' ? (
+              // Original image comparison view
               <div
                 ref={containerRef}
                 className="relative w-full h-full bg-slate-100 dark:bg-slate-900 select-none flex flex-col items-center justify-center overflow-hidden"
@@ -806,8 +907,8 @@ export default function ImageComparisonModal({
                     </Button>
                   </div>
                 ) : (
-                  <h2 
-                    className="text-slate-900 dark:text-white text-sm font-bold mb-1 break-words line-clamp-2 cursor-pointer hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors" 
+                  <h2
+                    className="text-slate-900 dark:text-white text-sm font-bold mb-1 break-words line-clamp-2 cursor-pointer hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors"
                     onClick={() => setIsEditingFilename(true)}
                   >
                     {editableFilename}
@@ -823,290 +924,343 @@ export default function ImageComparisonModal({
                 </div>
 
                 <div className="bg-gradient-to-br from-emerald-600 to-emerald-700 rounded-lg p-4">
-                  <p className="text-emerald-100 text-[10px] font-semibold uppercase tracking-wider mb-1">Compressed Size</p>
+                  <p className="text-emerald-100 text-[10px] font-semibold uppercase tracking-wider mb-1">
+                    {isAnimationVariations ? 'Total Generated Size' : 'Compressed Size'}
+                  </p>
                   <p className="text-white text-2xl font-bold mb-2">{formatFileSize(compressedSize)}</p>
-                  <Badge className="bg-white/20 text-white text-xs px-2 py-0.5 font-bold">
-                    {savingsPercent}% smaller
-                  </Badge>
-                </div>
-
-                <div className="bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg p-4">
-                  <p className="text-slate-500 dark:text-slate-400 text-[10px] font-semibold uppercase tracking-wider mb-1">Space Saved</p>
-                  <p className="text-emerald-600 dark:text-emerald-400 text-xl font-bold">{formatFileSize(savingsAmount)}</p>
-                </div>
-              </div>
-
-              <div className="h-px bg-slate-200 dark:bg-slate-800" />
-
-              <div className="space-y-2">
-                <h3 className="text-slate-900 dark:text-white font-semibold text-xs uppercase tracking-wider">Compression Details</h3>
-
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between py-2 px-3 bg-slate-50 dark:bg-slate-950 rounded-lg border border-slate-200 dark:border-slate-800">
-                    <span className="text-slate-600 dark:text-slate-400 text-xs font-medium">Compression Ratio</span>
-                    <span className="text-slate-900 dark:text-white font-bold text-sm">{(compressedSize / originalSize).toFixed(3)}:1</span>
-                  </div>
-
-                  <div className="flex items-center justify-between py-2 px-3 bg-slate-50 dark:bg-slate-950 rounded-lg border border-slate-200 dark:border-slate-800">
-                    <span className="text-slate-600 dark:text-slate-400 text-xs font-medium">Quality</span>
-                    <Badge className="bg-emerald-600 text-white font-semibold text-xs">High</Badge>
-                  </div>
-
-                  <div className="flex items-center justify-between py-2 px-3 bg-slate-50 dark:bg-slate-950 rounded-lg border border-slate-200 dark:border-slate-800">
-                    <span className="text-slate-600 dark:text-slate-400 text-xs font-medium">Processing</span>
-                    <Badge className="bg-blue-600 text-white font-semibold text-xs">Browser-side</Badge>
-                  </div>
-
-                  {mediaType === 'image' && imageDimensions.width > 0 && (
-                    <>
-                      <div className="flex items-center justify-between py-2 px-3 bg-slate-50 dark:bg-slate-950 rounded-lg border border-slate-200 dark:border-slate-800">
-                        <span className="text-slate-600 dark:text-slate-400 text-xs font-medium">Resolution</span>
-                        <span className="text-slate-900 dark:text-white font-bold text-sm">{imageDimensions.width} × {imageDimensions.height}</span>
-                      </div>
-
-                      <div className="flex items-center justify-between py-2 px-3 bg-slate-50 dark:bg-slate-950 rounded-lg border border-slate-200 dark:border-slate-800">
-                        <span className="text-slate-600 dark:text-slate-400 text-xs font-medium">Aspect Ratio</span>
-                        <span className="text-slate-900 dark:text-white font-bold text-sm">{getAspectRatio(imageDimensions.width, imageDimensions.height)}</span>
-                      </div>
-                    </>
-                  )}
-                </div>
-              </div>
-
-              <div className="h-px bg-slate-200 dark:bg-slate-800" />
-
-              {/* AI Generated Section */}
-              {mediaType === 'image' && (
-              <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <h3 className="text-slate-900 dark:text-white font-semibold text-xs uppercase tracking-wider">AI Generated</h3>
-                  {hasAnyMetadata && !isGenerating && (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={generateMetadata}
-                      className="h-7 px-2 text-xs"
-                    >
-                      <RefreshCw className="w-3 h-3 mr-1" />
-                      Regenerate All
-                    </Button>
+                  {!isAnimationVariations && (
+                    <Badge className="bg-white/20 text-white text-xs px-2 py-0.5 font-bold">
+                      {savingsPercent}% smaller
+                    </Badge>
                   )}
                 </div>
 
-                {isGenerating ? (
-                  <div className="bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg p-6 text-center">
-                    <RefreshCw className="w-6 h-6 animate-spin mx-auto mb-2 text-slate-400" />
-                    <p className="text-xs text-slate-500 dark:text-slate-400">Analyzing image with AI...</p>
-                  </div>
-                ) : hasAnyMetadata ? (
-                  <div className="space-y-2">
-                    {/* Title */}
-                    <div className="bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg p-3">
-                      <div className="flex items-center justify-between mb-2">
-                        <label className="text-[10px] font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider">Title</label>
-                        <div className="flex gap-1">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => regenerateField('title')}
-                            disabled={regeneratingField === 'title'}
-                            className="h-5 w-5 p-0 hover:bg-slate-200 dark:hover:bg-slate-800"
-                          >
-                            <RefreshCw className={cn("w-3 h-3", regeneratingField === 'title' && "animate-spin")} />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => copyToClipboard(aiTitle, 'Title')}
-                            className="h-5 w-5 p-0 hover:bg-slate-200 dark:hover:bg-slate-800"
-                          >
-                            <Copy className="w-3 h-3" />
-                          </Button>
-                        </div>
-                      </div>
-                      <input
-                        type="text"
-                        value={aiTitle}
-                        readOnly
-                        className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded px-3 py-2 text-sm text-slate-900 dark:text-white"
-                      />
-                    </div>
-
-                    {/* Description */}
-                    <div className="bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg p-3">
-                      <div className="flex items-center justify-between mb-2">
-                        <label className="text-[10px] font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider">Description</label>
-                        <div className="flex gap-1">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => regenerateField('description')}
-                            disabled={regeneratingField === 'description'}
-                            className="h-5 w-5 p-0 hover:bg-slate-200 dark:hover:bg-slate-800"
-                          >
-                            <RefreshCw className={cn("w-3 h-3", regeneratingField === 'description' && "animate-spin")} />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => copyToClipboard(aiDescription, 'Description')}
-                            className="h-5 w-5 p-0 hover:bg-slate-200 dark:hover:bg-slate-800"
-                          >
-                            <Copy className="w-3 h-3" />
-                          </Button>
-                        </div>
-                      </div>
-                      <textarea
-                        value={aiDescription}
-                        readOnly
-                        rows={3}
-                        className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded px-3 py-2 text-xs text-slate-900 dark:text-white resize-none"
-                      />
-                    </div>
-
-                    {/* Category & Mood */}
-                    <div className="grid grid-cols-2 gap-2">
-                      <div className="bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg p-3">
-                        <div className="flex items-center justify-between mb-2">
-                          <label className="text-[10px] font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider">Category</label>
-                          <div className="flex gap-1">
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => regenerateField('category')}
-                              disabled={regeneratingField === 'category'}
-                              className="h-5 w-5 p-0 hover:bg-slate-200 dark:hover:bg-slate-800"
-                            >
-                              <RefreshCw className={cn("w-3 h-3", regeneratingField === 'category' && "animate-spin")} />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => copyToClipboard(aiCategory, 'Category')}
-                              className="h-5 w-5 p-0 hover:bg-slate-200 dark:hover:bg-slate-800"
-                            >
-                              <Copy className="w-3 h-3" />
-                            </Button>
-                          </div>
-                        </div>
-                        <input
-                          type="text"
-                          value={aiCategory}
-                          readOnly
-                          className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded px-3 py-2 text-xs text-slate-900 dark:text-white"
-                        />
-                      </div>
-
-                      <div className="bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg p-3">
-                        <div className="flex items-center justify-between mb-2">
-                          <label className="text-[10px] font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider">Mood</label>
-                          <div className="flex gap-1">
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => regenerateField('mood')}
-                              disabled={regeneratingField === 'mood'}
-                              className="h-5 w-5 p-0 hover:bg-slate-200 dark:hover:bg-slate-800"
-                            >
-                              <RefreshCw className={cn("w-3 h-3", regeneratingField === 'mood' && "animate-spin")} />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => copyToClipboard(aiMood, 'Mood')}
-                              className="h-5 w-5 p-0 hover:bg-slate-200 dark:hover:bg-slate-800"
-                            >
-                              <Copy className="w-3 h-3" />
-                            </Button>
-                          </div>
-                        </div>
-                        <input
-                          type="text"
-                          value={aiMood}
-                          readOnly
-                          className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded px-3 py-2 text-xs text-slate-900 dark:text-white"
-                        />
-                      </div>
-                    </div>
-
-                    {/* Alt Text */}
-                    <div className="bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg p-3">
-                      <div className="flex items-center justify-between mb-2">
-                        <label className="text-[10px] font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider">Alt Text</label>
-                        <div className="flex gap-1">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => regenerateField('alt_text')}
-                            disabled={regeneratingField === 'alt_text'}
-                            className="h-5 w-5 p-0 hover:bg-slate-200 dark:hover:bg-slate-800"
-                          >
-                            <RefreshCw className={cn("w-3 h-3", regeneratingField === 'alt_text' && "animate-spin")} />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => copyToClipboard(aiAltText, 'Alt Text')}
-                            className="h-5 w-5 p-0 hover:bg-slate-200 dark:hover:bg-slate-800"
-                          >
-                            <Copy className="w-3 h-3" />
-                          </Button>
-                        </div>
-                      </div>
-                      <textarea
-                        value={aiAltText}
-                        readOnly
-                        rows={2}
-                        className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded px-3 py-2 text-xs text-slate-900 dark:text-white resize-none"
-                      />
-                    </div>
-
-                    {/* Tags */}
-                    <div className="bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg p-3">
-                      <div className="flex items-center justify-between mb-2">
-                        <label className="text-[10px] font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider">Tags</label>
-                        <div className="flex gap-1">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => regenerateField('tags')}
-                            disabled={regeneratingField === 'tags'}
-                            className="h-5 w-5 p-0 hover:bg-slate-200 dark:hover:bg-slate-800"
-                          >
-                            <RefreshCw className={cn("w-3 h-3", regeneratingField === 'tags' && "animate-spin")} />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => copyToClipboard(aiTags, 'Tags')}
-                            className="h-5 w-5 p-0 hover:bg-slate-200 dark:hover:bg-slate-800"
-                          >
-                            <Copy className="w-3 h-3" />
-                          </Button>
-                        </div>
-                      </div>
-                      <input
-                        type="text"
-                        value={aiTags}
-                        readOnly
-                        className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded px-3 py-2 text-xs text-slate-900 dark:text-white"
-                      />
-                    </div>
+                {isAnimationVariations ? (
+                  <div className="bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
+                    <p className="text-blue-700 dark:text-blue-400 text-xs font-medium mb-2">
+                      🎬 {generatedAnimations.length} Animation Variations
+                    </p>
+                    <p className="text-blue-600 dark:text-blue-400 text-xs">
+                      Click any animation in the grid to download it individually, or use the download button above to get all variations as a ZIP.
+                    </p>
                   </div>
                 ) : (
-                  <div className="bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg p-4 text-center">
-                    <p className="text-xs text-slate-500 dark:text-slate-400 mb-3">Generate AI-powered metadata for this image</p>
-                    <Button
-                      size="sm"
-                      onClick={generateMetadata}
-                      className="bg-slate-700 hover:bg-slate-800 text-white text-xs h-8"
-                    >
-                      <RefreshCw className="w-3 h-3 mr-1" />
-                      Generate Metadata
-                    </Button>
+                  <div className="bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg p-4">
+                    <p className="text-slate-500 dark:text-slate-400 text-[10px] font-semibold uppercase tracking-wider mb-1">Space Saved</p>
+                    <p className="text-emerald-600 dark:text-emerald-400 text-xl font-bold">{formatFileSize(savingsAmount)}</p>
                   </div>
                 )}
               </div>
+
+              <div className="h-px bg-slate-200 dark:bg-slate-800" />
+
+              {!isAnimationVariations && (
+                <div className="space-y-2">
+                  <h3 className="text-slate-900 dark:text-white font-semibold text-xs uppercase tracking-wider">Compression Details</h3>
+
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between py-2 px-3 bg-slate-50 dark:bg-slate-950 rounded-lg border border-slate-200 dark:border-slate-800">
+                      <span className="text-slate-600 dark:text-slate-400 text-xs font-medium">Compression Ratio</span>
+                      <span className="text-slate-900 dark:text-white font-bold text-sm">{(compressedSize / originalSize).toFixed(3)}:1</span>
+                    </div>
+
+                    <div className="flex items-center justify-between py-2 px-3 bg-slate-50 dark:bg-slate-950 rounded-lg border border-slate-200 dark:border-slate-800">
+                      <span className="text-slate-600 dark:text-slate-400 text-xs font-medium">Quality</span>
+                      <Badge className="bg-emerald-600 text-white font-semibold text-xs">High</Badge>
+                    </div>
+
+                    <div className="flex items-center justify-between py-2 px-3 bg-slate-50 dark:bg-slate-950 rounded-lg border border-slate-200 dark:border-slate-800">
+                      <span className="text-slate-600 dark:text-slate-400 text-xs font-medium">Processing</span>
+                      <Badge className="bg-blue-600 text-white font-semibold text-xs">Browser-side</Badge>
+                    </div>
+
+                    {mediaType === 'image' && imageDimensions.width > 0 && (
+                      <>
+                        <div className="flex items-center justify-between py-2 px-3 bg-slate-50 dark:bg-slate-950 rounded-lg border border-slate-200 dark:border-slate-800">
+                          <span className="text-slate-600 dark:text-slate-400 text-xs font-medium">Resolution</span>
+                          <span className="text-slate-900 dark:text-white font-bold text-sm">{imageDimensions.width} × {imageDimensions.height}</span>
+                        </div>
+
+                        <div className="flex items-center justify-between py-2 px-3 bg-slate-50 dark:bg-slate-950 rounded-lg border border-slate-200 dark:border-slate-800">
+                          <span className="text-slate-600 dark:text-slate-400 text-xs font-medium">Aspect Ratio</span>
+                          <span className="text-slate-900 dark:text-white font-bold text-sm">{getAspectRatio(imageDimensions.width, imageDimensions.height)}</span>
+                        </div>
+                      </>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {isAnimationVariations && (
+                <div className="space-y-2">
+                  <h3 className="text-slate-900 dark:text-white font-semibold text-xs uppercase tracking-wider">Animation Details</h3>
+                  <div className="space-y-2">
+                    {generatedAnimations.map((anim, index) => (
+                      <div
+                        key={index}
+                        className="flex items-center justify-between py-2 px-3 bg-slate-50 dark:bg-slate-950 rounded-lg border border-slate-200 dark:border-slate-800 cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-900 transition-colors"
+                        onClick={() => {
+                          const link = document.createElement('a');
+                          link.href = anim.url;
+                          const baseName = editableFilename.split('.').slice(0, -1).join('.') || editableFilename;
+                          link.download = `${baseName}_${anim.name.toLowerCase().replace(/\s+/g, '_')}.gif`;
+                          link.click();
+                          toast.success(`${anim.name} downloaded!`);
+                        }}
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className="w-12 h-12 rounded overflow-hidden bg-slate-200 dark:bg-slate-800 flex items-center justify-center">
+                            <img src={anim.url} alt={anim.name} className="w-full h-full object-cover" />
+                          </div>
+                          <div>
+                            <p className="text-slate-900 dark:text-white font-medium text-sm">{anim.name}</p>
+                            <p className="text-slate-500 dark:text-slate-400 text-xs">{formatFileSize(anim.size)}</p>
+                          </div>
+                        </div>
+                        <DownloadIcon className="w-4 h-4 text-slate-400" />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {!isAnimationVariations && (
+                <>
+                  <div className="h-px bg-slate-200 dark:bg-slate-800" />
+                  {/* AI Generated Section */}
+                  {mediaType === 'image' && (
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <h3 className="text-slate-900 dark:text-white font-semibold text-xs uppercase tracking-wider">AI Generated</h3>
+                      {hasAnyMetadata && !isGenerating && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={generateMetadata}
+                          className="h-7 px-2 text-xs"
+                        >
+                          <RefreshCw className="w-3 h-3 mr-1" />
+                          Regenerate All
+                        </Button>
+                      )}
+                    </div>
+
+                    {isGenerating ? (
+                      <div className="bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg p-6 text-center">
+                        <RefreshCw className="w-6 h-6 animate-spin mx-auto mb-2 text-slate-400" />
+                        <p className="text-xs text-slate-500 dark:text-slate-400">Analyzing image with AI...</p>
+                      </div>
+                    ) : hasAnyMetadata ? (
+                      <div className="space-y-2">
+                        {/* Title */}
+                        <div className="bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg p-3">
+                          <div className="flex items-center justify-between mb-2">
+                            <label className="text-[10px] font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider">Title</label>
+                            <div className="flex gap-1">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => regenerateField('title')}
+                                disabled={regeneratingField === 'title'}
+                                className="h-5 w-5 p-0 hover:bg-slate-200 dark:hover:bg-slate-800"
+                              >
+                                <RefreshCw className={cn("w-3 h-3", regeneratingField === 'title' && "animate-spin")} />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => copyToClipboard(aiTitle, 'Title')}
+                                className="h-5 w-5 p-0 hover:bg-slate-200 dark:hover:bg-slate-800"
+                              >
+                                <Copy className="w-3 h-3" />
+                              </Button>
+                            </div>
+                          </div>
+                          <input
+                            type="text"
+                            value={aiTitle}
+                            readOnly
+                            className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded px-3 py-2 text-sm text-slate-900 dark:text-white"
+                          />
+                        </div>
+
+                        {/* Description */}
+                        <div className="bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg p-3">
+                          <div className="flex items-center justify-between mb-2">
+                            <label className="text-[10px] font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider">Description</label>
+                            <div className="flex gap-1">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => regenerateField('description')}
+                                disabled={regeneratingField === 'description'}
+                                className="h-5 w-5 p-0 hover:bg-slate-200 dark:hover:bg-slate-800"
+                              >
+                                <RefreshCw className={cn("w-3 h-3", regeneratingField === 'description' && "animate-spin")} />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => copyToClipboard(aiDescription, 'Description')}
+                                className="h-5 w-5 p-0 hover:bg-slate-200 dark:hover:bg-slate-800"
+                              >
+                                <Copy className="w-3 h-3" />
+                              </Button>
+                            </div>
+                          </div>
+                          <textarea
+                            value={aiDescription}
+                            readOnly
+                            rows={3}
+                            className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded px-3 py-2 text-xs text-slate-900 dark:text-white resize-none"
+                          />
+                        </div>
+
+                        {/* Category & Mood */}
+                        <div className="grid grid-cols-2 gap-2">
+                          <div className="bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg p-3">
+                            <div className="flex items-center justify-between mb-2">
+                              <label className="text-[10px] font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider">Category</label>
+                              <div className="flex gap-1">
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => regenerateField('category')}
+                                  disabled={regeneratingField === 'category'}
+                                  className="h-5 w-5 p-0 hover:bg-slate-200 dark:hover:bg-slate-800"
+                                >
+                                  <RefreshCw className={cn("w-3 h-3", regeneratingField === 'category' && "animate-spin")} />
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => copyToClipboard(aiCategory, 'Category')}
+                                  className="h-5 w-5 p-0 hover:bg-slate-200 dark:hover:bg-slate-800"
+                                >
+                                  <Copy className="w-3 h-3" />
+                                </Button>
+                              </div>
+                            </div>
+                            <input
+                              type="text"
+                              value={aiCategory}
+                              readOnly
+                              className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded px-3 py-2 text-xs text-slate-900 dark:text-white"
+                            />
+                          </div>
+
+                          <div className="bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg p-3">
+                            <div className="flex items-center justify-between mb-2">
+                              <label className="text-[10px] font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider">Mood</label>
+                              <div className="flex gap-1">
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => regenerateField('mood')}
+                                  disabled={regeneratingField === 'mood'}
+                                  className="h-5 w-5 p-0 hover:bg-slate-200 dark:hover:bg-slate-800"
+                                >
+                                  <RefreshCw className={cn("w-3 h-3", regeneratingField === 'mood' && "animate-spin")} />
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => copyToClipboard(aiMood, 'Mood')}
+                                  className="h-5 w-5 p-0 hover:bg-slate-200 dark:hover:bg-slate-800"
+                                >
+                                  <Copy className="w-3 h-3" />
+                                </Button>
+                              </div>
+                            </div>
+                            <input
+                              type="text"
+                              value={aiMood}
+                              readOnly
+                              className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded px-3 py-2 text-xs text-slate-900 dark:text-white"
+                            />
+                          </div>
+                        </div>
+
+                        {/* Alt Text */}
+                        <div className="bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg p-3">
+                          <div className="flex items-center justify-between mb-2">
+                            <label className="text-[10px] font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider">Alt Text</label>
+                            <div className="flex gap-1">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => regenerateField('alt_text')}
+                                disabled={regeneratingField === 'alt_text'}
+                                className="h-5 w-5 p-0 hover:bg-slate-200 dark:hover:bg-slate-800"
+                              >
+                                <RefreshCw className={cn("w-3 h-3", regeneratingField === 'alt_text' && "animate-spin")} />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => copyToClipboard(aiAltText, 'Alt Text')}
+                                className="h-5 w-5 p-0 hover:bg-slate-200 dark:hover:bg-slate-800"
+                              >
+                                <Copy className="w-3 h-3" />
+                              </Button>
+                            </div>
+                          </div>
+                          <textarea
+                            value={aiAltText}
+                            readOnly
+                            rows={2}
+                            className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded px-3 py-2 text-xs text-slate-900 dark:text-white resize-none"
+                          />
+                        </div>
+
+                        {/* Tags */}
+                        <div className="bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg p-3">
+                          <div className="flex items-center justify-between mb-2">
+                            <label className="text-[10px] font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider">Tags</label>
+                            <div className="flex gap-1">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => regenerateField('tags')}
+                                disabled={regeneratingField === 'tags'}
+                                className="h-5 w-5 p-0 hover:bg-slate-200 dark:hover:bg-slate-800"
+                              >
+                                <RefreshCw className={cn("w-3 h-3", regeneratingField === 'tags' && "animate-spin")} />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => copyToClipboard(aiTags, 'Tags')}
+                                className="h-5 w-5 p-0 hover:bg-slate-200 dark:hover:bg-slate-800"
+                              >
+                                <Copy className="w-3 h-3" />
+                              </Button>
+                            </div>
+                          </div>
+                          <input
+                            type="text"
+                            value={aiTags}
+                            readOnly
+                            className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded px-3 py-2 text-xs text-slate-900 dark:text-white"
+                          />
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg p-4 text-center">
+                        <p className="text-xs text-slate-500 dark:text-slate-400 mb-3">Generate AI-powered metadata for this image</p>
+                        <Button
+                          size="sm"
+                          onClick={generateMetadata}
+                          className="bg-slate-700 hover:bg-slate-800 text-white text-xs h-8"
+                        >
+                          <RefreshCw className="w-3 h-3 mr-1" />
+                          Generate Metadata
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+                  )}
+                </>
               )}
             </div>
 
@@ -1120,7 +1274,7 @@ export default function ImageComparisonModal({
         </div>
 
         {/* Download Options Modal for Images */}
-        {mediaType === 'image' && (
+        {mediaType === 'image' && !isAnimationVariations && (
           <DownloadWithOptionsModal
             isOpen={showDownloadModalForImage}
             onClose={() => setShowDownloadModalForImage(false)}
