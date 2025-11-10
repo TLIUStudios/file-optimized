@@ -113,68 +113,69 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
     if (ffmpegLoading || ffmpegLoaded) return;
 
     setFfmpegLoading(true);
-    let toastId = null;
 
     try {
-      toastId = toast.loading('Loading video/audio processor...', { duration: Infinity });
+      console.log('🎬 Loading FFmpeg from unpkg.com...');
+      console.log('⏳ This may take 10-30 seconds depending on your connection');
 
-      console.log('Loading FFmpeg libraries...');
+      // Import FFmpeg library
+      const FFmpegModule = await import('https://unpkg.com/@ffmpeg/ffmpeg@0.12.10/dist/esm/index.js');
+      const { FFmpeg } = FFmpegModule;
 
-      // Try to load FFmpeg with better error handling
-      const { FFmpeg } = await import('https://unpkg.com/@ffmpeg/ffmpeg@0.12.10/dist/esm/index.js');
-      
-      console.log('FFmpeg imported, creating instance...');
+      console.log('✅ FFmpeg library imported');
       const ffmpeg = new FFmpeg();
 
-      // Add event listeners
       ffmpeg.on('log', ({ message }) => {
-        console.log('FFmpeg:', message);
+        console.log('[FFmpeg]:', message);
       });
 
       ffmpeg.on('progress', ({ progress }) => {
         if (progress > 0 && progress < 1) {
-          console.log(`FFmpeg Progress: ${(progress * 100).toFixed(1)}%`);
+          console.log(`[FFmpeg] Progress: ${(progress * 100).toFixed(0)}%`);
         }
       });
 
-      console.log('Loading FFmpeg core...');
-      const baseURL = 'https://unpkg.com/@ffmpeg/core@0.12.6/dist/esm';
+      console.log('🔄 Loading FFmpeg core files (WASM)...');
 
+      // Load FFmpeg core
       await ffmpeg.load({
-        coreURL: `${baseURL}/ffmpeg-core.js`,
-        wasmURL: `${baseURL}/ffmpeg-core.wasm`,
+        coreURL: 'https://unpkg.com/@ffmpeg/core@0.12.6/dist/esm/ffmpeg-core.js',
+        wasmURL: 'https://unpkg.com/@ffmpeg/core@0.12.6/dist/esm/ffmpeg-core.wasm',
       });
 
       ffmpegRef.current = ffmpeg;
       setFfmpegLoaded(true);
       setFfmpegLoading(false);
-      setFfmpegLoadError(null); // Clear any previous errors
+      setFfmpegLoadError(null);
 
-      if (toastId) toast.dismiss(toastId);
-      toast.success('Audio/video processor ready!');
-      console.log('✅ FFmpeg loaded successfully');
+      console.log('✅ FFmpeg fully loaded and ready!');
+      toast.success('Video/audio processor loaded successfully!');
 
     } catch (error) {
       console.error('❌ FFmpeg load error:', error);
+      console.error('Error details:', {
+        message: error.message,
+        stack: error.stack,
+        type: error.constructor.name
+      });
 
       setFfmpegLoading(false);
       setFfmpegLoadError(error.message);
 
-      if (toastId) toast.dismiss(toastId);
+      // Detailed error message for user
+      let errorMsg = 'Failed to load video/audio processor. ';
 
-      // Show user-friendly error
-      toast.error(
-        'Audio/video processor failed to load. Try:\n' +
-        '• Refreshing the page\n' +
-        '• Using Chrome/Edge browser\n' +
-        '• Checking your internet connection',
-        { duration: 8000 }
-      );
+      if (error.message.includes('Failed to fetch') || error.message.includes('network')) {
+        errorMsg += 'Check your internet connection and try refreshing the page.';
+      } else if (error.message.includes('CORS')) {
+        errorMsg += 'Browser security blocked the request. Try using Chrome or Edge.';
+      } else if (error.message.includes('SharedArrayBuffer')) {
+        errorMsg += 'Your browser needs SharedArrayBuffer support. Use Chrome/Edge with HTTPS.';
+      } else {
+        errorMsg += `Error: ${error.message}`;
+      }
 
-      // DON'T set permanent error - allow retry
-      setTimeout(() => {
-        setFfmpegLoadError(null);
-      }, 10000);
+      toast.error(errorMsg, { duration: 10000 });
     }
   };
 
@@ -1526,7 +1527,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
     // This handles: isVideo to gif, isGif to mp4, isAudio to mp3/wav, or (re)processing video/audio
     if (isVideo || isAudio || (isGif && newFormat === 'mp4')) {
       if (!ffmpegLoaded) {
-        toast.error('Video/audio processor still loading. Please wait...');
+        toast.error('Video processor still loading. Please wait...');
         return;
       }
       setFormat(newFormat); // Update the target format for processMedia
@@ -1881,7 +1882,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
                   </div>
                 </div>
               )}
-              
+
               {/* FFmpeg load error - ONLY show for video/audio files */}
               {(isVideo || isAudio || (isGif && format === 'mp4')) && ffmpegLoadError && !ffmpegLoading && (
                 <div className="bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800 rounded-lg p-3">
