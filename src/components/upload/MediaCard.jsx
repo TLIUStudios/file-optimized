@@ -1174,13 +1174,13 @@ Make animations dynamic with REAL motion - characters move, swing weapons, chang
 
   let availableFormats = [];
   if (isImage && !isGif && enableAnimation) {
-    availableFormats = ['gif']; // Only GIF for AI animations
+    availableFormats = ['gif'];
   } else if (isImage && !isGif) {
     availableFormats = ['jpg', 'png', 'webp', 'avif'];
   } else if (isGif) {
-    availableFormats = ['gif', 'mp4']; // Now supports MP4 conversion
+    availableFormats = ffmpegLoaded ? ['gif', 'mp4'] : ['gif'];
   } else if (isVideo) {
-    availableFormats = ['mp4', 'gif']; // Now supports GIF conversion
+    availableFormats = ffmpegLoaded ? ['mp4', 'gif'] : ['mp4'];
   } else if (isAudio) {
     availableFormats = ['mp3', 'wav'];
   }
@@ -1188,7 +1188,6 @@ Make animations dynamic with REAL motion - characters move, swing weapons, chang
   const mediaIcon = isVideo ? Video : isAudio ? Music : isGif || (isImage && enableAnimation) ? Film : null;
   const MediaIcon = mediaIcon;
 
-  // Helper function for actual download logic
   const performSingleMediaDownload = async (blob, targetFormat, mediaType, filename) => {
     if (!blob) {
       toast.error("No compressed file available to download.");
@@ -1198,13 +1197,10 @@ Make animations dynamic with REAL motion - characters move, swing weapons, chang
     let finalBlob = blob;
     let finalFilename = filename || getOutputFilename(targetFormat);
 
-    // If it's an image (and not a GIF being treated as video) and the targetFormat is different from the current outputFormat,
-    // we need to perform an on-the-fly conversion for download.
-    // This logic should now also consider if the original was a static image converted to animation (mp4/gif)
     if (isImage && !isGif && !enableAnimation && targetFormat && targetFormat !== (outputFormat || format)) {
         try {
             const img = new Image();
-            img.src = compressedPreview; // Use the currently processed preview as source
+            img.src = compressedPreview;
             await new Promise((resolve) => { img.onload = resolve; });
 
             const canvas = document.createElement('canvas');
@@ -1214,8 +1210,6 @@ Make animations dynamic with REAL motion - characters move, swing weapons, chang
             ctx.drawImage(img, 0, 0);
 
             const mimeType = targetFormat === 'jpg' ? 'image/jpeg' : `image/${targetFormat}`;
-            
-            // Re-use the existing quality setting for this on-the-fly conversion
             const qualityValue = quality / 100; 
 
             const convertedBlob = await new Promise((resolve) => {
@@ -1252,38 +1246,34 @@ Make animations dynamic with REAL motion - characters move, swing weapons, chang
     }
 
     const mediaType = isVideo ? 'video' : isAudio ? 'audio' : 'image';
-    // The format that the media is currently in (after processing)
     const currentCompressedFormat = outputFormat || format; 
 
-    // Case 1: Image, and no specific format requested (user clicked general "Download")
-    // If it's an image and animation is enabled, use the specific animation download.
     if (isImage && enableAnimation) {
-        setShowDownloadModal(true); // Open modal for animation options
+        setShowDownloadModal(true);
         return;
     }
 
-    if (mediaType === 'image' && formatOverride === null && !isGif) {
-      // For images, if no specific format is selected, open the options modal.
+    if (mediaType === 'image' && formatOverride === null) {
       setShowDownloadModal(true);
       return;
     }
 
-    // Case 2: Video, and no specific format requested. Download the currently compressed video.
-    // Case 3: Audio, and no specific format requested. Download the currently compressed audio.
-    // Case 4: GIF, and no specific format requested. Download the currently compressed GIF.
-    if ((mediaType === 'video' || mediaType === 'audio' || isGif) && formatOverride === null) {
-      performSingleMediaDownload(compressedBlob, currentCompressedFormat, mediaType, getOutputFilename(currentCompressedFormat));
+    if (mediaType === 'video' && formatOverride === null) {
+      performSingleMediaDownload(compressedBlob, currentCompressedFormat, 'video', getOutputFilename(currentCompressedFormat));
       return;
     }
 
-    // Case 5: Any media type, if a specific format is provided (e.g., from a convert button or a direct download button from a hypothetical image options modal).
+    if (mediaType === 'audio' && formatOverride === null) {
+      performSingleMediaDownload(compressedBlob, currentCompressedFormat, 'audio', getOutputFilename(currentCompressedFormat));
+      return;
+    }
+
     performSingleMediaDownload(compressedBlob, formatOverride, mediaType, getOutputFilename(formatOverride));
   };
 
-  // Helper function to get the output filename
   const getOutputFilename = (targetFormat = null) => {
     const nameWithoutExt = editableFilename.split('.').slice(0, -1).join('.') || editableFilename;
-    const finalExt = targetFormat || outputFormat || format; // Prioritize targetFormat, then actual output, then configured format
+    const finalExt = targetFormat || outputFormat || format;
     return `${nameWithoutExt}.${finalExt}`;
   };
 
@@ -1294,8 +1284,8 @@ Make animations dynamic with REAL motion - characters move, swing weapons, chang
         compressed: compressedPreview,
         originalSize,
         compressedSize,
-        fileName: getOutputFilename(), // Use new helper for filename
-        mediaType: isImage && enableAnimation ? 'image' : isVideo ? 'video' : isAudio ? 'audio' : 'image', // Animation output is always GIF (image)
+        fileName: getOutputFilename(),
+        mediaType: isImage && enableAnimation ? 'image' : isVideo ? 'video' : isAudio ? 'audio' : 'image',
         fileFormat: outputFormat || format
       });
     }
@@ -1319,185 +1309,79 @@ Make animations dynamic with REAL motion - characters move, swing weapons, chang
   };
 
   const convertFormat = async (newFormat) => {
-    if (!compressedBlob || processing) return;
+    if (!compressedPreview || processing) return;
     
-    // For image animations, only GIF is supported as output
-    if (isImage && enableAnimation) {
-      if (newFormat !== 'gif') {
-        toast.error('Animations can only be exported as GIF.');
-        return;
-      }
-    }
-
     // If already in the target format, do nothing
     if (newFormat === (outputFormat || format)) {
         toast.info(`Already in ${newFormat.toUpperCase()} format.`);
         return;
     }
 
+    // For image animations, only GIF is supported as output
+    if (isImage && enableAnimation) {
+      if (newFormat !== 'gif') {
+        toast.error('Animations can only be exported as GIF.');
+        return;
+      }
+      return; // If format is already gif and animation enabled, nothing else to do.
+    }
+
+    // For video/audio/GIF conversions that require FFmpeg, we trigger a full re-process.
+    // This handles: isVideo to gif, isGif to mp4, isAudio to mp3/wav, or (re)processing video/audio
+    if (isVideo || isAudio || (isGif && newFormat === 'mp4')) {
+      if (!ffmpegLoaded) {
+        toast.error('Video/audio processor still loading. Please wait...');
+        return;
+      }
+      setFormat(newFormat); // Update the target format for processMedia
+      await processMedia(); // Re-run the full processing logic
+      return;
+    }
+
+    // For static images, convert on the fly using canvas
     setProcessing(true);
     setError(null);
-    
+
     try {
-      if (isImage && !isGif && !enableAnimation) { // Static image conversion
-        const img = new Image();
-        img.src = compressedPreview;
-        
-        await new Promise((resolve) => {
-          img.onload = resolve;
-        });
+      const img = new Image();
+      img.src = compressedPreview;
+      
+      await new Promise((resolve) => {
+        img.onload = resolve;
+      });
 
-        const canvas = document.createElement('canvas');
-        canvas.width = img.width;
-        canvas.height = img.height;
-        const ctx = canvas.getContext('2d');
-        ctx.drawImage(img, 0, 0);
+      const canvas = document.createElement('canvas');
+      canvas.width = img.width;
+      canvas.height = img.height;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(img, 0, 0);
 
-        const mimeType = newFormat === 'jpg' ? 'image/jpeg' : `image/${newFormat}`;
-        const blob = await new Promise((resolve) => {
-          canvas.toBlob((b) => resolve(b), mimeType, quality / 100);
-        });
+      const mimeType = newFormat === 'jpg' ? 'image/jpeg' : `image/${newFormat}`;
+      const blob = await new Promise((resolve) => {
+        canvas.toBlob((b) => resolve(b), mimeType, quality / 100);
+      });
 
-        const url = URL.createObjectURL(blob);
-        setCompressedPreview(url);
-        setCompressedSize(blob.size);
-        setCompressedBlob(blob); // ADDED
-        setOutputFormat(newFormat);
-        setFormat(newFormat); // Update the internal format state as well
-        
-        onProcessed({
-          id: image.name,
-          originalFile: image,
-          compressedBlob: blob,
-          compressedUrl: url,
-          originalSize: originalSize,
-          compressedSize: blob.size,
-          format: newFormat,
-          filename: getOutputFilename(newFormat), // Use new helper
-          mediaType: 'image',
-          fileFormat: newFormat
-        });
-        
-        toast.success(`Converted to ${newFormat.toUpperCase()}`);
-      } else if ((isGif && newFormat === 'mp4') || (isVideo && newFormat === 'gif')) { // FFmpeg conversions
-          if (!ffmpegLoaded) {
-              toast.error('Video processor not loaded. Please wait or reload.');
-              setProcessing(false);
-              return;
-          }
-          let convertedBlob;
-          let newMediaType;
-          if (isGif && newFormat === 'mp4') {
-              // Read current compressed GIF blob
-              const gifBlob = compressedBlob;
-              await ffmpegRef.current.writeFile('input.gif', new Uint8Array(await gifBlob.arrayBuffer()));
-              await ffmpegRef.current.exec([
-                  '-i', 'input.gif',
-                  '-movflags', 'faststart',
-                  '-pix_fmt', 'yuv420p',
-                  '-vf', 'scale=trunc(iw/2)*2:trunc(ih/2)*2',
-                  'output.mp4'
-              ]);
-              const data = await ffmpegRef.current.readFile('output.mp4');
-              convertedBlob = new Blob([data.buffer], { type: 'video/mp4' });
-              newMediaType = 'video';
-              await ffmpegRef.current.deleteFile('input.gif');
-              await ffmpegRef.current.deleteFile('output.mp4');
-          } else if (isVideo && newFormat === 'gif') {
-              // Read current compressed video blob
-              const videoBlob = compressedBlob;
-              await ffmpegRef.current.writeFile('input.mp4', new Uint8Array(await videoBlob.arrayBuffer()));
-              const fps = Math.max(5, Math.round(frameRate / 2));
-              const scale = maxWidth || 480;
-              await ffmpegRef.current.exec([
-                  '-i', 'input.mp4',
-                  '-vf', `fps=${fps},scale=${scale}:-1:flags=lanczos,split[s0][s1];[s0]palettegen[p];[s1][p]paletteuse`,
-                  '-loop', '0',
-                  'output.gif'
-              ]);
-              const data = await ffmpegRef.current.readFile('output.gif');
-              convertedBlob = new Blob([data.buffer], { type: 'image/gif' });
-              newMediaType = 'image';
-              await ffmpegRef.current.deleteFile('input.mp4');
-              await ffmpegRef.current.deleteFile('output.gif');
-          } else {
-              throw new Error("Unsupported FFmpeg conversion for this media type.");
-          }
-          
-          const url = URL.createObjectURL(convertedBlob);
-          setCompressedPreview(url);
-          setCompressedSize(convertedBlob.size);
-          setCompressedBlob(convertedBlob);
-          setOutputFormat(newFormat);
-          setFormat(newFormat);
-          
-          onProcessed({
-            id: image.name,
-            originalFile: image,
-            compressedBlob: convertedBlob,
-            compressedUrl: url,
-            originalSize: originalSize,
-            compressedSize: convertedBlob.size,
-            format: newFormat,
-            filename: getOutputFilename(newFormat),
-            mediaType: newMediaType,
-            fileFormat: newFormat
-          });
-          toast.success(`Converted to ${newFormat.toUpperCase()}`);
-
-      } else if (isAudio) { // Audio conversion
-          if (!ffmpegLoaded) {
-              toast.error('Audio processor not loaded. Please wait or reload.');
-              setProcessing(false);
-              return;
-          }
-          // Use the current compressed audio blob as input
-          const inputExt = (outputFormat || format);
-          await ffmpegRef.current.writeFile(`input.${inputExt}`, new Uint8Array(await compressedBlob.arrayBuffer()));
-
-          const outputExt = newFormat;
-          const args = ['-i', `input.${inputExt}`];
-          
-          if (newFormat === 'mp3') {
-            args.push('-codec:a', 'libmp3lame');
-            args.push('-b:a', `${audioBitrate}k`);
-            args.push('-q:a', audioQuality === 'high' ? '0' : audioQuality === 'standard' ? '2' : '4');
-          } else if (newFormat === 'wav') {
-            args.push('-codec:a', 'pcm_s16le');
-            args.push('-ar', '44100');
-          }
-          
-          args.push(`output.${outputExt}`);
-          await ffmpegRef.current.exec(args);
-
-          const data = await ffmpegRef.current.readFile(`output.${outputExt}`);
-          const mimeType = newFormat === 'mp3' ? 'audio/mpeg' : 'audio/wav';
-          const convertedBlob = new Blob([data.buffer], { type: mimeType });
-
-          await ffmpegRef.current.deleteFile(`input.${inputExt}`);
-          await ffmpegRef.current.deleteFile(`output.${outputExt}`);
-
-          const url = URL.createObjectURL(convertedBlob);
-          setCompressedPreview(url);
-          setCompressedSize(convertedBlob.size);
-          setCompressedBlob(convertedBlob);
-          setOutputFormat(newFormat);
-          setFormat(newFormat);
-          
-          onProcessed({
-            id: image.name,
-            originalFile: image,
-            compressedBlob: convertedBlob,
-            compressedUrl: url,
-            originalSize: originalSize,
-            compressedSize: convertedBlob.size,
-            format: newFormat,
-            filename: getOutputFilename(newFormat),
-            mediaType: 'audio',
-            fileFormat: newFormat
-          });
-          toast.success(`Converted to ${newFormat.toUpperCase()}`);
-      }
+      const url = URL.createObjectURL(blob);
+      setCompressedPreview(url);
+      setCompressedSize(blob.size);
+      setCompressedBlob(blob);
+      setOutputFormat(newFormat);
+      setFormat(newFormat); // Update the internal format state as well
+      
+      onProcessed({
+        id: image.name,
+        originalFile: image,
+        compressedBlob: blob,
+        compressedUrl: url,
+        originalSize: originalSize,
+        compressedSize: blob.size,
+        format: newFormat,
+        filename: getOutputFilename(newFormat),
+        mediaType: 'image',
+        fileFormat: newFormat
+      });
+      
+      toast.success(`Converted to ${newFormat.toUpperCase()}`);
     } catch (error) {
       console.error('Error converting format:', error);
       setError('Failed to convert format');
@@ -1507,7 +1391,6 @@ Make animations dynamic with REAL motion - characters move, swing weapons, chang
     }
   };
 
-  // Update the download section to show all 4 animations
   const downloadAnimation = (animIndex) => {
     if (!generatedAnimations[animIndex]) return;
     
@@ -1516,9 +1399,9 @@ Make animations dynamic with REAL motion - characters move, swing weapons, chang
     link.href = anim.url;
     const baseName = editableFilename.split('.').slice(0, -1).join('.') || editableFilename;
     link.download = `${baseName}_${anim.name.toLowerCase().replace(/\s+/g, '_')}.gif`;
-    document.body.appendChild(link); // Added for cross-browser compatibility
+    document.body.appendChild(link);
     link.click();
-    document.body.removeChild(link); // Added for cross-browser compatibility
+    document.body.removeChild(link);
     URL.revokeObjectURL(link.href);
     toast.success(`${anim.name} downloaded!`);
   };
@@ -1540,10 +1423,10 @@ Make animations dynamic with REAL motion - characters move, swing weapons, chang
       const content = await zip.generateAsync({ type: 'blob' });
       const link = document.createElement('a');
       link.href = URL.createObjectURL(content);
-      link.download = `${baseName}_animations.zip`;
-      document.body.appendChild(link); // Added for cross-browser compatibility
+      link.download = `${baseName}-animations.zip`;
+      document.body.appendChild(link);
       link.click();
-      document.body.removeChild(link); // Added for cross-browser compatibility
+      document.body.removeChild(link);
       URL.revokeObjectURL(link.href);
       
       toast.success('All animations downloaded!');
@@ -1552,7 +1435,6 @@ Make animations dynamic with REAL motion - characters move, swing weapons, chang
       toast.error('Failed to create ZIP file for animations.');
     }
   };
-
 
   return (
     <Card className="overflow-hidden bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 shadow-lg hover:shadow-xl transition-shadow">
