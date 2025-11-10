@@ -697,19 +697,45 @@ Make animations creative and dynamic - they should have real motion and action!`
         
         toast.info(`${anim.name}: Combining ${frames.length} frames into GIF...`, { id: 'anim-gen' });
         
-        // Load all frame images
-        const loadedFrames = await Promise.all(frames.map(async (frame) => {
-          const img = new Image();
-          img.crossOrigin = 'anonymous'; // Required for canvas.drawImage with external images
-          return new Promise((resolve, reject) => {
-            img.onload = () => resolve({ img, index: frame.index });
-            img.onerror = () => reject(new Error(`Failed to load frame image: ${frame.url}`));
-            img.src = frame.url;
-          });
-        }));
+        // Load all frame images with better error handling
+        console.log(`📥 Loading ${frames.length} frame images...`);
+        const loadedFrames = [];
+        
+        for (let i = 0; i < frames.length; i++) {
+          try {
+            const frame = frames[i];
+            const img = new Image();
+            img.crossOrigin = 'anonymous';
+            
+            await new Promise((resolve, reject) => {
+              const timeout = setTimeout(() => reject(new Error('Image load timeout')), 30000);
+              img.onload = () => {
+                clearTimeout(timeout);
+                resolve();
+              };
+              img.onerror = () => {
+                clearTimeout(timeout);
+                reject(new Error(`Failed to load image`));
+              };
+              img.src = frame.url;
+            });
+            
+            loadedFrames.push({ img, index: frame.index });
+            console.log(`✅ Loaded frame ${i + 1}/${frames.length}`);
+          } catch (error) {
+            console.error(`Failed to load frame ${i + 1}:`, error);
+            // Continue with other frames
+          }
+        }
+        
+        if (loadedFrames.length === 0) {
+          console.error(`No frames could be loaded for ${anim.name}`);
+          continue;
+        }
         
         // Sort frames by their original index to ensure correct order
         loadedFrames.sort((a, b) => a.index - b.index);
+        console.log(`✅ All ${loadedFrames.length} frames loaded and sorted`);
 
         // Determine target dimensions
         const firstImg = loadedFrames[0].img;
@@ -728,7 +754,9 @@ Make animations creative and dynamic - they should have real motion and action!`
         targetWidth = targetWidth % 2 === 0 ? targetWidth : targetWidth - 1;
         targetHeight = targetHeight % 2 === 0 ? targetHeight : targetHeight - 1;
         
-        // Create GIF
+        console.log(`📐 Target GIF dimensions: ${targetWidth}x${targetHeight}`);
+        
+        // Create GIF with timeout protection
         const GIF = window.GIF;
         const gif = new GIF({
           workers: 2,
@@ -746,18 +774,43 @@ Make animations creative and dynamic - they should have real motion and action!`
         
         // Add each frame to GIF
         const frameDelay = Math.round((animationDuration * 1000) / loadedFrames.length);
-        for (const { img } of loadedFrames) {
+        console.log(`🎬 Adding ${loadedFrames.length} frames with ${frameDelay}ms delay each...`);
+        
+        for (let i = 0; i < loadedFrames.length; i++) {
+          const { img } = loadedFrames[i];
           ctx.clearRect(0, 0, targetWidth, targetHeight);
           ctx.drawImage(img, 0, 0, targetWidth, targetHeight);
           gif.addFrame(canvas, { delay: frameDelay, copy: true });
+          
+          if (i % 3 === 0) {
+            console.log(`📝 Added frame ${i + 1}/${loadedFrames.length} to GIF`);
+          }
         }
         
-        // Render GIF
-        const gifBlob = await new Promise((resolve, reject) => {
-          gif.on('finished', resolve);
-          gif.on('error', reject);
-          gif.render();
-        });
+        console.log(`🎨 Rendering GIF... (this may take 30-60 seconds)`);
+        
+        // Render GIF with timeout
+        const gifBlob = await Promise.race([
+          new Promise((resolve, reject) => {
+            gif.on('finished', (blob) => {
+              console.log(`✅ GIF rendering complete! Size: ${(blob.size / 1024).toFixed(1)}KB`);
+              resolve(blob);
+            });
+            gif.on('error', (error) => {
+              console.error('GIF rendering error:', error);
+              reject(error);
+            });
+            gif.on('progress', (progress) => {
+              if (progress % 0.2 < 0.01) { // Log every 20%
+                console.log(`⏳ GIF rendering progress: ${(progress * 100).toFixed(0)}%`);
+              }
+            });
+            gif.render();
+          }),
+          new Promise((_, reject) => 
+            setTimeout(() => reject(new Error('GIF rendering timeout (60s)')), 60000)
+          )
+        ]);
         
         const gifUrl = URL.createObjectURL(gifBlob);
         generatedGifs.push({
@@ -769,7 +822,7 @@ Make animations creative and dynamic - they should have real motion and action!`
           frameCount: loadedFrames.length
         });
         
-        console.log(`✅ ${anim.name} complete! (${loadedFrames.length} frames)`);
+        console.log(`✅ ${anim.name} complete! (${loadedFrames.length} frames, ${(gifBlob.size / 1024).toFixed(1)}KB)`);
       }
       
       if (generatedGifs.length === 0) {
@@ -1375,7 +1428,7 @@ Make animations creative and dynamic - they should have real motion and action!`
                 </div>
               )}
               
-              isGif && (
+              {isGif && (
                 <div>
                   <div className="flex items-center gap-2 mb-2">
                     <label className="text-xs font-medium text-slate-700 dark:text-slate-300">
