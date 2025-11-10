@@ -640,28 +640,34 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
         const ctx = canvas.getContext('2d');
 
         for (let frame = 0; frame < totalFrames; frame++) {
-          const progress = frame / totalFrames;
+          // Create seamless loop: go from 0 to 1 and back to 0
+          // This makes it loop smoothly like Midjourney
+          const rawProgress = frame / totalFrames;
+          const progress = rawProgress < 0.5 
+            ? rawProgress * 2  // 0 to 1 in first half
+            : (1 - rawProgress) * 2;  // 1 back to 0 in second half
+          
           ctx.clearRect(0, 0, targetWidth, targetHeight);
           ctx.save();
 
           // Apply different transformations based on animation type
           switch (animation.type) {
             case 'zoom':
-              const scale = 1 + (progress * 0.3);
+              const scale = 1 + (progress * 0.15); // Reduced intensity for smoother loop
               ctx.translate(targetWidth / 2, targetHeight / 2);
               ctx.scale(scale, scale);
               ctx.translate(-targetWidth / 2, -targetHeight / 2);
               break;
 
             case 'pan':
-              const panX = -targetWidth * 0.1 + (progress * targetWidth * 0.2);
+              const panX = -targetWidth * 0.05 + (progress * targetWidth * 0.1); // Reduced range
               ctx.translate(panX, 0);
               break;
 
             case 'ken-burns':
-              const kbScale = 1 + (progress * 0.2);
-              const kbPanX = Math.sin(progress * Math.PI) * 20;
-              const kbPanY = Math.cos(progress * Math.PI) * 20;
+              const kbScale = 1 + (progress * 0.1);
+              const kbPanX = Math.sin(progress * Math.PI * 2) * 15;
+              const kbPanY = Math.cos(progress * Math.PI * 2) * 15;
               
               ctx.translate(targetWidth / 2 + kbPanX, targetHeight / 2 + kbPanY);
               ctx.scale(kbScale, kbScale);
@@ -671,8 +677,8 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
             case 'rotate':
               const angle = progress * Math.PI * 2;
               ctx.translate(targetWidth / 2, targetHeight / 2);
-              ctx.rotate(angle * 0.1);
-              ctx.scale(1.2, 1.2);
+              ctx.rotate(angle * 0.05); // Slower rotation
+              ctx.scale(1.1, 1.1);
               ctx.translate(-targetWidth / 2, -targetHeight / 2);
               break;
           }
@@ -699,7 +705,8 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
       }
 
       setGeneratedAnimations(generatedGifs);
-      toast.success('4 animations created!', { id: 'anim-gen' });
+      toast.dismiss('anim-gen');
+      toast.success('4 animations created!'); // Removed id so it auto-dismisses
       
       // Set the first one as the main preview
       setCompressedPreview(generatedGifs[0].url);
@@ -1584,7 +1591,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
                         <Info className="w-3 h-3 text-slate-400 cursor-help" />
                       </TooltipTrigger>
                       <TooltipContent className="max-w-xs">
-                        <p className="text-xs">Creates 4 animated GIF variations with different motion effects</p>
+                        <p className="text-xs">Creates 4 animated GIF variations with seamless looping - same start and end frame</p>
                       </TooltipContent>
                     </Tooltip>
                   </div>
@@ -1633,7 +1640,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
 
                     <div className="bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 rounded-lg p-3">
                       <p className="text-xs text-blue-700 dark:text-blue-400 mb-2">
-                        <strong>🎬 Animation Styles:</strong>
+                        <strong>🎬 Animation Styles (Seamless Loop):</strong>
                       </p>
                       <ul className="text-xs text-blue-600 dark:text-blue-400 space-y-1 list-disc list-inside">
                         <li><strong>Zoom In:</strong> Smooth zoom effect</li>
@@ -1641,6 +1648,9 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
                         <li><strong>Ken Burns:</strong> Zoom + subtle pan</li>
                         <li><strong>Rotate:</strong> Gentle rotation</li>
                       </ul>
+                      <p className="text-xs text-blue-600 dark:text-blue-400 mt-2">
+                        ✨ All animations loop seamlessly - start and end frames are identical!
+                      </p>
                     </div>
                     
                     {generatedAnimations.length > 0 && (
