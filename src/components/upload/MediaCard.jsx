@@ -13,10 +13,10 @@ import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
-  TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
 
 // Lazy load the editor and download modal
 const ImageEditor = lazy(() => import("./ImageEditor"));
@@ -50,6 +50,9 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
   // AI Enhancement for upscaling
   const [aiEnhancement, setAiEnhancement] = useState(false);
   const [aiUpscaleMode, setAiUpscaleMode] = useState('standard'); // 'standard', 'enhanced', 'maximum'
+  const [showVariationsModal, setShowVariationsModal] = useState(false);
+  const [generatedVariations, setGeneratedVariations] = useState([]);
+  const [selectedVariationIndex, setSelectedVariationIndex] = useState(null);
 
   // New state for editable filename
   const [editableFilename, setEditableFilename] = useState('');
@@ -802,24 +805,56 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
 
     canvas.width = width;
     canvas.height = height;
-    const ctx = canvas.getContext('2d');
-    
+    const ctx = canvas.getContext('2d', { willReadFrequently: true }); // Added willReadFrequently
+
     // Enhanced upscaling with AI-like processing
     if (enableUpscale && aiEnhancement && width > img.width) {
-      toast.info('Applying AI enhancement...', { id: 'ai-enhance', duration: Infinity });
-      
       if (aiUpscaleMode === 'maximum') {
-        // Maximum Quality: Multi-pass super resolution
-        await applyMaximumQualityUpscale(img, canvas, ctx, width, height);
+        // Generate multiple variations for user to choose
+        toast.info('Generating HD variations...', { id: 'ai-enhance', duration: Infinity });
+        
+        const variations = [];
+        const variationConfigs = [
+          { name: 'Balanced', sharpness: 2.0, clarity: 0.3, bilateral: 1.0 },
+          { name: 'Sharp Details', sharpness: 2.8, clarity: 0.5, bilateral: 0.7 },
+          { name: 'Smooth & Clean', sharpness: 1.5, clarity: 0.2, bilateral: 1.3 },
+          { name: 'Ultra Sharp', sharpness: 3.2, clarity: 0.6, bilateral: 0.5 },
+        ];
+        
+        for (let i = 0; i < variationConfigs.length; i++) {
+          const config = variationConfigs[i];
+          const variationCanvas = document.createElement('canvas');
+          variationCanvas.width = width;
+          variationCanvas.height = height;
+          const variationCtx = variationCanvas.getContext('2d', { willReadFrequently: true });
+          
+          await applyMaximumQualityUpscale(img, variationCanvas, variationCtx, width, height, config);
+          
+          const blob = await new Promise((resolve) => {
+            variationCanvas.toBlob(resolve, 'image/png', 0.95);
+          });
+          
+          variations.push({
+            name: config.name,
+            url: URL.createObjectURL(blob),
+            blob: blob,
+            canvas: variationCanvas
+          });
+        }
+        
+        setGeneratedVariations(variations);
+        setShowVariationsModal(true);
         toast.dismiss('ai-enhance');
-        toast.success('Maximum AI Enhancement applied!', { duration: 2000 });
+        
+        // Wait for user selection - this will be handled by modal
+        return; // IMPORTANT: return here to prevent further processing until user selects
       } else if (aiUpscaleMode === 'enhanced') {
-        // Enhanced: Advanced processing with edge preservation
+        toast.info('Applying Enhanced AI...', { id: 'ai-enhance', duration: Infinity }); // Updated toast
         await applyEnhancedUpscale(img, canvas, ctx, width, height);
         toast.dismiss('ai-enhance');
         toast.success('Enhanced AI applied!', { duration: 2000 });
       } else {
-        // Standard: Basic enhancement
+        toast.info('Applying Standard AI...', { id: 'ai-enhance', duration: Infinity }); // Updated toast
         ctx.imageSmoothingEnabled = true;
         ctx.imageSmoothingQuality = 'high';
         ctx.drawImage(img, 0, 0, width, height);
@@ -908,60 +943,108 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
     });
   };
 
+  // Handle variation selection from modal
+  const handleVariationSelected = async (variationIndex) => {
+    const variation = generatedVariations[variationIndex];
+    setSelectedVariationIndex(variationIndex);
+    
+    // Convert selected variation to final format
+    const mimeType = format === 'jpg' ? 'image/jpeg' : `image/${format}`;
+    const finalBlob = await new Promise((resolve) => {
+      // Use the canvas from the selected variation, then convert to the desired output format
+      variation.canvas.toBlob(resolve, mimeType, quality / 100);
+    });
+    
+    const compressedUrl = URL.createObjectURL(finalBlob);
+    setCompressedPreview(compressedUrl);
+    setCompressedSize(finalBlob.size);
+    setCompressedBlob(finalBlob);
+    setProcessed(true);
+    setOutputFormat(format); // Use the currently selected output format
+    setShowVariationsModal(false);
+
+    onProcessed({
+      id: image.name,
+      originalFile: image,
+      compressedBlob: finalBlob,
+      compressedUrl,
+      originalSize: image.size, // Original size remains the same
+      compressedSize: finalBlob.size,
+      format, // Use the currently selected output format
+      filename: getOutputFilename(format),
+      mediaType: 'image',
+      fileFormat: format
+    });
+    
+    toast.success(`Selected: ${variation.name}`, { duration: 2000 });
+    
+    // Cleanup unused variations. Important to revoke URLs.
+    generatedVariations.forEach((v, i) => {
+      if (i !== variationIndex) {
+        URL.revokeObjectURL(v.url);
+      }
+    });
+    setGeneratedVariations([]); // Clear variations state after selection
+    setSelectedVariationIndex(null); // Reset selection
+  };
+
   // Maximum Quality Upscaling - Multi-pass with advanced techniques
-  const applyMaximumQualityUpscale = async (img, canvas, ctx, targetWidth, targetHeight) => {
+  const applyMaximumQualityUpscale = async (img, canvas, ctx, targetWidth, targetHeight, config = { sharpness: 2.0, clarity: 0.3, bilateral: 1.0 }) => {
     // Step 1: Lanczos-like resampling with multiple passes
     const tempCanvas = document.createElement('canvas');
     const tempCtx = tempCanvas.getContext('2d', { willReadFrequently: true });
     
-    let currentWidth = img.width;
-    let currentHeight = img.height;
+    let currentIntermediateWidth = img.width;
+    let currentIntermediateHeight = img.height;
     
     // Progressive upscaling (multiple passes for better quality)
     const passes = 3;
-    const scaleFactor = targetWidth / img.width;
-    const scalePerPass = Math.pow(scaleFactor, 1 / passes);
+    const totalScaleFactor = targetWidth / img.width;
+    const scaleFactorPerPass = Math.pow(totalScaleFactor, 1 / passes);
     
-    tempCanvas.width = currentWidth;
-    tempCanvas.height = currentHeight;
+    tempCanvas.width = currentIntermediateWidth;
+    tempCanvas.height = currentIntermediateHeight;
     tempCtx.drawImage(img, 0, 0);
     
     for (let pass = 0; pass < passes; pass++) {
-      currentWidth = Math.round(currentWidth * scalePerPass);
-      currentHeight = Math.round(currentHeight * scalePerPass);
+      const nextIntermediateWidth = Math.round(currentIntermediateWidth * scaleFactorPerPass);
+      const nextIntermediateHeight = Math.round(currentIntermediateHeight * scaleFactorPerPass);
       
       const newCanvas = document.createElement('canvas');
       const newCtx = newCanvas.getContext('2d', { willReadFrequently: true });
-      newCanvas.width = currentWidth;
-      newCanvas.height = currentHeight;
+      newCanvas.width = nextIntermediateWidth;
+      newCanvas.height = nextIntermediateHeight;
       
       newCtx.imageSmoothingEnabled = true;
       newCtx.imageSmoothingQuality = 'high';
-      newCtx.drawImage(tempCanvas, 0, 0, currentWidth, currentHeight);
+      newCtx.drawImage(tempCanvas, 0, 0, nextIntermediateWidth, nextIntermediateHeight);
       
       // Apply sharpening after each pass
-      let imageData = newCtx.getImageData(0, 0, currentWidth, currentHeight);
-      imageData = applyUnsharpMask(imageData, currentWidth, currentHeight, 2.0, 0.5);
+      let imageData = newCtx.getImageData(0, 0, nextIntermediateWidth, nextIntermediateHeight);
+      imageData = applyUnsharpMask(imageData, nextIntermediateWidth, nextIntermediateHeight, config.sharpness, 0.5);
       newCtx.putImageData(imageData, 0, 0);
       
-      tempCanvas.width = currentWidth;
-      tempCanvas.height = currentHeight;
-      tempCtx.clearRect(0, 0, currentWidth, currentHeight);
+      tempCanvas.width = nextIntermediateWidth;
+      tempCanvas.height = nextIntermediateHeight;
+      tempCtx.clearRect(0, 0, nextIntermediateWidth, nextIntermediateHeight);
       tempCtx.drawImage(newCanvas, 0, 0);
+
+      currentIntermediateWidth = nextIntermediateWidth;
+      currentIntermediateHeight = nextIntermediateHeight;
     }
     
     // Step 2: Transfer to main canvas
     ctx.clearRect(0, 0, targetWidth, targetHeight);
     ctx.drawImage(tempCanvas, 0, 0, targetWidth, targetHeight);
     
-    // Step 3: Advanced enhancement pipeline
+    // Step 3: Advanced enhancement pipeline with config
     let imageData = ctx.getImageData(0, 0, targetWidth, targetHeight);
     
     // De-pixelation: Bilateral filter to smooth while preserving edges
-    imageData = applyBilateralFilter(imageData, targetWidth, targetHeight, 1.0);
+    imageData = applyBilateralFilter(imageData, targetWidth, targetHeight, config.bilateral);
     
     // Super sharpening
-    imageData = applyUnsharpMask(imageData, targetWidth, targetHeight, 2.5, 0.3);
+    imageData = applyUnsharpMask(imageData, targetWidth, targetHeight, config.sharpness + 0.5, 0.3);
     
     // Edge enhancement
     imageData = enhanceDetails(imageData, targetWidth, targetHeight, 1.5);
@@ -970,7 +1053,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
     imageData = applySelectiveGaussian(imageData, targetWidth, targetHeight);
     
     // Final clarity boost
-    imageData = applyClarity(imageData, targetWidth, targetHeight);
+    imageData = applyClarity(imageData, targetWidth, targetHeight, config.clarity);
     
     ctx.putImageData(imageData, 0, 0);
   };
@@ -1111,7 +1194,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
   };
 
   // Clarity enhancement
-  const applyClarity = (imageData, width, height) => {
+  const applyClarity = (imageData, width, height, intensity = 0.3) => {
     const data = new Uint8ClampedArray(imageData.data); // Copy original data to modify
     const originalData = imageData.data; // Keep reference to original for calculations
     
@@ -1129,7 +1212,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
           for (let ky = -radius; ky <= radius; ky++) {
             for (let kx = -radius; kx <= radius; kx++) {
               const currentPixelIdx = ((y + ky) * width + (x + kx)) * 4 + c;
-              if (currentPixelIdx >= 0 && currentPixelIdx < originalData.length) { // Boundary check
+              if (y + ky >= 0 && y + ky < height && x + kx >= 0 && x + kx < width) { // Boundary check
                 sum += originalData[currentPixelIdx];
                 count++;
               }
@@ -1139,7 +1222,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
           
           // Increase contrast relative to local average
           const diff = originalData[idx] - avg;
-          data[idx] = Math.min(255, Math.max(0, originalData[idx] + diff * 0.3)); // 0.3 is contrast strength
+          data[idx] = Math.min(255, Math.max(0, originalData[idx] + diff * intensity)); // 0.3 is contrast strength
         }
       }
     }
@@ -2348,6 +2431,126 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
           </div>
         )}
       </div>
+
+      {showVariationsModal && generatedVariations.length > 0 && (
+        <Dialog open={showVariationsModal} onOpenChange={(open) => {
+          if (!open) {
+            // Cleanup on close
+            generatedVariations.forEach(v => URL.revokeObjectURL(v.url));
+            setGeneratedVariations([]);
+            setShowVariationsModal(false);
+            setProcessing(false);
+            setSelectedVariationIndex(null); // Reset selected index on close
+          }
+        }}>
+          <DialogContent className="max-w-6xl w-[95vw] max-h-[95vh] p-0 bg-slate-50 dark:bg-slate-950 overflow-hidden [&>button]:hidden">
+            <div className="p-6 border-b border-slate-200 dark:border-slate-800">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h2 className="text-xl font-bold text-slate-900 dark:text-white mb-1">
+                    Choose Your HD Version
+                  </h2>
+                  <p className="text-sm text-slate-600 dark:text-slate-400">
+                    AI generated {generatedVariations.length} variations - select the one that looks best to you
+                  </p>
+                </div>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => {
+                    generatedVariations.forEach(v => URL.revokeObjectURL(v.url));
+                    setGeneratedVariations([]);
+                    setShowVariationsModal(false);
+                    setProcessing(false);
+                    setSelectedVariationIndex(null);
+                  }}
+                  className="hover:bg-red-100 dark:hover:bg-red-950 hover:text-red-600 dark:hover:text-red-400"
+                >
+                  <X className="w-5 h-5" />
+                </Button>
+              </div>
+            </div>
+
+            <div className="p-6 overflow-y-auto max-h-[calc(95vh-140px)]">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-6">
+                {generatedVariations.map((variation, index) => (
+                  <div
+                    key={index}
+                    className={cn(
+                      "relative group cursor-pointer rounded-xl overflow-hidden border-2 transition-all",
+                      selectedVariationIndex === index
+                        ? "border-emerald-500 ring-4 ring-emerald-500/20"
+                        : "border-slate-200 dark:border-slate-800 hover:border-emerald-400 dark:hover:border-emerald-600"
+                    )}
+                    onClick={() => setSelectedVariationIndex(index)} // Only select, not finalize here
+                  >
+                    <div className="aspect-square bg-slate-100 dark:bg-slate-900 flex items-center justify-center p-4">
+                      <img
+                        src={variation.url}
+                        alt={variation.name}
+                        className="max-w-full max-h-full object-contain"
+                      />
+                    </div>
+                    
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                    
+                    <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/80 to-transparent">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <h3 className="text-white font-bold text-lg">{variation.name}</h3>
+                          <p className="text-white/80 text-xs">
+                            {index === 0 && 'Recommended for most images'}
+                            {index === 1 && 'Best for text and fine details'}
+                            {index === 2 && 'Best for photos and portraits'}
+                            {index === 3 && 'Maximum sharpness and clarity'}
+                          </p>
+                        </div>
+                        <div className={cn(
+                          "w-10 h-10 rounded-full flex items-center justify-center transition-all",
+                          selectedVariationIndex === index
+                            ? "bg-emerald-500 scale-110"
+                            : "bg-white/20 group-hover:bg-white/30"
+                        )}>
+                          {selectedVariationIndex === index ? (
+                            <CheckCircle2 className="w-6 h-6 text-white" />
+                          ) : (
+                            <Sparkles className="w-6 h-6 text-white" />
+                          )}
+                        </div>
+                      </div>
+                    </div>
+
+                    {selectedVariationIndex === index && (
+                      <div className="absolute top-4 right-4">
+                        <Badge className="bg-emerald-500 text-white font-bold shadow-lg">
+                          Selected
+                        </Badge>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+
+              <div className="mt-6 flex justify-center">
+                <Button
+                  onClick={() => {
+                    if (selectedVariationIndex !== null) {
+                      handleVariationSelected(selectedVariationIndex);
+                    } else {
+                      toast.error('Please select a variation');
+                    }
+                  }}
+                  disabled={selectedVariationIndex === null}
+                  className="bg-emerald-600 hover:bg-emerald-700 text-white px-8"
+                >
+                  <CheckCircle2 className="w-4 h-4 mr-2" />
+                  Use Selected Version
+                </Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
+      )}
 
       {showEditor && isImage && !isGif && (
         <ImageEditor
