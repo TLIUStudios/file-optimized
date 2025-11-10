@@ -47,6 +47,9 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
   const [upscaleMultiplier, setUpscaleMultiplier] = useState(null);
   const [originalImageDimensions, setOriginalImageDimensions] = useState({ width: 0, height: 0 });
 
+  // AI Enhancement for upscaling
+  const [aiEnhancement, setAiEnhancement] = useState(false);
+
   // New state for editable filename
   const [editableFilename, setEditableFilename] = useState('');
   const [isEditingFilename, setIsEditingFilename] = useState(false);
@@ -773,7 +776,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
       // Use multiplier
       width = Math.round(img.width * (upscaleMultiplier / 100));
       height = Math.round(img.height * (upscaleMultiplier / 100));
-    } else if (maxWidth || maxHeight || enableUpscale) { // The '|| enableUpscale' here ensures the block is entered if only upscaling is enabled without specific dims/multiplier
+    } else if (maxWidth || maxHeight || enableUpscale) {
       const aspectRatio = width / height;
       
       if (maxWidth && maxHeight) {
@@ -784,14 +787,11 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
         width = Math.round(img.width * ratio);
         height = Math.round(img.height * ratio);
       } else if (maxWidth) {
-        // If enabling upscale and maxWidth is set, apply it.
-        // If not enabling upscale, only apply if maxWidth is less than current width (downscale).
         if (enableUpscale || maxWidth < width) {
           width = maxWidth;
           height = Math.round(maxWidth / aspectRatio);
         }
       } else if (maxHeight) {
-        // Similar logic for maxHeight
         if (enableUpscale || maxHeight < height) {
           height = maxHeight;
           width = Math.round(maxHeight * aspectRatio);
@@ -801,15 +801,32 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
 
     canvas.width = width;
     canvas.height = height;
-
     const ctx = canvas.getContext('2d');
     
-    if (noiseReduction || enableUpscale) { // Added enableUpscale
+    // Enhanced upscaling with AI-like processing
+    if (enableUpscale && aiEnhancement && width > img.width) {
+      // Step 1: Use high-quality smoothing for initial upscale
       ctx.imageSmoothingEnabled = true;
       ctx.imageSmoothingQuality = 'high';
+      ctx.drawImage(img, 0, 0, width, height);
+      
+      // Step 2: Apply sharpening filter for AI-like enhancement
+      const imageData = ctx.getImageData(0, 0, width, height);
+      const sharpened = applyUnsharpMask(imageData, width, height, 1.5, 1);
+      ctx.putImageData(sharpened, 0, 0);
+      
+      // Step 3: Enhance edges and details
+      const enhanced = enhanceDetails(ctx.getImageData(0, 0, width, height), width, height);
+      ctx.putImageData(enhanced, 0, 0);
+      
+      toast.success('AI Enhancement applied!', { duration: 2000 });
+    } else if (noiseReduction || enableUpscale) {
+      ctx.imageSmoothingEnabled = true;
+      ctx.imageSmoothingQuality = 'high';
+      ctx.drawImage(img, 0, 0, width, height);
+    } else {
+      ctx.drawImage(img, 0, 0, width, height);
     }
-    
-    ctx.drawImage(img, 0, 0, width, height);
 
     const mimeType = format === 'jpg' ? 'image/jpeg' : `image/${format}`;
     
@@ -834,7 +851,6 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
         );
       });
 
-      // Changed condition: now it's `enableUpscale || blob.size < image.size`
       if (enableUpscale || blob.size < image.size || attempts === maxAttempts - 1) {
         break;
       }
@@ -843,7 +859,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
       attempts++;
     }
 
-    if (!enableUpscale && blob.size >= image.size) { // Only show error if not upscaling and size increased
+    if (!enableUpscale && blob.size >= image.size) {
       const fallbackQuality = compressionMode === 'maximum' ? 0.4 : 0.6;
       blob = await new Promise((resolve) => {
         canvas.toBlob(
@@ -862,7 +878,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
     const compressedUrl = URL.createObjectURL(blob);
     setCompressedPreview(compressedUrl);
     setCompressedSize(blob.size);
-    setCompressedBlob(blob); // ADDED
+    setCompressedBlob(blob);
     setProcessed(true);
     setOutputFormat(format);
 
@@ -874,10 +890,116 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
       originalSize: image.size,
       compressedSize: blob.size,
       format,
-      filename: getOutputFilename(format), // Use new helper
+      filename: getOutputFilename(format),
       mediaType: 'image',
       fileFormat: format
     });
+  };
+
+  // Unsharp mask for AI-like sharpening
+  const applyUnsharpMask = (imageData, width, height, amount, threshold) => {
+    const data = imageData.data;
+    const blurred = gaussianBlur(imageData, width, height, 1.0);
+    
+    for (let i = 0; i < data.length; i += 4) {
+      for (let j = 0; j < 3; j++) { // RGB channels
+        const diff = data[i + j] - blurred[i + j];
+        if (Math.abs(diff) > threshold) {
+          data[i + j] = Math.min(255, Math.max(0, data[i + j] + diff * amount));
+        }
+      }
+    }
+    
+    return imageData;
+  };
+
+  // Gaussian blur helper
+  const gaussianBlur = (imageData, width, height, sigma) => {
+    const data = new Uint8ClampedArray(imageData.data);
+    const kernel = generateGaussianKernel(sigma);
+    const kernelSize = kernel.length;
+    const half = Math.floor(kernelSize / 2);
+    
+    // Horizontal pass
+    for (let y = 0; y < height; y++) {
+      for (let x = 0; x < width; x++) {
+        for (let c = 0; c < 3; c++) {
+          let sum = 0;
+          let weightSum = 0;
+          
+          for (let k = -half; k <= half; k++) {
+            const px = Math.min(width - 1, Math.max(0, x + k));
+            const idx = (y * width + px) * 4 + c;
+            sum += imageData.data[idx] * kernel[k + half];
+            weightSum += kernel[k + half];
+          }
+          
+          const idx = (y * width + x) * 4 + c;
+          data[idx] = sum / weightSum;
+        }
+      }
+    }
+    
+    return data;
+  };
+
+  // Generate Gaussian kernel
+  const generateGaussianKernel = (sigma) => {
+    const size = Math.ceil(sigma * 3) * 2 + 1;
+    const kernel = [];
+    const mean = Math.floor(size / 2);
+    let sum = 0;
+    
+    for (let i = 0; i < size; i++) {
+      const x = i - mean;
+      const value = Math.exp(-0.5 * (x * x) / (sigma * sigma));
+      kernel.push(value);
+      sum += value;
+    }
+    
+    // Normalize
+    for (let i = 0; i < size; i++) {
+      kernel[i] /= sum;
+    }
+    
+    return kernel;
+  };
+
+  // Enhance details with edge detection
+  const enhanceDetails = (imageData, width, height) => {
+    const data = imageData.data;
+    const enhanced = new Uint8ClampedArray(data);
+    
+    // Sobel edge detection for detail enhancement
+    const sobelX = [-1, 0, 1, -2, 0, 2, -1, 0, 1];
+    const sobelY = [-1, -2, -1, 0, 0, 0, 1, 2, 1];
+    
+    for (let y = 1; y < height - 1; y++) {
+      for (let x = 1; x < width - 1; x++) {
+        for (let c = 0; c < 3; c++) {
+          let gx = 0;
+          let gy = 0;
+          
+          for (let ky = -1; ky <= 1; ky++) {
+            for (let kx = -1; kx <= 1; kx++) {
+              const idx = ((y + ky) * width + (x + kx)) * 4 + c;
+              const kernelIdx = (ky + 1) * 3 + (kx + 1);
+              gx += data[idx] * sobelX[kernelIdx];
+              gy += data[idx] * sobelY[kernelIdx];
+            }
+          }
+          
+          const magnitude = Math.sqrt(gx * gx + gy * gy);
+          const idx = (y * width + x) * 4 + c;
+          
+          // Add edge enhancement (subtle)
+          enhanced[idx] = Math.min(255, Math.max(0, data[idx] + magnitude * 0.3));
+        }
+      }
+    }
+    
+    imageData.data.set(enhanced);
+    return imageData;
   };
 
   // Helper function for actual download logic
@@ -1684,7 +1806,6 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
                               targetWidth = Math.round(originalImageDimensions.width * (upscaleMultiplier / 100));
                               targetHeight = Math.round(originalImageDimensions.height * (upscaleMultiplier / 100));
                             } else if (maxWidth || maxHeight) {
-                              // For upscaling, we always take the maximum ratio to ensure the image meets or exceeds the target size
                               const widthRatio = maxWidth ? maxWidth / originalImageDimensions.width : 0;
                               const heightRatio = maxHeight ? maxHeight / originalImageDimensions.height : 0;
                               
@@ -1729,12 +1850,9 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
                       setEnableUpscale(checked);
                       if (!checked) {
                         setUpscaleMultiplier(null);
-                        // Clear custom dimensions when disabling upscale only if they were set for upscaling
-                        // If they were set as "Max Width/Height" in compression settings, they should persist
-                        // This logic becomes a bit tricky with shared state. For now, we clear them for simplicity.
-                        // A better approach might be separate states for upscale dimensions vs compression dimensions.
                         setMaxWidth(null); 
                         setMaxHeight(null);
+                        setAiEnhancement(false);
                       }
                     }}
                     disabled={processing}
@@ -1743,6 +1861,43 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
 
                 {enableUpscale && (
                   <>
+                    {/* AI Enhancement Toggle */}
+                    <div className="bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-950/30 dark:to-pink-950/30 border border-purple-200 dark:border-purple-800 rounded-lg p-3">
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center gap-2">
+                          <Sparkles className="w-4 h-4 text-purple-600 dark:text-purple-400" />
+                          <label className="text-xs font-bold text-purple-900 dark:text-purple-300">
+                            AI Enhancement
+                          </label>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Info className="w-3 h-3 text-purple-500 cursor-help" />
+                            </TooltipTrigger>
+                            <TooltipContent className="max-w-xs">
+                              <p className="text-xs">
+                                Applies advanced image processing algorithms including:
+                                <br/>• Unsharp masking for clarity
+                                <br/>• Edge enhancement for details
+                                <br/>• Smart sharpening
+                                <br/><br/>
+                                <strong>Note:</strong> This uses algorithmic enhancement. For true AI upscaling with neural networks (like Real-ESRGAN), specialized cloud services are needed.
+                              </p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </div>
+                        <Switch
+                          checked={aiEnhancement}
+                          onCheckedChange={setAiEnhancement}
+                          disabled={processing}
+                        />
+                      </div>
+                      {aiEnhancement && (
+                        <p className="text-[10px] text-purple-700 dark:text-purple-400 mt-1">
+                          ✨ Will apply smart enhancement when upscaling
+                        </p>
+                      )}
+                    </div>
+
                     <div>
                       <label className="text-xs font-medium text-slate-700 dark:text-slate-300 mb-2 block">
                         Upscale Multiplier
@@ -1755,7 +1910,6 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
                             variant={upscaleMultiplier === multiplier ? "default" : "outline"}
                             onClick={() => {
                               setUpscaleMultiplier(multiplier);
-                              // Clear manual dimensions when using multiplier
                               setMaxWidth(null);
                               setMaxHeight(null);
                             }}
@@ -1787,7 +1941,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
                             onChange={(e) => {
                               setMaxWidth(e.target.value ? parseInt(e.target.value) : null);
                               if (e.target.value) {
-                                setUpscaleMultiplier(null); // Clear multiplier if custom dimension is set
+                                setUpscaleMultiplier(null);
                               }
                             }}
                             className="w-full h-9 px-3 rounded-md border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 text-sm"
@@ -1805,7 +1959,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
                             onChange={(e) => {
                               setMaxHeight(e.target.value ? parseInt(e.target.value) : null);
                               if (e.target.value) {
-                                setUpscaleMultiplier(null); // Clear multiplier if custom dimension is set
+                                setUpscaleMultiplier(null);
                               }
                             }}
                             className="w-full h-9 px-3 rounded-md border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 text-sm"
