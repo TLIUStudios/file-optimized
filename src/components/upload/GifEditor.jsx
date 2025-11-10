@@ -59,6 +59,7 @@ export default function GifEditor({ isOpen, onClose, gifData, onSave }) {
 
   const loadGifFrames = async () => {
     try {
+      console.log('📦 Loading GIF frames for editor...');
       const response = await fetch(gifData);
       const arrayBuffer = await response.arrayBuffer();
 
@@ -66,13 +67,78 @@ export default function GifEditor({ isOpen, onClose, gifData, onSave }) {
       const gif = parseGIF(arrayBuffer);
       const decompressed = decompressFrames(gif, true);
 
-      const loadedFrames = decompressed.map((frame, index) => ({
-        id: index,
-        canvas: createCanvasFromFrame(frame),
-        delay: frame.delay * 10 || 100,
-        width: frame.dims.width,
-        height: frame.dims.height
-      }));
+      console.log(`✅ Loaded ${decompressed.length} frames`);
+
+      // Create background canvas for proper frame accumulation
+      // Using willReadFrequently: false for better performance if context isn't read often
+      // which it isn't, as we're drawing to it and then drawing it to another canvas.
+      const bgCanvas = document.createElement('canvas');
+      bgCanvas.width = decompressed[0].dims.width;
+      bgCanvas.height = decompressed[0].dims.height;
+      const bgCtx = bgCanvas.getContext('2d', { willReadFrequently: false });
+
+      const loadedFrames = [];
+
+      for (let i = 0; i < decompressed.length; i++) {
+        const frame = decompressed[i];
+        
+        // Handle disposal method (How the previous frame should be treated)
+        // Disposal method 2: Restore to background color.
+        // For animated GIFs, this usually means clearing the portion of the canvas
+        // covered by the previous frame to transparent or the GIF's background color.
+        // Here, we effectively clear the area used by the previous frame.
+        if (i > 0) {
+          const prevFrame = decompressed[i - 1];
+          if (prevFrame.disposalType === 2) {
+            // Clear previous frame area
+            bgCtx.clearRect(
+              prevFrame.dims.left || 0,
+              prevFrame.dims.top || 0,
+              prevFrame.dims.width,
+              prevFrame.dims.height
+            );
+          }
+        }
+
+        // Draw current frame patch to a temporary canvas
+        const tempCanvas = document.createElement('canvas');
+        tempCanvas.width = frame.dims.width;
+        tempCanvas.height = frame.dims.height;
+        const tempCtx = tempCanvas.getContext('2d');
+        
+        const imageData = new ImageData(
+          new Uint8ClampedArray(frame.patch),
+          frame.dims.width,
+          frame.dims.height
+        );
+        tempCtx.putImageData(imageData, 0, 0);
+
+        // Draw the temporary patch canvas onto the background canvas
+        bgCtx.drawImage(
+          tempCanvas,
+          frame.dims.left || 0,
+          frame.dims.top || 0
+        );
+
+        // Create a final frame canvas that represents the current state of the entire GIF
+        const frameCanvas = document.createElement('canvas');
+        frameCanvas.width = bgCanvas.width;
+        frameCanvas.height = bgCanvas.height;
+        const frameCtx = frameCanvas.getContext('2d');
+        frameCtx.drawImage(bgCanvas, 0, 0); // Copy the accumulated state
+
+        loadedFrames.push({
+          id: i, // Use index as id for now
+          canvas: frameCanvas,
+          delay: frame.delay * 10 || 100, // gifuct-js delay is in 100ths of a second, so multiply by 10 for ms
+          width: bgCanvas.width,
+          height: bgCanvas.height
+        });
+
+        if (i % 10 === 0) {
+          console.log(`Processed frame ${i + 1}/${decompressed.length}`);
+        }
+      }
 
       setFrames(loadedFrames);
       setGlobalDelay(loadedFrames[0]?.delay || 100);
@@ -87,29 +153,13 @@ export default function GifEditor({ isOpen, onClose, gifData, onSave }) {
           const ctx = canvas.getContext('2d');
           ctx.drawImage(loadedFrames[0].canvas, 0, 0);
         }
-      }, 100);
-      
+      }, 100); // Small delay to ensure canvasRef is available
+
       toast.success(`Loaded ${loadedFrames.length} frames`);
     } catch (error) {
-      console.error('Error loading GIF:', error);
-      toast.error('Failed to load GIF frames');
+      console.error('❌ Error loading GIF:', error);
+      toast.error('Failed to load GIF frames: ' + error.message);
     }
-  };
-
-  const createCanvasFromFrame = (frame) => {
-    const canvas = document.createElement('canvas');
-    canvas.width = frame.dims.width;
-    canvas.height = frame.dims.height;
-    const ctx = canvas.getContext('2d');
-    
-    const imageData = new ImageData(
-      new Uint8ClampedArray(frame.patch),
-      frame.dims.width,
-      frame.dims.height
-    );
-    ctx.putImageData(imageData, 0, 0);
-    
-    return canvas;
   };
 
   const drawFrame = (frameIndex) => {
@@ -158,7 +208,14 @@ export default function GifEditor({ isOpen, onClose, gifData, onSave }) {
 
   const duplicateFrame = (frameIndex) => {
     const frame = frames[frameIndex];
-    const newFrame = { ...frame, id: Date.now() };
+    // Create a new canvas for the duplicated frame to avoid reference issues
+    const newCanvas = document.createElement('canvas');
+    newCanvas.width = frame.canvas.width;
+    newCanvas.height = frame.canvas.height;
+    const newCtx = newCanvas.getContext('2d');
+    newCtx.drawImage(frame.canvas, 0, 0);
+
+    const newFrame = { ...frame, id: Date.now(), canvas: newCanvas }; // Assign a new unique ID and new canvas
     setFrames(prev => [
       ...prev.slice(0, frameIndex + 1),
       newFrame,
@@ -209,12 +266,13 @@ export default function GifEditor({ isOpen, onClose, gifData, onSave }) {
     toast.info('Applying effect...', { duration: Infinity, id: 'effect-apply' });
     
     const newFrames = await Promise.all(frames.map(async (frame) => {
-      const tempCanvas = document.createElement('canvas');
-      tempCanvas.width = frame.width;
-      tempCanvas.height = frame.height;
-      const ctx = tempCanvas.getContext('2d');
+      // Create a new canvas for the modified frame to avoid altering the original
+      const newFrameCanvas = document.createElement('canvas');
+      newFrameCanvas.width = frame.width;
+      newFrameCanvas.height = frame.height;
+      const ctx = newFrameCanvas.getContext('2d');
       
-      // Draw the original frame's content to the temporary canvas first
+      // Draw the original frame's content to the new canvas
       ctx.drawImage(frame.canvas, 0, 0);
       
       switch (effect) {
@@ -229,25 +287,25 @@ export default function GifEditor({ isOpen, onClose, gifData, onSave }) {
           break;
         case 'brightness':
           ctx.filter = 'brightness(1.2)';
-          // Redraw original content with filter applied
+          // Redraw original content with filter applied to the new canvas
           ctx.drawImage(frame.canvas, 0, 0); 
           break;
         case 'contrast':
           ctx.filter = 'contrast(1.3)';
-          // Redraw original content with filter applied
+          // Redraw original content with filter applied to the new canvas
           ctx.drawImage(frame.canvas, 0, 0);
           break;
         case 'blur':
           ctx.filter = 'blur(2px)';
-          // Redraw original content with filter applied
+          // Redraw original content with filter applied to the new canvas
           ctx.drawImage(frame.canvas, 0, 0);
           break;
         default:
-          // No effect or unknown effect, just return original canvas
+          // No effect or unknown effect, just return original canvas (already copied)
           break;
       }
       
-      return { ...frame, canvas: tempCanvas };
+      return { ...frame, canvas: newFrameCanvas }; // Return frame with new canvas
     }));
     
     setFrames(newFrames);
@@ -270,6 +328,7 @@ export default function GifEditor({ isOpen, onClose, gifData, onSave }) {
       const workerUrl = URL.createObjectURL(workerBlob);
 
       // Dynamically load gif.js library
+      // gif.js is globally available as `window.GIF` after loading
       await new Promise((resolve, reject) => {
         const script = document.createElement('script');
         script.src = 'https://cdn.jsdelivr.net/npm/gif.js@0.2.0/dist/gif.js';
@@ -295,6 +354,7 @@ export default function GifEditor({ isOpen, onClose, gifData, onSave }) {
         canvas.height = frame.height;
         const ctx = canvas.getContext('2d');
         
+        // Draw the frame's pre-rendered canvas content
         ctx.drawImage(frame.canvas, 0, 0);
         
         // Draw text overlays that apply to this specific frame
@@ -318,7 +378,7 @@ export default function GifEditor({ isOpen, onClose, gifData, onSave }) {
         gif.render();
       });
 
-      URL.revokeObjectURL(workerUrl);
+      URL.revokeObjectURL(workerUrl); // Clean up the worker URL
       toast.dismiss('gif-save');
       
       onSave(blob);
@@ -425,6 +485,7 @@ export default function GifEditor({ isOpen, onClose, gifData, onSave }) {
                       <canvas
                         ref={el => {
                           if (el && frame.canvas) {
+                            // Ensure the canvas dimensions match the frame
                             el.width = frame.width;
                             el.height = frame.height;
                             const ctx = el.getContext('2d');
@@ -433,10 +494,12 @@ export default function GifEditor({ isOpen, onClose, gifData, onSave }) {
                             
                             // Draw text overlays for thumbnail preview
                             textOverlays.filter(t => t.frameIndex === index).forEach(overlay => {
-                                ctx.font = `${overlay.fontSize / 3}px ${overlay.fontFamily}`; // Scale down font for thumbnail
+                                // Scale down font size and position for thumbnail
+                                const scaleFactor = 0.25; // Example scale factor, adjust as needed
+                                ctx.font = `${overlay.fontSize * scaleFactor}px ${overlay.fontFamily}`;
                                 ctx.fillStyle = overlay.color;
                                 ctx.textAlign = overlay.align;
-                                ctx.fillText(overlay.text, overlay.x / 3, overlay.y / 3); // Scale down position
+                                ctx.fillText(overlay.text, overlay.x * scaleFactor, overlay.y * scaleFactor); 
                             });
                           }
                         }}
