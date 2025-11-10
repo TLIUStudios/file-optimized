@@ -710,7 +710,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
           targetHeight = Math.round(maxWidth / aspectRatio);
         } else if (maxHeight && maxHeight < targetHeight) {
           targetHeight = maxHeight;
-          targetWidth = Math.round(maxHeight * aspectRatio);
+          targetWidth = Math.round(maxHeight / aspectRatio);
         }
       }
       
@@ -1868,8 +1868,8 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
                     </div>
                     
                     <div className="flex items-center justify-between py-2 px-3 bg-white/50 dark:bg-slate-900/50 rounded-lg">
-                      <span className="text-xs text-slate-700 dark:text-slate-300">Max Dimension</span>
-                      <Badge className="bg-emerald-600 text-white text-xs">800px (Longest side)</Badge>
+                      <span className="text-xs text-slate-700 dark:text-slate-300">Resolution</span>
+                      <Badge className="bg-emerald-600 text-white text-xs">Original (No Reduction)</Badge>
                     </div>
                     
                     <div className="flex items-center justify-between py-2 px-3 bg-white/50 dark:bg-slate-900/50 rounded-lg">
