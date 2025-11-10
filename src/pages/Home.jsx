@@ -369,7 +369,7 @@ export default function Home() {
                               onRemove={() => removeImage(image.id)}
                               onProcessed={(data) => handleImageProcessed(image.id, data)}
                               onCompare={handleCompare}
-                              autoProcess={!processedImages[image.id] && autoProcessTrigger}
+                              autoProcess={processedImages[image.id] ? 0 : autoProcessTrigger}
                             />
                           </Suspense>
                         </div>
