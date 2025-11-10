@@ -616,7 +616,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
           targetHeight = Math.round(maxWidth / aspectRatio);
         } else if (maxHeight && maxHeight < gifSettings.height) {
           targetHeight = maxHeight;
-          targetWidth = Math.round(maxHeight / aspectRatio);
+          targetWidth = Math.round(maxHeight * aspectRatio);
         }
       }
       
@@ -1223,7 +1223,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
                 type="text"
                 value={editableFilename}
                 onChange={(e) => setEditableFilename(e.target.value)}
-                className="flex-1 text-sm font-medium text-slate-900 dark:text-white bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded px-2 py-1"
+                className="flex-1 text-sm font-medium text-slate-900 dark:text-white bg-slate-50 dark:bg-slate-900 border border-emerald-300 dark:border-emerald-700 rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-emerald-500"
                 onBlur={() => setIsEditingFilename(false)}
                 onKeyDown={(e) => {
                   if (e.key === 'Enter') {
@@ -1250,13 +1250,18 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
               </Button>
             </div>
           ) : (
-            <p 
-              className="font-medium text-sm text-slate-900 dark:text-white truncate cursor-pointer hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors" 
-              title={editableFilename}
+            <div 
+              className="group flex items-center gap-2 mb-1 cursor-pointer bg-slate-50 dark:bg-slate-900 hover:bg-emerald-50 dark:hover:bg-emerald-950/30 border border-slate-200 dark:border-slate-800 hover:border-emerald-300 dark:hover:border-emerald-700 rounded px-3 py-2 transition-all" 
               onClick={() => setIsEditingFilename(true)}
             >
-              {editableFilename}
-            </p>
+              <p 
+                className="flex-1 font-medium text-sm text-slate-900 dark:text-white group-hover:text-emerald-600 dark:group-hover:text-emerald-400 truncate transition-colors" 
+                title={editableFilename}
+              >
+                {editableFilename}
+              </p>
+              <Edit2 className="w-3.5 h-3.5 text-slate-400 group-hover:text-emerald-600 dark:group-hover:text-emerald-400 flex-shrink-0 transition-colors" />
+            </div>
           )}
           <div className="flex items-center gap-2 mt-1 text-xs text-slate-500 dark:text-slate-400">
             <span>{formatFileSize(originalSize)}</span>
