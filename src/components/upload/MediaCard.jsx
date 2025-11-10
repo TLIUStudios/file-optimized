@@ -676,9 +676,9 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
 
       console.log(`Original GIF: ${gifSettings.frames.length} frames, ${gifSettings.width}x${gifSettings.height}`);
       
-      // AGGRESSIVE DIMENSION REDUCTION for file size savings
-      // Reduce to max 600px on longest side while maintaining aspect ratio
-      const maxDimension = 600;
+      // SMART dimension reduction - less aggressive, better quality
+      // Only reduce if GIF is very large (over 800px)
+      const maxDimension = 800; // Increased from 600 to 800
       let targetWidth = gifSettings.width;
       let targetHeight = gifSettings.height;
       
@@ -687,6 +687,9 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
         const scale = maxDimension / longestSide;
         targetWidth = Math.round(gifSettings.width * scale);
         targetHeight = Math.round(gifSettings.height * scale);
+        console.log(`Reducing dimensions: ${gifSettings.width}x${gifSettings.height} → ${targetWidth}x${targetHeight}`);
+      } else {
+        console.log(`Keeping original dimensions: ${targetWidth}x${targetHeight} (under ${maxDimension}px)`);
       }
       
       // Apply user-defined dimension limits if stricter
@@ -711,11 +714,11 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
         }
       }
       
-      console.log(`Target size: ${targetWidth}x${targetHeight} (${Math.round((targetWidth * targetHeight) / (gifSettings.width * gifSettings.height) * 100)}% of original)`);
+      console.log(`Final target size: ${targetWidth}x${targetHeight}`);
       
       // KEEP ALL FRAMES for smooth animation - NO SKIPPING
       const framesToProcess = gifSettings.frames;
-      const maxFrames = Math.min(framesToProcess.length, 300); // Cap at 300 frames for memory
+      const maxFrames = Math.min(framesToProcess.length, 500); // Cap at 500 frames for memory
       
       console.log(`Processing ALL ${maxFrames} frames for smooth animation`);
       
@@ -759,7 +762,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
           );
           tempCtx.putImageData(imageData, 0, 0);
           
-          // HIGH QUALITY resampling
+          // MAXIMUM QUALITY resampling
           frameCtx.imageSmoothingEnabled = true;
           frameCtx.imageSmoothingQuality = 'high';
           frameCtx.drawImage(tempCanvas, 0, 0, targetWidth, targetHeight);
@@ -788,14 +791,14 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
 
       const GIF = window.GIF;
       
-      // QUALITY 2 = Excellent quality (1 is best, but 2 is great and faster)
-      const gifQuality = 2;
+      // QUALITY 1 = BEST POSSIBLE QUALITY (1 is best, 20 is worst)
+      const gifQuality = 1;
       
-      console.log(`GIF.js quality: ${gifQuality} (2=excellent, lower=better)`);
+      console.log(`GIF.js quality: ${gifQuality} (1=best possible quality)`);
       
       const gif = new GIF({
         workers: 4,
-        quality: gifQuality, // EXCELLENT QUALITY
+        quality: gifQuality, // BEST QUALITY
         width: targetWidth,
         height: targetHeight,
         workerScript: workerBlobUrl,
@@ -817,7 +820,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
         }
       }
 
-      console.log('All frames added, rendering GIF...');
+      console.log('All frames added, rendering GIF with BEST quality...');
       
       const gifBlob = await new Promise((resolve, reject) => {
         const timeout = setTimeout(() => {
@@ -875,9 +878,9 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
       const dimensionReduction = Math.round((1 - (targetWidth * targetHeight) / (gifSettings.width * gifSettings.height)) * 100);
       
       if (gifBlob.size < image.size) {
-        toast.success(`GIF optimized! ${processedFrames.length} frames, saved ${savings}% • ${dimensionReduction}% smaller dimensions • Excellent quality maintained`);
+        toast.success(`GIF optimized! ${processedFrames.length} frames, saved ${savings}% • ${dimensionReduction > 0 ? dimensionReduction + '% smaller dimensions • ' : ''}Best quality maintained`);
       } else {
-        toast.info(`GIF processed • ${processedFrames.length} frames • High quality maintained`);
+        toast.info(`GIF processed • ${processedFrames.length} frames • Best quality maintained`);
       }
     } catch (error) {
       console.error('❌ GIF optimization failed:', error);
@@ -1174,6 +1177,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
       
       console.log(`✅ GIF created: ${(gifBlob.size / 1024).toFixed(1)}KB`);
       
+      const gifUrl = URL.createObjectURL(gifBlob);
       const animationData = {
         name: animationType.replace('-', ' ').split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' '),
         blob: gifBlob,
@@ -1855,7 +1859,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
                   <div className="space-y-2">
                     <div className="flex items-center justify-between py-2 px-3 bg-white/50 dark:bg-slate-900/50 rounded-lg">
                       <span className="text-xs text-slate-700 dark:text-slate-300">Quality Level</span>
-                      <Badge className="bg-emerald-600 text-white text-xs">Excellent (2)</Badge>
+                      <Badge className="bg-emerald-600 text-white text-xs">Best (1)</Badge>
                     </div>
                     
                     <div className="flex items-center justify-between py-2 px-3 bg-white/50 dark:bg-slate-900/50 rounded-lg">
@@ -1865,7 +1869,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
                     
                     <div className="flex items-center justify-between py-2 px-3 bg-white/50 dark:bg-slate-900/50 rounded-lg">
                       <span className="text-xs text-slate-700 dark:text-slate-300">Max Dimension</span>
-                      <Badge className="bg-emerald-600 text-white text-xs">600px (Longest side)</Badge>
+                      <Badge className="bg-emerald-600 text-white text-xs">800px (Longest side)</Badge>
                     </div>
                     
                     <div className="flex items-center justify-between py-2 px-3 bg-white/50 dark:bg-slate-900/50 rounded-lg">
