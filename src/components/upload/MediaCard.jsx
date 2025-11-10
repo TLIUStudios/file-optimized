@@ -1740,7 +1740,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
                         Upscale Multiplier
                       </label>
                       <div className="grid grid-cols-3 gap-2">
-                        {[150, 200, 250, 300, 400, 500].map((multiplier) => (
+                        {[100, 150, 200, 300, 400, 500].map((multiplier) => (
                           <Button
                             key={multiplier}
                             size="sm"
