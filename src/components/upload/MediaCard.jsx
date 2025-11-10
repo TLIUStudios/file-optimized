@@ -187,6 +187,57 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
   }, [autoProcess, processed, processing]);
 
   useEffect(() => {
+    // Load GIF.js for both animations AND GIF compression
+    if ((enableAnimation || isGif) && !gifJsLoaded) {
+      const loadGifJs = async () => {
+        try {
+          if (window.GIF && workerBlobUrl) {
+            setGifJsLoaded(true);
+            return;
+          }
+
+          console.log('📦 Loading GIF.js library...');
+
+          if (!window.GIF) {
+            await new Promise((resolve, reject) => {
+              const script = document.createElement('script');
+              script.src = 'https://cdn.jsdelivr.net/npm/gif.js@0.2.0/dist/gif.js';
+              script.onload = () => {
+                setTimeout(() => {
+                  if (window.GIF) resolve();
+                  else reject(new Error('GIF.js not available after script load'));
+                }, 100);
+              };
+              script.onerror = () => reject(new Error('Failed to load GIF.js'));
+              document.head.appendChild(script);
+            });
+          }
+
+          console.log('👷 Loading worker script...');
+          const workerResponse = await fetch('https://cdn.jsdelivr.net/npm/gif.js@0.2.0/dist/gif.worker.js');
+          const workerText = await workerResponse.text();
+          const workerBlob = new Blob([workerText], { type: 'application/javascript' });
+          const workerUrl = URL.createObjectURL(workerBlob);
+          
+          setWorkerBlobUrl(workerUrl);
+          setGifJsLoaded(true);
+          console.log('✅ GIF.js and worker loaded successfully');
+          
+          // Only show success toast for animations, not regular GIF compression
+          if (enableAnimation) {
+            toast.success('AI animation engine ready!');
+          }
+        } catch (error) {
+          console.error('Failed to load GIF.js:', error);
+          toast.error('Failed to load GIF processor: ' + error.message);
+        }
+      };
+
+      loadGifJs();
+    }
+  }, [enableAnimation, isGif, gifJsLoaded, workerBlobUrl]);
+
+  useEffect(() => {
     return () => {
       if (workerBlobUrl) {
         URL.revokeObjectURL(workerBlobUrl);
