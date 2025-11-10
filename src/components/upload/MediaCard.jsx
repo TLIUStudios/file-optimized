@@ -603,7 +603,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
           originalFile: image,
           compressedBlob: originalBlob,
           compressedUrl,
-          originalSize: image.size,
+          originalSize: originalBlob.size,
           compressedSize: originalBlob.size,
           format: 'gif',
           filename: getOutputFilename('gif'),
@@ -912,15 +912,24 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
       const response = await fetch(preview);
       const blob = await response.blob();
       const file = new File([blob], 'image.jpg', { type: blob.type });
-      // Assuming base44 is globally available as per instructions
-      const uploadResult = await base44.integrations.Core.UploadFile({ file });
+      
+      let uploadResult;
+      try {
+        uploadResult = await base44.integrations.Core.UploadFile({ file });
+      } catch (uploadError) {
+        console.error('Upload failed:', uploadError);
+        throw new Error('Failed to upload image for AI analysis. Please try again.');
+      }
+      
       const imageUrl = uploadResult.file_url;
 
       // Step 2: AI analyzes image and generates animation concepts
       toast.info('Step 2/3: AI analyzing image...', { id: 'anim-gen' });
-      // Assuming base44 is globally available as per instructions
-      const analysisResult = await base44.integrations.Core.InvokeLLM({
-        prompt: `Analyze this EXACT image in detail and create 4 unique, creative animation concepts that would bring it to life with REAL motion.
+      
+      let analysisResult;
+      try {
+        analysisResult = await base44.integrations.Core.InvokeLLM({
+          prompt: `Analyze this EXACT image in detail and create 4 unique, creative animation concepts that would bring it to life with REAL motion.
 
 CRITICAL INSTRUCTIONS:
 - Frame 1 is ALWAYS the exact uploaded image (no generation needed)
@@ -966,82 +975,98 @@ Output format:
 }
 
 Make animations dynamic with REAL motion - characters move, swing weapons, change expressions, etc!`,
-        file_urls: [imageUrl],
-        response_json_schema: {
-          type: "object",
-          properties: {
-            scene_description: { type: "string" },
-            image_style: { type: "string" },
-            subject_pose: { type: "string" },
-            animations: {
-              type: "array",
-              items: {
-                type: "object",
-                properties: {
-                  name: { type: "string" },
-                  concept: { type: "string" },
-                  frame_prompts: {
-                    type: "array",
-                    items: { type: "string" }
+          file_urls: [imageUrl],
+          response_json_schema: {
+            type: "object",
+            properties: {
+              scene_description: { type: "string" },
+              image_style: { type: "string" },
+              subject_pose: { type: "string" },
+              animations: {
+                type: "array",
+                items: {
+                  type: "object",
+                  properties: {
+                    name: { type: "string" },
+                    concept: { type: "string" },
+                    frame_prompts: {
+                      type: "array",
+                      items: { type: "string" }
+                    }
                   }
                 }
               }
             }
           }
-        }
-      });
+        });
+      } catch (aiError) {
+        console.error('AI analysis failed:', aiError);
+        throw new Error('AI analysis failed. Please try again with a different image.');
+      }
 
       console.log('✅ AI Analysis Complete:', analysisResult);
+
+      // Validate AI response
+      if (!analysisResult || !analysisResult.animations) {
+        throw new Error('AI returned an invalid response or no animations. Please try again.');
+      }
 
       // Fix: Handle case where animations might not be an array
       let animationConcepts = [];
       if (Array.isArray(analysisResult.animations)) {
         animationConcepts = analysisResult.animations.slice(0, 4);
       } else if (analysisResult.animations && typeof analysisResult.animations === 'object') {
-        // If it's an object, try to convert it to an array
         animationConcepts = Object.values(analysisResult.animations).slice(0, 4);
-      } else {
-        throw new Error('AI did not return valid animation concepts. Please try again.');
       }
 
       if (animationConcepts.length === 0) {
-        throw new Error('No animation concepts were generated. Please try again.');
+        throw new Error('No animation concepts were generated. Try with a clearer image.');
       }
 
       console.log(`✅ Got ${animationConcepts.length} animation concepts`);
 
       // Step 3: Generate frames for each animation
       const generatedGifs = [];
-      const framesPerAnimation = 10; // Reduced from 12 to 10 for faster processing
+      const framesPerAnimation = 10;
 
       for (let animIndex = 0; animIndex < animationConcepts.length; animIndex++) {
         const anim = animationConcepts[animIndex];
-        toast.info(`Step 3/3: Creating ${anim.name}... (${animIndex + 1}/4)`, { id: 'anim-gen' });
+        
+        // Validate animation concept
+        if (!anim.name || !anim.frame_prompts || !Array.isArray(anim.frame_prompts)) {
+          console.warn(`Skipping invalid animation concept at index ${animIndex}`);
+          continue;
+        }
+        
+        toast.info(`Step 3/3: Creating ${anim.name}... (${animIndex + 1}/${animationConcepts.length})`, { id: 'anim-gen' });
 
         const frames = [];
 
         // Frame 1: Use the ACTUAL uploaded image (not AI-generated)
         console.log(`✅ Frame 1/${framesPerAnimation}: Using original uploaded image`);
         frames.push({
-          url: imageUrl, // The actual uploaded image
+          url: imageUrl,
           index: 0,
           isOriginal: true
         });
 
-        // Frames 2-10: Generate with AI (reduced from 2-12)
+        // Frames 2-10: Generate with AI
+        let successfulFrames = 1; // Start with 1 for the original image
         for (let frameIndex = 1; frameIndex < framesPerAnimation; frameIndex++) {
           toast.info(`Creating ${anim.name}... Frame ${frameIndex + 1}/${framesPerAnimation}`, { id: 'anim-gen' });
 
           try {
-            const framePrompt = anim.frame_prompts[frameIndex - 1]; // frame_prompts array adjusted
+            const framePrompt = anim.frame_prompts[frameIndex - 1];
+            
+            if (!framePrompt) {
+              console.warn(`Missing frame prompt for frame ${frameIndex + 1}, skipping`);
+              continue;
+            }
 
-            // For frame 10 (last frame), explicitly reference returning to original pose
             const enhancedPrompt = frameIndex === framesPerAnimation - 1
               ? `${analysisResult.image_style} style. ${framePrompt}. CRITICAL: This is the final frame - the character/subject should return to the EXACT SAME pose as the original image for seamless looping. Match the original image's composition, character position, and pose exactly.`
               : `${analysisResult.image_style} style. ${framePrompt}. Match the style and quality of the original image exactly. Maintain consistent character features, lighting, and composition.`;
 
-            // Generate image for this frame
-            // Assuming base44 is globally available as per instructions
             const frameResult = await base44.integrations.Core.GenerateImage({
               prompt: enhancedPrompt
             });
@@ -1051,16 +1076,18 @@ Make animations dynamic with REAL motion - characters move, swing weapons, chang
               index: frameIndex,
               isOriginal: false
             });
-
+            
+            successfulFrames++;
             console.log(`✅ Frame ${frameIndex + 1}/${framesPerAnimation} generated for ${anim.name}`);
           } catch (frameError) {
             console.error(`Failed to generate frame ${frameIndex + 1}:`, frameError);
-            // Continue with other frames
+            // Continue with other frames instead of failing completely
           }
         }
 
-        if (frames.length < 2) { // Need at least original + 1 generated frame
-          console.error(`Insufficient frames generated for ${anim.name}`);
+        // Need at least 3 frames (original + 2 generated) for a meaningful animation
+        if (successfulFrames < 3) {
+          console.warn(`Not enough frames generated for ${anim.name} (only ${successfulFrames}), skipping`);
           continue;
         }
 
@@ -1102,108 +1129,110 @@ Make animations dynamic with REAL motion - characters move, swing weapons, chang
           continue;
         }
 
-        // Sort frames by their original index to ensure correct order
+        // Sort frames by their original index
         loadedFrames.sort((a, b) => a.index - b.index);
         console.log(`✅ All ${loadedFrames.length} frames loaded and sorted`);
 
-        // Determine target dimensions
-        const firstImg = loadedFrames[0].img;
-        let targetWidth = firstImg.width;
-        let targetHeight = firstImg.height;
+        try {
+          // Determine target dimensions
+          const firstImg = loadedFrames[0].img;
+          let targetWidth = firstImg.width;
+          let targetHeight = firstImg.height;
 
-        // More aggressive resizing for faster GIF rendering
-        const maxDim = 600; // Reduced from 800
-        if (targetWidth > maxDim || targetHeight > maxDim) {
-          const scale = maxDim / Math.max(targetWidth, targetHeight);
-          targetWidth = Math.round(targetWidth * scale);
-          targetHeight = Math.round(targetHeight * scale);
-        }
-
-        // Ensure even dimensions
-        targetWidth = targetWidth % 2 === 0 ? targetWidth : targetWidth - 1;
-        targetHeight = targetHeight % 2 === 0 ? targetHeight : targetHeight - 1;
-
-        console.log(`📐 Target GIF dimensions: ${targetWidth}x${targetHeight}`);
-
-        // Create GIF with optimized settings for faster rendering
-        const GIF = window.GIF;
-        const gif = new GIF({
-          workers: 4, // Increased from 2
-          quality: 15, // Increased from 10 (higher = faster but lower quality)
-          width: targetWidth,
-          height: targetHeight,
-          workerScript: workerBlobUrl,
-          repeat: 0,
-          dither: false // Disable dithering for speed
-        });
-
-        const canvas = document.createElement('canvas');
-        canvas.width = targetWidth;
-        canvas.height = targetHeight;
-        const ctx = canvas.getContext('2d', { willReadFrequently: true }); // Optimize canvas
-
-        // Add each frame to GIF
-        const frameDelay = Math.round((animationDuration * 1000) / loadedFrames.length);
-        console.log(`🎬 Adding ${loadedFrames.length} frames with ${frameDelay}ms delay each...`);
-
-        for (let i = 0; i < loadedFrames.length; i++) {
-          const { img } = loadedFrames[i];
-          ctx.clearRect(0, 0, targetWidth, targetHeight);
-          ctx.drawImage(img, 0, 0, targetWidth, targetHeight);
-          gif.addFrame(ctx, { delay: frameDelay, copy: true, dispose: 2 }); // Added dispose for efficiency
-
-          if (i % 3 === 0) {
-            console.log(`📝 Added frame ${i + 1}/${loadedFrames.length} to GIF`);
+          const maxDim = 600;
+          if (targetWidth > maxDim || targetHeight > maxDim) {
+            const scale = maxDim / Math.max(targetWidth, targetHeight);
+            targetWidth = Math.round(targetWidth * scale);
+            targetHeight = Math.round(targetHeight * scale);
           }
+
+          targetWidth = targetWidth % 2 === 0 ? targetWidth : targetWidth - 1;
+          targetHeight = targetHeight % 2 === 0 ? targetHeight : targetHeight - 1;
+
+          console.log(`📐 Target GIF dimensions: ${targetWidth}x${targetHeight}`);
+
+          // Create GIF
+          const GIF = window.GIF;
+          const gif = new GIF({
+            workers: 4,
+            quality: 15,
+            width: targetWidth,
+            height: targetHeight,
+            workerScript: workerBlobUrl,
+            repeat: 0,
+            dither: false
+          });
+
+          const canvas = document.createElement('canvas');
+          canvas.width = targetWidth;
+          canvas.height = targetHeight;
+          const ctx = canvas.getContext('2d', { willReadFrequently: true });
+
+          const frameDelay = Math.round((animationDuration * 1000) / loadedFrames.length);
+          console.log(`🎬 Adding ${loadedFrames.length} frames with ${frameDelay}ms delay each...`);
+
+          for (let i = 0; i < loadedFrames.length; i++) {
+            const { img } = loadedFrames[i];
+            ctx.clearRect(0, 0, targetWidth, targetHeight);
+            ctx.drawImage(img, 0, 0, targetWidth, targetHeight);
+            gif.addFrame(ctx, { delay: frameDelay, copy: true, dispose: 2 });
+
+            if (i % 3 === 0) {
+              console.log(`📝 Added frame ${i + 1}/${loadedFrames.length} to GIF`);
+            }
+          }
+
+          console.log(`🎨 Rendering GIF... (this may take 30-90 seconds)`);
+
+          // Render GIF with extended timeout
+          const gifBlob = await Promise.race([
+            new Promise((resolve, reject) => {
+              gif.on('finished', (blob) => {
+                console.log(`✅ GIF rendering complete! Size: ${(blob.size / 1024).toFixed(1)}KB`);
+                resolve(blob);
+              });
+              gif.on('error', (error) => {
+                console.error('GIF rendering error:', error);
+                reject(error);
+              });
+              gif.on('progress', (progress) => {
+                const percent = (progress * 100).toFixed(0);
+                if (progress % 0.1 < 0.01) {
+                  console.log(`⏳ GIF rendering progress: ${percent}%`);
+                  toast.info(`${anim.name}: ${percent}% complete...`, { id: 'anim-gen' });
+                }
+              });
+              gif.render();
+            }),
+            new Promise((_, reject) =>
+              setTimeout(() => reject(new Error('GIF rendering timeout (120s)')), 120000)
+            )
+          ]);
+
+          const gifUrl = URL.createObjectURL(gifBlob);
+          generatedGifs.push({
+            name: anim.name,
+            blob: gifBlob,
+            url: gifUrl,
+            size: gifBlob.size,
+            description: anim.concept,
+            frameCount: loadedFrames.length
+          });
+
+          console.log(`✅ ${anim.name} complete! (${loadedFrames.length} frames, ${(gifBlob.size / 1024).toFixed(1)}KB)`);
+        } catch (gifError) {
+          console.error(`Failed to create GIF for ${anim.name}:`, gifError);
+          // Continue with other animations
         }
-
-        console.log(`🎨 Rendering GIF... (this may take 30-90 seconds)`);
-
-        // Render GIF with extended timeout
-        const gifBlob = await Promise.race([
-          new Promise((resolve, reject) => {
-            gif.on('finished', (blob) => {
-              console.log(`✅ GIF rendering complete! Size: ${(blob.size / 1024).toFixed(1)}KB`);
-              resolve(blob);
-            });
-            gif.on('error', (error) => {
-              console.error('GIF rendering error:', error);
-              reject(error);
-            });
-            gif.on('progress', (progress) => {
-              const percent = (progress * 100).toFixed(0);
-              if (progress % 0.1 < 0.01) { // Log every 10%
-                console.log(`⏳ GIF rendering progress: ${percent}%`);
-                toast.info(`${anim.name}: ${percent}% complete...`, { id: 'anim-gen' });
-              }
-            });
-            gif.render();
-          }),
-          new Promise((_, reject) =>
-            setTimeout(() => reject(new Error('GIF rendering timeout (120s)')), 120000) // Extended to 120 seconds
-          )
-        ]);
-
-        const gifUrl = URL.createObjectURL(gifBlob);
-        generatedGifs.push({
-          name: anim.name,
-          blob: gifBlob,
-          url: gifUrl,
-          size: gifBlob.size,
-          description: anim.concept,
-          frameCount: loadedFrames.length
-        });
-
-        console.log(`✅ ${anim.name} complete! (${loadedFrames.length} frames, ${(gifBlob.size / 1024).toFixed(1)}KB)`);
       }
 
       if (generatedGifs.length === 0) {
-        throw new Error('No animations were generated successfully');
+        throw new Error('Animation generation completed but no GIFs were created successfully. Please try again with a different image or check your connection.');
       }
 
       setGeneratedAnimations(generatedGifs);
       toast.dismiss('anim-gen');
-      toast.success(`${generatedGifs.length} AI animations created! 🎬`);
+      toast.success(`${generatedGifs.length} AI animation${generatedGifs.length > 1 ? 's' : ''} created! 🎬`);
 
       // Set the first one as preview
       setCompressedPreview(generatedGifs[0].url);
@@ -1211,7 +1240,7 @@ Make animations dynamic with REAL motion - characters move, swing weapons, chang
       setCompressedBlob(generatedGifs[0].blob);
       setProcessed(true);
       setOutputFormat('gif');
-      setOutputGifFrameCount(generatedGifs[0].frameCount); // Set output frame count for the main preview
+      setOutputGifFrameCount(generatedGifs[0].frameCount);
 
       onProcessed({
         id: image.name,
