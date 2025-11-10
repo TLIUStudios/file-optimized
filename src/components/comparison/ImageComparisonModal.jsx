@@ -442,7 +442,7 @@ export default function ImageComparisonModal({
   };
 
   const downloadMedia = async (format = null) => {
-    if (isAnimationVariations && generatedAnimations) {
+    if (isAnimationVariations) { // Changed to use `isAnimationVariations` state
       await downloadAllAnimationsAsZip();
       return;
     }
@@ -597,6 +597,9 @@ export default function ImageComparisonModal({
 
   const savingsPercent = originalSize ? ((1 - compressedSize / originalSize) * 100).toFixed(1) : '0';
   const savingsAmount = originalSize - compressedSize;
+  
+  // Check if file got larger
+  const sizeIncreased = compressedSize > originalSize;
 
   const hasAnyMetadata = aiTitle || aiDescription || aiCategory || aiMood || aiAltText || aiTags;
 
@@ -923,14 +926,27 @@ export default function ImageComparisonModal({
                   <p className="text-slate-900 dark:text-white text-2xl font-bold">{formatFileSize(originalSize)}</p>
                 </div>
 
-                <div className="bg-gradient-to-br from-emerald-600 to-emerald-700 rounded-lg p-4">
-                  <p className="text-emerald-100 text-[10px] font-semibold uppercase tracking-wider mb-1">
+                <div className={cn(
+                  "rounded-lg p-4",
+                  sizeIncreased
+                    ? "bg-gradient-to-br from-red-600 to-red-700"
+                    : "bg-gradient-to-br from-emerald-600 to-emerald-700"
+                )}>
+                  <p className={cn(
+                    "text-[10px] font-semibold uppercase tracking-wider mb-1",
+                    sizeIncreased ? "text-red-100" : "text-emerald-100"
+                  )}>
                     {isAnimationVariations ? 'Total Generated Size' : 'Compressed Size'}
                   </p>
                   <p className="text-white text-2xl font-bold mb-2">{formatFileSize(compressedSize)}</p>
                   {!isAnimationVariations && (
-                    <Badge className="bg-white/20 text-white text-xs px-2 py-0.5 font-bold">
-                      {savingsPercent}% smaller
+                    <Badge className={cn(
+                      "text-xs px-2 py-0.5 font-bold",
+                      sizeIncreased 
+                        ? "bg-white/20 text-white"
+                        : "bg-white/20 text-white"
+                    )}>
+                      {sizeIncreased ? `+${Math.abs(parseFloat(savingsPercent))}% larger` : `${savingsPercent}% smaller`}
                     </Badge>
                   )}
                 </div>
@@ -945,9 +961,28 @@ export default function ImageComparisonModal({
                     </p>
                   </div>
                 ) : (
-                  <div className="bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg p-4">
-                    <p className="text-slate-500 dark:text-slate-400 text-[10px] font-semibold uppercase tracking-wider mb-1">Space Saved</p>
-                    <p className="text-emerald-600 dark:text-emerald-400 text-xl font-bold">{formatFileSize(savingsAmount)}</p>
+                  <div className={cn(
+                    "border rounded-lg p-4",
+                    sizeIncreased
+                      ? "bg-red-50 dark:bg-red-950/30 border-red-200 dark:border-red-800"
+                      : "bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-800"
+                  )}>
+                    <p className={cn(
+                      "text-[10px] font-semibold uppercase tracking-wider mb-1",
+                      sizeIncreased 
+                        ? "text-red-500 dark:text-red-400" 
+                        : "text-slate-500 dark:text-slate-400"
+                    )}>
+                      {sizeIncreased ? 'Size Increase' : 'Space Saved'}
+                    </p>
+                    <p className={cn(
+                      "text-xl font-bold",
+                      sizeIncreased 
+                        ? "text-red-600 dark:text-red-400" 
+                        : "text-emerald-600 dark:text-emerald-400"
+                    )}>
+                      {sizeIncreased ? '+' : ''}{formatFileSize(Math.abs(savingsAmount))}
+                    </p>
                   </div>
                 )}
               </div>

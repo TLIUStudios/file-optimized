@@ -707,12 +707,13 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
       
       console.log(`Target size: ${targetWidth}x${targetHeight}, needsResize: ${needsResize}`);
       
-      // ALWAYS process with good quality for file size reduction
+      // Always use good quality for file size reduction
       // Keep all frames for quality, but use smart quality settings
-      const frameSkip = 1;
-      const maxFramesToProcess = Math.min(gifSettings.frames.length, 1000);
+      // Smart frame skip for large GIFs
+      const frameSkip = gifSettings.frames.length > 500 ? 2 : 1;
+      const maxFramesToProcess = Math.min(gifSettings.frames.length, 1500); // Limit total frames to avoid out of memory
       
-      console.log(`Processing ${maxFramesToProcess} frames with high quality`);
+      console.log(`Processing ${maxFramesToProcess} frames with smart optimization (frame skip: ${frameSkip})`);
       
       const processedFrames = [];
       
@@ -781,11 +782,10 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
 
       const GIF = window.GIF;
       
-      // ALWAYS use excellent quality (2-5 range = high quality with file size reduction)
-      // Quality 2-5 out of 30 gives great quality + good compression
-      let gifQuality = Math.max(2, Math.min(5, Math.round(5 - (quality / 25))));
+      // Quality 10 for good quality with file size reduction
+      const gifQuality = 10; 
       
-      console.log(`GIF.js quality: ${gifQuality} (2-5=excellent, always good quality)`);
+      console.log(`GIF.js quality: ${gifQuality} (10=good quality)`);
       
       const gif = new GIF({
         workers: 4,
@@ -1838,12 +1838,17 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
                   <div className="space-y-2">
                     <div className="flex items-center justify-between py-2 px-3 bg-white/50 dark:bg-slate-900/50 rounded-lg">
                       <span className="text-xs text-slate-700 dark:text-slate-300">Quality Level</span>
-                      <Badge className="bg-emerald-600 text-white text-xs">Excellent (2-5)</Badge>
+                      <Badge className="bg-emerald-600 text-white text-xs">Good (10)</Badge>
                     </div>
                     
                     <div className="flex items-center justify-between py-2 px-3 bg-white/50 dark:bg-slate-900/50 rounded-lg">
                       <span className="text-xs text-slate-700 dark:text-slate-300">Frame Processing</span>
-                      <Badge className="bg-emerald-600 text-white text-xs">All Frames</Badge>
+                      <Badge className="bg-emerald-600 text-white text-xs">Smart Optimization</Badge>
+                    </div>
+                    
+                    <div className="flex items-center justify-between py-2 px-3 bg-white/50 dark:bg-slate-900/50 rounded-lg">
+                      <span className="text-xs text-slate-700 dark:text-slate-300">Frame Skip</span>
+                      <Badge className="bg-emerald-600 text-white text-xs">2x for large GIFs</Badge>
                     </div>
                     
                     <div className="flex items-center justify-between py-2 px-3 bg-white/50 dark:bg-slate-900/50 rounded-lg">
@@ -1859,7 +1864,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
                   
                   <p className="text-xs text-emerald-600 dark:text-emerald-400 mt-3 flex items-center gap-1">
                     <Info className="w-3 h-3" />
-                    Minimal quality loss with 20-40% file size reduction
+                    Optimized for good quality with significant file size reduction
                   </p>
                 </div>
               )}
