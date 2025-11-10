@@ -121,7 +121,12 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
 
   // Load FFmpeg for video/audio/animation processing
   useEffect(() => {
-    if ((isVideo || isAudio || (isGif && format === 'mp4') || (isImage && enableAnimation && (format === 'mp4' || format === 'gif'))) && !ffmpegLoaded) {
+    const needsFFmpeg = isVideo || 
+                        isAudio || 
+                        (isGif && format === 'mp4') || 
+                        (isImage && enableAnimation && (format === 'mp4' || format === 'gif'));
+    
+    if (needsFFmpeg && !ffmpegLoaded) {
       loadFFmpegAlternative();
     }
   }, [isVideo, isAudio, isGif, format, ffmpegLoaded, isImage, enableAnimation]);
