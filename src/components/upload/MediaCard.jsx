@@ -1288,7 +1288,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
 
         {(isVideo || isAudio || (isGif && format === 'mp4')) && !ffmpegLoaded && (
           <div className="flex items-center gap-2 text-sm text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/30 p-3 rounded-lg">
-            <Loader2 className="w-4 h-4 animate-spin flex-shrink-0" />
+            <Loader2 className="w-4 h-4 mr-2 animate-spin flex-shrink-0" />
             <span className="text-xs">Loading {isVideo ? 'video' : isAudio ? 'audio' : 'media'} processor...</span>
           </div>
         )}
@@ -1367,7 +1367,8 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
           </CollapsibleTrigger>
           <CollapsibleContent className="space-y-4 mt-4">
             <TooltipProvider>
-              {!isAudio && (
+              {/* Compression Mode - Images and GIFs only */}
+              {(isImage || isGif) && !isVideo && !isAudio && (
                 <div>
                   <div className="flex items-center gap-2 mb-2">
                     <label className="text-xs font-medium text-slate-700 dark:text-slate-300">
@@ -1387,7 +1388,8 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
                 </div>
               )}
 
-              {(isImage || isGif) && (
+              {/* Quality Slider - Images and GIFs */}
+              {(isImage || isGif) && !isVideo && !isAudio && (
                 <div>
                   <div className="flex items-center gap-2 mb-2">
                     <label className="text-xs font-medium text-slate-700 dark:text-slate-300">
@@ -1406,6 +1408,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
                 </div>
               )}
               
+              {/* GIF Optimization - GIFs only */}
               {isGif && (
                 <div>
                   <div className="flex items-center gap-2 mb-2">
@@ -1426,6 +1429,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
                 </div>
               )}
 
+              {/* Video Settings - Videos only */}
               {isVideo && (
                 <>
                   <div>
@@ -1513,7 +1517,8 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
                 </>
               )}
 
-              isAudio && (
+              {/* Audio Settings - Audio only */}
+              {isAudio && (
                 <>
                   <div>
                     <div className="flex items-center gap-2 mb-2">
@@ -1574,7 +1579,8 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
                 </>
               )}
 
-              {(isVideo || isGif || (isImage && !isGif)) && ( // Apply max width/height for static images as well
+              {/* Max Width/Height - Videos, GIFs, and Images */}
+              {(isVideo || isGif || (isImage && !isGif)) && (
                 <div className="grid grid-cols-2 gap-2">
                   <div>
                     <div className="flex items-center gap-1 mb-1">
@@ -1609,7 +1615,8 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
                 </div>
               )}
 
-              {(isImage && !isGif) && (
+              {/* Strip Metadata & Noise Reduction - Static images only (not GIF, not video, not audio) */}
+              {isImage && !isGif && !isVideo && !isAudio && (
                 <div className="space-y-3 pt-2 border-t border-slate-200 dark:border-slate-800">
                   <div className="flex items-center justify-between">
                     <label className="text-xs font-medium text-slate-700 dark:text-slate-300">
@@ -1638,6 +1645,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
           </CollapsibleContent>
         </Collapsible>
 
+        {/* Upscale Settings - Static images only */}
         {(isImage && !isGif) && (
           <Collapsible open={upscaleSettingsOpen} onOpenChange={setUpscaleSettingsOpen}>
             <CollapsibleTrigger asChild>
