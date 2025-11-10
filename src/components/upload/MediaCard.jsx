@@ -906,6 +906,8 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
 
     try {
       console.log('🎬 Starting REAL AI animation generation...');
+      console.log('GIF.js loaded:', !!window.GIF);
+      console.log('Worker URL:', workerBlobUrl);
 
       // Step 1: Upload image to get URL for AI
       toast.info('Step 1/3: Uploading image to AI...', { duration: Infinity, id: 'anim-gen' });
@@ -916,6 +918,10 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
       let uploadResult;
       try {
         uploadResult = await base44.integrations.Core.UploadFile({ file });
+        if (!uploadResult || !uploadResult.file_url) {
+          throw new Error('Upload returned invalid response');
+        }
+        console.log('✅ Upload successful:', uploadResult.file_url);
       } catch (uploadError) {
         console.error('Upload failed:', uploadError);
         throw new Error('Failed to upload image for AI analysis. Please try again.');
@@ -943,38 +949,9 @@ For each animation:
    - Frame 2: Very slight change from original pose
    - Frames 3-8: Progressive motion (character moves, performs action)
    - Frame 9: Beginning to return to original pose
-   - Frame 10: EXACT same standing pose as Frame 1 - ready stance with sword at side
+   - Frame 10: EXACT same standing pose as Frame 1
 
-Example for image of "anime girl with sword":
-Frame 1: [Original image - not generated]
-Frame 2: Girl's eyes narrow slightly, grip tightens on sword handle
-Frame 3: Begins drawing sword from sheath, body starts to rotate
-Frame 4-8: [progressive sword swing motion]
-Frame 9: Sword returning to sheath, body rotating back
-Frame 10: EXACT same standing pose as Frame 1 - ready stance with sword at side
-
-Output format:
-{
-  "scene_description": "Detailed description of EXACTLY what's in the uploaded image",
-  "image_style": "art style (anime/photo/cartoon/3D/etc)",
-  "subject_pose": "Exact pose/position of main subject in original image",
-  "animations": {
-    "type": "array",
-    "items": {
-      "type": "object",
-      "properties": {
-        "name": { "type": "string" },
-        "concept": { "type": "string" },
-        "frame_prompts": {
-          "type": "array",
-          "items": { "type": "string" }
-        }
-      }
-    }
-  }
-}
-
-Make animations dynamic with REAL motion - characters move, swing weapons, change expressions, etc!`,
+CRITICAL: You MUST return a JSON object with an "animations" array containing EXACTLY 4 animation objects. Each animation MUST have "name", "concept", and "frame_prompts" (array of 9 strings).`,
           file_urls: [imageUrl],
           response_json_schema: {
             type: "object",
@@ -984,6 +961,8 @@ Make animations dynamic with REAL motion - characters move, swing weapons, chang
               subject_pose: { type: "string" },
               animations: {
                 type: "array",
+                minItems: 4,
+                maxItems: 4,
                 items: {
                   type: "object",
                   properties: {
@@ -991,35 +970,42 @@ Make animations dynamic with REAL motion - characters move, swing weapons, chang
                     concept: { type: "string" },
                     frame_prompts: {
                       type: "array",
+                      minItems: 9,
+                      maxItems: 9,
                       items: { type: "string" }
                     }
-                  }
+                  },
+                  required: ["name", "concept", "frame_prompts"]
                 }
               }
-            }
+            },
+            required: ["animations"]
           }
         });
+        
+        console.log('✅ AI Analysis Complete:', analysisResult);
       } catch (aiError) {
         console.error('AI analysis failed:', aiError);
         throw new Error('AI analysis failed. Please try again with a different image.');
       }
 
-      console.log('✅ AI Analysis Complete:', analysisResult);
-
-      // Validate AI response
+      // Validate AI response structure
       if (!analysisResult || !analysisResult.animations) {
-        throw new Error('AI returned an invalid response or no animations. Please try again.');
+        console.error('Invalid AI response structure:', analysisResult);
+        throw new Error('AI returned invalid response. Please try again.');
       }
 
-      // Fix: Handle case where animations might not be an array
+      // Parse animations array
       let animationConcepts = [];
       if (Array.isArray(analysisResult.animations)) {
-        animationConcepts = analysisResult.animations.slice(0, 4);
+        animationConcepts = analysisResult.animations;
       } else if (analysisResult.animations && typeof analysisResult.animations === 'object') {
-        animationConcepts = Object.values(analysisResult.animations).slice(0, 4);
+        animationConcepts = Object.values(analysisResult.animations);
       }
 
+      // Validate we have animations
       if (animationConcepts.length === 0) {
+        console.error('No animation concepts in response');
         throw new Error('No animation concepts were generated. Try with a clearer image.');
       }
 
@@ -1027,118 +1013,137 @@ Make animations dynamic with REAL motion - characters move, swing weapons, chang
 
       // Step 3: Generate frames for each animation
       const generatedGifs = [];
-      const framesPerAnimation = 10;
+      const framesPerAnimation = 10; // 1 original + 9 generated
 
-      for (let animIndex = 0; animIndex < animationConcepts.length; animIndex++) {
+      for (let animIndex = 0; animIndex < Math.min(animationConcepts.length, 4); animIndex++) {
         const anim = animationConcepts[animIndex];
         
-        // Validate animation concept
-        if (!anim.name || !anim.frame_prompts || !Array.isArray(anim.frame_prompts)) {
-          console.warn(`Skipping invalid animation concept at index ${animIndex}`);
+        // Validate animation concept structure
+        if (!anim || !anim.name || !anim.frame_prompts || !Array.isArray(anim.frame_prompts)) {
+          console.warn(`Invalid animation concept at index ${animIndex}:`, anim);
           continue;
         }
         
-        toast.info(`Step 3/3: Creating ${anim.name}... (${animIndex + 1}/${animationConcepts.length})`, { id: 'anim-gen' });
-
-        const frames = [];
-
-        // Frame 1: Use the ACTUAL uploaded image (not AI-generated)
-        console.log(`✅ Frame 1/${framesPerAnimation}: Using original uploaded image`);
-        frames.push({
-          url: imageUrl,
-          index: 0,
-          isOriginal: true
-        });
-
-        // Frames 2-10: Generate with AI
-        let successfulFrames = 1; // Start with 1 for the original image
-        for (let frameIndex = 1; frameIndex < framesPerAnimation; frameIndex++) {
-          toast.info(`Creating ${anim.name}... Frame ${frameIndex + 1}/${framesPerAnimation}`, { id: 'anim-gen' });
-
-          try {
-            const framePrompt = anim.frame_prompts[frameIndex - 1];
-            
-            if (!framePrompt) {
-              console.warn(`Missing frame prompt for frame ${frameIndex + 1}, skipping`);
-              continue;
-            }
-
-            const enhancedPrompt = frameIndex === framesPerAnimation - 1
-              ? `${analysisResult.image_style} style. ${framePrompt}. CRITICAL: This is the final frame - the character/subject should return to the EXACT SAME pose as the original image for seamless looping. Match the original image's composition, character position, and pose exactly.`
-              : `${analysisResult.image_style} style. ${framePrompt}. Match the style and quality of the original image exactly. Maintain consistent character features, lighting, and composition.`;
-
-            const frameResult = await base44.integrations.Core.GenerateImage({
-              prompt: enhancedPrompt
-            });
-
-            frames.push({
-              url: frameResult.url,
-              index: frameIndex,
-              isOriginal: false
-            });
-            
-            successfulFrames++;
-            console.log(`✅ Frame ${frameIndex + 1}/${framesPerAnimation} generated for ${anim.name}`);
-          } catch (frameError) {
-            console.error(`Failed to generate frame ${frameIndex + 1}:`, frameError);
-            // Continue with other frames instead of failing completely
-          }
-        }
-
-        // Need at least 3 frames (original + 2 generated) for a meaningful animation
-        if (successfulFrames < 3) {
-          console.warn(`Not enough frames generated for ${anim.name} (only ${successfulFrames}), skipping`);
+        if (anim.frame_prompts.length < 5) { // Minimum threshold for meaningful animations
+          console.warn(`Not enough frame prompts for ${anim.name}:`, anim.frame_prompts.length);
           continue;
         }
-
-        toast.info(`${anim.name}: Combining ${frames.length} frames into GIF...`, { id: 'anim-gen' });
-
-        // Load all frame images with better error handling
-        console.log(`📥 Loading ${frames.length} frame images...`);
-        const loadedFrames = [];
-
-        for (let i = 0; i < frames.length; i++) {
-          try {
-            const frame = frames[i];
-            const img = new Image();
-            img.crossOrigin = 'anonymous';
-
-            await new Promise((resolve, reject) => {
-              const timeout = setTimeout(() => reject(new Error('Image load timeout')), 30000);
-              img.onload = () => {
-                clearTimeout(timeout);
-                resolve();
-              };
-              img.onerror = () => {
-                clearTimeout(timeout);
-                reject(new Error(`Failed to load image`));
-              };
-              img.src = frame.url;
-            });
-
-            loadedFrames.push({ img, index: frame.index, isOriginal: frame.isOriginal });
-            console.log(`✅ Loaded frame ${i + 1}/${frames.length}${frame.isOriginal ? ' (ORIGINAL IMAGE)' : ''}`);
-          } catch (error) {
-            console.error(`Failed to load frame ${i + 1}:`, error);
-            // Continue with other frames
-          }
-        }
-
-        if (loadedFrames.length === 0) {
-          console.error(`No frames could be loaded for ${anim.name}`);
-          continue;
-        }
-
-        // Sort frames by their original index
-        loadedFrames.sort((a, b) => a.index - b.index);
-        console.log(`✅ All ${loadedFrames.length} frames loaded and sorted`);
-
+        
         try {
-          // Determine target dimensions
+          console.log(`\n🎨 Starting animation ${animIndex + 1}: ${anim.name}`);
+          toast.info(`Step 3/3: Creating ${anim.name}... (${animIndex + 1}/${Math.min(animationConcepts.length, 4)})`, { id: 'anim-gen' });
+
+          const frames = [];
+          let successfulFrames = 0;
+
+          // Frame 1: Use original image
+          frames.push({
+            url: imageUrl,
+            index: 0,
+            isOriginal: true
+          });
+          successfulFrames++;
+          console.log(`✅ Frame 1/${framesPerAnimation}: Using original image`);
+
+          // Generate frames 2-10 (or as many as possible)
+          for (let frameIndex = 1; frameIndex < framesPerAnimation && frameIndex <= anim.frame_prompts.length; frameIndex++) {
+            try {
+              const framePrompt = anim.frame_prompts[frameIndex - 1];
+              
+              if (!framePrompt || framePrompt.trim().length === 0) {
+                console.warn(`Empty frame prompt at index ${frameIndex}, skipping`);
+                continue;
+              }
+
+              console.log(`Generating frame ${frameIndex + 1}/${framesPerAnimation}...`);
+              toast.info(`${anim.name}: Generating frame ${frameIndex + 1}/${framesPerAnimation}...`, { id: 'anim-gen' });
+
+              const enhancedPrompt = frameIndex === framesPerAnimation - 1
+                ? `${analysisResult.image_style || 'same'} style. ${framePrompt}. CRITICAL: This is the final frame - return to original pose for seamless loop.`
+                : `${analysisResult.image_style || 'same'} style. ${framePrompt}. Match original image style exactly.`;
+
+              const frameResult = await base44.integrations.Core.GenerateImage({
+                prompt: enhancedPrompt
+              });
+
+              if (!frameResult || !frameResult.url) {
+                console.warn(`Frame ${frameIndex + 1} returned invalid result:`, frameResult);
+                continue;
+              }
+
+              frames.push({
+                url: frameResult.url,
+                index: frameIndex,
+                isOriginal: false
+              });
+              
+              successfulFrames++;
+              console.log(`✅ Frame ${frameIndex + 1}/${framesPerAnimation} generated`);
+            } catch (frameError) {
+              console.error(`Failed to generate frame ${frameIndex + 1}:`, frameError);
+              // Continue with other frames
+            }
+          }
+
+          // Need at least 3 frames for a meaningful animation
+          if (successfulFrames < 3) {
+            console.warn(`Not enough frames for ${anim.name}: ${successfulFrames}/10, skipping animation`);
+            continue;
+          }
+
+          console.log(`✅ Generated ${successfulFrames} frames, now loading images...`);
+          toast.info(`${anim.name}: Loading ${frames.length} images...`, { id: 'anim-gen' });
+
+          // Load all frame images
+          const loadedFrames = [];
+          for (let i = 0; i < frames.length; i++) {
+            try {
+              const frame = frames[i];
+              const img = new Image();
+              img.crossOrigin = 'anonymous';
+
+              await new Promise((resolve, reject) => {
+                const timeout = setTimeout(() => {
+                  reject(new Error(`Timeout loading image ${i + 1}`));
+                }, 30000);
+                
+                img.onload = () => {
+                  clearTimeout(timeout);
+                  resolve();
+                };
+                img.onerror = (err) => {
+                  clearTimeout(timeout);
+                  reject(new Error(`Failed to load image ${i + 1}`));
+                };
+                img.src = frame.url;
+              });
+
+              loadedFrames.push({ img, index: frame.index, isOriginal: frame.isOriginal });
+              console.log(`✅ Loaded frame ${i + 1}/${frames.length}`);
+            } catch (loadError) {
+              console.error(`Failed to load frame ${i + 1}:`, loadError);
+              // Continue with other frames
+            }
+          }
+
+          if (loadedFrames.length === 0) {
+            console.error(`No frames loaded for ${anim.name}`);
+            continue;
+          }
+
+          // Sort by index
+          loadedFrames.sort((a, b) => a.index - b.index);
+          console.log(`✅ ${loadedFrames.length} frames loaded and sorted`);
+
+          // Create GIF
+          console.log(`🎨 Creating GIF for ${anim.name}...`);
+          toast.info(`${anim.name}: Creating GIF from ${loadedFrames.length} frames...`, { id: 'anim-gen' });
+
           const firstImg = loadedFrames[0].img;
           let targetWidth = firstImg.width;
           let targetHeight = firstImg.height;
 
+          // Resize if too large
           const maxDim = 600;
           if (targetWidth > maxDim || targetHeight > maxDim) {
             const scale = maxDim / Math.max(targetWidth, targetHeight);
@@ -1146,12 +1151,17 @@ Make animations dynamic with REAL motion - characters move, swing weapons, chang
             targetHeight = Math.round(targetHeight * scale);
           }
 
+          // Ensure even dimensions
           targetWidth = targetWidth % 2 === 0 ? targetWidth : targetWidth - 1;
           targetHeight = targetHeight % 2 === 0 ? targetHeight : targetHeight - 1;
 
-          console.log(`📐 Target GIF dimensions: ${targetWidth}x${targetHeight}`);
+          console.log(`Target dimensions: ${targetWidth}x${targetHeight}`);
 
-          // Create GIF
+          // Verify GIF constructor is available
+          if (!window.GIF || typeof window.GIF !== 'function') {
+            throw new Error('GIF.js constructor not available');
+          }
+
           const GIF = window.GIF;
           const gif = new GIF({
             workers: 4,
@@ -1163,51 +1173,67 @@ Make animations dynamic with REAL motion - characters move, swing weapons, chang
             dither: false
           });
 
+          console.log('GIF instance created:', !!gif);
+
           const canvas = document.createElement('canvas');
           canvas.width = targetWidth;
           canvas.height = targetHeight;
           const ctx = canvas.getContext('2d', { willReadFrequently: true });
 
-          const frameDelay = Math.round((animationDuration * 1000) / loadedFrames.length);
-          console.log(`🎬 Adding ${loadedFrames.length} frames with ${frameDelay}ms delay each...`);
+          if (!ctx) {
+            throw new Error('Failed to get canvas context');
+          }
 
+          const frameDelay = Math.round((animationDuration * 1000) / loadedFrames.length);
+          console.log(`Adding ${loadedFrames.length} frames with ${frameDelay}ms delay...`);
+
+          // Add frames to GIF
           for (let i = 0; i < loadedFrames.length; i++) {
             const { img } = loadedFrames[i];
             ctx.clearRect(0, 0, targetWidth, targetHeight);
             ctx.drawImage(img, 0, 0, targetWidth, targetHeight);
             gif.addFrame(ctx, { delay: frameDelay, copy: true, dispose: 2 });
-
-            if (i % 3 === 0) {
-              console.log(`📝 Added frame ${i + 1}/${loadedFrames.length} to GIF`);
+            
+            if (i % 2 === 0) {
+              console.log(`Added frame ${i + 1}/${loadedFrames.length}`);
             }
           }
 
-          console.log(`🎨 Rendering GIF... (this may take 30-90 seconds)`);
+          console.log('All frames added, rendering GIF...');
 
-          // Render GIF with extended timeout
-          const gifBlob = await Promise.race([
-            new Promise((resolve, reject) => {
-              gif.on('finished', (blob) => {
-                console.log(`✅ GIF rendering complete! Size: ${(blob.size / 1024).toFixed(1)}KB`);
-                resolve(blob);
-              });
-              gif.on('error', (error) => {
-                console.error('GIF rendering error:', error);
-                reject(error);
-              });
-              gif.on('progress', (progress) => {
-                const percent = (progress * 100).toFixed(0);
-                if (progress % 0.1 < 0.01) {
-                  console.log(`⏳ GIF rendering progress: ${percent}%`);
-                  toast.info(`${anim.name}: ${percent}% complete...`, { id: 'anim-gen' });
-                }
-              });
-              gif.render();
-            }),
-            new Promise((_, reject) =>
-              setTimeout(() => reject(new Error('GIF rendering timeout (120s)')), 120000)
-            )
-          ]);
+          // Render GIF with timeout
+          const gifBlob = await new Promise((resolve, reject) => {
+            const timeout = setTimeout(() => {
+              reject(new Error('GIF rendering timeout after 120 seconds'));
+            }, 120000);
+
+            gif.on('finished', (blob) => {
+              clearTimeout(timeout);
+              console.log(`✅ GIF rendered: ${(blob.size / 1024).toFixed(1)}KB`);
+              resolve(blob);
+            });
+
+            gif.on('error', (error) => {
+              clearTimeout(timeout);
+              console.error('GIF rendering error:', error);
+              reject(error);
+            });
+
+            gif.on('progress', (progress) => {
+              const percent = (progress * 100).toFixed(0);
+              if (progress % 0.2 < 0.01 || progress > 0.95) {
+                console.log(`GIF progress: ${percent}%`);
+                toast.info(`${anim.name}: ${percent}% complete...`, { id: 'anim-gen' });
+              }
+            });
+
+            console.log('Starting GIF render...');
+            gif.render();
+          });
+
+          if (!gifBlob || gifBlob.size === 0) {
+            throw new Error('GIF rendering produced empty blob');
+          }
 
           const gifUrl = URL.createObjectURL(gifBlob);
           generatedGifs.push({
@@ -1219,17 +1245,20 @@ Make animations dynamic with REAL motion - characters move, swing weapons, chang
             frameCount: loadedFrames.length
           });
 
-          console.log(`✅ ${anim.name} complete! (${loadedFrames.length} frames, ${(gifBlob.size / 1024).toFixed(1)}KB)`);
-        } catch (gifError) {
-          console.error(`Failed to create GIF for ${anim.name}:`, gifError);
-          // Continue with other animations
+          console.log(`✅ ${anim.name} complete! (${loadedFrames.length} frames, ${(gifBlob.size / 1024).toFixed(1)}KB)\n`);
+        } catch (animError) {
+          console.error(`Failed to create animation ${anim.name}:`, animError);
+          // Continue with next animation
         }
       }
 
+      // Final validation
       if (generatedGifs.length === 0) {
-        throw new Error('Animation generation completed but no GIFs were created successfully. Please try again with a different image or check your connection.');
+        console.error('No animations were successfully created');
+        throw new Error('Could not create any animations. This might be due to:\n• Network issues with image generation\n• Image complexity\n• GIF rendering timeout\n\nPlease try again or use a simpler image.');
       }
 
+      console.log(`\n🎉 Successfully created ${generatedGifs.length} animations!`);
       setGeneratedAnimations(generatedGifs);
       toast.dismiss('anim-gen');
       toast.success(`${generatedGifs.length} AI animation${generatedGifs.length > 1 ? 's' : ''} created! 🎬`);
@@ -1258,8 +1287,9 @@ Make animations dynamic with REAL motion - characters move, swing weapons, chang
 
     } catch (error) {
       console.error('❌ AI Animation generation failed:', error);
+      console.error('Error stack:', error.stack);
       toast.dismiss('anim-gen');
-      toast.error('AI Animation failed: ' + error.message);
+      toast.error('Animation failed: ' + error.message);
       throw error;
     }
   };
