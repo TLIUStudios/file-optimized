@@ -139,40 +139,22 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
 
   const loadFFmpegAlternative = async () => {
     try {
-      console.log('🚀 Loading FFmpeg with alternative approach...');
+      console.log('🚀 Loading FFmpeg...');
       toast.info('Loading media processor...', { id: 'ffmpeg-load', duration: Infinity });
       
-      // Use CDN bundle approach - simpler and more reliable
-      const script = document.createElement('script');
-      script.src = 'https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@0.12.10/dist/umd/ffmpeg.js';
+      // Import FFmpeg from CDN using dynamic import
+      const FFmpegModule = await import('https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@0.12.10/dist/esm/index.js');
+      const FFmpeg = FFmpegModule.FFmpeg;
       
-      await new Promise((resolve, reject) => {
-        script.onload = resolve;
-        script.onerror = () => reject(new Error('Failed to load FFmpeg script'));
-        document.head.appendChild(script);
-      });
+      const UtilModule = await import('https://cdn.jsdelivr.net/npm/@ffmpeg/util@0.12.1/dist/esm/index.js');
+      const { toBlobURL, fetchFile } = UtilModule;
       
-      console.log('✅ FFmpeg script loaded');
-      
-      // Load utilities
-      const utilScript = document.createElement('script');
-      utilScript.src = 'https://cdn.jsdelivr.net/npm/@ffmpeg/util@0.12.1/dist/umd/index.js';
-      
-      await new Promise((resolve, reject) => {
-        utilScript.onload = resolve;
-        utilScript.onerror = () => reject(new Error('Failed to load FFmpeg utilities'));
-        document.head.appendChild(utilScript);
-      });
-      
-      console.log('✅ FFmpeg utilities loaded');
-      
-      // Access from window object
-      const { FFmpeg } = window.FFmpegWASM || window;
-      const { toBlobURL } = window.FFmpegUtil || window;
-      
-      if (!FFmpeg || !toBlobURL) {
-        throw new Error('FFmpeg or toBlobURL not available on window object');
+      // Store fetchFile in window for later use
+      if (!window.FFmpegUtil) {
+        window.FFmpegUtil = { toBlobURL, fetchFile };
       }
+      
+      console.log('✅ FFmpeg modules loaded');
       
       const ffmpeg = new FFmpeg();
       ffmpegRef.current = ffmpeg;
@@ -187,14 +169,14 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
         toast.info(`Processing: ${percent}%`, { id: 'ffmpeg-progress' });
       });
       
-      // Use single-threaded core for better compatibility
-      const baseURL = 'https://unpkg.com/@ffmpeg/core-st@0.12.6/dist/umd';
+      // Use CDN for WASM files - single-threaded for better compatibility
+      const baseURL = 'https://unpkg.com/@ffmpeg/core-st@0.12.6/dist/esm';
       
-      console.log('📦 Creating blob URLs...');
+      console.log('📦 Loading FFmpeg core...');
       const coreURL = await toBlobURL(`${baseURL}/ffmpeg-core.js`, 'text/javascript');
       const wasmURL = await toBlobURL(`${baseURL}/ffmpeg-core.wasm`, 'application/wasm');
       
-      console.log('🔧 Loading FFmpeg core...');
+      console.log('🔧 Initializing FFmpeg...');
       await ffmpeg.load({ coreURL, wasmURL });
       
       setFfmpegLoaded(true);
@@ -202,9 +184,9 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
       toast.success('Media processor ready!', { id: 'ffmpeg-load' });
     } catch (error) {
       console.error('❌ FFmpeg load failed:', error);
-      console.error('Details:', error.message, error.stack);
-      setError('Media processor failed to load. Try refreshing the page or use a different browser.');
-      toast.error('Failed to load media processor: ' + error.message, { id: 'ffmpeg-load' });
+      console.error('Error details:', error.message, error.stack);
+      setError('Media processor failed to load. Try refreshing the page or use a different browser (Chrome/Edge recommended).');
+      toast.error('Failed to load media processor. Try Chrome or Edge browser.', { id: 'ffmpeg-load' });
     }
   };
 
