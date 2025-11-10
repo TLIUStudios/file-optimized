@@ -700,57 +700,19 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
           needsResize = true;
         } else if (maxHeight && maxHeight < gifSettings.height) {
           targetHeight = maxHeight;
-          targetWidth = Math.round(maxHeight * aspectRatio);
+          targetWidth = Math.round(maxHeight / aspectRatio);
           needsResize = true;
         }
       }
       
-      // If no resize needed and quality is high, return original
-      if (!needsResize && quality >= 80) {
-        console.log('No resize needed and quality is high, using original GIF');
-        const compressedUrl = URL.createObjectURL(originalBlob);
-        setCompressedPreview(compressedUrl);
-        setCompressedSize(originalBlob.size);
-        setCompressedBlob(originalBlob);
-        setProcessed(true);
-        setOutputFormat('gif');
-        setOutputGifFrameCount(gifFrameCount);
-
-        onProcessed({
-          id: image.name,
-          originalFile: image,
-          compressedBlob: originalBlob,
-          compressedUrl,
-          originalSize: image.size,
-          compressedSize: originalBlob.size,
-          format: 'gif',
-          filename: getOutputFilename('gif'),
-          mediaType: 'image',
-          fileFormat: 'gif'
-        });
-        
-        toast.success('GIF ready (preserving original quality)');
-        return;
-      }
-
       console.log(`Target size: ${targetWidth}x${targetHeight}, needsResize: ${needsResize}`);
       
-      // Frame handling based on quality
-      let frameSkip = 1;
-      let maxFramesToProcess = gifSettings.frames.length;
+      // ALWAYS process with good quality for file size reduction
+      // Keep all frames for quality, but use smart quality settings
+      const frameSkip = 1;
+      const maxFramesToProcess = Math.min(gifSettings.frames.length, 1000);
       
-      if (quality < 50) {
-        frameSkip = 2; // Skip every other frame for lower quality
-        maxFramesToProcess = Math.min(gifSettings.frames.length, 400);
-      } else if (quality < 80) {
-        frameSkip = 1;
-        maxFramesToProcess = Math.min(gifSettings.frames.length, 600);
-      } else {
-        frameSkip = 1;
-        maxFramesToProcess = Math.min(gifSettings.frames.length, 1000);
-      }
-      
-      console.log(`Processing with frameSkip=${frameSkip}, maxFrames=${maxFramesToProcess}, quality=${quality}`);
+      console.log(`Processing ${maxFramesToProcess} frames with high quality`);
       
       const processedFrames = [];
       
@@ -819,10 +781,11 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
 
       const GIF = window.GIF;
       
-      // Quality mapping: Higher user quality = lower gif.js quality number (better)
-      let gifQuality = Math.max(1, Math.round((100 - quality) / 10));
+      // ALWAYS use excellent quality (2-5 range = high quality with file size reduction)
+      // Quality 2-5 out of 30 gives great quality + good compression
+      let gifQuality = Math.max(2, Math.min(5, Math.round(5 - (quality / 25))));
       
-      console.log(`GIF.js quality: ${gifQuality} (1=best, 30=worst), user quality: ${quality}%`);
+      console.log(`GIF.js quality: ${gifQuality} (2-5=excellent, always good quality)`);
       
       const gif = new GIF({
         workers: 4,
@@ -907,12 +870,11 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
       if (gifBlob.size < image.size) {
         toast.success(`GIF optimized! ${processedFrames.length} frames, saved ${savings}%`);
       } else {
-        toast.info(`GIF processed • ${processedFrames.length} frames`);
+        toast.info(`GIF processed • ${processedFrames.length} frames • High quality maintained`);
       }
     } catch (error) {
       console.error('❌ GIF optimization failed:', error);
       
-      // Fallback to original
       try {
         const response = await fetch(preview);
         const originalBlob = await response.blob();

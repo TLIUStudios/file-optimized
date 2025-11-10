@@ -1,3 +1,4 @@
+
 import { useState, useRef, useEffect } from "react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { X, Play, Pause, Plus, Trash2, Type, Wand2, Download, ChevronLeft, ChevronRight } from "lucide-react";
@@ -75,6 +76,19 @@ export default function GifEditor({ isOpen, onClose, gifData, onSave }) {
 
       setFrames(loadedFrames);
       setGlobalDelay(loadedFrames[0]?.delay || 100);
+      setCurrentFrame(0);
+      
+      // Draw first frame immediately after loading
+      setTimeout(() => {
+        if (canvasRef.current && loadedFrames.length > 0) {
+          const canvas = canvasRef.current;
+          canvas.width = loadedFrames[0].width;
+          canvas.height = loadedFrames[0].height;
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(loadedFrames[0].canvas, 0, 0);
+        }
+      }, 100);
+      
       toast.success(`Loaded ${loadedFrames.length} frames`);
     } catch (error) {
       console.error('Error loading GIF:', error);
@@ -154,6 +168,10 @@ export default function GifEditor({ isOpen, onClose, gifData, onSave }) {
   };
 
   const addTextOverlay = () => {
+    if (!frames.length) {
+      toast.error("No frames to add text to.");
+      return;
+    }
     const newOverlay = {
       id: Date.now(),
       frameIndex: currentFrame,
@@ -172,6 +190,7 @@ export default function GifEditor({ isOpen, onClose, gifData, onSave }) {
 
   const updateTextOverlay = (id, updates) => {
     setTextOverlays(prev => prev.map(t => t.id === id ? { ...t, ...updates } : t));
+    setEditingText(prev => prev && prev.id === id ? { ...prev, ...updates } : prev);
   };
 
   const deleteTextOverlay = (id) => {
@@ -183,7 +202,11 @@ export default function GifEditor({ isOpen, onClose, gifData, onSave }) {
   };
 
   const applyEffect = async (effect) => {
-    toast.info('Applying effect...');
+    if (!frames.length) {
+      toast.error("No frames to apply effects to.");
+      return;
+    }
+    toast.info('Applying effect...', { duration: Infinity, id: 'effect-apply' });
     
     const newFrames = await Promise.all(frames.map(async (frame) => {
       const tempCanvas = document.createElement('canvas');
@@ -191,6 +214,7 @@ export default function GifEditor({ isOpen, onClose, gifData, onSave }) {
       tempCanvas.height = frame.height;
       const ctx = tempCanvas.getContext('2d');
       
+      // Draw the original frame's content to the temporary canvas first
       ctx.drawImage(frame.canvas, 0, 0);
       
       switch (effect) {
@@ -205,15 +229,21 @@ export default function GifEditor({ isOpen, onClose, gifData, onSave }) {
           break;
         case 'brightness':
           ctx.filter = 'brightness(1.2)';
-          ctx.drawImage(frame.canvas, 0, 0);
+          // Redraw original content with filter applied
+          ctx.drawImage(frame.canvas, 0, 0); 
           break;
         case 'contrast':
           ctx.filter = 'contrast(1.3)';
+          // Redraw original content with filter applied
           ctx.drawImage(frame.canvas, 0, 0);
           break;
         case 'blur':
           ctx.filter = 'blur(2px)';
+          // Redraw original content with filter applied
           ctx.drawImage(frame.canvas, 0, 0);
+          break;
+        default:
+          // No effect or unknown effect, just return original canvas
           break;
       }
       
@@ -221,10 +251,16 @@ export default function GifEditor({ isOpen, onClose, gifData, onSave }) {
     }));
     
     setFrames(newFrames);
+    toast.dismiss('effect-apply');
     toast.success('Effect applied to all frames');
   };
 
   const saveGif = async () => {
+    if (!frames.length) {
+      toast.error("No frames to save.");
+      return;
+    }
+
     try {
       toast.info('Creating GIF...', { duration: Infinity, id: 'gif-save' });
       
@@ -233,10 +269,12 @@ export default function GifEditor({ isOpen, onClose, gifData, onSave }) {
       const workerBlob = new Blob([workerText], { type: 'application/javascript' });
       const workerUrl = URL.createObjectURL(workerBlob);
 
-      await new Promise((resolve) => {
+      // Dynamically load gif.js library
+      await new Promise((resolve, reject) => {
         const script = document.createElement('script');
         script.src = 'https://cdn.jsdelivr.net/npm/gif.js@0.2.0/dist/gif.js';
         script.onload = resolve;
+        script.onerror = reject;
         document.head.appendChild(script);
       });
 
@@ -247,10 +285,11 @@ export default function GifEditor({ isOpen, onClose, gifData, onSave }) {
         width: frames[0].width,
         height: frames[0].height,
         workerScript: workerUrl,
-        repeat: 0
+        repeat: 0 // Loop indefinitely
       });
 
-      for (const frame of frames) {
+      for (let i = 0; i < frames.length; i++) {
+        const frame = frames[i];
         const canvas = document.createElement('canvas');
         canvas.width = frame.width;
         canvas.height = frame.height;
@@ -258,8 +297,8 @@ export default function GifEditor({ isOpen, onClose, gifData, onSave }) {
         
         ctx.drawImage(frame.canvas, 0, 0);
         
-        // Draw text overlays
-        textOverlays.filter(t => t.frameIndex === frame.id).forEach(overlay => {
+        // Draw text overlays that apply to this specific frame
+        textOverlays.filter(t => t.frameIndex === i).forEach(overlay => { // Filter by frame index
           ctx.font = `${overlay.fontSize}px ${overlay.fontFamily}`;
           ctx.fillStyle = overlay.color;
           ctx.textAlign = overlay.align;
@@ -273,8 +312,9 @@ export default function GifEditor({ isOpen, onClose, gifData, onSave }) {
         toast.info(`Creating GIF: ${(p * 100).toFixed(0)}%...`, { id: 'gif-save' });
       });
 
-      const blob = await new Promise((resolve) => {
+      const blob = await new Promise((resolve, reject) => {
         gif.on('finished', resolve);
+        gif.on('error', reject); // Handle potential errors during rendering
         gif.render();
       });
 
@@ -332,6 +372,7 @@ export default function GifEditor({ isOpen, onClose, gifData, onSave }) {
                     variant="outline"
                     size="icon"
                     onClick={() => setCurrentFrame(prev => Math.max(0, prev - 1))}
+                    disabled={frames.length === 0 || currentFrame === 0}
                   >
                     <ChevronLeft className="w-4 h-4" />
                   </Button>
@@ -340,6 +381,7 @@ export default function GifEditor({ isOpen, onClose, gifData, onSave }) {
                     variant="outline"
                     size="icon"
                     onClick={() => setIsPlaying(!isPlaying)}
+                    disabled={frames.length === 0}
                   >
                     {isPlaying ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
                   </Button>
@@ -348,12 +390,13 @@ export default function GifEditor({ isOpen, onClose, gifData, onSave }) {
                     variant="outline"
                     size="icon"
                     onClick={() => setCurrentFrame(prev => Math.min(frames.length - 1, prev + 1))}
+                    disabled={frames.length === 0 || currentFrame === frames.length - 1}
                   >
                     <ChevronRight className="w-4 h-4" />
                   </Button>
 
                   <span className="text-sm font-medium text-slate-700 dark:text-slate-300">
-                    Frame {currentFrame + 1} / {frames.length}
+                    Frame {frames.length > 0 ? currentFrame + 1 : 0} / {frames.length}
                   </span>
                 </div>
 
@@ -381,11 +424,20 @@ export default function GifEditor({ isOpen, onClose, gifData, onSave }) {
                     >
                       <canvas
                         ref={el => {
-                          if (el) {
+                          if (el && frame.canvas) {
                             el.width = frame.width;
                             el.height = frame.height;
                             const ctx = el.getContext('2d');
+                            ctx.clearRect(0, 0, el.width, el.height);
                             ctx.drawImage(frame.canvas, 0, 0);
+                            
+                            // Draw text overlays for thumbnail preview
+                            textOverlays.filter(t => t.frameIndex === index).forEach(overlay => {
+                                ctx.font = `${overlay.fontSize / 3}px ${overlay.fontFamily}`; // Scale down font for thumbnail
+                                ctx.fillStyle = overlay.color;
+                                ctx.textAlign = overlay.align;
+                                ctx.fillText(overlay.text, overlay.x / 3, overlay.y / 3); // Scale down position
+                            });
                           }
                         }}
                         className="w-full h-full object-contain rounded"
@@ -415,6 +467,7 @@ export default function GifEditor({ isOpen, onClose, gifData, onSave }) {
                       max={1000}
                       step={10}
                       className="mt-2"
+                      disabled={frames.length === 0}
                     />
                   </div>
 
@@ -427,12 +480,14 @@ export default function GifEditor({ isOpen, onClose, gifData, onSave }) {
                       max={1000}
                       step={10}
                       className="mt-2"
+                      disabled={frames.length === 0}
                     />
                     <Button
                       onClick={applyGlobalDelay}
                       variant="outline"
                       size="sm"
                       className="w-full mt-2"
+                      disabled={frames.length === 0}
                     >
                       Apply to All Frames
                     </Button>
@@ -447,6 +502,7 @@ export default function GifEditor({ isOpen, onClose, gifData, onSave }) {
                       onClick={addTextOverlay}
                       size="sm"
                       variant="outline"
+                      disabled={frames.length === 0}
                     >
                       <Type className="w-3 h-3 mr-1" />
                       Add Text
@@ -467,7 +523,7 @@ export default function GifEditor({ isOpen, onClose, gifData, onSave }) {
                           <Input
                             type="number"
                             value={editingText.fontSize}
-                            onChange={(e) => updateTextOverlay(editingText.id, { fontSize: parseInt(e.target.value) })}
+                            onChange={(e) => updateTextOverlay(editingText.id, { fontSize: parseInt(e.target.value) || 0 })}
                           />
                         </div>
                         <div>
@@ -486,7 +542,7 @@ export default function GifEditor({ isOpen, onClose, gifData, onSave }) {
                           <Input
                             type="number"
                             value={editingText.x}
-                            onChange={(e) => updateTextOverlay(editingText.id, { x: parseInt(e.target.value) })}
+                            onChange={(e) => updateTextOverlay(editingText.id, { x: parseInt(e.target.value) || 0 })}
                           />
                         </div>
                         <div>
@@ -494,10 +550,21 @@ export default function GifEditor({ isOpen, onClose, gifData, onSave }) {
                           <Input
                             type="number"
                             value={editingText.y}
-                            onChange={(e) => updateTextOverlay(editingText.id, { y: parseInt(e.target.value) })}
+                            onChange={(e) => updateTextOverlay(editingText.id, { y: parseInt(e.target.value) || 0 })}
                           />
                         </div>
                       </div>
+                      
+                      <Select value={editingText.align} onValueChange={(value) => updateTextOverlay(editingText.id, { align: value })}>
+                          <SelectTrigger className="w-full">
+                              <SelectValue placeholder="Text Alignment" />
+                          </SelectTrigger>
+                          <SelectContent>
+                              <SelectItem value="left">Left</SelectItem>
+                              <SelectItem value="center">Center</SelectItem>
+                              <SelectItem value="right">Right</SelectItem>
+                          </SelectContent>
+                      </Select>
 
                       <Button
                         onClick={() => deleteTextOverlay(editingText.id)}
@@ -521,9 +588,14 @@ export default function GifEditor({ isOpen, onClose, gifData, onSave }) {
                         }}
                         className="p-2 bg-slate-100 dark:bg-slate-800 rounded cursor-pointer hover:bg-slate-200 dark:hover:bg-slate-700 text-xs"
                       >
-                        "{overlay.text}"
+                        "{overlay.text}" (Frame {overlay.frameIndex + 1})
                       </div>
                     ))}
+                    {textOverlays.filter(t => t.frameIndex !== currentFrame).length > 0 && (
+                      <p className="text-xs text-slate-500 dark:text-slate-400 mt-2">
+                        ({textOverlays.filter(t => t.frameIndex !== currentFrame).length} other text overlays on different frames)
+                      </p>
+                    )}
                   </div>
                 </div>
 
@@ -535,6 +607,7 @@ export default function GifEditor({ isOpen, onClose, gifData, onSave }) {
                       onClick={() => applyEffect('grayscale')}
                       variant="outline"
                       size="sm"
+                      disabled={frames.length === 0}
                     >
                       <Wand2 className="w-3 h-3 mr-1" />
                       Grayscale
@@ -543,6 +616,7 @@ export default function GifEditor({ isOpen, onClose, gifData, onSave }) {
                       onClick={() => applyEffect('brightness')}
                       variant="outline"
                       size="sm"
+                      disabled={frames.length === 0}
                     >
                       <Wand2 className="w-3 h-3 mr-1" />
                       Brightness
@@ -551,6 +625,7 @@ export default function GifEditor({ isOpen, onClose, gifData, onSave }) {
                       onClick={() => applyEffect('contrast')}
                       variant="outline"
                       size="sm"
+                      disabled={frames.length === 0}
                     >
                       <Wand2 className="w-3 h-3 mr-1" />
                       Contrast
@@ -559,6 +634,7 @@ export default function GifEditor({ isOpen, onClose, gifData, onSave }) {
                       onClick={() => applyEffect('blur')}
                       variant="outline"
                       size="sm"
+                      disabled={frames.length === 0}
                     >
                       <Wand2 className="w-3 h-3 mr-1" />
                       Blur
@@ -575,6 +651,7 @@ export default function GifEditor({ isOpen, onClose, gifData, onSave }) {
                       variant="outline"
                       size="sm"
                       className="flex-1"
+                      disabled={frames.length === 0}
                     >
                       <Plus className="w-3 h-3 mr-1" />
                       Duplicate
