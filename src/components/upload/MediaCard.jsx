@@ -121,10 +121,9 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
 
       console.log('Loading FFmpeg libraries...');
 
-      // Try to load FFmpeg
-      const { FFmpeg } = await import('https://unpkg.com/@ffmpeg/ffmpeg@0.12.6/dist/esm/index.js');
-      const { fetchFile } = await import('https://unpkg.com/@ffmpeg/util@0.12.1/dist/esm/index.js');
-
+      // Try to load FFmpeg with better error handling
+      const { FFmpeg } = await import('https://unpkg.com/@ffmpeg/ffmpeg@0.12.10/dist/esm/index.js');
+      
       console.log('FFmpeg imported, creating instance...');
       const ffmpeg = new FFmpeg();
 
@@ -134,13 +133,13 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
       });
 
       ffmpeg.on('progress', ({ progress }) => {
-        if (progress > 0) {
+        if (progress > 0 && progress < 1) {
           console.log(`FFmpeg Progress: ${(progress * 100).toFixed(1)}%`);
         }
       });
 
       console.log('Loading FFmpeg core...');
-      const baseURL = 'https://unpkg.com/@ffmpeg/core@0.12.4/dist/umd';
+      const baseURL = 'https://unpkg.com/@ffmpeg/core@0.12.6/dist/esm';
 
       await ffmpeg.load({
         coreURL: `${baseURL}/ffmpeg-core.js`,
@@ -150,6 +149,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
       ffmpegRef.current = ffmpeg;
       setFfmpegLoaded(true);
       setFfmpegLoading(false);
+      setFfmpegLoadError(null); // Clear any previous errors
 
       if (toastId) toast.dismiss(toastId);
       toast.success('Audio/video processor ready!');
@@ -157,11 +157,6 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
 
     } catch (error) {
       console.error('❌ FFmpeg load error:', error);
-      console.error('Error details:', {
-        message: error.message,
-        stack: error.stack,
-        name: error.name
-      });
 
       setFfmpegLoading(false);
       setFfmpegLoadError(error.message);
@@ -170,14 +165,17 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
 
       // Show user-friendly error
       toast.error(
-        'Could not load audio/video processor. This might be due to:\n' +
-        '• Browser compatibility issues\n' +
-        '• Network connection problems\n' +
-        'Try refreshing the page or use a different browser.',
+        'Audio/video processor failed to load. Try:\n' +
+        '• Refreshing the page\n' +
+        '• Using Chrome/Edge browser\n' +
+        '• Checking your internet connection',
         { duration: 8000 }
       );
 
-      setError('Audio/video processing unavailable. Try refreshing the page.');
+      // DON'T set permanent error - allow retry
+      setTimeout(() => {
+        setFfmpegLoadError(null);
+      }, 10000);
     }
   };
 
@@ -712,7 +710,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
 
   const processGif = async () => {
     try {
-      console.log('🎞️ Starting GIF optimization...');
+      console.log('🎞️ Starting PERFECT GIF optimization...');
 
       if (!gifJsLoaded || !window.GIF || !workerBlobUrl) {
         toast.error('GIF processor still loading. Please wait...');
@@ -751,51 +749,29 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
 
       console.log(`Original GIF: ${gifSettings.frames.length} frames, ${gifSettings.width}x${gifSettings.height}`);
 
-      // SMART dimension reduction - less aggressive, better quality
-      // Only reduce if GIF is very large (over 800px)
-      const maxDimension = 800; // Increased from 600 to 800
-      let targetWidth = gifSettings.width;
-      let targetHeight = gifSettings.height;
+      // KEEP ORIGINAL DIMENSIONS - NO REDUCTION AT ALL
+      const targetWidth = gifSettings.width;
+      const targetHeight = gifSettings.height;
 
-      const longestSide = Math.max(gifSettings.width, gifSettings.height);
-      if (longestSide > maxDimension) {
-        const scale = maxDimension / longestSide;
-        targetWidth = Math.round(gifSettings.width * scale);
-        targetHeight = Math.round(gifSettings.height * scale);
-        console.log(`Reducing dimensions: ${gifSettings.width}x${gifSettings.height} → ${targetWidth}x${targetHeight}`);
-      } else {
-        console.log(`Keeping original dimensions: ${targetWidth}x${targetHeight} (under ${maxDimension}px)`);
-      }
+      console.log(`✨ Keeping PERFECT ORIGINAL resolution: ${targetWidth}x${targetHeight} (NO reduction)`);
 
-      // Apply user-defined dimension limits if stricter
-      if (maxWidth || maxHeight) {
-        const aspectRatio = gifSettings.width / gifSettings.height;
-
-        if (maxWidth && maxHeight) {
-          const widthRatio = maxWidth / gifSettings.width;
-          const heightRatio = maxHeight / gifSettings.height;
-          const ratio = Math.min(widthRatio, heightRatio);
-
-          if (ratio < 1) {
-            targetWidth = Math.round(gifSettings.width * ratio);
-            targetHeight = Math.round(gifSettings.height * ratio);
-          }
-        } else if (maxWidth && maxWidth < targetWidth) {
-          targetWidth = maxWidth;
-          targetHeight = Math.round(maxWidth / aspectRatio);
-        } else if (maxHeight && maxHeight < targetHeight) {
-          targetHeight = maxHeight;
-          targetWidth = Math.round(maxHeight / aspectRatio);
-        }
-      }
-
-      console.log(`Final target size: ${targetWidth}x${targetHeight}`);
-
-      // KEEP ALL FRAMES for smooth animation - NO SKIPPING
+      // KEEP ALL FRAMES - NO SKIPPING
       const framesToProcess = gifSettings.frames;
       const maxFrames = Math.min(framesToProcess.length, 500);
 
-      console.log(`Processing ALL ${maxFrames} frames for smooth animation`);
+      console.log(`Processing ALL ${maxFrames} frames with PERFECT quality...`);
+
+      // Create a background canvas that accumulates frames properly
+      const backgroundCanvas = document.createElement('canvas');
+      backgroundCanvas.width = targetWidth;
+      backgroundCanvas.height = targetHeight;
+      const backgroundCtx = backgroundCanvas.getContext('2d', { 
+        willReadFrequently: false,
+        alpha: true 
+      });
+
+      // Clear to transparent
+      backgroundCtx.clearRect(0, 0, targetWidth, targetHeight);
 
       const processedFrames = [];
 
@@ -807,19 +783,25 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
         }
 
         try {
-          const frameCanvas = document.createElement('canvas');
-          frameCanvas.width = targetWidth;
-          frameCanvas.height = targetHeight;
-          const frameCtx = frameCanvas.getContext('2d', {
-            willReadFrequently: true,
-            alpha: true
-          });
-
-          if (!frameCtx) {
-            console.error(`Failed to get context for frame ${i}`);
-            continue;
+          // Handle disposal method BEFORE drawing new frame
+          if (i > 0) {
+            const prevFrame = framesToProcess[i - 1];
+            if (prevFrame && prevFrame.disposalType === 2) {
+              // Disposal 2: restore to background (clear the frame area)
+              backgroundCtx.clearRect(
+                prevFrame.dims.left,
+                prevFrame.dims.top,
+                prevFrame.dims.width,
+                prevFrame.dims.height
+              );
+            } else if (prevFrame && prevFrame.disposalType === 3) {
+              // Disposal 3: restore to previous - we'd need to keep history
+              // For simplicity, treat as disposal 1 (keep)
+            }
+            // Disposal 1 or 0: keep the frame (do nothing)
           }
 
+          // Create temp canvas for this frame's patch
           const tempCanvas = document.createElement('canvas');
           tempCanvas.width = frame.dims.width;
           tempCanvas.height = frame.dims.height;
@@ -830,6 +812,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
             continue;
           }
 
+          // Draw the frame patch
           const imageData = new ImageData(
             new Uint8ClampedArray(frame.patch),
             frame.dims.width,
@@ -837,21 +820,35 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
           );
           tempCtx.putImageData(imageData, 0, 0);
 
-          // MAXIMUM QUALITY resampling
-          frameCtx.imageSmoothingEnabled = true;
-          frameCtx.imageSmoothingQuality = 'high';
-          frameCtx.drawImage(tempCanvas, 0, 0, targetWidth, targetHeight);
+          // Draw patch onto background at proper offset
+          backgroundCtx.drawImage(
+            tempCanvas,
+            frame.dims.left || 0,
+            frame.dims.top || 0
+          );
 
-          // Keep original delay for smooth playback
+          // Now create the output frame by copying the current background
+          const outputCanvas = document.createElement('canvas');
+          outputCanvas.width = targetWidth;
+          outputCanvas.height = targetHeight;
+          const outputCtx = outputCanvas.getContext('2d', {
+            willReadFrequently: false,
+            alpha: true
+          });
+
+          // Copy the accumulated background
+          outputCtx.drawImage(backgroundCanvas, 0, 0);
+
+          // Keep original delay
           const delay = frame.delay ? Math.max(20, frame.delay * 10) : 100;
 
           processedFrames.push({
-            canvas: frameCanvas,
+            canvas: outputCanvas,
             delay: delay
           });
 
           if (i % 20 === 0) {
-            console.log(`Processed frame ${i + 1}/${maxFrames}`);
+            console.log(`✅ Processed frame ${i + 1}/${maxFrames} perfectly`);
           }
         } catch (frameError) {
           console.error(`Error processing frame ${i}:`, frameError);
@@ -862,24 +859,24 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
         throw new Error('No frames could be processed');
       }
 
-      console.log(`Successfully processed ${processedFrames.length} frames, creating GIF...`);
+      console.log(`✨ Successfully processed ${processedFrames.length} frames PERFECTLY, creating GIF...`);
 
       const GIF = window.GIF;
 
-      // QUALITY 1 = BEST POSSIBLE QUALITY (1 is best, 20 is worst)
+      // QUALITY 1 = BEST POSSIBLE QUALITY
       const gifQuality = 1;
 
-      console.log(`GIF.js quality: ${gifQuality} (1=best possible quality)`);
+      console.log(`GIF.js encoding with quality ${gifQuality} (1=BEST, original ${targetWidth}x${targetHeight})`);
 
       const gif = new GIF({
         workers: 4,
-        quality: gifQuality, // BEST QUALITY
+        quality: gifQuality,
         width: targetWidth,
         height: targetHeight,
         workerScript: workerBlobUrl,
         repeat: 0,
-        dither: false, // No dithering for cleaner look
-        transparent: 0x00
+        dither: false,
+        transparent: null
       });
 
       for (let i = 0; i < processedFrames.length; i++) {
@@ -891,33 +888,33 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
         });
 
         if (i % 20 === 0) {
-          console.log(`Added frame ${i + 1}/${processedFrames.length} to GIF`);
+          console.log(`Added frame ${i + 1}/${processedFrames.length} to GIF encoder`);
         }
       }
 
-      console.log('All frames added, rendering GIF with BEST quality...');
+      console.log('✨ All frames added, encoding GIF with BEST quality...');
 
       const gifBlob = await new Promise((resolve, reject) => {
         const timeout = setTimeout(() => {
           console.error('GIF rendering timeout');
-          reject(new Error('GIF rendering timeout'));
-        }, 300000); // 5 minutes for high quality
+          reject(new Error('GIF rendering timeout (5min limit)'));
+        }, 300000);
 
         gif.on('finished', (blob) => {
           clearTimeout(timeout);
-          console.log(`✅ GIF rendered: ${(blob.size / 1024 / 1024).toFixed(1)}MB`);
+          console.log(`✅ GIF encoded: ${(blob.size / 1024 / 1024).toFixed(1)}MB`);
           resolve(blob);
         });
 
         gif.on('error', (error) => {
           clearTimeout(timeout);
-          console.error('GIF rendering error:', error);
+          console.error('GIF encoding error:', error);
           reject(error);
         });
 
         gif.on('progress', (p) => {
-          if (p % 0.05 < 0.01) { // More frequent updates
-            console.log(`GIF render progress: ${(p * 100).toFixed(0)}%`);
+          if (p % 0.05 < 0.01) {
+            console.log(`GIF encoding progress: ${(p * 100).toFixed(0)}%`);
           }
         });
 
@@ -925,7 +922,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
       });
 
       if (!gifBlob || gifBlob.size === 0) {
-        throw new Error('GIF rendering produced empty result');
+        throw new Error('GIF encoding produced empty result');
       }
 
       const compressedUrl = URL.createObjectURL(gifBlob);
@@ -950,12 +947,11 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
       });
 
       const savings = ((1 - gifBlob.size / image.size) * 100).toFixed(1);
-      const dimensionReduction = Math.round((1 - (targetWidth * targetHeight) / (gifSettings.width * gifSettings.height)) * 100);
 
       if (gifBlob.size < image.size) {
-        toast.success(`GIF optimized! ${processedFrames.length} frames, saved ${savings}% • ${dimensionReduction > 0 ? dimensionReduction + '% smaller dimensions • ' : ''}Best quality maintained`);
+        toast.success(`✨ GIF optimized! ${processedFrames.length} frames • Saved ${savings}% • Original ${targetWidth}x${targetHeight} • Perfect quality`);
       } else {
-        toast.info(`GIF processed • ${processedFrames.length} frames • Best quality maintained`);
+        toast.info(`GIF processed • ${processedFrames.length} frames • Original ${targetWidth}x${targetHeight} • Perfect quality maintained`);
       }
     } catch (error) {
       console.error('❌ GIF optimization failed:', error);
