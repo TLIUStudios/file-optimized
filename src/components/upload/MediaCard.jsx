@@ -17,6 +17,7 @@ import {
 } from "@/components/ui/tooltip";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
+import { base44 } from "@/api/base44Client";
 
 // Lazy load the editor and download modal
 const ImageEditor = lazy(() => import("./ImageEditor"));
@@ -1374,7 +1375,7 @@ Make animations creative and dynamic - they should have real motion and action!`
                 </div>
               )}
               
-              {isGif && (
+              isGif && (
                 <div>
                   <div className="flex items-center gap-2 mb-2">
                     <label className="text-xs font-medium text-slate-700 dark:text-slate-300">
