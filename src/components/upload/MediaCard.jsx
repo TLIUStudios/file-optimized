@@ -47,6 +47,12 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
   const [upscaleMultiplier, setUpscaleMultiplier] = useState(null);
   const [originalImageDimensions, setOriginalImageDimensions] = useState({ width: 0, height: 0 });
 
+  // New states for animation
+  const [animationSettingsOpen, setAnimationSettingsOpen] = useState(false);
+  const [enableAnimation, setEnableAnimation] = useState(false);
+  const [animationType, setAnimationType] = useState('auto'); // 'auto', 'low', 'high'
+  const [loopType, setLoopType] = useState('loop'); // 'loop', 'oscillate', 'random'
+
   // New state for editable filename
   const [editableFilename, setEditableFilename] = useState('');
   const [isEditingFilename, setIsEditingFilename] = useState(false);
@@ -113,12 +119,12 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
     }
   }, [image, isGif, isVideo, isAudio, isImage]);
 
-  // Load FFmpeg for video/audio processing - NEW APPROACH
+  // Load FFmpeg for video/audio/animation processing
   useEffect(() => {
-    if ((isVideo || isAudio || (isGif && format === 'mp4')) && !ffmpegLoaded) {
+    if ((isVideo || isAudio || (isGif && format === 'mp4') || (isImage && enableAnimation && (format === 'mp4' || format === 'gif'))) && !ffmpegLoaded) {
       loadFFmpegAlternative();
     }
-  }, [isVideo, isAudio, isGif, format, ffmpegLoaded]);
+  }, [isVideo, isAudio, isGif, format, ffmpegLoaded, isImage, enableAnimation]);
 
   useEffect(() => {
     if (autoProcess && !processed && !processing && processMediaRef.current) {
@@ -223,7 +229,9 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
     setOutputFormat(null);
     
     try {
-      if (isGif && format === 'mp4') {
+      if (isImage && enableAnimation) { // NEW condition for animation
+        await processImageToAnimation();
+      } else if (isGif && format === 'mp4') {
         await convertGifToMp4();
       } else if (isGif) {
         await processGif();
@@ -238,7 +246,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
       }
     } catch (error) {
       console.error('Error processing media:', error);
-      setError(`Failed to process ${isVideo ? 'video' : isAudio ? 'audio' : 'image'}. ${error.message}`);
+      setError(`Failed to process ${isImage && enableAnimation ? 'animation' : isVideo ? 'video' : isAudio ? 'audio' : 'image'}. ${error.message}`);
       toast.error('Processing failed: ' + error.message);
     }
     
@@ -880,6 +888,189 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
     });
   };
 
+  const processImageToAnimation = async () => {
+    if (!ffmpegLoaded || !ffmpegRef.current) {
+      toast.error('Media processor not ready for animation');
+      return;
+    }
+
+    try {
+      console.log('✨ Starting image to animation conversion...');
+      toast.info('Creating animation from image...', { duration: Infinity });
+
+      const ffmpeg = ffmpegRef.current;
+      const { fetchFile } = window.FFmpegUtil || window;
+
+      console.log('📥 Fetching image data...');
+      const imgData = await fetchFile(preview);
+      await ffmpeg.writeFile('input.jpg', imgData); // Assuming input is jpg/png, ffmpeg can handle it
+
+      const outputExt = format; // 'mp4' or 'gif'
+      const outputMimeType = outputExt === 'mp4' ? 'video/mp4' : 'image/gif';
+      const outputFilename = `output.${outputExt}`;
+
+      // Calculate target resolution based on maxWidth/maxHeight and original dimensions
+      let targetWidth = originalImageDimensions.width;
+      let targetHeight = originalImageDimensions.height;
+
+      // Prioritize maxWidth/maxHeight if set, otherwise use original dimensions
+      if (maxWidth && maxHeight) {
+        const widthRatio = maxWidth / originalImageDimensions.width;
+        const heightRatio = maxHeight / originalImageDimensions.height;
+        const ratio = Math.min(widthRatio, heightRatio); // Downscale if needed
+        targetWidth = Math.round(originalImageDimensions.width * ratio);
+        targetHeight = Math.round(originalImageDimensions.height * ratio);
+      } else if (maxWidth && maxWidth < targetWidth) {
+        targetWidth = maxWidth;
+        targetHeight = Math.round(maxWidth / (originalImageDimensions.width / originalImageDimensions.height));
+      } else if (maxHeight && maxHeight < targetHeight) {
+        targetHeight = maxHeight;
+        targetWidth = Math.round(maxHeight * (originalImageDimensions.width / originalImageDimensions.height));
+      }
+      
+      // Ensure dimensions are even for FFmpeg
+      targetWidth = targetWidth % 2 === 0 ? targetWidth : targetWidth - 1;
+      targetHeight = targetHeight % 2 === 0 ? targetHeight : targetHeight - 1;
+      
+      // Fallback for extremely small or zero dimensions
+      if (targetWidth <= 0) targetWidth = 640; 
+      if (targetHeight <= 0) targetHeight = 480; 
+
+      let zoomExpr;
+      let xExpr;
+      let yExpr;
+      const animationDurationSeconds = 8; // Total animation duration
+      const totalFrames = animationDurationSeconds * frameRate;
+
+      // Base parameters adjusted by animationType
+      let baseZoomSpeed = 0.0005;
+      let basePanSpeed = 0.002;
+      let maxZoomContinuous = 1.2;
+      let oscillationMaxZoom = 1.1; // for oscillate type
+      let oscillationPanRange = 10;
+      let randomPanRange = 15;
+
+      switch (animationType) {
+        case 'low':
+          baseZoomSpeed = 0.0003; basePanSpeed = 0.001; maxZoomContinuous = 1.1; oscillationMaxZoom = 1.07; oscillationPanRange = 7; randomPanRange = 10; break;
+        case 'high':
+          baseZoomSpeed = 0.0008; basePanSpeed = 0.003; maxZoomContinuous = 1.3; oscillationMaxZoom = 1.15; oscillationPanRange = 15; randomPanRange = 20; break;
+        case 'auto': // default for auto
+        default:
+          break;
+      }
+
+      switch (loopType) {
+        case 'loop': // Continuous zoom-in and pan
+          zoomExpr = `min(zoom+${baseZoomSpeed},${maxZoomContinuous})`;
+          xExpr = `iw/2-(iw/zoom/2)+${basePanSpeed}*iw*sin(n/20)`; // pan relative to image width
+          yExpr = `ih/2-(ih/zoom/2)+${basePanSpeed}*ih*cos(n/20)`; // pan relative to image height
+          break;
+        case 'oscillate': // Oscillating zoom and pan
+          // Oscillation between 1x and oscillationMaxZoom
+          zoomExpr = `1+${(oscillationMaxZoom - 1) / 2}*sin(PI*n/${totalFrames})`;
+          xExpr = `iw/2-(iw/z/2)+${oscillationPanRange}*sin(PI*n/${totalFrames} + PI/4)`;
+          yExpr = `ih/2-(ih/z/2)+${oscillationPanRange}*cos(PI*n/${totalFrames} + PI/2)`;
+          break;
+        case 'random': // Random-like pan, with slight zoom
+          zoomExpr = `min(zoom+${baseZoomSpeed/2},1.05)`; // Gentle zoom in
+          xExpr = `iw/2-(iw/z/2)+${randomPanRange}*sin(n/(${frameRate/2})+random(0))`; // random-like pan
+          yExpr = `ih/2-(ih/z/2)+${randomPanRange}*cos(n/(${frameRate/2})+random(1))`; // random-like pan
+          break;
+        default: // Fallback to 'loop' if not recognized
+          zoomExpr = `min(zoom+${baseZoomSpeed},${maxZoomContinuous})`;
+          xExpr = `iw/2-(iw/zoom/2)+${basePanSpeed}*iw*sin(n/20)`;
+          yExpr = `ih/2-(ih/zoom/2)+${basePanSpeed}*ih*cos(n/20)`;
+          break;
+      }
+
+      const vf = `zoompan=z='${zoomExpr}':x='${xExpr}':y='${yExpr}':d=1:s=${targetWidth}x${targetHeight}:fps=${frameRate}`;
+
+      const args = [
+        '-loop', '1', // Loop input image indefinitely
+        '-i', 'input.jpg',
+        '-t', String(animationDurationSeconds), // Output duration
+        '-vf', vf,
+      ];
+
+      if (outputExt === 'mp4') {
+        args.push(
+          '-c:v', 'libx264',
+          '-preset', videoPreset,
+          '-crf', String(Math.round((100 - quality) / 2.5)),
+          '-pix_fmt', 'yuv420p', // Required for wider compatibility
+          '-movflags', '+faststart',
+        );
+      } else if (outputExt === 'gif') {
+        // GIF conversion requires palettegen
+        // First pass: generate palette
+        await ffmpeg.exec([
+          '-loop', '1',
+          '-i', 'input.jpg',
+          '-t', String(animationDurationSeconds),
+          '-vf', `${vf},palettegen=max_colors=256`,
+          '-y',
+          'palette.png'
+        ]);
+
+        // Second pass: apply palette to generate GIF
+        // Note: '-lavfi' expects a complex filtergraph, not just one filter
+        args.push(
+          '-i', 'palette.png', // Add palette as second input
+          '-lavfi', `${vf}[x];[x][1:v]paletteuse=dither=bayer:bayer_scale=5`,
+          '-loop', '0', // Loop GIF indefinitely
+          '-y',
+        );
+      }
+      
+      args.push(outputFilename);
+
+      console.log('⚙️ Creating animation with args:', args.join(' '));
+      await ffmpeg.exec(args);
+
+      console.log('📤 Reading output file...');
+      const data = await ffmpeg.readFile(outputFilename);
+      const outputBlob = new Blob([data.buffer], { type: outputMimeType });
+      const compressedUrl = URL.createObjectURL(outputBlob);
+
+      console.log('🧹 Cleaning up...');
+      await ffmpeg.deleteFile('input.jpg');
+      await ffmpeg.deleteFile(outputFilename);
+      if (outputExt === 'gif') {
+        await ffmpeg.deleteFile('palette.png');
+      }
+
+      setCompressedPreview(compressedUrl);
+      setCompressedSize(outputBlob.size);
+      setCompressedBlob(outputBlob);
+      setProcessed(true);
+      setOutputFormat(outputExt);
+
+      onProcessed({
+        id: image.name,
+        originalFile: image,
+        compressedBlob: outputBlob,
+        compressedUrl,
+        originalSize: image.size,
+        compressedSize: outputBlob.size,
+        format: outputExt,
+        filename: getOutputFilename(outputExt),
+        mediaType: outputExt === 'mp4' ? 'video' : 'image', // GIF is image, MP4 is video
+        fileFormat: outputExt
+      });
+
+      toast.dismiss();
+      toast.success('Animation created successfully!');
+      console.log('✅ Animation complete!');
+
+    } catch (error) {
+      console.error('❌ Image to animation failed:', error);
+      toast.dismiss();
+      toast.error('Animation creation failed: ' + error.message);
+      throw error;
+    }
+  };
+
   // Helper function for actual download logic
   const performSingleMediaDownload = async (blob, targetFormat, mediaType, filename) => {
     if (!blob) {
@@ -892,7 +1083,8 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
 
     // If it's an image (and not a GIF being treated as video) and the targetFormat is different from the current outputFormat,
     // we need to perform an on-the-fly conversion for download.
-    if (isImage && !isGif && targetFormat && targetFormat !== (outputFormat || format)) {
+    // This logic should now also consider if the original was a static image converted to animation (mp4/gif)
+    if (isImage && !isGif && !enableAnimation && targetFormat && targetFormat !== (outputFormat || format)) {
         try {
             const img = new Image();
             img.src = compressedPreview; // Use the currently processed preview as source
@@ -993,7 +1185,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
         originalSize,
         compressedSize,
         fileName: getOutputFilename(), // Use new helper for filename
-        mediaType: isVideo ? 'video' : isAudio ? 'audio' : 'image',
+        mediaType: isVideo || (isImage && enableAnimation && outputFormat === 'mp4') ? 'video' : isAudio ? 'audio' : 'image', // Adjust mediaType for animation
         fileFormat: outputFormat || format
       });
     }
@@ -1020,7 +1212,8 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
     if (!compressedPreview || processing) return;
     
     // For video/audio/gif, just update the format state, actual conversion happens on re-process
-    if (isVideo || isAudio || (isGif && newFormat === 'mp4') || (isVideo && newFormat === 'gif')) {
+    // Also, if animation is enabled, only allow mp4/gif format change
+    if (isVideo || isAudio || (isGif && newFormat === 'mp4') || (isVideo && newFormat === 'gif') || (isImage && enableAnimation)) {
       setFormat(newFormat);
       // If already processed, reset processed state so user can re-process with new format
       if (processed) {
@@ -1101,7 +1294,9 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
   const displayCompressedExt = displayFormat.toUpperCase();
 
   let availableFormats = [];
-  if (isImage && !isGif) {
+  if (isImage && !isGif && enableAnimation) { // NEW condition for animation
+    availableFormats = ['mp4', 'gif'];
+  } else if (isImage && !isGif) {
     availableFormats = ['jpg', 'png', 'webp', 'avif'];
   } else if (isGif) {
     availableFormats = ['gif', 'mp4'];
@@ -1111,7 +1306,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
     availableFormats = ['mp3', 'wav'];
   }
 
-  const mediaIcon = isVideo ? Video : isAudio ? Music : isGif ? Film : null;
+  const mediaIcon = isVideo ? Video : isAudio ? Music : isGif || (isImage && enableAnimation) ? Film : null; // Added animation for film icon
   const MediaIcon = mediaIcon;
 
   return (
@@ -1130,14 +1325,14 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
                 </Badge>
               )}
               
-              {(isImage || isGif) ? (
+              {(isImage && !enableAnimation) ? (
                 <LazyImage 
                   src={preview} 
                   alt="Original" 
                   className="w-full h-full object-cover transition-transform group-hover:scale-105" 
                 />
-              ) : isVideo ? (
-                <video src={preview} className="w-full h-full object-cover" controls muted />
+              ) : isVideo || (isImage && enableAnimation) ? ( // Render video tag for animations
+                <video src={preview} className="w-full h-full object-cover" controls muted loop />
               ) : isAudio ? (
                 <div className="w-full h-full flex flex-col items-center justify-center p-4">
                   <Music className="w-16 h-16 text-slate-400 mb-2" />
@@ -1177,14 +1372,14 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
                 </Badge>
               )}
               
-              {(isImage || isGif) ? (
+              {(isImage && !enableAnimation) ? (
                 <LazyImage 
                   src={compressedPreview} 
                   alt="Compressed" 
                   className="w-full h-full object-cover transition-transform group-hover:scale-105" 
                 />
-              ) : isVideo ? (
-                <video src={compressedPreview} className="w-full h-full object-cover" controls muted />
+              ) : isVideo || (isImage && enableAnimation) ? ( // Render video tag for animations
+                <video src={compressedPreview} className="w-full h-full object-cover" controls muted loop />
               ) : isAudio ? (
                 <div className="w-full h-full flex flex-col items-center justify-center p-4">
                   <Music className="w-16 h-16 text-emerald-500 mb-2" />
@@ -1286,7 +1481,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
           </div>
         )}
 
-        {(isVideo || isAudio || (isGif && format === 'mp4')) && !ffmpegLoaded && (
+        {((isVideo || isAudio || (isGif && format === 'mp4')) || (isImage && enableAnimation && (format === 'mp4' || format === 'gif'))) && !ffmpegLoaded && (
           <div className="flex items-center gap-2 text-sm text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/30 p-3 rounded-lg">
             <Loader2 className="w-4 h-4 animate-spin flex-shrink-0" />
             <span className="text-xs">Loading {isVideo ? 'video' : isAudio ? 'audio' : 'media'} processor...</span>
@@ -1387,7 +1582,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
                 </div>
               )}
 
-              {(isImage || isGif) && (
+              {((isImage && !isGif && !enableAnimation) || isGif) && ( // Only show quality for static images / gifs (not animations)
                 <div>
                   <div className="flex items-center gap-2 mb-2">
                     <label className="text-xs font-medium text-slate-700 dark:text-slate-300">
@@ -1426,7 +1621,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
                 </div>
               )}
 
-              {isVideo && (
+              {(isVideo || (isImage && enableAnimation)) && ( // Show video settings for actual videos and image animations
                 <>
                   <div>
                     <div className="flex items-center gap-2 mb-2">
@@ -1574,7 +1769,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
                 </>
               )}
 
-              {(isVideo || isGif || (isImage && !isGif)) && ( // Apply max width/height for static images as well
+              {(isVideo || isGif || (isImage && !isGif && !enableAnimation)) && ( // Apply max width/height for static images as well, but not when animation is enabled (handled in animation settings)
                 <div className="grid grid-cols-2 gap-2">
                   <div>
                     <div className="flex items-center gap-1 mb-1">
@@ -1609,7 +1804,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
                 </div>
               )}
 
-              {(isImage && !isGif) && (
+              {(isImage && !isGif && !enableAnimation) && ( // Metadata/noise reduction only for static images, not for animations
                 <div className="space-y-3 pt-2 border-t border-slate-200 dark:border-slate-800">
                   <div className="flex items-center justify-between">
                     <label className="text-xs font-medium text-slate-700 dark:text-slate-300">
@@ -1638,7 +1833,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
           </CollapsibleContent>
         </Collapsible>
 
-        {(isImage && !isGif) && (
+        {(isImage && !isGif && !enableAnimation) && ( // Upscale settings only for static images, not for animations
           <Collapsible open={upscaleSettingsOpen} onOpenChange={setUpscaleSettingsOpen}>
             <CollapsibleTrigger asChild>
               <Button variant="outline" className="w-full justify-between" size="sm">
@@ -1721,10 +1916,6 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
                       setEnableUpscale(checked);
                       if (!checked) {
                         setUpscaleMultiplier(null);
-                        // Clear custom dimensions when disabling upscale only if they were set for upscaling
-                        // If they were set as "Max Width/Height" in compression settings, they should persist
-                        // This logic becomes a bit tricky with shared state. For now, we clear them for simplicity.
-                        // A better approach might be separate states for upscale dimensions vs compression dimensions.
                         setMaxWidth(null); 
                         setMaxHeight(null);
                       }
@@ -1813,11 +2004,177 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
           </Collapsible>
         )}
 
+        {(isImage && !isGif) && (
+          <Collapsible open={animationSettingsOpen} onOpenChange={setAnimationSettingsOpen}>
+            <CollapsibleTrigger asChild>
+              <Button variant="outline" className="w-full justify-between" size="sm">
+                <span className="flex items-center gap-2">
+                  <Film className="w-4 h-4" />
+                  Animation Settings
+                </span>
+                <ChevronDown className={cn(
+                  "w-4 h-4 transition-transform duration-200",
+                  animationSettingsOpen && "rotate-180"
+                )} />
+              </Button>
+            </CollapsibleTrigger>
+            <CollapsibleContent className="space-y-4 mt-4">
+              <TooltipProvider>
+                <div className="flex items-center justify-between pb-2 border-b border-slate-200 dark:border-slate-800">
+                  <div className="flex items-center gap-2">
+                    <label className="text-xs font-medium text-slate-700 dark:text-slate-300">
+                      Enable Animation
+                    </label>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Info className="w-3 h-3 text-slate-400 cursor-help" />
+                      </TooltipTrigger>
+                      <TooltipContent className="max-w-xs">
+                        <p className="text-xs">Convert static image to animated MP4 or GIF with motion effects</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </div>
+                  <Switch
+                    checked={enableAnimation}
+                    onCheckedChange={(checked) => {
+                      setEnableAnimation(checked);
+                      if (checked) {
+                        // When animation is enabled, default to MP4 if not already MP4/GIF
+                        if (format !== 'mp4' && format !== 'gif') {
+                          setFormat('mp4');
+                          toast.info('Format changed to MP4 for animation');
+                        }
+                        // Disable compression/upscale settings
+                        setStripMetadata(true);
+                        setNoiseReduction(false);
+                        setEnableUpscale(false);
+                        setQuality(80); // Reset quality to a reasonable default for video
+                      } else {
+                        // When animation is disabled, revert to a standard image format if current is MP4/GIF
+                        if (format === 'mp4' || format === 'gif') {
+                          setFormat('jpg'); // Default image format
+                          toast.info('Animation disabled. Format reset to JPG.');
+                        }
+                        // Also clear animation specific settings if disabling
+                        setAnimationType('auto');
+                        setLoopType('loop');
+                        setFrameRate(30); // Reset framerate for video if animation was using different
+                        setVideoBitrate(1000); // Reset video bitrate
+                        setQuality(80); // Reset quality to default
+                      }
+                    }}
+                    disabled={processing}
+                  />
+                </div>
+
+                {enableAnimation && (
+                  <>
+                    <div>
+                      <label className="text-xs font-medium text-slate-700 dark:text-slate-300 mb-2 block">
+                        Animation Type
+                      </label>
+                      <div className="grid grid-cols-3 gap-2">
+                        <Button
+                          size="sm"
+                          variant={animationType === 'auto' ? "default" : "outline"}
+                          onClick={() => setAnimationType('auto')}
+                          disabled={processing}
+                          className={cn(
+                            "text-xs h-9",
+                            animationType === 'auto' && "bg-emerald-600 hover:bg-emerald-700"
+                          )}
+                        >
+                          Auto
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant={animationType === 'low' ? "default" : "outline"}
+                          onClick={() => setAnimationType('low')}
+                          disabled={processing}
+                          className={cn(
+                            "text-xs h-9",
+                            animationType === 'low' && "bg-emerald-600 hover:bg-emerald-700"
+                          )}
+                        >
+                          Low Motion
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant={animationType === 'high' ? "default" : "outline"}
+                          onClick={() => setAnimationType('high')}
+                          disabled={processing}
+                          className={cn(
+                            "text-xs h-9",
+                            animationType === 'high' && "bg-emerald-600 hover:bg-emerald-700"
+                          )}
+                        >
+                          High Motion
+                        </Button>
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="text-xs font-medium text-slate-700 dark:text-slate-300 mb-2 block">
+                        Loop Settings
+                      </label>
+                      <div className="grid grid-cols-3 gap-2">
+                        <Button
+                          size="sm"
+                          variant={loopType === 'loop' ? "default" : "outline"}
+                          onClick={() => setLoopType('loop')}
+                          disabled={processing}
+                          className={cn(
+                            "text-xs h-9",
+                            loopType === 'loop' && "bg-emerald-600 hover:bg-emerald-700"
+                          )}
+                        >
+                          Continuous
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant={loopType === 'oscillate' ? "default" : "outline"}
+                          onClick={() => setLoopType('oscillate')}
+                          disabled={processing}
+                          className={cn(
+                            "text-xs h-9",
+                            loopType === 'oscillate' && "bg-emerald-600 hover:bg-emerald-700"
+                          )}
+                        >
+                          Oscillate
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant={loopType === 'random' ? "default" : "outline"}
+                          onClick={() => setLoopType('random')}
+                          disabled={processing}
+                          className={cn(
+                            "text-xs h-9",
+                            loopType === 'random' && "bg-emerald-600 hover:bg-emerald-700"
+                          )}
+                        >
+                          Random Pan
+                        </Button>
+                      </div>
+                    </div>
+
+                    <div className="bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 rounded-lg p-3">
+                      <p className="text-xs text-blue-700 dark:text-blue-400">
+                        <strong>Tip:</strong> Animation will create a looping {format.toUpperCase()} with smooth motion effects. 
+                        Higher motion creates more dramatic animations.
+                      </p>
+                    </div>
+                  </>
+                )}
+              </TooltipProvider>
+            </CollapsibleContent>
+          </Collapsible>
+        )}
+
         <div className="flex gap-2">
           {!processed ? (
             <Button
               onClick={processMedia}
-              disabled={processing || ((isVideo || isAudio || (isGif && format === 'mp4')) && !ffmpegLoaded)}
+              disabled={processing || (((isVideo || isAudio || (isGif && format === 'mp4')) || (isImage && enableAnimation && (format === 'mp4' || format === 'gif'))) && !ffmpegLoaded)}
               className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white"
             >
               {processing ? (
@@ -1828,7 +2185,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
               ) : (
                 <>
                   {MediaIcon && <MediaIcon className="w-4 h-4 mr-2" />}
-                  Compress {isVideo ? 'Video' : isAudio ? 'Audio' : isGif ? 'GIF' : 'Image'}
+                  Compress {isVideo ? 'Video' : isAudio ? 'Audio' : isGif ? 'GIF' : (isImage && enableAnimation) ? 'Animation' : 'Image'}
                 </>
               )}
             </Button>
