@@ -13,7 +13,6 @@ import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
-  TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
@@ -1834,7 +1833,7 @@ Make animations dynamic with REAL motion - characters move, swing weapons, chang
                         </li>
                         <li className="flex items-start gap-2">
                           <span className="text-purple-500 mt-0.5">⏱️</span>
-                          <span><strong>Processing time:</strong> 2-4 minutes (generates 36 unique frames - 9 per animation)</span>
+                          <span><strong>Processing time:</strong> 2-3 minutes (generates 36 unique frames - 9 per animation)</span>
                         </li>
                       </ul>
                     </div>
