@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
-import { X, Play, Pause, Scissors, Crop, RotateCw, Gauge, Type, Blur, Eraser, Download, ChevronDown } from "lucide-react";
+import { X, Play, Pause, Scissors, Crop, RotateCw, Gauge, Type, Circle, Eraser, Download, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
 import { Input } from "@/components/ui/input";
@@ -488,7 +488,7 @@ export default function VideoEditor({ isOpen, onClose, videoData, videoFile, onS
                   <CollapsibleTrigger asChild>
                     <Button variant="outline" className="w-full justify-between">
                       <span className="flex items-center gap-2">
-                        <Blur className="w-4 h-4" />
+                        <Circle className="w-4 h-4" />
                         Blur Areas ({blurAreas.length})
                       </span>
                       <ChevronDown className={cn("w-4 h-4 transition-transform", activeTab === 'blur' && "rotate-180")} />
@@ -496,7 +496,7 @@ export default function VideoEditor({ isOpen, onClose, videoData, videoFile, onS
                   </CollapsibleTrigger>
                   <CollapsibleContent className="space-y-3 mt-3">
                     <Button onClick={addBlurArea} variant="outline" size="sm" className="w-full">
-                      <Blur className="w-3 h-3 mr-1" />
+                      <Circle className="w-3 h-3 mr-1" />
                       Add Blur Area
                     </Button>
                     {blurAreas.map(blur => (
