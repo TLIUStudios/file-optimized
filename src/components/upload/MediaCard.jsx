@@ -341,11 +341,11 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
     // Provide common named ratios for better UX
     const ratioFloat = width / height;
     if (Math.abs(ratioFloat - 1) < 0.01) return "1:1 (Square)";
-    if (Math.abs(ratioFloat - 16/9) < 0.01) return "16:9 (Widescreen)";
-    if (Math.abs(ratioFloat - 4/3) < 0.01) return "4:3 (Standard)";
-    if (Math.abs(ratioFloat - 3/2) < 0.01) return "3:2";
-    if (Math.abs(ratioFloat - 21/9) < 0.01) return "21:9 (Ultrawide)";
-    if (Math.abs(ratioFloat - 9/16) < 0.01) return "9:16 (Vertical)";
+    if (Math.abs(ratioFloat - 16 / 9) < 0.01) return "16:9 (Widescreen)";
+    if (Math.abs(ratioFloat - 4 / 3) < 0.01) return "4:3 (Standard)";
+    if (Math.abs(ratioFloat - 3 / 2) < 0.01) return "3:2";
+    if (Math.abs(ratioFloat - 21 / 9) < 0.01) return "21:9 (Ultrawide)";
+    if (Math.abs(ratioFloat - 9 / 16) < 0.01) return "9:16 (Vertical)";
 
     // Fallback for less common ratios, simplify if numbers are large
     if (ratioW > 100 || ratioH > 100) {
@@ -358,7 +358,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
   const extractMetadata = async () => {
     try {
       toast.info('Extracting all metadata...', { duration: Infinity, id: 'metadata-extract' });
-      
+
       const metadata = {
         basic: {
           name: editableFilename,
@@ -393,7 +393,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
         // Extract EXIF, IPTC, GPS, XMP, ICC, etc. using exifr
         try {
           const exifr = await import('https://cdn.jsdelivr.net/npm/exifr@7.1.3/+esm');
-          
+
           // Get all possible metadata tags
           const allData = await exifr.parse(image, {
             tiff: true,
@@ -416,21 +416,21 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
             // Organize by category
             Object.entries(allData).forEach(([key, value]) => {
               if (value === null || value === undefined) return;
-              
+
               const keyLower = key.toLowerCase();
-              
+
               // GPS data
               if (keyLower.includes('gps') || keyLower.includes('latitude') || keyLower.includes('longitude')) {
                 metadata.gps[key] = value;
               }
               // EXIF data
-              else if (keyLower.includes('exif') || keyLower.includes('exposure') || keyLower.includes('iso') || 
-                       keyLower.includes('fnumber') || keyLower.includes('focallength') || keyLower.includes('flash')) {
+              else if (keyLower.includes('exif') || keyLower.includes('exposure') || keyLower.includes('iso') ||
+                keyLower.includes('fnumber') || keyLower.includes('focallength') || keyLower.includes('flash')) {
                 metadata.exif[key] = value;
               }
               // IPTC data
-              else if (keyLower.includes('iptc') || keyLower.includes('creator') || keyLower.includes('copyright') || 
-                       keyLower.includes('caption') || keyLower.includes('keywords')) {
+              else if (keyLower.includes('iptc') || keyLower.includes('creator') || keyLower.includes('copyright') ||
+                keyLower.includes('caption') || keyLower.includes('keywords')) {
                 metadata.iptc[key] = value;
               }
               // XMP data
@@ -450,9 +450,9 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
                 metadata.ihdr[key] = value;
               }
               // TIFF
-              else if (keyLower.includes('tiff') || keyLower.includes('orientation') || 
-                       keyLower.includes('resolution') || keyLower.includes('software') || 
-                       keyLower.includes('datetime') || keyLower.includes('make') || keyLower.includes('model')) {
+              else if (keyLower.includes('tiff') || keyLower.includes('orientation') ||
+                keyLower.includes('resolution') || keyLower.includes('software') ||
+                keyLower.includes('datetime') || keyLower.includes('make') || keyLower.includes('model')) {
                 metadata.tiff[key] = value;
               }
               // Other EXIF
@@ -464,7 +464,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
         } catch (exifrError) {
           console.warn('Could not extract EXIF data:', exifrError);
         }
-        
+
       } else if (isGif) {
         metadata.dimensions = {
           width: gifSettings.width || 'N/A',
@@ -474,7 +474,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
         };
       } else if (isVideo) {
         metadata.basic.format = 'Video File';
-        
+
         // Get video metadata from video element
         if (preview) {
           const video = document.createElement('video');
@@ -493,7 +493,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
         }
       } else if (isAudio) {
         metadata.basic.format = 'Audio File';
-        
+
         // Get audio metadata
         if (preview) {
           const audio = document.createElement('audio');
@@ -2626,12 +2626,22 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
             <Button
               onClick={processMedia}
               disabled={processing || (isVideo && !ffmpegLoaded) || (isAudio && !ffmpegLoaded) || (isGif && format === 'mp4' && !ffmpegLoaded) || (((isGif && format === 'gif') || (isImage && !isGif && enableAnimation)) && !gifJsLoaded)}
-              className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white"
+              className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white disabled:bg-slate-400 disabled:cursor-not-allowed"
             >
               {processing ? (
                 <>
                   <Loader2 className="w-4 h-4 mr-2 animate-spin" />
                   Processing...
+                </>
+              ) : (isVideo || isAudio) && ffmpegLoading ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Loading Processor...
+                </>
+              ) : (isVideo || isAudio) && !ffmpegLoaded ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Loading...
                 </>
               ) : (
                 <>
@@ -2652,7 +2662,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
                 Reprocess
               </Button>
               <Button
-                onClick={() => downloadMedia()} // Call without arguments for default logic
+                onClick={() => downloadMedia()}
                 className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white"
                 disabled={processing}
               >
@@ -2662,6 +2672,16 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
             </>
           )}
         </div>
+
+        {/* Show clear loading message for video/audio */}
+        {!processed && (isVideo || isAudio) && ffmpegLoading && (
+          <div className="flex items-center gap-2 text-sm text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/30 p-3 rounded-lg">
+            <Loader2 className="w-4 h-4 animate-spin flex-shrink-0" />
+            <span className="text-xs">
+              <strong>Loading video/audio processor...</strong> This may take 10-30 seconds on first load.
+            </span>
+          </div>
+        )}
 
         {processed && !error && (
           <div className={cn(
