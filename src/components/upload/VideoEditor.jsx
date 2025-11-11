@@ -7,7 +7,6 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 
 export default function VideoEditor({ isOpen, onClose, videoData, videoFile, onSave, ffmpeg }) {
@@ -21,12 +20,10 @@ export default function VideoEditor({ isOpen, onClose, videoData, videoFile, onS
   const [cropArea, setCropArea] = useState(null);
   const [textOverlays, setTextOverlays] = useState([]);
   const [blurAreas, setBlurAreas] = useState([]);
-  const [removeBackground, setRemoveBackground] = useState(false);
   const [processing, setProcessing] = useState(false);
-  const [activeTab, setActiveTab] = useState('trim'); // trim, crop, effects, text, blur
+  const [activeTab, setActiveTab] = useState('trim');
   
   const videoRef = useRef(null);
-  const canvasRef = useRef(null);
 
   useEffect(() => {
     if (isOpen && videoRef.current) {
@@ -63,8 +60,8 @@ export default function VideoEditor({ isOpen, onClose, videoData, videoFile, onS
     const newText = {
       id: Date.now(),
       text: 'Sample Text',
-      x: 50, // percentage
-      y: 50, // percentage
+      x: 50,
+      y: 50,
       fontSize: 32,
       color: '#FFFFFF',
       fontFamily: 'Arial',
@@ -77,7 +74,7 @@ export default function VideoEditor({ isOpen, onClose, videoData, videoFile, onS
   const addBlurArea = () => {
     const newBlur = {
       id: Date.now(),
-      x: 25, // percentage
+      x: 25,
       y: 25,
       width: 50,
       height: 50,
@@ -120,7 +117,6 @@ export default function VideoEditor({ isOpen, onClose, videoData, videoFile, onS
       const filters = [];
       let complexFilter = '';
 
-      // Trim
       const trimArgs = [];
       if (trimStart > 0) {
         trimArgs.push('-ss', String(trimStart));
@@ -129,7 +125,6 @@ export default function VideoEditor({ isOpen, onClose, videoData, videoFile, onS
         trimArgs.push('-to', String(trimEnd));
       }
 
-      // Rotation
       if (rotation !== 0) {
         const rotateMap = {
           90: 'transpose=1',
@@ -141,7 +136,6 @@ export default function VideoEditor({ isOpen, onClose, videoData, videoFile, onS
         }
       }
 
-      // Speed
       if (speed !== 1) {
         const speedFilter = `setpts=${(1/speed).toFixed(2)}*PTS`;
         const audioSpeedFilter = `atempo=${speed}`;
@@ -149,22 +143,19 @@ export default function VideoEditor({ isOpen, onClose, videoData, videoFile, onS
         complexFilter += `[0:a]${audioSpeedFilter}[a];`;
       }
 
-      // Crop
       if (cropArea) {
         const { x, y, width, height } = cropArea;
         filters.push(`crop=${width}:${height}:${x}:${y}`);
       }
 
-      // Blur areas
       if (blurAreas.length > 0) {
-        blurAreas.forEach((blur, index) => {
-          const { x, y, width, height, intensity, startTime, endTime } = blur;
+        blurAreas.forEach((blur) => {
+          const { intensity, startTime, endTime } = blur;
           const blurFilter = `boxblur=${intensity}:enable='between(t,${startTime},${endTime})'`;
           filters.push(blurFilter);
         });
       }
 
-      // Text overlays
       if (textOverlays.length > 0) {
         textOverlays.forEach(text => {
           const { text: content, x, y, fontSize, color, startTime, endTime } = text;
@@ -173,7 +164,6 @@ export default function VideoEditor({ isOpen, onClose, videoData, videoFile, onS
         });
       }
 
-      // Build FFmpeg command
       const args = [
         ...trimArgs,
         '-i', `input.${inputExt}`,
@@ -203,7 +193,6 @@ export default function VideoEditor({ isOpen, onClose, videoData, videoFile, onS
       const data = await ffmpeg.readFile('output.mp4');
       const blob = new Blob([data.buffer], { type: 'video/mp4' });
 
-      // Cleanup
       await ffmpeg.deleteFile(`input.${inputExt}`);
       await ffmpeg.deleteFile('output.mp4');
 
@@ -234,7 +223,6 @@ export default function VideoEditor({ isOpen, onClose, videoData, videoFile, onS
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-7xl w-[98vw] h-[98vh] p-0 overflow-hidden [&>button]:hidden">
         <div className="flex flex-col h-full">
-          {/* Header */}
           <div className="p-4 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between bg-white dark:bg-slate-900">
             <div>
               <h2 className="text-lg font-bold text-slate-900 dark:text-white">Video Editor</h2>
@@ -256,7 +244,6 @@ export default function VideoEditor({ isOpen, onClose, videoData, videoFile, onS
           </div>
 
           <div className="flex flex-1 overflow-hidden">
-            {/* Main Video Area */}
             <div className="flex-1 flex flex-col bg-slate-100 dark:bg-slate-900">
               <div className="flex-1 flex items-center justify-center p-4">
                 <video
@@ -267,7 +254,6 @@ export default function VideoEditor({ isOpen, onClose, videoData, videoFile, onS
                 />
               </div>
 
-              {/* Video Controls */}
               <div className="p-4 bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800">
                 <div className="flex items-center gap-4 mb-4">
                   <Button
@@ -292,7 +278,6 @@ export default function VideoEditor({ isOpen, onClose, videoData, videoFile, onS
                   />
                 </div>
 
-                {/* Trim Preview */}
                 {(trimStart > 0 || trimEnd < duration) && (
                   <div className="text-xs text-slate-600 dark:text-slate-400 bg-emerald-50 dark:bg-emerald-950/30 p-2 rounded">
                     Trim: {formatTime(trimStart)} → {formatTime(trimEnd)} (Duration: {formatTime(trimEnd - trimStart)})
@@ -301,10 +286,8 @@ export default function VideoEditor({ isOpen, onClose, videoData, videoFile, onS
               </div>
             </div>
 
-            {/* Right Sidebar - Tools */}
             <div className="w-80 border-l border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 overflow-y-auto">
               <div className="p-4 space-y-4">
-                {/* Trim Tool */}
                 <Collapsible open={activeTab === 'trim'} onOpenChange={(open) => setActiveTab(open ? 'trim' : '')}>
                   <CollapsibleTrigger asChild>
                     <Button variant="outline" className="w-full justify-between">
@@ -349,7 +332,6 @@ export default function VideoEditor({ isOpen, onClose, videoData, videoFile, onS
                   </CollapsibleContent>
                 </Collapsible>
 
-                {/* Rotate Tool */}
                 <Collapsible open={activeTab === 'rotate'} onOpenChange={(open) => setActiveTab(open ? 'rotate' : '')}>
                   <CollapsibleTrigger asChild>
                     <Button variant="outline" className="w-full justify-between">
@@ -377,7 +359,6 @@ export default function VideoEditor({ isOpen, onClose, videoData, videoFile, onS
                   </CollapsibleContent>
                 </Collapsible>
 
-                {/* Speed Tool */}
                 <Collapsible open={activeTab === 'speed'} onOpenChange={(open) => setActiveTab(open ? 'speed' : '')}>
                   <CollapsibleTrigger asChild>
                     <Button variant="outline" className="w-full justify-between">
@@ -413,7 +394,6 @@ export default function VideoEditor({ isOpen, onClose, videoData, videoFile, onS
                   </CollapsibleContent>
                 </Collapsible>
 
-                {/* Text Overlays */}
                 <Collapsible open={activeTab === 'text'} onOpenChange={(open) => setActiveTab(open ? 'text' : '')}>
                   <CollapsibleTrigger asChild>
                     <Button variant="outline" className="w-full justify-between">
@@ -483,7 +463,6 @@ export default function VideoEditor({ isOpen, onClose, videoData, videoFile, onS
                   </CollapsibleContent>
                 </Collapsible>
 
-                {/* Blur Areas */}
                 <Collapsible open={activeTab === 'blur'} onOpenChange={(open) => setActiveTab(open ? 'blur' : '')}>
                   <CollapsibleTrigger asChild>
                     <Button variant="outline" className="w-full justify-between">
