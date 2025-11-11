@@ -24,6 +24,7 @@ import { base44 } from "@/api/base44Client";
 const ImageEditor = lazy(() => import("./ImageEditor"));
 const DownloadModal = lazy(() => import("./DownloadModal"));
 const GifEditor = lazy(() => import("./GifEditor"));
+const VideoEditor = lazy(() => import("./VideoEditor"));
 
 export default function MediaCard({ image, onRemove, onProcessed, onCompare, autoProcess }) {
   const [processing, setProcessing] = useState(false);
@@ -50,6 +51,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
   const [upscaleMultiplier, setUpscaleMultiplier] = useState(null);
   const [originalImageDimensions, setOriginalImageDimensions] = useState({ width: 0, height: 0 });
   const [showGifEditor, setShowGifEditor] = useState(false);
+  const [showVideoEditor, setShowVideoEditor] = useState(false);
 
   // Animation states
   const [animationSettingsOpen, setAnimationSettingsOpen] = useState(false);
@@ -352,14 +354,27 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
     return `${ratioW}:${ratioH}`;
   };
 
-  // Add function to extract metadata
+  // Add function to extract ALL metadata using exifr
   const extractMetadata = async () => {
     try {
+      toast.info('Extracting all metadata...', { duration: Infinity, id: 'metadata-extract' });
+      
       const metadata = {
-        name: editableFilename,
-        type: image.type,
-        size: formatFileSize(originalSize),
-        lastModified: new Date(image.lastModified).toLocaleString(),
+        basic: {
+          name: editableFilename,
+          type: image.type,
+          size: formatFileSize(originalSize),
+          lastModified: new Date(image.lastModified).toLocaleString(),
+        },
+        dimensions: {},
+        exif: {},
+        iptc: {},
+        gps: {},
+        xmp: {},
+        icc: {},
+        jfif: {},
+        ihdr: {},
+        tiff: {}
       };
 
       if (isImage && !isGif) {
@@ -369,31 +384,152 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
           img.onload = resolve;
           img.onerror = () => reject(new Error('Failed to load image for metadata.'));
         });
-        metadata.width = img.width;
-        metadata.height = img.height;
-        metadata.aspectRatio = getAspectRatio(img.width, img.height);
+        metadata.dimensions = {
+          width: img.width,
+          height: img.height,
+          aspectRatio: getAspectRatio(img.width, img.height)
+        };
+
+        // Extract EXIF, IPTC, GPS, XMP, ICC, etc. using exifr
+        try {
+          const exifr = await import('https://cdn.jsdelivr.net/npm/exifr@7.1.3/+esm');
+          
+          // Get all possible metadata tags
+          const allData = await exifr.parse(image, {
+            tiff: true,
+            exif: true,
+            gps: true,
+            iptc: true,
+            xmp: true,
+            icc: true,
+            jfif: true,
+            ihdr: true,
+            translateKeys: false,
+            translateValues: false,
+            reviveValues: false,
+            sanitize: false,
+            mergeOutput: false,
+            silentErrors: true
+          });
+
+          if (allData) {
+            // Organize by category
+            Object.entries(allData).forEach(([key, value]) => {
+              if (value === null || value === undefined) return;
+              
+              const keyLower = key.toLowerCase();
+              
+              // GPS data
+              if (keyLower.includes('gps') || keyLower.includes('latitude') || keyLower.includes('longitude')) {
+                metadata.gps[key] = value;
+              }
+              // EXIF data
+              else if (keyLower.includes('exif') || keyLower.includes('exposure') || keyLower.includes('iso') || 
+                       keyLower.includes('fnumber') || keyLower.includes('focallength') || keyLower.includes('flash')) {
+                metadata.exif[key] = value;
+              }
+              // IPTC data
+              else if (keyLower.includes('iptc') || keyLower.includes('creator') || keyLower.includes('copyright') || 
+                       keyLower.includes('caption') || keyLower.includes('keywords')) {
+                metadata.iptc[key] = value;
+              }
+              // XMP data
+              else if (keyLower.includes('xmp') || keyLower.includes('rating') || keyLower.includes('label')) {
+                metadata.xmp[key] = value;
+              }
+              // ICC profile
+              else if (keyLower.includes('icc') || keyLower.includes('profile') || keyLower.includes('colorspace')) {
+                metadata.icc[key] = value;
+              }
+              // JFIF
+              else if (keyLower.includes('jfif')) {
+                metadata.jfif[key] = value;
+              }
+              // IHDR (PNG)
+              else if (keyLower.includes('ihdr') || keyLower.includes('png')) {
+                metadata.ihdr[key] = value;
+              }
+              // TIFF
+              else if (keyLower.includes('tiff') || keyLower.includes('orientation') || 
+                       keyLower.includes('resolution') || keyLower.includes('software') || 
+                       keyLower.includes('datetime') || keyLower.includes('make') || keyLower.includes('model')) {
+                metadata.tiff[key] = value;
+              }
+              // Other EXIF
+              else {
+                metadata.exif[key] = value;
+              }
+            });
+          }
+        } catch (exifrError) {
+          console.warn('Could not extract EXIF data:', exifrError);
+        }
+        
       } else if (isGif) {
-        metadata.width = gifSettings.width || 'N/A';
-        metadata.height = gifSettings.height || 'N/A';
-        metadata.frames = gifFrameCount || 'N/A';
-        metadata.aspectRatio = getAspectRatio(gifSettings.width, gifSettings.height);
+        metadata.dimensions = {
+          width: gifSettings.width || 'N/A',
+          height: gifSettings.height || 'N/A',
+          frames: gifFrameCount || 'N/A',
+          aspectRatio: getAspectRatio(gifSettings.width, gifSettings.height)
+        };
       } else if (isVideo) {
-        metadata.format = 'Video File';
+        metadata.basic.format = 'Video File';
+        
+        // Get video metadata from video element
+        if (preview) {
+          const video = document.createElement('video');
+          video.src = preview;
+          await new Promise((resolve) => {
+            video.onloadedmetadata = () => {
+              metadata.dimensions = {
+                width: video.videoWidth,
+                height: video.videoHeight,
+                duration: `${Math.floor(video.duration / 60)}:${String(Math.floor(video.duration % 60)).padStart(2, '0')}`,
+                aspectRatio: getAspectRatio(video.videoWidth, video.videoHeight)
+              };
+              resolve();
+            };
+          });
+        }
       } else if (isAudio) {
-        metadata.format = 'Audio File';
+        metadata.basic.format = 'Audio File';
+        
+        // Get audio metadata
+        if (preview) {
+          const audio = document.createElement('audio');
+          audio.src = preview;
+          await new Promise((resolve) => {
+            audio.onloadedmetadata = () => {
+              metadata.dimensions = {
+                duration: `${Math.floor(audio.duration / 60)}:${String(Math.floor(audio.duration % 60)).padStart(2, '0')}`
+              };
+              resolve();
+            };
+          });
+        }
       }
 
       if (processed) {
-        metadata.compressedSize = formatFileSize(compressedSize);
-        metadata.savings = `${savingsPercent}%`;
-        metadata.compressedFormat = displayCompressedExt;
-        if (outputGifFrameCount > 0) metadata.compressedFrames = outputGifFrameCount;
+        metadata.basic.compressedSize = formatFileSize(compressedSize);
+        metadata.basic.savings = `${savingsPercent}%`;
+        metadata.basic.compressedFormat = displayCompressedExt;
+        if (outputGifFrameCount > 0) metadata.dimensions.compressedFrames = outputGifFrameCount;
       }
+
+      // Remove empty categories
+      Object.keys(metadata).forEach(category => {
+        if (typeof metadata[category] === 'object' && Object.keys(metadata[category]).length === 0) {
+          delete metadata[category];
+        }
+      });
 
       setFileMetadata(metadata);
       setShowMetadataViewer(true);
+      toast.dismiss('metadata-extract');
+      toast.success('All metadata extracted!');
     } catch (error) {
       console.error('Error extracting metadata:', error);
+      toast.dismiss('metadata-extract');
       toast.error('Failed to extract metadata: ' + error.message);
     }
   };
@@ -1651,6 +1787,20 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
                   <Wand2 className="w-3 h-3" />
                 </Button>
               )}
+              {isVideo && (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setShowVideoEditor(true);
+                  }}
+                  disabled={!ffmpegLoaded}
+                  className="absolute top-2 right-2 bg-white/80 hover:bg-white dark:bg-slate-800/80 dark:hover:bg-slate-800 h-7 w-7 rounded-lg"
+                >
+                  <Wand2 className="w-3 h-3" />
+                </Button>
+              )}
             </div>
           )}
           {compressedPreview ? (
@@ -2549,6 +2699,29 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
         />
       )}
 
+      {showVideoEditor && isVideo && ffmpegLoaded && (
+        <VideoEditor
+          isOpen={showVideoEditor}
+          onClose={() => setShowVideoEditor(false)}
+          videoData={preview}
+          videoFile={image}
+          onSave={(editedBlob) => {
+            const newUrl = URL.createObjectURL(editedBlob);
+            setPreview(newUrl);
+            setOriginalSize(editedBlob.size);
+            if (processed) {
+              setProcessed(false);
+              setCompressedPreview(null);
+              setCompressedSize(0);
+              setError(null);
+            }
+            setShowVideoEditor(false);
+            toast.success("Video edited successfully. Re-compress to finalize.");
+          }}
+          ffmpeg={ffmpegRef.current}
+        />
+      )}
+
       {showDownloadModal && compressedBlob && (
         <DownloadModal
           isOpen={showDownloadModal}
@@ -2562,20 +2735,31 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
 
       {showMetadataViewer && fileMetadata && (
         <Dialog open={showMetadataViewer} onOpenChange={setShowMetadataViewer}>
-          <DialogContent className="sm:max-w-[425px]">
+          <DialogContent className="sm:max-w-[600px] max-h-[80vh] overflow-y-auto">
             <DialogHeader>
-              <DialogTitle>File Metadata</DialogTitle>
+              <DialogTitle>Complete File Metadata</DialogTitle>
               <DialogDescription>
-                Detailed information about your file.
+                All available metadata extracted from your file
               </DialogDescription>
             </DialogHeader>
-            <div className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-2 text-sm">
-              {Object.entries(fileMetadata).map(([key, value]) => (
-                <div key={key} className="contents">
-                  <span className="font-medium text-slate-600 dark:text-slate-400">
-                    {key.replace(/([A-Z])/g, ' $1').trim().split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')}:
-                  </span>
-                  <span className="text-slate-900 dark:text-white">{String(value)}</span>
+            <div className="space-y-4">
+              {Object.entries(fileMetadata).map(([category, data]) => (
+                <div key={category} className="space-y-2">
+                  <h3 className="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-wider border-b pb-1">
+                    {category}
+                  </h3>
+                  <div className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-2 text-xs">
+                    {typeof data === 'object' && Object.entries(data).map(([key, value]) => (
+                      <div key={key} className="contents">
+                        <span className="font-medium text-slate-600 dark:text-slate-400">
+                          {key}:
+                        </span>
+                        <span className="text-slate-900 dark:text-white break-all">
+                          {typeof value === 'object' ? JSON.stringify(value, null, 2) : String(value)}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               ))}
             </div>
