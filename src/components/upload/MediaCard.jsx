@@ -20,9 +20,9 @@ import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
 import { base44 } from "@/api/base44Client";
 
-// Lazy load the editor and download modal
+// Lazy load the editor
 const ImageEditor = lazy(() => import("./ImageEditor"));
-const DownloadModal = lazy(() => import("./DownloadModal"));
+// DownloadModal is no longer used, so removed
 const GifEditor = lazy(() => import("./GifEditor"));
 const VideoEditor = lazy(() => import("./VideoEditor"));
 
@@ -44,7 +44,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
   const [noiseReduction, setNoiseReduction] = useState(false);
   const [showEditor, setShowEditor] = useState(false);
   const [outputFormat, setOutputFormat] = useState(null);
-  const [showDownloadModal, setShowDownloadModal] = useState(false);
+  // showDownloadModal state is removed
   const [compressedBlob, setCompressedBlob] = useState(null);
   const [enableUpscale, setEnableUpscale] = useState(false);
   const [upscaleSettingsOpen, setUpscaleSettingsOpen] = useState(false);
@@ -1580,11 +1580,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
       return;
     }
 
-    if (mediaType === 'image' && formatOverride === null) {
-      setShowDownloadModal(true);
-      return;
-    }
-
+    // Direct download with current format - no modal
     performSingleMediaDownload(
       compressedBlob,
       formatOverride || currentCompressedFormat,
@@ -2739,17 +2735,6 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
             toast.success("Video edited successfully. Re-compress to finalize.");
           }}
           ffmpeg={ffmpegRef.current}
-        />
-      )}
-
-      {showDownloadModal && compressedBlob && (
-        <DownloadModal
-          isOpen={showDownloadModal}
-          onClose={() => setShowDownloadModal(false)}
-          blob={compressedBlob}
-          originalFilename={getOutputFilename()}
-          format={outputFormat || format}
-          generatedAnimations={generatedAnimations.length > 0 ? generatedAnimations : null}
         />
       )}
 
