@@ -7,50 +7,29 @@ import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
-export default function AudioEditor({ isOpen, onClose, audioUrl, ffmpeg, onSave }) {
+export default function AudioEditor({ isOpen, onClose, audioData, onSave, ffmpegRef }) {
   const [isPlaying, setIsPlaying] = useState(false);
-  const [duration, setDuration] = useState(0);
   const [currentTime, setCurrentTime] = useState(0);
-  const [processing, setProcessing] = useState(false);
-  
-  // Trim settings
+  const [duration, setDuration] = useState(0);
   const [trimStart, setTrimStart] = useState(0);
   const [trimEnd, setTrimEnd] = useState(0);
-  
-  // Format conversion
   const [outputFormat, setOutputFormat] = useState('mp3');
-  const [bitrate, setBitrate] = useState(128);
-  
-  // Volume
-  const [volume, setVolume] = useState(1);
-  
-  // Fade
-  const [fadeIn, setFadeIn] = useState(0);
-  const [fadeOut, setFadeOut] = useState(0);
+  const [processing, setProcessing] = useState(false);
   
   const audioRef = useRef(null);
 
   useEffect(() => {
     if (isOpen && audioRef.current) {
-      audioRef.current.src = audioUrl;
+      audioRef.current.src = audioData;
       audioRef.current.onloadedmetadata = () => {
         const dur = audioRef.current.duration;
         setDuration(dur);
         setTrimEnd(dur);
       };
     }
-  }, [isOpen, audioUrl]);
+  }, [isOpen, audioData]);
 
-  useEffect(() => {
-    const audio = audioRef.current;
-    if (!audio) return;
-
-    const updateTime = () => setCurrentTime(audio.currentTime);
-    audio.addEventListener('timeupdate', updateTime);
-    return () => audio.removeEventListener('timeupdate', updateTime);
-  }, []);
-
-  const togglePlayPause = () => {
+  const handlePlayPause = () => {
     if (audioRef.current) {
       if (isPlaying) {
         audioRef.current.pause();
@@ -61,6 +40,19 @@ export default function AudioEditor({ isOpen, onClose, audioUrl, ffmpeg, onSave 
     }
   };
 
+  const handleTimeUpdate = () => {
+    if (audioRef.current) {
+      setCurrentTime(audioRef.current.currentTime);
+    }
+  };
+
+  const handleSeek = (value) => {
+    if (audioRef.current) {
+      audioRef.current.currentTime = value[0];
+      setCurrentTime(value[0]);
+    }
+  };
+
   const formatTime = (seconds) => {
     const mins = Math.floor(seconds / 60);
     const secs = Math.floor(seconds % 60);
@@ -68,8 +60,8 @@ export default function AudioEditor({ isOpen, onClose, audioUrl, ffmpeg, onSave 
   };
 
   const applyEdits = async () => {
-    if (!ffmpeg) {
-      toast.error('Audio processor not available');
+    if (!ffmpegRef.current) {
+      toast.error('FFmpeg not loaded. Please wait...');
       return;
     }
 
@@ -77,16 +69,18 @@ export default function AudioEditor({ isOpen, onClose, audioUrl, ffmpeg, onSave 
     toast.info('Processing audio...', { duration: Infinity, id: 'audio-edit' });
 
     try {
+      const ffmpeg = ffmpegRef.current;
+      
       // Fetch audio data
-      const response = await fetch(audioUrl);
-      const audioData = await response.arrayBuffer();
-      const inputName = 'input.mp3';
-      const outputName = `output.${outputFormat}`;
-
-      await ffmpeg.writeFile(inputName, new Uint8Array(audioData));
+      const response = await fetch(audioData);
+      const audioBlob = await response.blob();
+      const audioArray = new Uint8Array(await audioBlob.arrayBuffer());
+      
+      const inputExt = audioData.includes('.mp3') ? 'mp3' : 'wav';
+      await ffmpeg.writeFile(`input.${inputExt}`, audioArray);
 
       // Build FFmpeg command
-      const args = ['-i', inputName];
+      const args = ['-i', `input.${inputExt}`];
       
       // Trim
       if (trimStart > 0) {
@@ -95,67 +89,40 @@ export default function AudioEditor({ isOpen, onClose, audioUrl, ffmpeg, onSave 
       if (trimEnd < duration) {
         args.push('-to', trimEnd.toString());
       }
-      
-      // Build audio filter
-      let filters = [];
-      
-      // Volume
-      if (volume !== 1) {
-        filters.push(`volume=${volume}`);
-      }
-      
-      // Fade in
-      if (fadeIn > 0) {
-        filters.push(`afade=t=in:st=0:d=${fadeIn}`);
-      }
-      
-      // Fade out
-      if (fadeOut > 0) {
-        const fadeStart = (trimEnd - trimStart) - fadeOut;
-        filters.push(`afade=t=out:st=${fadeStart}:d=${fadeOut}`);
-      }
-      
-      if (filters.length > 0) {
-        args.push('-af', filters.join(','));
-      }
-      
-      // Format and bitrate
+
+      // Output format
       if (outputFormat === 'mp3') {
-        args.push('-codec:a', 'libmp3lame', '-b:a', `${bitrate}k`);
+        args.push('-codec:a', 'libmp3lame');
+        args.push('-b:a', '192k');
       } else if (outputFormat === 'wav') {
-        args.push('-codec:a', 'pcm_s16le', '-ar', '44100');
-      } else if (outputFormat === 'ogg') {
-        args.push('-codec:a', 'libvorbis', '-q:a', '5');
+        args.push('-codec:a', 'pcm_s16le');
       } else if (outputFormat === 'aac') {
-        args.push('-codec:a', 'aac', '-b:a', `${bitrate}k`);
+        args.push('-codec:a', 'aac');
+        args.push('-b:a', '192k');
       }
-      
-      args.push(outputName);
+
+      args.push(`output.${outputFormat}`);
 
       console.log('FFmpeg command:', args.join(' '));
-      
       await ffmpeg.exec(args);
 
-      const data = await ffmpeg.readFile(outputName);
+      const data = await ffmpeg.readFile(`output.${outputFormat}`);
       const mimeTypes = {
         mp3: 'audio/mpeg',
         wav: 'audio/wav',
-        ogg: 'audio/ogg',
         aac: 'audio/aac'
       };
-      const blob = new Blob([data.buffer], { type: mimeTypes[outputFormat] });
-      const url = URL.createObjectURL(blob);
+      const editedBlob = new Blob([data.buffer], { type: mimeTypes[outputFormat] });
 
-      // Cleanup
-      await ffmpeg.deleteFile(inputName);
-      await ffmpeg.deleteFile(outputName);
+      await ffmpeg.deleteFile(`input.${inputExt}`);
+      await ffmpeg.deleteFile(`output.${outputFormat}`);
 
       toast.dismiss('audio-edit');
       toast.success('Audio edited successfully!');
       
-      onSave(url, blob);
+      onSave(URL.createObjectURL(editedBlob), editedBlob);
       onClose();
-      
+
     } catch (error) {
       console.error('Audio editing error:', error);
       toast.dismiss('audio-edit');
@@ -169,17 +136,16 @@ export default function AudioEditor({ isOpen, onClose, audioUrl, ffmpeg, onSave 
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-3xl w-[98vw] max-h-[90vh] p-0 overflow-hidden [&>button]:hidden">
-        <div className="flex flex-col h-full">
+      <DialogContent className="max-w-3xl p-0 overflow-hidden [&>button]:hidden">
+        <div className="flex flex-col">
           {/* Header */}
           <div className="p-4 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between bg-white dark:bg-slate-900">
-            <h2 className="text-lg font-bold text-slate-900 dark:text-white">Audio Editor</h2>
+            <div>
+              <h2 className="text-lg font-bold text-slate-900 dark:text-white">Audio Editor</h2>
+              <p className="text-xs text-slate-500 dark:text-slate-400">Edit your audio before compression</p>
+            </div>
             <div className="flex items-center gap-2">
-              <Button 
-                onClick={applyEdits} 
-                disabled={processing}
-                className="bg-emerald-600 hover:bg-emerald-700 text-white"
-              >
+              <Button onClick={applyEdits} disabled={processing} className="bg-emerald-600 hover:bg-emerald-700 text-white">
                 {processing ? (
                   <>
                     <Zap className="w-4 h-4 mr-2 animate-spin" />
@@ -188,7 +154,7 @@ export default function AudioEditor({ isOpen, onClose, audioUrl, ffmpeg, onSave 
                 ) : (
                   <>
                     <Download className="w-4 h-4 mr-2" />
-                    Apply & Save
+                    Apply Edits
                   </>
                 )}
               </Button>
@@ -198,156 +164,99 @@ export default function AudioEditor({ isOpen, onClose, audioUrl, ffmpeg, onSave 
             </div>
           </div>
 
-          <div className="p-6 space-y-6 overflow-y-auto">
-            {/* Waveform / Player */}
-            <div className="bg-slate-100 dark:bg-slate-900 rounded-lg p-6">
-              <audio ref={audioRef} className="hidden" />
-              
-              <div className="flex items-center gap-4 mb-4">
-                <Button
-                  variant="outline"
-                  size="icon"
-                  onClick={togglePlayPause}
-                  className="h-12 w-12"
-                >
-                  {isPlaying ? <Pause className="w-5 h-5" /> : <Play className="w-5 h-5" />}
-                </Button>
-                
-                <div className="flex-1">
-                  <Slider
-                    value={[currentTime]}
-                    onValueChange={([value]) => {
-                      if (audioRef.current) {
-                        audioRef.current.currentTime = value;
-                        setCurrentTime(value);
-                      }
-                    }}
-                    min={0}
-                    max={duration || 100}
-                    step={0.1}
-                    className="w-full"
-                  />
+          {/* Audio Player */}
+          <div className="p-8 bg-slate-50 dark:bg-slate-950">
+            <div className="max-w-2xl mx-auto space-y-6">
+              <div className="flex items-center justify-center">
+                <div className="w-32 h-32 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-full flex items-center justify-center">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={handlePlayPause}
+                    className="w-16 h-16 text-white hover:bg-white/20"
+                  >
+                    {isPlaying ? <Pause className="w-8 h-8" /> : <Play className="w-8 h-8 ml-1" />}
+                  </Button>
                 </div>
-                
-                <span className="text-sm text-slate-600 dark:text-slate-400 min-w-[80px] text-right">
-                  {formatTime(currentTime)} / {formatTime(duration)}
-                </span>
+              </div>
+
+              <audio
+                ref={audioRef}
+                onTimeUpdate={handleTimeUpdate}
+                className="hidden"
+              />
+
+              <div className="space-y-2">
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-slate-600 dark:text-slate-400">{formatTime(currentTime)}</span>
+                  <span className="text-slate-600 dark:text-slate-400">{formatTime(duration)}</span>
+                </div>
+                <Slider
+                  value={[currentTime]}
+                  onValueChange={handleSeek}
+                  min={0}
+                  max={duration}
+                  step={0.1}
+                  className="w-full"
+                />
               </div>
             </div>
+          </div>
 
-            {/* Trim Section */}
+          {/* Editing Tools */}
+          <div className="p-6 space-y-6 bg-white dark:bg-slate-900">
             <div className="space-y-4">
-              <div className="flex items-center gap-2">
-                <Scissors className="w-4 h-4 text-slate-600" />
-                <h3 className="font-semibold text-slate-900 dark:text-white">Trim Audio</h3>
-              </div>
-              
-              <div className="space-y-3">
-                <div>
-                  <Label className="text-xs">Start Time: {formatTime(trimStart)}</Label>
-                  <Slider
-                    value={[trimStart]}
-                    onValueChange={([value]) => setTrimStart(Math.min(value, trimEnd - 0.1))}
-                    min={0}
-                    max={duration}
-                    step={0.1}
-                    className="mt-2"
-                  />
-                </div>
-                <div>
-                  <Label className="text-xs">End Time: {formatTime(trimEnd)}</Label>
-                  <Slider
-                    value={[trimEnd]}
-                    onValueChange={([value]) => setTrimEnd(Math.max(value, trimStart + 0.1))}
-                    min={0}
-                    max={duration}
-                    step={0.1}
-                    className="mt-2"
-                  />
-                </div>
-                <p className="text-xs text-slate-500">
-                  Duration: {formatTime(trimEnd - trimStart)}
-                </p>
-              </div>
-            </div>
-
-            {/* Format & Quality */}
-            <div className="space-y-4">
-              <h3 className="font-semibold text-slate-900 dark:text-white">Format & Quality</h3>
-              
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label className="text-xs">Output Format</Label>
-                  <Select value={outputFormat} onValueChange={setOutputFormat}>
-                    <SelectTrigger className="mt-1">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="mp3">MP3</SelectItem>
-                      <SelectItem value="wav">WAV (Lossless)</SelectItem>
-                      <SelectItem value="ogg">OGG</SelectItem>
-                      <SelectItem value="aac">AAC</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                
-                {(outputFormat === 'mp3' || outputFormat === 'aac') && (
-                  <div>
-                    <Label className="text-xs">Bitrate: {bitrate}kbps</Label>
-                    <Slider
-                      value={[bitrate]}
-                      onValueChange={([value]) => setBitrate(value)}
-                      min={64}
-                      max={320}
-                      step={16}
-                      className="mt-3"
-                    />
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* Volume & Effects */}
-            <div className="space-y-4">
-              <h3 className="font-semibold text-slate-900 dark:text-white">Volume & Effects</h3>
+              <h3 className="font-semibold text-sm text-slate-900 dark:text-white flex items-center gap-2">
+                <Scissors className="w-4 h-4" />
+                Trim Audio
+              </h3>
               
               <div>
-                <Label className="text-xs">Volume: {(volume * 100).toFixed(0)}%</Label>
+                <Label className="text-xs">Start: {formatTime(trimStart)}</Label>
                 <Slider
-                  value={[volume]}
-                  onValueChange={([value]) => setVolume(value)}
+                  value={[trimStart]}
+                  onValueChange={(v) => setTrimStart(Math.min(v[0], trimEnd - 0.1))}
                   min={0}
-                  max={2}
+                  max={duration}
                   step={0.1}
                   className="mt-2"
                 />
               </div>
-              
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label className="text-xs">Fade In: {fadeIn.toFixed(1)}s</Label>
-                  <Slider
-                    value={[fadeIn]}
-                    onValueChange={([value]) => setFadeIn(value)}
-                    min={0}
-                    max={5}
-                    step={0.1}
-                    className="mt-2"
-                  />
-                </div>
-                
-                <div>
-                  <Label className="text-xs">Fade Out: {fadeOut.toFixed(1)}s</Label>
-                  <Slider
-                    value={[fadeOut]}
-                    onValueChange={([value]) => setFadeOut(value)}
-                    min={0}
-                    max={5}
-                    step={0.1}
-                    className="mt-2"
-                  />
-                </div>
+
+              <div>
+                <Label className="text-xs">End: {formatTime(trimEnd)}</Label>
+                <Slider
+                  value={[trimEnd]}
+                  onValueChange={(v) => setTrimEnd(Math.max(v[0], trimStart + 0.1))}
+                  min={0}
+                  max={duration}
+                  step={0.1}
+                  className="mt-2"
+                />
               </div>
+
+              <div className="bg-emerald-50 dark:bg-emerald-950/30 p-3 rounded-lg">
+                <p className="text-xs text-emerald-700 dark:text-emerald-400">
+                  New Duration: {formatTime(trimEnd - trimStart)}
+                </p>
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              <h3 className="font-semibold text-sm text-slate-900 dark:text-white">
+                Output Format
+              </h3>
+              
+              <Select value={outputFormat} onValueChange={setOutputFormat}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="mp3">MP3 (Compressed)</SelectItem>
+                  <SelectItem value="wav">WAV (Lossless)</SelectItem>
+                  <SelectItem value="aac">AAC (High Quality)</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
           </div>
         </div>
