@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery } from "@tanstack/react-query";
@@ -440,7 +441,7 @@ export default function Profile() {
                 </div>
 
                 <div className="text-center pt-4 border-t border-amber-200 dark:border-amber-800">
-                  <p className="text-2xl font-bold text-slate-900 dark:text-white mb-1">$9/month</p>
+                  <p className="text-2xl font-bold text-slate-900 dark:text-white mb-1">$10/month</p>
                   <p className="text-xs text-slate-600 dark:text-slate-400 mb-3">Cancel anytime</p>
                   <Button
                     onClick={() => setShowProModal(true)}

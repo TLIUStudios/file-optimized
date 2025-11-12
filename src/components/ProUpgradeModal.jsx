@@ -1,3 +1,4 @@
+
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Check, Zap, Sparkles, Film, TrendingUp, Loader2 } from "lucide-react";
@@ -32,7 +33,7 @@ export default function ProUpgradeModal({ isOpen, onClose, onUpgrade, processing
           <div className="text-center py-4 bg-slate-100 dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800">
             <p className="text-sm text-slate-600 dark:text-slate-400 mb-1">Starting at</p>
             <div className="flex items-baseline justify-center gap-1">
-              <span className="text-4xl font-bold text-slate-900 dark:text-white">$9</span>
+              <span className="text-4xl font-bold text-slate-900 dark:text-white">$10</span>
               <span className="text-lg text-slate-600 dark:text-slate-400">/month</span>
             </div>
             <p className="text-xs text-emerald-600 dark:text-emerald-400 mt-1 font-medium">Cancel anytime</p>
