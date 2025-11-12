@@ -14,7 +14,7 @@ import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
-  TooltipTrigger,
+  TooltipTrigger, // Added TooltipTrigger
 } from "@/components/ui/tooltip";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
@@ -24,8 +24,8 @@ import { base44 } from "@/api/base44Client";
 const ImageEditor = lazy(() => import("./ImageEditor"));
 const DownloadModal = lazy(() => import("./DownloadModal"));
 const GifEditor = lazy(() => import("./GifEditor"));
-const VideoEditor = lazy(() => import("./VideoEditor"));
-const AudioEditor = lazy(() => import("./AudioEditor"));
+const VideoEditor = lazy(() => import("./VideoEditor")); // New: Lazy load VideoEditor
+const AudioEditor = lazy(() => import("./AudioEditor")); // New: Lazy load AudioEditor
 
 export default function MediaCard({ image, onRemove, onProcessed, onCompare, autoProcess }) {
   const [processing, setProcessing] = useState(false);
@@ -52,10 +52,8 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
   const [upscaleMultiplier, setUpscaleMultiplier] = useState(null);
   const [originalImageDimensions, setOriginalImageDimensions] = useState({ width: 0, height: 0 });
   const [showGifEditor, setShowGifEditor] = useState(false);
-
-  // Add video/audio editor states
-  const [showVideoEditor, setShowVideoEditor] = useState(false);
-  const [showAudioEditor, setShowAudioEditor] = useState(false);
+  const [showVideoEditor, setShowVideoEditor] = useState(false); // New: State for Video Editor
+  const [showAudioEditor, setShowAudioEditor] = useState(false); // New: State for Audio Editor
 
   // Animation states
   const [animationSettingsOpen, setAnimationSettingsOpen] = useState(false);
@@ -1321,7 +1319,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
           throw new Error(`Browser does not support converting to ${targetFormat.toUpperCase()}.`);
         }
 
-        const convertedBlob = await new Promise((resolve, reject) => {
+        const convertedBlob = await new Promise((resolve) => {
           canvas.toBlob((b) => {
             if (b) resolve(b);
             else reject(new Error(`Failed to create ${targetFormat.toUpperCase()} image blob.`));
@@ -1514,9 +1512,10 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
     toast.success("GIF edited successfully. Re-compress to finalize.");
   };
 
-  const handleSaveVideoEdit = (newVideoUrl, newBlob) => {
+  // New: Handle saving video edits
+  const handleSaveVideoEdit = (newVideoBlob, newVideoUrl) => {
     setPreview(newVideoUrl);
-    setOriginalSize(newBlob.size);
+    setOriginalSize(newVideoBlob.size);
     if (processed) {
       setProcessed(false);
       setCompressedPreview(null);
@@ -1527,9 +1526,10 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
     toast.success("Video edited successfully. Re-compress to apply changes.");
   };
 
-  const handleSaveAudioEdit = (newAudioUrl, newBlob) => {
+  // New: Handle saving audio edits
+  const handleSaveAudioEdit = (newAudioBlob, newAudioUrl) => {
     setPreview(newAudioUrl);
-    setOriginalSize(newBlob.size);
+    setOriginalSize(newAudioBlob.size);
     if (processed) {
       setProcessed(false);
       setCompressedPreview(null);
@@ -1688,10 +1688,13 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
                   size="icon"
                   onClick={(e) => {
                     e.stopPropagation();
+                    if (!ffmpegLoaded) {
+                      toast.error('Video processor not loaded yet');
+                      return;
+                    }
                     setShowVideoEditor(true);
                   }}
                   className="absolute top-2 right-2 bg-white/80 hover:bg-white dark:bg-slate-800/80 dark:hover:bg-slate-800 h-7 w-7 rounded-lg"
-                  disabled={!ffmpegLoaded}
                 >
                   <Edit2 className="w-3 h-3" />
                 </Button>
@@ -1702,10 +1705,13 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
                   size="icon"
                   onClick={(e) => {
                     e.stopPropagation();
+                    if (!ffmpegLoaded) {
+                      toast.error('Audio processor not loaded yet');
+                      return;
+                    }
                     setShowAudioEditor(true);
                   }}
-                  className="absolute top-2 right-2 bg-white/80 hover:bg-white dark:bg-slate-800/80 dark:hover:bg-slate-800 h-7 w-7 rounded-lg"
-                  disabled={!ffmpegLoaded}
+                  className="absolute top-10 right-2 bg-white/80 hover:bg-white dark:bg-slate-800/80 dark:hover:bg-slate-800 h-7 w-7 rounded-lg"
                 >
                   <Edit2 className="w-3 h-3" />
                 </Button>
@@ -1840,20 +1846,14 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
           </div>
         </div>
 
-        {/* Change Metadata button to Download Original button */}
+        {/* Metadata Viewer button */}
         <Button
           variant="outline"
           size="sm"
-          onClick={() => {
-            const link = document.createElement('a');
-            link.href = preview;
-            link.download = editableFilename;
-            link.click();
-            toast.success('Original file downloaded!');
-          }}
+          onClick={extractMetadata}
           className="w-full justify-center mt-3 text-xs"
         >
-          <Download className="w-3 h-3 mr-1" /> Download Original
+          <Info className="w-3 h-3 mr-1" /> View Metadata
         </Button>
 
         {error && (
@@ -2614,23 +2614,25 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
         />
       )}
 
-      {showVideoEditor && isVideo && ffmpegLoaded && (
+      {showVideoEditor && isVideo && ( // New: Video Editor Dialog
         <VideoEditor
           isOpen={showVideoEditor}
           onClose={() => setShowVideoEditor(false)}
-          videoData={preview}
-          onSave={handleSaveVideoEdit}
+          videoData={image} // Pass the original file object
+          videoUrl={preview} // Pass the Data URL for preview
           ffmpegRef={ffmpegRef}
+          onSave={handleSaveVideoEdit}
         />
       )}
 
-      {showAudioEditor && isAudio && ffmpegLoaded && (
+      {showAudioEditor && isAudio && ( // New: Audio Editor Dialog
         <AudioEditor
           isOpen={showAudioEditor}
           onClose={() => setShowAudioEditor(false)}
-          audioData={preview}
-          onSave={handleSaveAudioEdit}
+          audioData={image} // Pass the original file object
+          audioUrl={preview} // Pass the Data URL for preview
           ffmpegRef={ffmpegRef}
+          onSave={handleSaveAudioEdit}
         />
       )}
 
