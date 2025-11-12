@@ -1,4 +1,3 @@
-
 import { useState, lazy, Suspense, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Download, Trash2, Sparkles, Shield, Zap, Image as ImageIcon } from "lucide-react";
@@ -40,6 +39,8 @@ export default function Home() {
   const [userPlan, setUserPlan] = useState('free');
   const [showProModal, setShowProModal] = useState(false);
   const [user, setUser] = useState(null);
+  const [processingCheckout, setProcessingCheckout] = useState(false);
+  const [upgradeError, setUpgradeError] = useState(null);
 
   // Load user and their plan
   useEffect(() => {
@@ -160,22 +161,52 @@ export default function Home() {
   };
 
   const handleUpgradeToPro = async () => {
+    console.log('🚀 Upgrade clicked from Home page');
+    
+    setUpgradeError(null);
+    setProcessingCheckout(true);
+    
     try {
-      toast.info('Redirecting to checkout...');
-      const { data } = await base44.functions.invoke('createCheckoutSession');
+      const toastId = toast.loading('Creating checkout session...', { duration: Infinity });
       
+      console.log('Calling createCheckoutSession...');
+      const response = await base44.functions.invoke('createCheckoutSession');
+      
+      console.log('Response:', response);
+      
+      if (!response?.data) {
+        throw new Error('Invalid response from server');
+      }
+
+      const { data } = response;
+
       if (data.error) {
         throw new Error(data.error);
       }
 
-      if (data.url) {
-        window.location.href = data.url;
-      } else {
-        throw new Error('No checkout URL returned');
+      if (!data.url) {
+        throw new Error('No checkout URL received');
       }
+
+      console.log('Redirecting to:', data.url);
+      toast.dismiss(toastId);
+      toast.success('Redirecting to Stripe checkout...');
+      
+      // Close modal and redirect immediately
+      setShowProModal(false);
+      
+      // Small delay for UX, then redirect
+      setTimeout(() => {
+        window.location.href = data.url;
+      }, 300);
+
     } catch (error) {
-      console.error('Error upgrading:', error);
-      toast.error('Failed to upgrade. Please try again: ' + error.message);
+      console.error('Upgrade failed:', error);
+      
+      const errorMessage = error.message || 'Failed to start checkout';
+      setUpgradeError(errorMessage);
+      toast.error(errorMessage, { duration: 8000 });
+      setProcessingCheckout(false);
     }
   };
 
@@ -432,7 +463,7 @@ export default function Home() {
                               onProcessed={(data) => handleImageProcessed(image.id, data)}
                               onCompare={handleCompare}
                               autoProcess={!processedImages[image.id] && autoProcessTrigger}
-                              userPlan={userPlan}
+                              isPro={isPro}
                             />
                           </Suspense>
                         </div>
@@ -470,8 +501,14 @@ export default function Home() {
         <Suspense fallback={null}>
           <ProUpgradeModal
             isOpen={showProModal}
-            onClose={() => setShowProModal(false)}
+            onClose={() => {
+              setShowProModal(false);
+              setUpgradeError(null);
+              setProcessingCheckout(false);
+            }}
             onUpgrade={handleUpgradeToPro}
+            processing={processingCheckout}
+            error={upgradeError}
           />
         </Suspense>
       )}
