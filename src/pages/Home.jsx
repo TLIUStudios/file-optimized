@@ -168,6 +168,22 @@ export default function Home() {
     setProcessingCheckout(true);
     
     try {
+      // Check authentication FIRST before calling backend
+      const isAuth = await base44.auth.isAuthenticated();
+      
+      if (!isAuth) {
+        console.log('❌ User not logged in');
+        toast.error('Please log in to upgrade to Pro', { duration: 4000 });
+        setShowProModal(false);
+        setProcessingCheckout(false);
+        
+        // Redirect to login after a brief delay
+        setTimeout(() => {
+          base44.auth.redirectToLogin(window.location.href);
+        }, 1500);
+        return;
+      }
+
       const toastId = toast.loading('Creating checkout session...', { duration: Infinity });
       
       console.log('Calling createCheckoutSession...');
@@ -181,14 +197,13 @@ export default function Home() {
 
       const { data } = response;
 
-      // Check if user needs to log in
+      // Additional check from backend response
       if (data.requiresAuth) {
         toast.dismiss(toastId);
         toast.error('Please log in to upgrade to Pro');
         setShowProModal(false);
         setProcessingCheckout(false);
         
-        // Redirect to login after a brief delay
         setTimeout(() => {
           base44.auth.redirectToLogin(window.location.href);
         }, 1500);

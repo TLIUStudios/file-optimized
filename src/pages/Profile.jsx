@@ -82,26 +82,41 @@ export default function Profile() {
   });
 
   const handleUpgrade = async () => {
-    console.log('🚀 Upgrade clicked');
-
+    console.log('🚀 Upgrade clicked from Profile');
+    
     setUpgradeError(null);
     setProcessingCheckout(true);
-
+    
     try {
-      const toastId = toast.loading('Creating checkout session...', { duration: Infinity });
+      // Check authentication FIRST before calling backend
+      const isAuth = await base44.auth.isAuthenticated();
+      
+      if (!isAuth) {
+        console.log('❌ User not logged in');
+        toast.error('Please log in to upgrade to Pro', { duration: 4000 });
+        setShowProModal(false);
+        setProcessingCheckout(false);
+        
+        setTimeout(() => {
+          base44.auth.redirectToLogin(window.location.href);
+        }, 1500);
+        return;
+      }
 
+      const toastId = toast.loading('Creating checkout session...', { duration: Infinity });
+      
       console.log('Calling createCheckoutSession...');
       const response = await base44.functions.invoke('createCheckoutSession');
-
+      
       console.log('Response:', response);
-
+      
       if (!response?.data) {
         throw new Error('Invalid response from server');
       }
 
       const { data } = response;
 
-      // Check if user needs to log in (shouldn't happen on Profile page, but just in case)
+      // Additional check from backend response
       if (data.requiresAuth) {
         toast.dismiss(toastId);
         toast.error('Please log in to upgrade to Pro');
@@ -125,11 +140,11 @@ export default function Profile() {
       console.log('Redirecting to:', data.url);
       toast.dismiss(toastId);
       toast.success('Redirecting to Stripe checkout...');
-
+      
       // Close modal
       setShowProModal(false);
-
-      // CRITICAL FIX: Redirect at top level to break out of iframe
+      
+      // Redirect at top level to break out of iframe
       setTimeout(() => {
         if (window.top) {
           window.top.location.href = data.url;
@@ -140,7 +155,7 @@ export default function Profile() {
 
     } catch (error) {
       console.error('Upgrade failed:', error);
-
+      
       const errorMessage = error.message || 'Failed to start checkout';
       setUpgradeError(errorMessage);
       toast.error(errorMessage, { duration: 8000 });
