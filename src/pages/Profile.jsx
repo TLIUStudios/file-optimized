@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery } from "@tanstack/react-query";
@@ -37,6 +38,15 @@ export default function Profile() {
       try {
         const currentUser = await base44.auth.me();
         setUser(currentUser);
+        
+        // TEST: Try calling test function
+        console.log('🧪 Testing backend function connectivity...');
+        try {
+          const testResult = await base44.functions.invoke('testCheckout');
+          console.log('✅ Backend functions working:', testResult);
+        } catch (testError) {
+          console.error('❌ Backend functions not working:', testError);
+        }
       } catch (error) {
         console.error('Error loading user:', error);
         toast.error('Failed to load user data');
@@ -79,27 +89,34 @@ export default function Profile() {
 
   const handleUpgrade = async () => {
     console.log('🚀 handleUpgrade called');
+    console.log('User data:', user);
     
     try {
       setProcessingCheckout(true);
       const toastId = toast.loading('Creating checkout session...', { duration: Infinity });
 
-      console.log('Invoking createCheckoutSession function...');
+      console.log('Calling createCheckoutSession...');
       
-      // Add timeout
-      const timeoutPromise = new Promise((_, reject) => 
-        setTimeout(() => reject(new Error('Request timeout after 15 seconds')), 15000)
-      );
-
-      const invokePromise = base44.functions.invoke('createCheckoutSession');
-
-      const response = await Promise.race([invokePromise, timeoutPromise]);
+      // Try the function call with explicit error handling
+      const response = await base44.functions.invoke('createCheckoutSession')
+        .catch(err => {
+          console.error('Function invoke error:', err);
+          throw err;
+        });
       
-      console.log('Function response:', response);
-      console.log('Response status:', response.status);
-      console.log('Response data:', response.data);
+      console.log('Got response:', response);
+
+      // Check response structure
+      if (!response) {
+        throw new Error('No response from function');
+      }
+
+      if (!response.data) {
+        throw new Error('No data in response');
+      }
 
       const { data } = response;
+      console.log('Response data:', data);
 
       if (data.error) {
         console.error('Error in response:', data);
@@ -115,13 +132,14 @@ export default function Profile() {
       toast.dismiss(toastId);
       toast.success('Redirecting to Stripe checkout...');
       
-      // Small delay to show success message
-      setTimeout(() => {
-        window.location.href = data.url;
-      }, 500);
+      window.location.href = data.url;
 
     } catch (error) {
       console.error('❌ Error in handleUpgrade:', error);
+      console.error('Error type:', typeof error);
+      console.error('Error keys:', Object.keys(error));
+      console.error('Error message:', error.message);
+      console.error('Error stack:', error.stack);
       
       let errorMessage = 'Failed to start checkout. Please try again.';
       
