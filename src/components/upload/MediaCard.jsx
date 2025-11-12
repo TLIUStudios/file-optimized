@@ -1,3 +1,4 @@
+
 import { useState, useEffect, lazy, useRef } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -200,6 +201,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
     };
   }, [workerBlobUrl]);
 
+  // Load UPNG.js for better PNG compression - FIXED VERSION
   useEffect(() => {
     if (format === 'png' && !upngLoaded) {
       const loadUPNG = async () => {
@@ -208,22 +210,35 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
             setUpngLoaded(true);
             return;
           }
+
+          console.log('📦 Loading UPNG.js from unpkg...');
+          
           await new Promise((resolve, reject) => {
             const script = document.createElement('script');
-            script.src = 'https://cdn.jsdelivr.net/npm/upng-js@2.1.0/UPNG.min.js';
+            // Try unpkg instead of jsdelivr - more reliable
+            script.src = 'https://unpkg.com/upng-js@2.1.0/UPNG.js';
             script.onload = () => {
-              if (window.UPNG) resolve();
-              else reject(new Error('UPNG.js not available'));
+              setTimeout(() => {
+                if (window.UPNG) {
+                  console.log('✅ UPNG.js loaded successfully');
+                  resolve();
+                } else {
+                  reject(new Error('UPNG.js not available after load'));
+                }
+              }, 200);
             };
-            script.onerror = () => reject(new Error('Failed to load UPNG.js'));
+            script.onerror = () => reject(new Error('Failed to load UPNG.js script'));
             document.head.appendChild(script);
           });
+
           setUpngLoaded(true);
-          console.log('✅ UPNG.js loaded for PNG compression');
+          console.log('✅ UPNG.js ready for PNG compression');
         } catch (error) {
           console.error('Failed to load UPNG.js:', error);
+          toast.warning('PNG compression: using standard method');
         }
       };
+
       loadUPNG();
     }
   }, [format, upngLoaded]);
@@ -729,34 +744,60 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
     }
     ctx.drawImage(img, 0, 0, width, height);
 
+    // Special handling for PNG compression with UPNG.js - IMPROVED
     if (format === 'png') {
       if (!upngLoaded || !window.UPNG) {
+        console.log('⏳ Waiting for UPNG.js to load...');
         toast.info('Loading PNG compression engine...', { id: 'upng-load' });
         const startWait = Date.now();
-        while (!window.UPNG && (Date.now() - startWait) < 3000) {
+        while (!window.UPNG && (Date.now() - startWait) < 5000) {
           await new Promise(resolve => setTimeout(resolve, 100));
         }
         toast.dismiss('upng-load');
         if (!window.UPNG) {
-          toast.error('PNG compression engine failed to load.');
+          console.error('❌ UPNG.js not available after waiting');
+          toast.warning('Using standard PNG compression');
         } else {
+          console.log('✅ UPNG.js loaded');
           setUpngLoaded(true);
         }
       }
+
       if (upngLoaded && window.UPNG) {
         try {
+          console.log('🎨 Using UPNG.js for advanced PNG compression...');
+          
           const imageData = ctx.getImageData(0, 0, width, height);
+          
           let colors;
           if (quality >= 90) colors = 256;
           else if (quality >= 80) colors = Math.round(128 + ((quality - 80) / 10) * 128);
           else if (quality >= 70) colors = Math.round(64 + ((quality - 70) / 10) * 64);
           else if (quality >= 50) colors = Math.round(32 + ((quality - 50) / 20) * 32);
           else colors = Math.max(16, Math.round(quality / 3));
-          console.log(`PNG Compression: ${colors} colors (quality: ${quality}%)`);
-          const rgba = imageData.data;
-          const pngBuffer = window.UPNG.encode([rgba.buffer], width, height, colors, []);
+          
+          console.log(`PNG: ${colors} colors, quality: ${quality}%, size: ${width}x${height}`);
+          
+          // FIXED: Properly convert ImageData to RGBA buffer
+          const rgba = new Uint8Array(imageData.data);
+          
+          console.log('Encoding PNG with UPNG...');
+          
+          // Call UPNG.encode with proper parameters
+          const pngBuffer = window.UPNG.encode(
+            [rgba.buffer], // Array of ArrayBuffers
+            width,
+            height,
+            colors, // 0 = lossless, 256 = full palette, less = more compression
+            [] // No delays (not animated)
+          );
+          
+          console.log(`✅ PNG encoded: ${pngBuffer.byteLength} bytes`);
+          
           const blob = new Blob([pngBuffer], { type: 'image/png' });
+          
           if (!enableUpscale && blob.size >= image.size) {
+            console.log('⚠️ Compressed PNG larger than original, using original');
             const compressedUrl = URL.createObjectURL(image);
             setCompressedPreview(compressedUrl);
             setCompressedSize(image.size);
@@ -778,6 +819,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
             toast.info(`PNG already optimized - 0% savings`);
             return;
           }
+
           const compressedUrl = URL.createObjectURL(blob);
           setCompressedPreview(compressedUrl);
           setCompressedSize(blob.size);
@@ -800,11 +842,13 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
           toast.success(`PNG compressed! Saved ${savings}% (${colors} colors)`);
           return;
         } catch (error) {
-          console.error('❌ UPNG compression failed:', error);
-          toast.error('Advanced PNG compression failed: ' + error.message);
+          console.error('❌ UPNG compression error:', error);
+          console.error('Error details:', error.stack);
+          toast.error('PNG compression failed, using standard method');
+          // Fall through to standard compression
         }
       } else {
-        toast.warning('Using standard PNG compression (limited)');
+        console.warn('⚠️ UPNG.js not available, falling back to standard compression.');
       }
     }
 
