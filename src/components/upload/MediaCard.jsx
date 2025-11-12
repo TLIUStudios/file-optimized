@@ -14,7 +14,7 @@ import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
-  TooltipTrigger, // Added TooltipTrigger here
+  TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
@@ -1022,7 +1022,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
           originalFile: image,
           compressedBlob: originalBlob,
           compressedUrl: compressedUrl,
-          originalSize: image.size,
+          originalSize: originalSize,
           compressedSize: originalBlob.size,
           format: 'gif',
           filename: getOutputFilename('gif'),
@@ -1850,523 +1850,572 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
       </div>
 
       <div className="p-4 space-y-4">
-        <div>
-          {isEditingFilename ? (
-            <div className="flex items-center gap-2 mb-1">
-              <input
-                type="text"
-                value={editableFilename}
-                onChange={(e) => setIsEditingFilename(e.target.value)}
-                className="flex-1 text-sm font-medium text-slate-900 dark:text-white bg-slate-50 dark:bg-slate-900 border border-emerald-300 dark:border-emerald-700 rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                onBlur={() => setEditableFilename(false)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') {
+        <TooltipProvider> {/* Moved TooltipProvider here to cover the whole interactive section */}
+          <div>
+            {isEditingFilename ? (
+              <div className="flex items-center gap-2 mb-1">
+                <input
+                  type="text"
+                  value={editableFilename}
+                  onChange={(e) => setIsEditingFilename(e.target.value)}
+                  className="flex-1 text-sm font-medium text-slate-900 dark:text-white bg-slate-50 dark:bg-slate-900 border border-emerald-300 dark:border-emerald-700 rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                  onBlur={() => setEditableFilename(false)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      setEditableFilename(false);
+                      toast.success('Filename updated!');
+                    }
+                    if (e.key === 'Escape') {
+                      setIsEditingFilename(image.name);
+                      setEditableFilename(false);
+                    }
+                  }}
+                  autoFocus
+                />
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => {
                     setEditableFilename(false);
                     toast.success('Filename updated!');
-                  }
-                  if (e.key === 'Escape') {
-                    setIsEditingFilename(image.name);
-                    setEditableFilename(false);
-                  }
-                }}
-                autoFocus
-              />
-              <Button
-                size="sm"
-                variant="ghost"
-                onClick={() => {
-                  setEditableFilename(false);
-                  toast.success('Filename updated!');
-                }}
-                className="h-7 w-7 p-0 flex-shrink-0"
+                  }}
+                  className="h-7 w-7 p-0 flex-shrink-0"
+                >
+                  <Check className="w-4 h-4 text-emerald-600" />
+                </Button>
+              </div>
+            ) : (
+              <div
+                className="group flex items-center gap-2 mb-1 cursor-pointer bg-slate-50 dark:bg-slate-900 hover:bg-emerald-50 dark:hover:bg-emerald-950/30 border border-slate-200 dark:border-slate-800 hover:border-emerald-300 dark:hover:border-emerald-700 rounded px-3 py-2 transition-all"
+                onClick={() => setEditableFilename(true)}
               >
-                <Check className="w-4 h-4 text-emerald-600" />
-              </Button>
+                <p
+                  className="flex-1 font-medium text-sm text-slate-900 dark:text-white group-hover:text-emerald-600 dark:group-hover:text-emerald-400 truncate transition-colors"
+                  title={editableFilename}
+                >
+                  {editableFilename}
+                </p>
+                <Edit2 className="w-3.5 h-3.5 text-slate-400 group-hover:text-emerald-600 dark:group-hover:text-emerald-400 flex-shrink-0 transition-colors" />
+              </div>
+            )}
+            <div className="flex items-center gap-2 mt-1 text-xs text-slate-500 dark:text-slate-400">
+              <span>{formatFileSize(originalSize)}</span>
+              {processed && (
+                <>
+                  <ArrowRight className="w-3 h-3" />
+                  <span className={cn(
+                    "font-medium",
+                    sizeIncreased
+                      ? "text-red-600 dark:text-red-400"
+                      : "text-emerald-600 dark:text-emerald-400"
+                  )}>
+                    {formatFileSize(compressedSize)}
+                  </span>
+                  <Badge variant="secondary" className={cn(
+                    sizeIncreased
+                      ? "bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-400"
+                      : "bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-400"
+                  )}>
+                    {sizeIncreased ? '+' : ''}{Math.abs(parseFloat(savingsPercent))}%
+                  </Badge>
+                </>
+              )}
+              {processing && estimatedTimeForFile !== null && (
+                <Badge variant="outline" className="border-blue-300 text-blue-700 dark:border-blue-700 dark:text-blue-400 ml-auto">
+                  ~{estimatedTimeForFile}s
+                </Badge>
+              )}
             </div>
-          ) : (
-            <div
-              className="group flex items-center gap-2 mb-1 cursor-pointer bg-slate-50 dark:bg-slate-900 hover:bg-emerald-50 dark:hover:bg-emerald-950/30 border border-slate-200 dark:border-slate-800 hover:border-emerald-300 dark:hover:border-emerald-700 rounded px-3 py-2 transition-all"
-              onClick={() => setEditableFilename(true)}
-            >
-              <p
-                className="flex-1 font-medium text-sm text-slate-900 dark:text-white group-hover:text-emerald-600 dark:group-hover:text-emerald-400 truncate transition-colors"
-                title={editableFilename}
-              >
-                {editableFilename}
-              </p>
-              <Edit2 className="w-3.5 h-3.5 text-slate-400 group-hover:text-emerald-600 dark:group-hover:text-emerald-400 flex-shrink-0 transition-colors" />
+          </div>
+
+          {/* Metadata Viewer button */}
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={extractMetadata}
+            className="w-full justify-center mt-3 text-xs"
+          >
+            <Info className="w-3 h-3 mr-1" /> View Metadata
+          </Button>
+
+          {error && (
+            <div className="flex items-center gap-2 text-sm text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/30 p-3 rounded-lg">
+              <AlertCircle className="w-4 h-4 flex-shrink-0" />
+              <span className="text-xs">{error}</span>
             </div>
           )}
-          <div className="flex items-center gap-2 mt-1 text-xs text-slate-500 dark:text-slate-400">
-            <span>{formatFileSize(originalSize)}</span>
-            {processed && (
-              <>
-                <ArrowRight className="w-3 h-3" />
-                <span className={cn(
-                  "font-medium",
-                  sizeIncreased
-                    ? "text-red-600 dark:text-red-400"
-                    : "text-emerald-600 dark:text-emerald-400"
-                )}>
-                  {formatFileSize(compressedSize)}
-                </span>
-                <Badge variant="secondary" className={cn(
-                  sizeIncreased
-                    ? "bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-400"
-                    : "bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-400"
-                )}>
-                  {sizeIncreased ? '+' : ''}{Math.abs(parseFloat(savingsPercent))}%
-                </Badge>
-              </>
-            )}
-            {processing && estimatedTimeForFile !== null && (
-              <Badge variant="outline" className="border-blue-300 text-blue-700 dark:border-blue-700 dark:text-blue-400 ml-auto">
-                ~{estimatedTimeForFile}s
-              </Badge>
-            )}
-          </div>
-        </div>
 
-        {/* Metadata Viewer button */}
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={extractMetadata}
-          className="w-full justify-center mt-3 text-xs"
-        >
-          <Info className="w-3 h-3 mr-1" /> View Metadata
-        </Button>
-
-        {error && (
-          <div className="flex items-center gap-2 text-sm text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/30 p-3 rounded-lg">
-            <AlertCircle className="w-4 h-4 flex-shrink-0" />
-            <span className="text-xs">{error}</span>
-          </div>
-        )}
-
-        {/* Convert Format Selector - Show AFTER compression */}
-        {processed && availableFormats.length > 0 && (
-          <div className="space-y-2">
-            <label className="text-xs font-medium text-slate-700 dark:text-slate-300">
-              Convert Format
-            </label>
-            <div className={cn(
-              "grid gap-2",
-              availableFormats.length === 1 ? "grid-cols-1" : availableFormats.length === 2 ? "grid-cols-2" : "grid-cols-4"
-            )}>
-              {availableFormats.map((fmt) => (
-                <Button
-                  key={fmt}
-                  size="sm"
-                  variant={displayFormat === fmt ? "default" : "outline"}
-                  onClick={() => convertFormat(fmt)}
-                  disabled={displayFormat === fmt || processing || (ffmpegLoading && (isVideo || isAudio || (isGif && fmt === 'mp4')))}
-                  className={cn(
-                    "relative text-xs h-9",
-                    format === fmt && "bg-emerald-600 hover:bg-emerald-700"
-                  )}
-                >
-                  {fmt.toUpperCase()}
-                  {displayFormat === fmt && processing && <Loader2 className="ml-1 h-3 w-3 animate-spin" />}
-                </Button>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Output Format Selector - Show BEFORE compression */}
-        {!processed && availableFormats.length > 0 && (
-          <div className="space-y-2">
-            <label className="text-xs font-medium text-slate-700 dark:text-slate-300">
-              Output Format
-            </label>
-            <div className={cn(
-              "grid gap-2",
-              availableFormats.length === 1 ? "grid-cols-1" : availableFormats.length === 2 ? "grid-cols-2" : "grid-cols-4"
-            )}>
-              {availableFormats.map((fmt) => (
-                <Button
-                  key={fmt}
-                  size="sm"
-                  variant={format === fmt ? "default" : "outline"}
-                  onClick={() => setFormat(fmt)}
-                  disabled={processing || (ffmpegLoading && (isVideo || isAudio || (isGif && fmt === 'mp4')))}
-                  className={cn(
-                    "relative text-xs h-9",
-                    format === fmt && "bg-emerald-600 hover:bg-emerald-700"
-                  )}
-                >
-                  {fmt.toUpperCase()}
-                </Button>
-              ))}
-            </div>
-          </div>
-        )}
-
-        <Collapsible open={settingsOpen} onOpenChange={setSettingsOpen}>
-          <CollapsibleTrigger asChild>
-            <Button variant="outline" className="w-full justify-between" size="sm">
-              <span className="flex items-center gap-2">
-                <Settings2 className="w-4 h-4" />
-                Compression Settings
-              </span>
-              <ChevronDown className={cn(
-                "w-4 h-4 transition-transform duration-200",
-                settingsOpen && "rotate-180"
-              )} />
-            </Button>
-          </CollapsibleTrigger>
-          <CollapsibleContent className="space-y-4 mt-4">
-            <TooltipProvider>
-              {/* Loading state for FFmpeg - ONLY show for video/audio files */}
-              {(isVideo || isAudio || (isGif && format === 'mp4')) && ffmpegLoading && (
-                <div className="bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 rounded-lg p-3">
-                  <div className="flex items-center gap-2">
-                    <Loader2 className="w-4 h-4 animate-spin text-blue-600" />
-                    <p className="text-xs text-blue-700 dark:text-blue-400">
-                      <strong>Loading video/audio processor...</strong>
-                    </p>
-                  </div>
-                </div>
-              )}
-              
-              {/* FFmpeg load error - ONLY show for video/audio files */}
-              {(isVideo || isAudio || (isGif && format === 'mp4')) && ffmpegLoadError && !ffmpegLoading && (
-                <div className="bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800 rounded-lg p-3">
-                  <div className="flex items-center gap-2 mb-2">
-                    <AlertCircle className="w-4 h-4 text-red-600" />
-                    <p className="text-xs text-red-700 dark:text-red-400 font-semibold">
-                      Video/audio processor unavailable
-                    </p>
-                  </div>
-                  <p className="text-xs text-red-600 dark:text-red-400 mb-2">
-                    Try refreshing the page or using Chrome/Edge browser
-                  </p>
+          {/* Convert Format Selector - Show AFTER compression */}
+          {processed && availableFormats.length > 0 && (
+            <div className="space-y-2">
+              <div className="flex items-center gap-2">
+                <label className="text-xs font-medium text-slate-700 dark:text-slate-300">
+                  Convert Format
+                </label>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Info className="w-3 h-3 text-slate-400 cursor-help" />
+                  </TooltipTrigger>
+                  <TooltipContent className="max-w-xs">
+                    <div className="text-xs space-y-2">
+                      <p className="font-semibold">Format Recommendations:</p>
+                      <div>
+                        <p className="font-medium">Maximum Compression:</p>
+                        <p>• WebP (best quality control)</p>
+                        <p>• JPG (universal support)</p>
+                      </div>
+                      <div>
+                        <p className="font-medium">Lossless:</p>
+                        <p>• PNG (quality slider won't matter)</p>
+                      </div>
+                      <div>
+                        <p className="font-medium">Modern/Best:</p>
+                        <p>• WebP (best balance of compression + browser support)</p>
+                      </div>
+                    </div>
+                  </TooltipContent>
+                </Tooltip>
+              </div>
+              <div className={cn(
+                "grid gap-2",
+                availableFormats.length === 1 ? "grid-cols-1" : availableFormats.length === 2 ? "grid-cols-2" : "grid-cols-4"
+              )}>
+                {availableFormats.map((fmt) => (
                   <Button
+                    key={fmt}
                     size="sm"
-                    variant="outline"
-                    onClick={() => {
-                      setFfmpegLoadError(null);
-                      setFfmpegLoading(false);
-                      setFfmpegLoaded(false);
-                      setTimeout(() => loadFFmpeg(), 100);
-                    }}
-                    className="text-xs h-7"
+                    variant={displayFormat === fmt ? "default" : "outline"}
+                    onClick={() => convertFormat(fmt)}
+                    disabled={displayFormat === fmt || processing || (ffmpegLoading && (isVideo || isAudio || (isGif && fmt === 'mp4')))}
+                    className={cn(
+                      "relative text-xs h-9",
+                      format === fmt && "bg-emerald-600 hover:bg-emerald-700"
+                    )}
                   >
-                    <RefreshCcw className="w-3 h-3 mr-1" />
-                    Retry
+                    {fmt.toUpperCase()}
+                    {displayFormat === fmt && processing && <Loader2 className="ml-1 h-3 w-3 animate-spin" />}
                   </Button>
-                </div>
-              )}
+                ))}
+              </div>
+            </div>
+          )}
 
-              {/* GIF Settings - LOCKED TO OPTIMAL */}
-              {isGif && format === 'gif' && (
-                <div className="bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800 rounded-lg p-4 space-y-3">
-                  <div className="flex items-center gap-2 mb-2">
-                    <Sparkles className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
-                    <h4 className="text-sm font-semibold text-emerald-700 dark:text-emerald-400">
-                      Optimal GIF Settings (Auto)
-                    </h4>
-                  </div>
-                  <p className="text-xs text-emerald-700 dark:text-emerald-400 mb-3">
-                    Settings optimized for best quality and original timing/resolution.
-                  </p>
-
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between py-2 px-3 bg-white/50 dark:bg-slate-900/50 rounded-lg">
-                      <span className="text-xs text-slate-700 dark:text-slate-300">Quality Level</span>
-                      <Badge className="bg-emerald-600 text-white text-xs">Excellent (10)</Badge>
-                    </div>
-
-                    <div className="flex items-center justify-between py-2 px-3 bg-white/50 dark:bg-slate-900/50 rounded-lg">
-                      <span className="text-xs text-slate-700 dark:text-slate-300">Frame Processing</span>
-                      <Badge className="bg-emerald-600 text-white text-xs">All Frames</Badge>
-                    </div>
-
-                    <div className="flex items-center justify-between py-2 px-3 bg-white/50 dark:bg-slate-900/50 rounded-lg">
-                      <span className="text-xs text-slate-700 dark:text-slate-300">Resolution</span>
-                      <Badge className="bg-emerald-600 text-white text-xs">Original Resolution</Badge>
-                    </div>
-
-                    <div className="flex items-center justify-between py-2 px-3 bg-white/50 dark:bg-slate-900/50 rounded-lg">
-                      <span className="text-xs text-slate-700 dark:text-slate-300">Frame Rate</span>
-                      <Badge className="bg-emerald-600 text-white text-xs">Original Frame Rate</Badge>
-                    </div>
-
-                    <div className="flex items-center justify-between py-2 px-3 bg-white/50 dark:bg-slate-900/50 rounded-lg">
-                      <span className="text-xs text-slate-700 dark:text-slate-300">Color Mode</span>
-                      <Badge className="bg-emerald-600 text-white text-xs">No Dithering</Badge>
-                    </div>
-
-                    <div className="flex items-center justify-between py-2 px-3 bg-white/50 dark:bg-slate-900/50 rounded-lg">
-                      <span className="text-xs text-slate-700 dark:text-slate-300">Smoothing</span>
-                      <Badge className="bg-emerald-600 text-white text-xs">High Quality</Badge>
-                    </div>
-                  </div>
-
-                  <p className="text-xs text-emerald-600 dark:text-emerald-400 mt-3 flex items-center gap-1">
-                    <Info className="w-3 h-3" />
-                    Optimized for excellent visual quality while preserving original timing and dimensions.
-                  </p>
-                </div>
-              )}
-
-              {/* Video Settings */}
-              {isVideo && ffmpegLoaded && (
-                <>
-                  <div>
-                    <label className="text-xs font-medium text-slate-700 dark:text-slate-300 mb-2 block">
-                      Quality: {quality}%
-                    </label>
-                    <Slider
-                      value={[quality]}
-                      onValueChange={(value) => setQuality(value[0])}
-                      min={1}
-                      max={100}
-                      step={1}
-                      className="w-full"
-                      disabled={processing}
-                    />
-                  </div>
-
-                  <div>
-                    <label className="text-xs font-medium text-slate-700 dark:text-slate-300 mb-2 block">
-                      Video Bitrate: {videoBitrate} kbps
-                    </label>
-                    <Slider
-                      value={[videoBitrate]}
-                      onValueChange={(value) => setVideoBitrate(value[0])}
-                      min={500}
-                      max={5000}
-                      step={100}
-                      className="w-full"
-                      disabled={processing}
-                    />
-                  </div>
-
-                  <div>
-                    <label className="text-xs font-medium text-slate-700 dark:text-slate-300 mb-2 block">
-                      Resolution
-                    </label>
-                    <Select value={videoResolution} onValueChange={setVideoResolution} disabled={processing}>
-                      <SelectTrigger className="h-9">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="original">Original</SelectItem>
-                        <SelectItem value="1080p">1080p (Full HD)</SelectItem>
-                        <SelectItem value="720p">720p (HD)</SelectItem>
-                        <SelectItem value="480p">480p (SD)</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div>
-                    <label className="text-xs font-medium text-slate-700 dark:text-slate-300 mb-2 block">
-                      Frame Rate: {frameRate} fps
-                    </label>
-                    <Slider
-                      value={[frameRate]}
-                      onValueChange={(value) => setFrameRate(value[0])}
-                      min={15}
-                      max={60}
-                      step={5}
-                      className="w-full"
-                      disabled={processing}
-                    />
-                  </div>
-
-                  <div>
-                    <label className="text-xs font-medium text-slate-700 dark:text-slate-300 mb-2 block">
-                      Encoding Preset
-                    </label>
-                    <Select value={videoPreset} onValueChange={setVideoPreset} disabled={processing}>
-                      <SelectTrigger className="h-9">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="ultrafast">Ultrafast (Fastest, Larger)</SelectItem>
-                        <SelectItem value="fast">Fast</SelectItem>
-                        <SelectItem value="medium">Medium (Balanced)</SelectItem>
-                        <SelectItem value="slow">Slow (Better Quality)</SelectItem>
-                        <SelectItem value="veryslow">Very Slow (Best Quality)</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div>
-                    <label className="text-xs font-medium text-slate-700 dark:text-slate-300 mb-2 block">
-                      Audio Bitrate: {audioBitrate} kbps
-                    </label>
-                    <Slider
-                      value={[audioBitrate]}
-                      onValueChange={(value) => setAudioBitrate(value[0])}
-                      min={64}
-                      max={320}
-                      step={16}
-                      className="w-full"
-                      disabled={processing}
-                    />
-                  </div>
-                </>
-              )}
-
-              {/* Audio Settings */}
-              {isAudio && ffmpegLoaded && (
-                <>
-                  <div>
-                    <label className="text-xs font-medium text-slate-700 dark:text-slate-300 mb-2 block">
-                      Audio Bitrate: {audioBitrate} kbps
-                    </label>
-                    <Slider
-                      value={[audioBitrate]}
-                      onValueChange={(value) => setAudioBitrate(value[0])}
-                      min={64}
-                      max={320}
-                      step={16}
-                      className="w-full"
-                      disabled={processing}
-                    />
-                  </div>
-
-                  <div>
-                    <label className="text-xs font-medium text-slate-700 dark:text-slate-300 mb-2 block">
-                      Audio Quality
-                    </label>
-                    <Select value={audioQuality} onValueChange={setAudioQuality} disabled={processing}>
-                      <SelectTrigger className="h-9">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="high">High Quality</SelectItem>
-                        <SelectItem value="standard">Standard (Recommended)</SelectItem>
-                        <SelectItem value="low">Low (Smaller Size)</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </>
-              )}
-
-              {/* Image/GIF Specific Settings (when not video or audio or GIF with gif format) */}
-              {!(isAudio || isVideo || enableAnimation || (isGif && format === 'gif')) && (
-                <>
-                  <div>
-                    <div className="flex items-center gap-2 mb-2">
-                      <label className="text-xs font-medium text-slate-700 dark:text-slate-300">
-                        Compression Mode
-                      </label>
-                    </div>
-                    <Select value={compressionMode} onValueChange={setCompressionMode} disabled={processing}>
-                      <SelectTrigger className="h-9">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="balanced">Balanced</SelectItem>
-                        <SelectItem value="aggressive">Aggressive</SelectItem>
-                        <SelectItem value="maximum">Maximum</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div>
-                    <div className="flex items-center gap-2 mb-2">
-                      <label className="text-xs font-medium text-slate-700 dark:text-slate-300">
-                        Quality: {quality}%
-                      </label>
-                    </div>
-                    <Slider
-                      value={[quality]}
-                      onValueChange={(value) => setQuality(value[0])}
-                      min={1}
-                      max={100}
-                      step={1}
-                      className="w-full"
-                      disabled={processing}
-                    />
-                  </div>
-
-                  {(isImage && !isGif) && (
-                    <div className="grid grid-cols-2 gap-2">
+          {/* Output Format Selector - Show BEFORE compression */}
+          {!processed && availableFormats.length > 0 && (
+            <div className="space-y-2">
+              <div className="flex items-center gap-2">
+                <label className="text-xs font-medium text-slate-700 dark:text-slate-300">
+                  Output Format
+                </label>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Info className="w-3 h-3 text-slate-400 cursor-help" />
+                  </TooltipTrigger>
+                  <TooltipContent className="max-w-xs">
+                    <div className="text-xs space-y-2">
+                      <p className="font-semibold">Format Recommendations:</p>
                       <div>
-                        <div className="flex items-center gap-1 mb-1">
-                          <label className="text-xs font-medium text-slate-700 dark:text-slate-300">
-                            Max Width (px)
-                          </label>
-                        </div>
-                        <input
-                          type="number"
-                          placeholder="Auto"
-                          value={maxWidth || ''}
-                          onChange={(e) => setMaxWidth(e.target.value ? parseInt(e.target.value) : null)}
-                          className="w-full h-9 px-3 rounded-md border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 text-sm"
-                          disabled={processing}
-                        />
+                        <p className="font-medium">Maximum Compression:</p>
+                        <p>• WebP (best quality control)</p>
+                        <p>• JPG (universal support)</p>
                       </div>
                       <div>
-                        <div className="flex items-center gap-1 mb-1">
-                          <label className="text-xs font-medium text-slate-700 dark:text-slate-300">
-                            Max Height (px)
-                          </label>
-                        </div>
-                        <input
-                          type="number"
-                          placeholder="Auto"
-                          value={maxHeight || ''}
-                          onChange={(e) => setMaxHeight(e.target.value ? parseInt(e.target.value) : null)}
-                          className="w-full h-9 px-3 rounded-md border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 text-sm"
-                          disabled={processing}
-                        />
+                        <p className="font-medium">Lossless:</p>
+                        <p>• PNG (quality slider won't matter)</p>
+                      </div>
+                      <div>
+                        <p className="font-medium">Modern/Best:</p>
+                        <p>• WebP (best balance of compression + browser support)</p>
                       </div>
                     </div>
-                  )}
+                  </TooltipContent>
+                </Tooltip>
+              </div>
+              <div className={cn(
+                "grid gap-2",
+                availableFormats.length === 1 ? "grid-cols-1" : availableFormats.length === 2 ? "grid-cols-2" : "grid-cols-4"
+              )}>
+                {availableFormats.map((fmt) => (
+                  <Button
+                    key={fmt}
+                    size="sm"
+                    variant={format === fmt ? "default" : "outline"}
+                    onClick={() => setFormat(fmt)}
+                    disabled={processing || (ffmpegLoading && (isVideo || isAudio || (isGif && fmt === 'mp4')))}
+                    className={cn(
+                      "relative text-xs h-9",
+                      format === fmt && "bg-emerald-600 hover:bg-emerald-700"
+                    )}
+                  >
+                    {fmt.toUpperCase()}
+                  </Button>
+                ))}
+              </div>
+            </div>
+          )}
 
-                  {(isImage && !isGif) && (
-                    <div className="space-y-3 pt-2 border-t border-slate-200 dark:border-slate-800">
-                      <div className="flex items-center justify-between">
-                        <label className="text-xs font-medium text-slate-700 dark:text-slate-300">
-                          Strip Metadata
-                        </label>
-                        <Switch
-                          checked={stripMetadata}
-                          onCheckedChange={setStripMetadata}
-                          disabled={processing}
-                        />
-                      </div>
-
-                      <div className="flex items-center justify-between">
-                        <label className="text-xs font-medium text-slate-700 dark:text-slate-300">
-                          Noise Reduction
-                        </label>
-                        <Switch
-                          checked={noiseReduction}
-                          onCheckedChange={setNoiseReduction}
-                          disabled={processing}
-                        />
-                      </div>
-                    </div>
-                  )}
-                </>
-              )}
-            </TooltipProvider>
-          </CollapsibleContent>
-        </Collapsible>
-
-        {(isImage && !isGif) && (
-          <Collapsible open={upscaleSettingsOpen} onOpenChange={setUpscaleSettingsOpen}>
+          <Collapsible open={settingsOpen} onOpenChange={setSettingsOpen}>
             <CollapsibleTrigger asChild>
               <Button variant="outline" className="w-full justify-between" size="sm">
                 <span className="flex items-center gap-2">
-                  <Sparkles className="w-4 h-4" />
-                  Upscale Settings
+                  <Settings2 className="w-4 h-4" />
+                  Compression Settings
                 </span>
                 <ChevronDown className={cn(
                   "w-4 h-4 transition-transform duration-200",
-                  upscaleSettingsOpen && "rotate-180"
+                  settingsOpen && "rotate-180"
                 )} />
               </Button>
             </CollapsibleTrigger>
             <CollapsibleContent className="space-y-4 mt-4">
-              <TooltipProvider>
+              {/* TooltipProvider was here originally, but moved up for broader coverage */}
+                {/* Loading state for FFmpeg - ONLY show for video/audio files */}
+                {(isVideo || isAudio || (isGif && format === 'mp4')) && ffmpegLoading && (
+                  <div className="bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 rounded-lg p-3">
+                    <div className="flex items-center gap-2">
+                      <Loader2 className="w-4 h-4 animate-spin text-blue-600" />
+                      <p className="text-xs text-blue-700 dark:text-blue-400">
+                        <strong>Loading video/audio processor...</strong>
+                      </p>
+                    </div>
+                  </div>
+                )}
+                
+                {/* FFmpeg load error - ONLY show for video/audio files */}
+                {(isVideo || isAudio || (isGif && format === 'mp4')) && ffmpegLoadError && !ffmpegLoading && (
+                  <div className="bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800 rounded-lg p-3">
+                    <div className="flex items-center gap-2 mb-2">
+                      <AlertCircle className="w-4 h-4 text-red-600" />
+                      <p className="text-xs text-red-700 dark:text-red-400 font-semibold">
+                        Video/audio processor unavailable
+                      </p>
+                    </div>
+                    <p className="text-xs text-red-600 dark:text-red-400 mb-2">
+                      Try refreshing the page or using Chrome/Edge browser
+                    </p>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => {
+                        setFfmpegLoadError(null);
+                        setFfmpegLoading(false);
+                        setFfmpegLoaded(false);
+                        setTimeout(() => loadFFmpeg(), 100);
+                      }}
+                      className="text-xs h-7"
+                    >
+                      <RefreshCcw className="w-3 h-3 mr-1" />
+                      Retry
+                    </Button>
+                  </div>
+                )}
+
+                {/* GIF Settings - LOCKED TO OPTIMAL */}
+                {isGif && format === 'gif' && (
+                  <div className="bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800 rounded-lg p-4 space-y-3">
+                    <div className="flex items-center gap-2 mb-2">
+                      <Sparkles className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                      <h4 className="text-sm font-semibold text-emerald-700 dark:text-emerald-400">
+                        Optimal GIF Settings (Auto)
+                      </h4>
+                    </div>
+                    <p className="text-xs text-emerald-700 dark:text-emerald-400 mb-3">
+                      Settings optimized for best quality and original timing/resolution.
+                    </p>
+
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between py-2 px-3 bg-white/50 dark:bg-slate-900/50 rounded-lg">
+                        <span className="text-xs text-slate-700 dark:text-slate-300">Quality Level</span>
+                        <Badge className="bg-emerald-600 text-white text-xs">Excellent (10)</Badge>
+                      </div>
+
+                      <div className="flex items-center justify-between py-2 px-3 bg-white/50 dark:bg-slate-900/50 rounded-lg">
+                        <span className="text-xs text-slate-700 dark:text-slate-300">Frame Processing</span>
+                        <Badge className="bg-emerald-600 text-white text-xs">All Frames</Badge>
+                      </div>
+
+                      <div className="flex items-center justify-between py-2 px-3 bg-white/50 dark:bg-slate-900/50 rounded-lg">
+                        <span className="text-xs text-slate-700 dark:text-slate-300">Resolution</span>
+                        <Badge className="bg-emerald-600 text-white text-xs">Original Resolution</Badge>
+                      </div>
+
+                      <div className="flex items-center justify-between py-2 px-3 bg-white/50 dark:bg-slate-900/50 rounded-lg">
+                        <span className="text-xs text-slate-700 dark:text-slate-300">Frame Rate</span>
+                        <Badge className="bg-emerald-600 text-white text-xs">Original Frame Rate</Badge>
+                      </div>
+
+                      <div className="flex items-center justify-between py-2 px-3 bg-white/50 dark:bg-slate-900/50 rounded-lg">
+                        <span className="text-xs text-slate-700 dark:text-slate-300">Color Mode</span>
+                        <Badge className="bg-emerald-600 text-white text-xs">No Dithering</Badge>
+                      </div>
+
+                      <div className="flex items-center justify-between py-2 px-3 bg-white/50 dark:bg-slate-900/50 rounded-lg">
+                        <span className="text-xs text-slate-700 dark:text-slate-300">Smoothing</span>
+                        <Badge className="bg-emerald-600 text-white text-xs">High Quality</Badge>
+                      </div>
+                    </div>
+
+                    <p className="text-xs text-emerald-600 dark:text-emerald-400 mt-3 flex items-center gap-1">
+                      <Info className="w-3 h-3" />
+                      Optimized for excellent visual quality while preserving original timing and dimensions.
+                    </p>
+                  </div>
+                )}
+
+                {/* Video Settings */}
+                {isVideo && ffmpegLoaded && (
+                  <>
+                    <div>
+                      <label className="text-xs font-medium text-slate-700 dark:text-slate-300 mb-2 block">
+                        Quality: {quality}%
+                      </label>
+                      <Slider
+                        value={[quality]}
+                        onValueChange={(value) => setQuality(value[0])}
+                        min={1}
+                        max={100}
+                        step={1}
+                        className="w-full"
+                        disabled={processing}
+                      />
+                    </div>
+
+                    <div>
+                      <label className="text-xs font-medium text-slate-700 dark:text-slate-300 mb-2 block">
+                        Video Bitrate: {videoBitrate} kbps
+                      </label>
+                      <Slider
+                        value={[videoBitrate]}
+                        onValueChange={(value) => setVideoBitrate(value[0])}
+                        min={500}
+                        max={5000}
+                        step={100}
+                        className="w-full"
+                        disabled={processing}
+                      />
+                    </div>
+
+                    <div>
+                      <label className="text-xs font-medium text-slate-700 dark:text-slate-300 mb-2 block">
+                        Resolution
+                      </label>
+                      <Select value={videoResolution} onValueChange={setVideoResolution} disabled={processing}>
+                        <SelectTrigger className="h-9">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="original">Original</SelectItem>
+                          <SelectItem value="1080p">1080p (Full HD)</SelectItem>
+                          <SelectItem value="720p">720p (HD)</SelectItem>
+                          <SelectItem value="480p">480p (SD)</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div>
+                      <label className="text-xs font-medium text-slate-700 dark:text-slate-300 mb-2 block">
+                        Frame Rate: {frameRate} fps
+                      </label>
+                      <Slider
+                        value={[frameRate]}
+                        onValueChange={(value) => setFrameRate(value[0])}
+                        min={15}
+                        max={60}
+                        step={5}
+                        className="w-full"
+                        disabled={processing}
+                      />
+                    </div>
+
+                    <div>
+                      <label className="text-xs font-medium text-slate-700 dark:text-slate-300 mb-2 block">
+                        Encoding Preset
+                      </label>
+                      <Select value={videoPreset} onValueChange={setVideoPreset} disabled={processing}>
+                        <SelectTrigger className="h-9">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="ultrafast">Ultrafast (Fastest, Larger)</SelectItem>
+                          <SelectItem value="fast">Fast</SelectItem>
+                          <SelectItem value="medium">Medium (Balanced)</SelectItem>
+                          <SelectItem value="slow">Slow (Better Quality)</SelectItem>
+                          <SelectItem value="veryslow">Very Slow (Best Quality)</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div>
+                      <label className="text-xs font-medium text-slate-700 dark:text-slate-300 mb-2 block">
+                        Audio Bitrate: {audioBitrate} kbps
+                      </label>
+                      <Slider
+                        value={[audioBitrate]}
+                        onValueChange={(value) => setAudioBitrate(value[0])}
+                        min={64}
+                        max={320}
+                        step={16}
+                        className="w-full"
+                        disabled={processing}
+                      />
+                    </div>
+                  </>
+                )}
+
+                {/* Audio Settings */}
+                {isAudio && ffmpegLoaded && (
+                  <>
+                    <div>
+                      <label className="text-xs font-medium text-slate-700 dark:text-slate-300 mb-2 block">
+                        Audio Bitrate: {audioBitrate} kbps
+                      </label>
+                      <Slider
+                        value={[audioBitrate]}
+                        onValueChange={(value) => setAudioBitrate(value[0])}
+                        min={64}
+                        max={320}
+                        step={16}
+                        className="w-full"
+                        disabled={processing}
+                      />
+                    </div>
+
+                    <div>
+                      <label className="text-xs font-medium text-slate-700 dark:text-slate-300 mb-2 block">
+                        Audio Quality
+                      </label>
+                      <Select value={audioQuality} onValueChange={setAudioQuality} disabled={processing}>
+                        <SelectTrigger className="h-9">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="high">High Quality</SelectItem>
+                          <SelectItem value="standard">Standard (Recommended)</SelectItem>
+                          <SelectItem value="low">Low (Smaller Size)</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </>
+                )}
+
+                {/* Image/GIF Specific Settings (when not video or audio or GIF with gif format) */}
+                {!(isAudio || isVideo || enableAnimation || (isGif && format === 'gif')) && (
+                  <>
+                    <div>
+                      <div className="flex items-center gap-2 mb-2">
+                        <label className="text-xs font-medium text-slate-700 dark:text-slate-300">
+                          Compression Mode
+                        </label>
+                      </div>
+                      <Select value={compressionMode} onValueChange={setCompressionMode} disabled={processing}>
+                        <SelectTrigger className="h-9">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="balanced">Balanced</SelectItem>
+                          <SelectItem value="aggressive">Aggressive</SelectItem>
+                          <SelectItem value="maximum">Maximum</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div>
+                      <div className="flex items-center gap-2 mb-2">
+                        <label className="text-xs font-medium text-slate-700 dark:text-slate-300">
+                          Quality: {quality}%
+                        </label>
+                      </div>
+                      <Slider
+                        value={[quality]}
+                        onValueChange={(value) => setQuality(value[0])}
+                        min={1}
+                        max={100}
+                        step={1}
+                        className="w-full"
+                        disabled={processing}
+                      />
+                    </div>
+
+                    {(isImage && !isGif) && (
+                      <div className="grid grid-cols-2 gap-2">
+                        <div>
+                          <div className="flex items-center gap-1 mb-1">
+                            <label className="text-xs font-medium text-slate-700 dark:text-slate-300">
+                              Max Width (px)
+                            </label>
+                          </div>
+                          <input
+                            type="number"
+                            placeholder="Auto"
+                            value={maxWidth || ''}
+                            onChange={(e) => setMaxWidth(e.target.value ? parseInt(e.target.value) : null)}
+                            className="w-full h-9 px-3 rounded-md border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 text-sm"
+                            disabled={processing}
+                          />
+                        </div>
+                        <div>
+                          <div className="flex items-center gap-1 mb-1">
+                            <label className="text-xs font-medium text-slate-700 dark:text-slate-300">
+                              Max Height (px)
+                            </label>
+                          </div>
+                          <input
+                            type="number"
+                            placeholder="Auto"
+                            value={maxHeight || ''}
+                            onChange={(e) => setMaxHeight(e.target.value ? parseInt(e.target.value) : null)}
+                            className="w-full h-9 px-3 rounded-md border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 text-sm"
+                            disabled={processing}
+                          />
+                        </div>
+                      </div>
+                    )}
+
+                    {(isImage && !isGif) && (
+                      <div className="space-y-3 pt-2 border-t border-slate-200 dark:border-slate-800">
+                        <div className="flex items-center justify-between">
+                          <label className="text-xs font-medium text-slate-700 dark:text-slate-300">
+                            Strip Metadata
+                          </label>
+                          <Switch
+                            checked={stripMetadata}
+                            onCheckedChange={setStripMetadata}
+                            disabled={processing}
+                          />
+                        </div>
+
+                        <div className="flex items-center justify-between">
+                          <label className="text-xs font-medium text-slate-700 dark:text-slate-300">
+                            Noise Reduction
+                          </label>
+                          <Switch
+                            checked={noiseReduction}
+                            onCheckedChange={setNoiseReduction}
+                            disabled={processing}
+                          />
+                        </div>
+                      </div>
+                    )}
+                  </>
+                )}
+            </CollapsibleContent>
+          </Collapsible>
+
+          {(isImage && !isGif) && (
+            <Collapsible open={upscaleSettingsOpen} onOpenChange={setUpscaleSettingsOpen}>
+              <CollapsibleTrigger asChild>
+                <Button variant="outline" className="w-full justify-between" size="sm">
+                  <span className="flex items-center gap-2">
+                    <Sparkles className="w-4 h-4" />
+                    Upscale Settings
+                  </span>
+                  <ChevronDown className={cn(
+                    "w-4 h-4 transition-transform duration-200",
+                    upscaleSettingsOpen && "rotate-180"
+                  )} />
+                </Button>
+              </CollapsibleTrigger>
+              <CollapsibleContent className="space-y-4 mt-4">
                 {/* Resolution Display */}
                 {originalImageDimensions.width > 0 && (
                   <div className="bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg p-3 space-y-2">
@@ -2517,27 +2566,25 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
                     </div>
                   </>
                 )}
-              </TooltipProvider>
-            </CollapsibleContent>
-          </Collapsible>
-        )}
+              </CollapsibleContent>
+            </Collapsible>
+          )}
 
-        {(isImage && !isGif) && (
-          <Collapsible open={animationSettingsOpen} onOpenChange={setAnimationSettingsOpen}>
-            <CollapsibleTrigger asChild>
-              <Button variant="outline" className="w-full justify-between" size="sm">
-                <span className="flex items-center gap-2">
-                  <Sparkles className="w-4 h-4" />
-                  Simple Animation {!gifJsLoaded && enableAnimation && <span className="text-xs text-slate-500">(Loading...)</span>}
-                </span>
-                <ChevronDown className={cn(
-                  "w-4 h-4 transition-transform duration-200",
-                  animationSettingsOpen && "rotate-180"
-                )} />
-              </Button>
-            </CollapsibleTrigger>
-            <CollapsibleContent className="space-y-4 mt-4">
-              <TooltipProvider>
+          {(isImage && !isGif) && (
+            <Collapsible open={animationSettingsOpen} onOpenChange={setAnimationSettingsOpen}>
+              <CollapsibleTrigger asChild>
+                <Button variant="outline" className="w-full justify-between" size="sm">
+                  <span className="flex items-center gap-2">
+                    <Sparkles className="w-4 h-4" />
+                    Simple Animation {!gifJsLoaded && enableAnimation && <span className="text-xs text-slate-500">(Loading...)</span>}
+                  </span>
+                  <ChevronDown className={cn(
+                    "w-4 h-4 transition-transform duration-200",
+                    animationSettingsOpen && "rotate-180"
+                  )} />
+                </Button>
+              </CollapsibleTrigger>
+              <CollapsibleContent className="space-y-4 mt-4">
                 <div className="flex items-center justify-between pb-2 border-b border-slate-200 dark:border-slate-800">
                   <div className="flex items-center gap-2">
                     <label className="text-xs font-medium text-slate-700 dark:text-slate-300">
@@ -2612,83 +2659,83 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
                     </div>
                   </>
                 )}
-              </TooltipProvider>
-            </CollapsibleContent>
-          </Collapsible>
-        )}
+              </CollapsibleContent>
+            </Collapsible>
+          )}
 
-        <div className="flex gap-2">
-          {!processed ? (
-            <Button
-              onClick={processMedia}
-              disabled={processing || (isVideo && !ffmpegLoaded) || (isAudio && !ffmpegLoaded) || (isGif && format === 'mp4' && !ffmpegLoaded) || (((isGif && format === 'gif') || (isImage && !isGif && enableAnimation)) && !gifJsLoaded)}
-              className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white relative overflow-hidden"
-            >
-              {/* Progress bar background */}
-              {processing && (
-                <div
-                  className="absolute inset-0 bg-emerald-500 transition-all duration-300 ease-linear"
-                  style={{
-                    width: `${processingProgress}%`,
-                    left: 0,
-                  }}
-                />
-              )}
-              
-              {/* Button content */}
-              <span className="relative z-10 flex items-center justify-center">
-                {processing ? (
-                  <>
-                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    Optimizing... {Math.round(processingProgress)}%
-                  </>
-                ) : (
-                  <>
-                    {MediaIcon && <MediaIcon className="w-4 h-4 mr-2" />}
-                    {enableAnimation ? 'Create Animation' : 'Optimize Asset'}
-                  </>
-                )}
-              </span>
-            </Button>
-          ) : (
-            <>
+          <div className="flex gap-2">
+            {!processed ? (
               <Button
                 onClick={processMedia}
-                variant="outline"
-                className="flex-1"
                 disabled={processing || (isVideo && !ffmpegLoaded) || (isAudio && !ffmpegLoaded) || (isGif && format === 'mp4' && !ffmpegLoaded) || (((isGif && format === 'gif') || (isImage && !isGif && enableAnimation)) && !gifJsLoaded)}
+                className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white relative overflow-hidden"
               >
-                <RefreshCcw className="w-4 h-4 mr-2" />
-                Reprocess
+                {/* Progress bar background */}
+                {processing && (
+                  <div
+                    className="absolute inset-0 bg-emerald-500 transition-all duration-300 ease-linear"
+                    style={{
+                      width: `${processingProgress}%`,
+                      left: 0,
+                    }}
+                  />
+                )}
+                
+                {/* Button content */}
+                <span className="relative z-10 flex items-center justify-center">
+                  {processing ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      Optimizing... {Math.round(processingProgress)}%
+                    </>
+                  ) : (
+                    <>
+                      {MediaIcon && <MediaIcon className="w-4 h-4 mr-2" />}
+                      {enableAnimation ? 'Create Animation' : 'Optimize Asset'}
+                    </>
+                  )}
+                </span>
               </Button>
-              <Button
-                onClick={() => downloadMedia()} // Call without arguments for default logic
-                className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white"
-                disabled={processing}
-              >
-                <Download className="w-4 h-4 mr-2" />
-                Download
-              </Button>
-            </>
-          )}
-        </div>
-
-        {processed && !error && (
-          <div className={cn(
-            "flex items-center gap-2 text-sm p-3 rounded-lg",
-            compressedSize < originalSize
-              ? "text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/30"
-              : "text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-950/30"
-          )}>
-            <CheckCircle2 className="w-4 h-4" />
-            <span>
-              {compressedSize < originalSize
-                ? `Saved ${formatFileSize(originalSize - compressedSize)}`
-                : `Added (+${formatFileSize(compressedSize - originalSize)})`
-              }
-            </span>
+            ) : (
+              <>
+                <Button
+                  onClick={processMedia}
+                  variant="outline"
+                  className="flex-1"
+                  disabled={processing || (isVideo && !ffmpegLoaded) || (isAudio && !ffmpegLoaded) || (isGif && format === 'mp4' && !ffmpegLoaded) || (((isGif && format === 'gif') || (isImage && !isGif && enableAnimation)) && !gifJsLoaded)}
+                >
+                  <RefreshCcw className="w-4 h-4 mr-2" />
+                  Reprocess
+                </Button>
+                <Button
+                  onClick={() => downloadMedia()} // Call without arguments for default logic
+                  className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white"
+                  disabled={processing}
+                >
+                  <Download className="w-4 h-4 mr-2" />
+                  Download
+                </Button>
+              </>
+            )}
           </div>
-        )}
+
+          {processed && !error && (
+            <div className={cn(
+              "flex items-center gap-2 text-sm p-3 rounded-lg",
+              compressedSize < originalSize
+                ? "text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/30"
+                : "text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-950/30"
+            )}>
+              <CheckCircle2 className="w-4 h-4" />
+              <span>
+                {compressedSize < originalSize
+                  ? `Saved ${formatFileSize(originalSize - compressedSize)}`
+                  : `Added (+${formatFileSize(compressedSize - originalSize)})`
+                }
+              </span>
+            </div>
+          )}
+        </TooltipProvider>
       </div>
 
       {showEditor && isImage && !isGif && (
