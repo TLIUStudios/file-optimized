@@ -32,7 +32,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
   const [compressedSize, setCompressedSize] = useState(0);
   const [preview, setPreview] = useState(null);
   const [compressedPreview, setCompressedPreview] = useState(null);
-  const [quality, setQuality] = useState(80);
+  const [quality, setQuality] = useState(85); // Changed from 80 to 85
   const [format, setFormat] = useState('webp');
   const [maxWidth, setMaxWidth] = useState(null);
   const [maxHeight, setMaxHeight] = useState(null);
