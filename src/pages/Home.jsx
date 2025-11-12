@@ -1,4 +1,3 @@
-
 import { useState, lazy, Suspense } from "react";
 import { Button } from "@/components/ui/button";
 import { Download, Trash2, Sparkles, Shield, Zap, Image as ImageIcon } from "lucide-react";
@@ -8,7 +7,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
 import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
 import { cn } from "@/lib/utils";
-import { validateFiles, sanitizeFilename } from "@/lib/fileValidation"; // Changed from "@/utils/fileValidation"
+import { validateFiles, sanitizeFilename } from "@/lib/fileValidation.js";
 
 // Lazy load heavy components for better performance
 const MediaCard = lazy(() => import("../components/upload/MediaCard"));

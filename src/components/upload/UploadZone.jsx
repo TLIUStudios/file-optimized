@@ -1,7 +1,7 @@
 import { useCallback } from "react";
 import { Upload, Image as ImageIcon, AlertCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { validateFiles, getErrorMessage } from "@/lib/fileValidation";
+import { validateFiles, getErrorMessage } from "@/lib/fileValidation.js";
 import { toast } from "sonner";
 
 export default function UploadZone({ onFilesSelected, isDragActive, onDragStateChange }) {
