@@ -1,7 +1,8 @@
-
 import { useCallback } from "react";
-import { Upload, Image as ImageIcon } from "lucide-react";
+import { Upload, Image as ImageIcon, AlertCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { validateFiles, getErrorMessage } from "@/utils/fileValidation";
+import { toast } from "sonner";
 
 export default function UploadZone({ onFilesSelected, isDragActive, onDragStateChange }) {
   const handleDrag = useCallback((e) => {
@@ -14,32 +15,98 @@ export default function UploadZone({ onFilesSelected, isDragActive, onDragStateC
     }
   }, [onDragStateChange]);
 
-  const handleDrop = useCallback((e) => {
+  const handleDrop = useCallback(async (e) => {
     e.preventDefault();
     e.stopPropagation();
     onDragStateChange(false);
 
-    const files = Array.from(e.dataTransfer.files).filter(file =>
-      file.type.startsWith('image/') || 
-      file.type.startsWith('video/') || 
-      file.type.startsWith('audio/')
-    );
+    const droppedFiles = Array.from(e.dataTransfer.files);
 
-    if (files.length > 0) {
-      onFilesSelected(files);
+    // Client-side validation
+    const validationResult = await validateFiles(droppedFiles, { isPro: false });
+
+    if (!validationResult.isValid) {
+      // Show errors
+      toast.error(
+        <div className="space-y-1">
+          <p className="font-semibold">Upload Failed</p>
+          <p className="text-xs">{getErrorMessage(validationResult.errors.slice(0, 3))}</p>
+          {validationResult.errors.length > 3 && (
+            <p className="text-xs text-slate-400">+ {validationResult.errors.length - 3} more issues</p>
+          )}
+        </div>,
+        { duration: 5000 }
+      );
+
+      // If some files are valid, still allow them
+      if (validationResult.validFiles.length > 0) {
+        toast.info(`${validationResult.validFiles.length} valid files will be uploaded`);
+        onFilesSelected(validationResult.validFiles.map(v => v.file));
+      }
+      return;
     }
+
+    // Show warnings if any
+    if (validationResult.warnings.length > 0) {
+      toast.warning(
+        <div className="space-y-1">
+          <p className="font-semibold">Files Uploaded with Warnings</p>
+          <p className="text-xs">{validationResult.warnings[0]}</p>
+        </div>,
+        { duration: 3000 }
+      );
+    }
+
+    // All files valid
+    onFilesSelected(validationResult.validFiles.map(v => v.file));
   }, [onFilesSelected, onDragStateChange]);
 
-  const handleFileInput = (e) => {
-    const files = Array.from(e.target.files).filter(file =>
-      file.type.startsWith('image/') || 
-      file.type.startsWith('video/') || 
-      file.type.startsWith('audio/')
-    );
+  const handleFileInput = async (e) => {
+    const selectedFiles = Array.from(e.target.files);
 
-    if (files.length > 0) {
-      onFilesSelected(files);
+    // Client-side validation
+    const validationResult = await validateFiles(selectedFiles, { isPro: false });
+
+    if (!validationResult.isValid) {
+      // Show errors
+      toast.error(
+        <div className="space-y-1">
+          <p className="font-semibold">Upload Failed</p>
+          <p className="text-xs">{getErrorMessage(validationResult.errors.slice(0, 3))}</p>
+          {validationResult.errors.length > 3 && (
+            <p className="text-xs text-slate-400">+ {validationResult.errors.length - 3} more issues</p>
+          )}
+        </div>,
+        { duration: 5000 }
+      );
+
+      // If some files are valid, still allow them
+      if (validationResult.validFiles.length > 0) {
+        toast.info(`${validationResult.validFiles.length} valid files will be uploaded`);
+        onFilesSelected(validationResult.validFiles.map(v => v.file));
+      }
+      
+      // Clear the input
+      e.target.value = '';
+      return;
     }
+
+    // Show warnings if any
+    if (validationResult.warnings.length > 0) {
+      toast.warning(
+        <div className="space-y-1">
+          <p className="font-semibold">Files Uploaded with Warnings</p>
+          <p className="text-xs">{validationResult.warnings[0]}</p>
+        </div>,
+        { duration: 3000 }
+      );
+    }
+
+    // All files valid
+    onFilesSelected(validationResult.validFiles.map(v => v.file));
+    
+    // Clear the input for re-selection
+    e.target.value = '';
   };
 
   return (
@@ -94,10 +161,10 @@ export default function UploadZone({ onFilesSelected, isDragActive, onDragStateC
             </p>
           </div>
           <p className="text-xs text-slate-500 dark:text-slate-400 mt-3">
-            Unlimited uploads • 50MB file size limit per file (500MB on Pro Plan)
+            Max 50 files • 50MB per file • 1GB total per batch
           </p>
           <p className="text-xs text-slate-400 dark:text-slate-500">
-            All processing happens locally
+            🔒 All processing happens locally in your browser
           </p>
         </div>
       </div>
