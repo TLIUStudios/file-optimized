@@ -824,7 +824,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
           id: image.name,
           originalFile: image,
           compressedBlob: originalBlob,
-          compressedUrl,
+          compressedUrl: compressedUrl,
           originalSize: image.size,
           compressedSize: originalBlob.size,
           format: 'gif',
@@ -987,7 +987,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
         id: image.name,
         originalFile: image,
         compressedBlob: gifBlob,
-        compressedUrl,
+        compressedUrl: compressedUrl,
         originalSize: image.size,
         compressedSize: gifBlob.size,
         format: 'gif',
@@ -1021,7 +1021,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
           id: image.name,
           originalFile: image,
           compressedBlob: originalBlob,
-          compressedUrl,
+          compressedUrl: compressedUrl,
           originalSize: image.size,
           compressedSize: originalBlob.size,
           format: 'gif',
@@ -1660,16 +1660,50 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
       ctx.drawImage(img, 0, 0);
 
       const mimeType = newFormat === 'jpg' ? 'image/jpeg' : `image/${newFormat}`;
-      const blob = await new Promise((resolve) => {
+      let blob = await new Promise((resolve) => {
         canvas.toBlob((b) => resolve(b), mimeType, quality / 100);
       });
 
+      // Check if converting back to original format and file got bigger
+      const originalFileFormat = image.name.split('.').pop().toLowerCase();
+      const isConvertingBackToOriginal = newFormat === originalFileFormat || 
+        (newFormat === 'jpg' && (originalFileFormat === 'jpeg' || originalFileFormat === 'jpg'));
+
+      if (isConvertingBackToOriginal && blob.size > originalSize) {
+        console.log('Converted file is larger than original, using original file');
+        
+        const originalUrl = URL.createObjectURL(image);
+        setCompressedPreview(originalUrl);
+        setCompressedSize(image.size);
+        setCompressedBlob(image);
+        setOutputFormat(newFormat);
+        setFormat(newFormat);
+
+        onProcessed({
+          id: image.name,
+          originalFile: image,
+          compressedBlob: image,
+          compressedUrl: originalUrl,
+          originalSize: originalSize,
+          compressedSize: image.size,
+          format: newFormat,
+          filename: getOutputFilename(newFormat),
+          mediaType: 'image',
+          fileFormat: newFormat
+        });
+
+        toast.info(`Converted to ${newFormat.toUpperCase()} - using original file (0% change)`);
+        setProcessing(false);
+        return;
+      }
+
+      // Successfully converted
       const url = URL.createObjectURL(blob);
       setCompressedPreview(url);
       setCompressedSize(blob.size);
       setCompressedBlob(blob);
       setOutputFormat(newFormat);
-      setFormat(newFormat); // Update the internal format state as well
+      setFormat(newFormat);
 
       onProcessed({
         id: image.name,
@@ -1684,7 +1718,14 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
         fileFormat: newFormat
       });
 
-      toast.success(`Converted to ${newFormat.toUpperCase()}`);
+      const savings = ((1 - blob.size / originalSize) * 100).toFixed(1);
+      if (blob.size < originalSize) {
+        toast.success(`Converted to ${newFormat.toUpperCase()} (${savings}% savings)`);
+      } else if (blob.size === originalSize) {
+        toast.success(`Converted to ${newFormat.toUpperCase()} (0% change)`);
+      } else {
+        toast.success(`Converted to ${newFormat.toUpperCase()}`);
+      }
     } catch (error) {
       console.error('Error converting format:', error);
       setError('Failed to convert format');
