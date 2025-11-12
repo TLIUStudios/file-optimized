@@ -41,10 +41,6 @@ export default function VideoEditor({ isOpen, onClose, videoUrl, ffmpeg, onSave 
   
   // Blur settings
   const [blurStrength, setBlurStrength] = useState(5);
-  const [blurX, setBlurX] = useState(0);
-  const [blurY, setBlurY] = useState(0);
-  const [blurWidth, setBlurWidth] = useState(100);
-  const [blurHeight, setBlurHeight] = useState(100);
   
   const videoRef = useRef(null);
 
@@ -125,8 +121,8 @@ export default function VideoEditor({ isOpen, onClose, videoUrl, ffmpeg, onSave 
         }
       }
       
-      // Blur area (basic blur - FFmpeg doesn't support selective blur easily)
-      if (currentTab === 'blur' && blurWidth > 0 && blurHeight > 0) {
+      // Blur (full frame only)
+      if (currentTab === 'blur' && blurStrength > 0) {
         filters.push(`boxblur=${blurStrength}:${blurStrength}`);
       }
       
@@ -388,7 +384,7 @@ export default function VideoEditor({ isOpen, onClose, videoUrl, ffmpeg, onSave 
 
                   <TabsContent value="rotate" className="space-y-4 mt-0">
                     <Label className="text-xs">Rotation Angle</Label>
-                    <div className="grid grid-cols-3 gap-2 mt-2">
+                    <div className="grid grid-cols-4 gap-2 mt-2">
                       {[0, 90, 180, 270].map((angle) => (
                         <Button
                           key={angle}
@@ -488,7 +484,7 @@ export default function VideoEditor({ isOpen, onClose, videoUrl, ffmpeg, onSave 
                         className="mt-2"
                       />
                     </div>
-                    <p className="text-xs text-slate-500">Note: Blur applies to entire video (selective blur not available)</p>
+                    <p className="text-xs text-slate-500">Note: Blur applies to entire video</p>
                   </TabsContent>
                 </div>
               </Tabs>

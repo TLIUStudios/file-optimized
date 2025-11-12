@@ -411,104 +411,89 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
   const extractAdvancedMetadata = async () => {
     if (!isImage || isGif) {
       toast.error('Advanced EXIF metadata can only be extracted from static images.');
-      setMetadataViewMode('basic'); // Fallback to basic view
+      setMetadataViewMode('basic');
       return;
     }
 
     if (loadingAdvancedMetadata) return;
 
     setLoadingAdvancedMetadata(true);
-    setAdvancedMetadata(null); // Clear previous advanced metadata
+    setAdvancedMetadata(null);
 
     try {
-      const EXIF = (await import('exif-js')).default;
-      const fileReader = new FileReader();
-      fileReader.onload = (e) => {
-        const arrayBuffer = e.target.result;
-        EXIF.getData(arrayBuffer, function() {
-          if (EXIF.getAllTags(this)) {
-            const allTags = EXIF.getAllTags(this);
-            const gpsInfo = EXIF.getGpsInfo(this);
-            const iptc = EXIF.getIptcData(this);
-            const xmp = EXIF.getXmpData(this);
-            const ifd0 = EXIF.getIfd0TagNames(this); // Get IFD0 tags (often contains make/model)
+      // Import exifr library dynamically from CDN
+      const exifr = await import('https://cdn.jsdelivr.net/npm/exifr@7.1.3/+esm');
 
-            // Filter out internal EXIF.js properties or duplicate raw data
-            const cleanTags = (tags) => {
-                const cleaned = {};
-                for (const key in tags) {
-                    // Avoid EXIF.js internal methods/properties, functions, or very large raw data
-                    if (typeof tags[key] !== 'function' &&
-                        !key.startsWith('__') &&
-                        key !== 'GPSIFD' && key !== 'InteropIFD' && // These are often nested or raw
-                        key !== 'thumbnail' && // Thumbnail data can be huge
-                        !(typeof tags[key] === 'object' && tags[key].length > 100) // heuristic for large array data
-                        ) {
-                        cleaned[key] = tags[key];
-                    }
-                }
-                return cleaned;
-            };
+      // Get the image file blob
+      const response = await fetch(preview);
+      const blob = await response.blob();
 
-            const cleanGps = {};
-            if (gpsInfo && gpsInfo.latitude) cleanGps.latitude = gpsInfo.latitude;
-            if (gpsInfo && gpsInfo.longitude) cleanGps.longitude = gpsInfo.longitude;
-            if (gpsInfo && gpsInfo.altitude) cleanGps.altitude = gpsInfo.altitude;
-            if (gpsInfo && gpsInfo.timestamp) cleanGps.timestamp = gpsInfo.timestamp;
+      // Extract all possible metadata
+      const [allTags, gps] = await Promise.all([
+        exifr.parse(blob, true).catch(() => ({})),
+        exifr.gps(blob).catch(() => null),
+      ]);
 
+      const advanced = {
+        exif: {},
+        gps: {},
+        iptc: {},
+        xmp: {},
+        ifd0: {},
+      };
 
-            const cleanIptc = {};
-            for (const key in iptc) {
-                if (key !== 'raw') { // raw can be large
-                    cleanIptc[key] = iptc[key];
-                }
-            }
+      // Organize tags by category
+      if (allTags && typeof allTags === 'object') {
+        Object.entries(allTags).forEach(([key, value]) => {
+          // Skip functions and very large data
+          if (typeof value === 'function' || key.startsWith('_')) return;
 
-            const cleanXmp = {};
-            if (xmp) {
-                // XMP can be complex, often an XML string. We might just store the string or parse minimally.
-                // For now, let's just store it as a string if it's text.
-                // A more robust solution would be an XML parser, but that's out of scope for this.
-                cleanXmp.raw = typeof xmp === 'string' ? xmp.substring(0, 500) + (xmp.length > 500 ? '...' : '') : JSON.stringify(xmp);
-            }
-
-            const ifd0Tags = {};
-            for (const key of ifd0) {
-              const value = EXIF.getTag(this, key);
-              if (value !== undefined) {
-                ifd0Tags[key] = value;
-              }
-            }
-
-
-            setAdvancedMetadata({
-              exif: cleanTags(allTags),
-              gps: cleanGps,
-              iptc: cleanIptc,
-              xmp: cleanXmp,
-              ifd0: ifd0Tags
-            });
-            setMetadataViewMode('advanced'); // Switch to advanced view once loaded
-            toast.success('Advanced metadata extracted!');
-          } else {
-            setAdvancedMetadata({ exif: {}, gps: {}, iptc: {}, xmp: {}, ifd0: {} });
-            setMetadataViewMode('advanced');
-            toast.info('No EXIF/Advanced metadata found.');
+          // GPS tags
+          if (key.toLowerCase().includes('gps') || ['latitude', 'longitude', 'altitude'].includes(key.toLowerCase())) {
+            advanced.gps[key] = value;
           }
-          setLoadingAdvancedMetadata(false);
+          // IPTC tags
+          else if (key.toLowerCase().includes('iptc') || ['copyright', 'credit', 'byline', 'caption'].includes(key.toLowerCase())) {
+            advanced.iptc[key] = value;
+          }
+          // XMP tags
+          else if (key.toLowerCase().includes('xmp') || key.toLowerCase().includes('rating')) {
+            advanced.xmp[key] = value;
+          }
+          // IFD0 tags (make, model, software)
+          else if (['make', 'model', 'software', 'orientation'].includes(key.toLowerCase())) {
+            advanced.ifd0[key] = value;
+          }
+          // Everything else goes to EXIF
+          else {
+            advanced.exif[key] = value;
+          }
         });
-      };
-      fileReader.onerror = (err) => {
-        console.error('FileReader error:', err);
-        setLoadingAdvancedMetadata(false);
-        toast.error('Failed to read file for advanced metadata.');
-      };
-      // Read the original image file as ArrayBuffer
-      fileReader.readAsArrayBuffer(image);
+      }
+
+      // Add GPS coordinates if available
+      if (gps && gps.latitude && gps.longitude) {
+        advanced.gps.latitude = gps.latitude;
+        advanced.gps.longitude = gps.longitude;
+        if (gps.altitude) advanced.gps.altitude = gps.altitude;
+      }
+
+      setAdvancedMetadata(advanced);
+      setMetadataViewMode('advanced');
+
+      const totalTags = Object.values(advanced).reduce((sum, obj) => sum + Object.keys(obj).length, 0);
+      if (totalTags > 0) {
+        toast.success(`Extracted ${totalTags} metadata tags!`);
+      } else {
+        toast.info('No EXIF metadata found in this image.');
+      }
+
     } catch (error) {
       console.error('Error extracting advanced metadata:', error);
+      toast.error('Failed to extract advanced metadata: ' + error.message);
+      setAdvancedMetadata({ exif: {}, gps: {}, iptc: {}, xmp: {}, ifd0: {} });
+    } finally {
       setLoadingAdvancedMetadata(false);
-      toast.error('Failed to load EXIF library or extract advanced metadata: ' + error.message);
     }
   };
 
