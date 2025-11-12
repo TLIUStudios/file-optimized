@@ -1096,7 +1096,9 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
     const mimeType = format === 'jpg' ? 'image/jpeg' : `image/${format}`;
 
     let baseQuality = quality / 100;
-    if (compressionMode === 'aggressive') {
+    if (compressionMode === 'balanced') { // Keep balanced as default behavior
+        // No explicit change, use baseQuality as is
+    } else if (compressionMode === 'aggressive') {
       baseQuality = Math.max(0.5, baseQuality - 0.15);
     } else if (compressionMode === 'maximum') {
       baseQuality = Math.max(0.3, baseQuality - 0.3);
@@ -2489,36 +2491,6 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
                     <div>
                       <div className="flex items-center gap-2 mb-2">
                         <label className="text-xs font-medium text-slate-700 dark:text-slate-300">
-                          Compression Mode
-                        </label>
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Info className="w-3 h-3 text-slate-400 cursor-help" />
-                          </TooltipTrigger>
-                          <TooltipContent className="max-w-xs">
-                            <p className="text-xs">
-                              <strong>Balanced:</strong> Good quality with moderate compression<br/>
-                              <strong>Aggressive:</strong> Smaller files with slight quality loss<br/>
-                              <strong>Maximum:</strong> Smallest files, noticeable quality reduction
-                            </p>
-                          </TooltipContent>
-                        </Tooltip>
-                      </div>
-                      <Select value={compressionMode} onValueChange={setCompressionMode} disabled={processing}>
-                        <SelectTrigger className="h-9">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="balanced">Balanced</SelectItem>
-                          <SelectItem value="aggressive">Aggressive</SelectItem>
-                          <SelectItem value="maximum">Maximum</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-
-                    <div>
-                      <div className="flex items-center gap-2 mb-2">
-                        <label className="text-xs font-medium text-slate-700 dark:text-slate-300">
                           Quality: {quality}%
                         </label>
                         <Tooltip>
@@ -2540,57 +2512,6 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
                         disabled={processing}
                       />
                     </div>
-
-                    {(isImage && !isGif) && (
-                      <div className="grid grid-cols-2 gap-2">
-                        <div>
-                          <div className="flex items-center gap-1 mb-1">
-                            <label className="text-xs font-medium text-slate-700 dark:text-slate-300">
-                              Max Width (px)
-                            </label>
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <Info className="w-3 h-3 text-slate-400 cursor-help" />
-                              </TooltipTrigger>
-                              <TooltipContent className="max-w-xs">
-                                <p className="text-xs">Scales image proportionally to fit within this width while maintaining aspect ratio. Leave empty to keep original width.</p>
-                              </TooltipContent>
-                            </Tooltip>
-                          </div>
-                          <input
-                            type="number"
-                            placeholder="Auto"
-                            value={maxWidth || ''}
-                            onChange={(e) => setMaxWidth(e.target.value ? parseInt(e.target.value) : null)}
-                            className="w-full h-9 px-3 rounded-md border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 text-sm"
-                            disabled={processing}
-                          />
-                        </div>
-                        <div>
-                          <div className="flex items-center gap-1 mb-1">
-                            <label className="text-xs font-medium text-slate-700 dark:text-slate-300">
-                              Max Height (px)
-                            </label>
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <Info className="w-3 h-3 text-slate-400 cursor-help" />
-                              </TooltipTrigger>
-                              <TooltipContent className="max-w-xs">
-                                <p className="text-xs">Scales image proportionally to fit within this height while maintaining aspect ratio. Leave empty to keep original height.</p>
-                              </TooltipContent>
-                            </Tooltip>
-                          </div>
-                          <input
-                            type="number"
-                            placeholder="Auto"
-                            value={maxHeight || ''}
-                            onChange={(e) => setMaxHeight(e.target.value ? parseInt(e.target.value) : null)}
-                            className="w-full h-9 px-3 rounded-md border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 text-sm"
-                            disabled={processing}
-                          />
-                        </div>
-                      </div>
-                    )}
 
                     {(isImage && !isGif) && (
                       <div className="space-y-3 pt-2 border-t border-slate-200 dark:border-slate-800">
