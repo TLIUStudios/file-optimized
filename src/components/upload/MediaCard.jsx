@@ -101,6 +101,9 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
   const [ffmpegLoadError, setFfmpegLoadError] = useState(null);
   const ffmpegRef = useRef(null);
 
+  // Add UPNG.js loading state for PNG compression
+  const [upngLoaded, setUpngLoaded] = useState(false);
+
   const processMediaRef = useRef(null);
 
   // Determine media icon for the button
@@ -283,6 +286,41 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
       }
     };
   }, [workerBlobUrl]);
+
+  // Load UPNG.js for better PNG compression
+  useEffect(() => {
+    if (format === 'png' && !upngLoaded) {
+      const loadUPNG = async () => {
+        try {
+          if (window.UPNG) {
+            setUpngLoaded(true);
+            return;
+          }
+
+          await new Promise((resolve, reject) => {
+            const script = document.createElement('script');
+            script.src = 'https://cdn.jsdelivr.net/npm/upng-js@2.1.0/UPNG.min.js';
+            script.onload = () => {
+              if (window.UPNG) {
+                resolve();
+              } else {
+                reject(new Error('UPNG.js not available'));
+              }
+            };
+            script.onerror = () => reject(new Error('Failed to load UPNG.js'));
+            document.head.appendChild(script);
+          });
+
+          setUpngLoaded(true);
+          console.log('✅ UPNG.js loaded for PNG compression');
+        } catch (error) {
+          console.error('Failed to load UPNG.js:', error);
+        }
+      };
+
+      loadUPNG();
+    }
+  }, [format, upngLoaded]);
 
   // Update estimated time during processing
   useEffect(() => {
@@ -1055,7 +1093,6 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
 
     // Handle upscaling with multiplier or custom dimensions
     if (enableUpscale && upscaleMultiplier) {
-      // Use multiplier
       width = Math.round(img.width * (upscaleMultiplier / 100));
       height = Math.round(img.height * (upscaleMultiplier / 100));
     } else if (maxWidth || maxHeight || enableUpscale) {
@@ -1093,10 +1130,97 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
 
     ctx.drawImage(img, 0, 0, width, height);
 
+    // Special handling for PNG compression
+    if (format === 'png' && upngLoaded && window.UPNG) {
+      try {
+        console.log('🎨 Using UPNG.js for advanced PNG compression...');
+        
+        // Get image data from canvas
+        const imageData = ctx.getImageData(0, 0, width, height);
+        
+        // Calculate number of colors based on quality
+        // Higher quality = more colors, lower quality = fewer colors (better compression)
+        const colors = Math.max(2, Math.min(256, Math.round(256 * (quality / 100))));
+        
+        console.log(`Colors: ${colors} (quality: ${quality}%)`);
+        
+        // Encode with UPNG using quantization for lossy compression
+        const pngBuffer = window.UPNG.encode(
+          [imageData.data.buffer],
+          width,
+          height,
+          colors, // Number of colors (2-256)
+          []
+        );
+        
+        const blob = new Blob([pngBuffer], { type: 'image/png' });
+        
+        console.log(`✅ PNG compressed: ${(blob.size / 1024).toFixed(1)}KB (${colors} colors)`);
+        
+        // If compressed file is larger and we're not upscaling, use original
+        if (!enableUpscale && blob.size >= image.size) {
+          console.log('Compressed PNG is larger, using original file');
+          
+          const compressedUrl = URL.createObjectURL(image);
+          setCompressedPreview(compressedUrl);
+          setCompressedSize(image.size);
+          setCompressedBlob(image);
+          setProcessed(true);
+          setOutputFormat(format);
+
+          onProcessed({
+            id: image.name,
+            originalFile: image,
+            compressedBlob: image,
+            compressedUrl: compressedUrl,
+            originalSize: image.size,
+            compressedSize: image.size,
+            format,
+            filename: getOutputFilename(format),
+            mediaType: 'image',
+            fileFormat: format
+          });
+
+          toast.info(`PNG already optimized - 0% savings`);
+          return;
+        }
+
+        const compressedUrl = URL.createObjectURL(blob);
+        setCompressedPreview(compressedUrl);
+        setCompressedSize(blob.size);
+        setCompressedBlob(blob);
+        setProcessed(true);
+        setOutputFormat(format);
+
+        onProcessed({
+          id: image.name,
+          originalFile: image,
+          compressedBlob: blob,
+          compressedUrl,
+          originalSize: image.size,
+          compressedSize: blob.size,
+          format,
+          filename: getOutputFilename(format),
+          mediaType: 'image',
+          fileFormat: format
+        });
+
+        const savings = ((1 - blob.size / image.size) * 100).toFixed(1);
+        toast.success(`PNG compressed! Saved ${savings}%`);
+        return;
+        
+      } catch (error) {
+        console.error('UPNG compression failed, falling back to standard:', error);
+        toast.warning('Using standard PNG compression (limited)');
+        // Fall through to standard compression
+      }
+    }
+
+    // Standard compression for non-PNG or if PNG compression fails
     const mimeType = format === 'jpg' ? 'image/jpeg' : `image/${format}`;
 
     let baseQuality = quality / 100;
-    if (compressionMode === 'balanced') { // Keep balanced as default behavior
+    if (compressionMode === 'balanced') {
         // No explicit change, use baseQuality as is
     } else if (compressionMode === 'aggressive') {
       baseQuality = Math.max(0.5, baseQuality - 0.15);
@@ -1109,7 +1233,6 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
     let attempts = 0;
     const maxAttempts = compressionMode === 'aggressive' || compressionMode === 'maximum' ? 8 : 5;
 
-    // Try progressively lower quality until we get a smaller file or run out of attempts
     while (attempts < maxAttempts) {
       blob = await new Promise((resolve) => {
         canvas.toBlob(
@@ -1119,7 +1242,6 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
         );
       });
 
-      // Break if upscaling, or file is smaller, or this is our last attempt
       if (enableUpscale || (blob && blob.size < image.size) || attempts === maxAttempts - 1) {
         break;
       }
@@ -1128,7 +1250,6 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
       attempts++;
     }
 
-    // If file is still larger and we're not upscaling, use the original file
     if (!enableUpscale && blob && blob.size >= image.size) {
       console.log('Compressed file is larger, using original file');
       
@@ -1156,7 +1277,6 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
       return;
     }
 
-    // Successfully compressed to a smaller size (or upscaled)
     const compressedUrl = URL.createObjectURL(blob);
     setCompressedPreview(compressedUrl);
     setCompressedSize(blob.size);
@@ -2507,7 +2627,12 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
                             <Info className="w-3 h-3 text-slate-400 cursor-help" />
                           </TooltipTrigger>
                           <TooltipContent className="max-w-xs">
-                            <p className="text-xs">Lower quality = smaller file size. Works for JPG and WebP formats. PNG and AVIF ignore this setting (lossless/browser limitation). 70-85% is usually optimal.</p>
+                            <p className="text-xs">
+                              {format === 'png' 
+                                ? "For PNG: Lower quality = fewer colors (better compression). 70-85% recommended for good balance. Uses advanced quantization for TinyPNG-like results."
+                                : "Lower quality = smaller file size. Works for JPG and WebP formats. PNG and AVIF ignore this setting (lossless/browser limitation). 70-85% is usually optimal."
+                              }
+                            </p>
                           </TooltipContent>
                         </Tooltip>
                       </div>
@@ -2521,6 +2646,16 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
                         disabled={processing}
                       />
                     </div>
+
+                    {format === 'png' && (
+                      <div className="bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 rounded-lg p-3">
+                        <p className="text-xs text-blue-700 dark:text-blue-400">
+                          <strong>💡 PNG Tip:</strong> Using advanced compression (like TinyPNG). Lower quality = fewer colors = smaller file size. 
+                          {!upngLoaded && <span className="block mt-1">⏳ Loading compression engine...</span>}
+                          {upngLoaded && <span className="block mt-1">✅ Advanced compression ready!</span>}
+                        </p>
+                      </div>
+                    )}
 
                     {(isImage && !isGif) && (
                       <div className="space-y-3 pt-2 border-t border-slate-200 dark:border-slate-800">
