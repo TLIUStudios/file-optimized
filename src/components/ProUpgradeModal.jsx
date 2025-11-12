@@ -1,4 +1,3 @@
-
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Check, Zap, Sparkles, Film, TrendingUp, Loader2 } from "lucide-react";
@@ -107,7 +106,7 @@ export default function ProUpgradeModal({ isOpen, onClose, onUpgrade, processing
               {processing ? (
                 <>
                   <Loader2 className="w-5 h-5 mr-2 animate-spin" />
-                  Processing...
+                  Creating checkout...
                 </>
               ) : (
                 <>

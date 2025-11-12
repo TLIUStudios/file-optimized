@@ -81,22 +81,43 @@ export default function Profile() {
   const handleUpgrade = async () => {
     try {
       setProcessingCheckout(true);
-      toast.info('Redirecting to checkout...');
+      toast.info('Creating checkout session...', { id: 'checkout' });
 
-      const { data } = await base44.functions.invoke('createCheckoutSession');
+      // Add timeout to prevent hanging
+      const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Request timeout - please try again')), 15000)
+      );
+
+      const checkoutPromise = base44.functions.invoke('createCheckoutSession');
+
+      const response = await Promise.race([checkoutPromise, timeoutPromise]);
+      const { data } = response;
       
+      console.log('Checkout response:', data);
+
       if (data.error) {
         throw new Error(data.error);
       }
 
       if (data.url) {
+        toast.dismiss('checkout');
+        toast.success('Redirecting to Stripe...');
         window.location.href = data.url;
       } else {
-        throw new Error('No checkout URL returned');
+        throw new Error('No checkout URL returned from Stripe');
       }
     } catch (error) {
       console.error('Error creating checkout:', error);
-      toast.error(error.message || 'Failed to start checkout');
+      toast.dismiss('checkout');
+      
+      let errorMessage = 'Failed to start checkout. Please try again.';
+      if (error.message.includes('timeout')) {
+        errorMessage = 'Request timed out. Please check your internet connection and try again.';
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+      
+      toast.error(errorMessage, { duration: 5000 });
       setProcessingCheckout(false);
     }
   };
