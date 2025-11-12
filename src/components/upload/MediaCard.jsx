@@ -712,6 +712,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
     const canvas = document.createElement('canvas');
     let width = img.width;
     let height = img.height;
+
     if (enableUpscale && upscaleMultiplier) {
       width = Math.round(img.width * (upscaleMultiplier / 100));
       height = Math.round(img.height * (upscaleMultiplier / 100));
@@ -735,6 +736,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
         }
       }
     }
+
     canvas.width = width;
     canvas.height = height;
     const ctx = canvas.getContext('2d');
@@ -744,10 +746,10 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
     }
     ctx.drawImage(img, 0, 0, width, height);
 
-    // Special handling for PNG compression with UPNG.js - IMPROVED
+    // Special handling for PNG compression with UPNG.js - COMPLETELY REWRITTEN
     if (format === 'png') {
       if (!upngLoaded || !window.UPNG) {
-        console.log('⏳ Waiting for UPNG.js to load...');
+        console.log('⏳ UPNG.js not ready, waiting...');
         toast.info('Loading PNG compression engine...', { id: 'upng-load' });
         const startWait = Date.now();
         while (!window.UPNG && (Date.now() - startWait) < 5000) {
@@ -755,49 +757,70 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
         }
         toast.dismiss('upng-load');
         if (!window.UPNG) {
-          console.error('❌ UPNG.js not available after waiting');
+          console.error('❌ UPNG.js unavailable');
           toast.warning('Using standard PNG compression');
         } else {
-          console.log('✅ UPNG.js loaded');
           setUpngLoaded(true);
         }
       }
 
       if (upngLoaded && window.UPNG) {
         try {
-          console.log('🎨 Using UPNG.js for advanced PNG compression...');
+          console.log('🎨 Starting UPNG.js compression...');
           
+          // Get image data
           const imageData = ctx.getImageData(0, 0, width, height);
           
-          let colors;
-          if (quality >= 90) colors = 256;
-          else if (quality >= 80) colors = Math.round(128 + ((quality - 80) / 10) * 128);
-          else if (quality >= 70) colors = Math.round(64 + ((quality - 70) / 10) * 64);
-          else if (quality >= 50) colors = Math.round(32 + ((quality - 50) / 20) * 32);
-          else colors = Math.max(16, Math.round(quality / 3));
+          // Calculate colors based on quality
+          let colors = 0; // 0 = lossless/automatic
+          if (quality < 90) {
+            if (quality >= 80) colors = 256;
+            else if (quality >= 70) colors = 128;
+            else if (quality >= 60) colors = 64;
+            else if (quality >= 50) colors = 32;
+            else colors = 16;
+          }
           
-          console.log(`PNG: ${colors} colors, quality: ${quality}%, size: ${width}x${height}`);
+          console.log(`Encoding PNG: ${width}x${height}, ${colors || 'auto'} colors, quality: ${quality}%`);
           
-          // FIXED: Properly convert ImageData to RGBA buffer
-          const rgba = new Uint8Array(imageData.data);
+          // Convert to proper format for UPNG
+          const rgba = imageData.data;
           
-          console.log('Encoding PNG with UPNG...');
+          // CRITICAL FIX: Use UPNG.encode properly
+          // For lossy compression with color reduction, we need to quantize first
+          let pngBuffer;
           
-          // Call UPNG.encode with proper parameters
-          const pngBuffer = window.UPNG.encode(
-            [rgba.buffer], // Array of ArrayBuffers
-            width,
-            height,
-            colors, // 0 = lossless, 256 = full palette, less = more compression
-            [] // No delays (not animated)
-          );
-          
-          console.log(`✅ PNG encoded: ${pngBuffer.byteLength} bytes`);
+          if (colors > 0 && colors < 256) {
+            // Quantize to reduce colors (lossy compression like TinyPNG)
+            console.log(`Quantizing to ${colors} colors...`);
+            const quantized = window.UPNG.quantize(rgba, colors);
+            
+            // Encode with indexed palette
+            pngBuffer = window.UPNG.encode(
+              [quantized.abuf], // Use the quantized buffer
+              width,
+              height,
+              0, // 0 for indexed color mode
+              [quantized.plte] // Pass the palette
+            );
+          } else {
+            // High quality or lossless - use full RGBA
+            pngBuffer = window.UPNG.encode(
+              [rgba.buffer],
+              width,
+              height,
+              0, // 0 = automatic/lossless
+              []
+            );
+          }
           
           const blob = new Blob([pngBuffer], { type: 'image/png' });
+          const savingsEstimate = ((1 - blob.size / image.size) * 100).toFixed(1);
+          
+          console.log(`✅ PNG compressed: ${(blob.size / 1024).toFixed(1)}KB (${savingsEstimate}% savings)`);
           
           if (!enableUpscale && blob.size >= image.size) {
-            console.log('⚠️ Compressed PNG larger than original, using original');
+            console.log('⚠️ Using original (compressed is larger)');
             const compressedUrl = URL.createObjectURL(image);
             setCompressedPreview(compressedUrl);
             setCompressedSize(image.size);
@@ -839,16 +862,13 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
             fileFormat: format
           });
           const savings = ((1 - blob.size / image.size) * 100).toFixed(1);
-          toast.success(`PNG compressed! Saved ${savings}% (${colors} colors)`);
+          toast.success(`PNG compressed! Saved ${savings}%${colors > 0 ? ` (${colors} colors)` : ''}`);
           return;
         } catch (error) {
-          console.error('❌ UPNG compression error:', error);
-          console.error('Error details:', error.stack);
+          console.error('❌ UPNG error:', error);
+          console.error('Stack:', error.stack);
           toast.error('PNG compression failed, using standard method');
-          // Fall through to standard compression
         }
-      } else {
-        console.warn('⚠️ UPNG.js not available, falling back to standard compression.');
       }
     }
 
