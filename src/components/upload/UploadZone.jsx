@@ -1,7 +1,59 @@
-
 import { useCallback } from "react";
-import { Upload, Image as ImageIcon } from "lucide-react";
+import { Upload, Image as ImageIcon, AlertCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { toast } from "sonner";
+
+// Security: Allowed file types (MIME types and extensions)
+const ALLOWED_TYPES = {
+  // Images
+  'image/jpeg': ['.jpg', '.jpeg'],
+  'image/png': ['.png'],
+  'image/webp': ['.webp'],
+  'image/avif': ['.avif'],
+  // GIF
+  'image/gif': ['.gif'],
+  // Video
+  'video/mp4': ['.mp4'],
+  // Audio
+  'audio/mpeg': ['.mp3'],
+  'audio/mp3': ['.mp3'],
+  'audio/wav': ['.wav'],
+  'audio/wave': ['.wav'],
+  'audio/x-wav': ['.wav'],
+};
+
+const MAX_FILES_PER_BATCH = 9;
+const MAX_FILE_SIZE_FREE = 50 * 1024 * 1024; // 50MB in bytes
+const MAX_FILE_SIZE_PRO = 500 * 1024 * 1024; // 500MB in bytes
+
+// For now, assume free tier (in production, this would come from user subscription)
+const MAX_FILE_SIZE = MAX_FILE_SIZE_FREE;
+
+const validateFile = (file) => {
+  const errors = [];
+  
+  // Check file size
+  if (file.size > MAX_FILE_SIZE) {
+    const maxSizeMB = Math.floor(MAX_FILE_SIZE / 1024 / 1024);
+    errors.push(`File "${file.name}" exceeds ${maxSizeMB}MB limit (${(file.size / 1024 / 1024).toFixed(1)}MB)`);
+  }
+  
+  // Check file type (MIME type)
+  const mimeAllowed = Object.keys(ALLOWED_TYPES).includes(file.type);
+  
+  // Check file extension as secondary validation
+  const extension = '.' + file.name.split('.').pop().toLowerCase();
+  const extensionAllowed = Object.values(ALLOWED_TYPES).flat().includes(extension);
+  
+  if (!mimeAllowed && !extensionAllowed) {
+    errors.push(`File type not allowed: "${file.name}" (${file.type || 'unknown type'})`);
+  }
+  
+  return {
+    isValid: errors.length === 0,
+    errors
+  };
+};
 
 export default function UploadZone({ onFilesSelected, isDragActive, onDragStateChange }) {
   const handleDrag = useCallback((e) => {
@@ -19,27 +71,62 @@ export default function UploadZone({ onFilesSelected, isDragActive, onDragStateC
     e.stopPropagation();
     onDragStateChange(false);
 
-    const files = Array.from(e.dataTransfer.files).filter(file =>
-      file.type.startsWith('image/') || 
-      file.type.startsWith('video/') || 
-      file.type.startsWith('audio/')
-    );
-
-    if (files.length > 0) {
-      onFilesSelected(files);
-    }
+    const droppedFiles = Array.from(e.dataTransfer.files);
+    processFiles(droppedFiles);
   }, [onFilesSelected, onDragStateChange]);
 
   const handleFileInput = (e) => {
-    const files = Array.from(e.target.files).filter(file =>
-      file.type.startsWith('image/') || 
-      file.type.startsWith('video/') || 
-      file.type.startsWith('audio/')
-    );
+    const selectedFiles = Array.from(e.target.files);
+    processFiles(selectedFiles);
+    // Reset input so the same file can be selected again
+    e.target.value = '';
+  };
 
-    if (files.length > 0) {
-      onFilesSelected(files);
+  const processFiles = (files) => {
+    // Check batch size limit
+    if (files.length > MAX_FILES_PER_BATCH) {
+      toast.error(`Maximum ${MAX_FILES_PER_BATCH} files allowed per batch. You selected ${files.length} files.`, {
+        duration: 5000
+      });
+      return;
     }
+
+    const validFiles = [];
+    const rejectedFiles = [];
+
+    files.forEach(file => {
+      const validation = validateFile(file);
+      if (validation.isValid) {
+        validFiles.push(file);
+      } else {
+        rejectedFiles.push({ file, errors: validation.errors });
+      }
+    });
+
+    // Show errors for rejected files
+    if (rejectedFiles.length > 0) {
+      rejectedFiles.forEach(({ file, errors }) => {
+        errors.forEach(error => {
+          toast.error(error, { duration: 6000 });
+        });
+      });
+    }
+
+    // Add valid files
+    if (validFiles.length > 0) {
+      onFilesSelected(validFiles);
+      toast.success(`${validFiles.length} file${validFiles.length > 1 ? 's' : ''} added successfully`, {
+        duration: 3000
+      });
+    } else if (files.length > 0) {
+      toast.error('No valid files to upload. Please check file types and sizes.', {
+        duration: 5000
+      });
+    }
+  };
+
+  const formatFileSize = (bytes) => {
+    return `${Math.floor(bytes / 1024 / 1024)}MB`;
   };
 
   return (
@@ -58,7 +145,7 @@ export default function UploadZone({ onFilesSelected, isDragActive, onDragStateC
       <input
         type="file"
         multiple
-        accept="image/*,video/mp4,audio/mp3,audio/wav,audio/mpeg"
+        accept=".jpg,.jpeg,.png,.webp,.avif,.gif,.mp4,.mp3,.wav"
         onChange={handleFileInput}
         className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
         id="file-upload"
@@ -93,11 +180,14 @@ export default function UploadZone({ onFilesSelected, isDragActive, onDragStateC
               <strong>Audio:</strong> MP3, WAV
             </p>
           </div>
-          <p className="text-xs text-slate-500 dark:text-slate-400 mt-3">
-            Unlimited uploads • 50MB file size limit per file (500MB on Pro Plan)
-          </p>
-          <p className="text-xs text-slate-400 dark:text-slate-500">
-            All processing happens locally
+          <div className="flex items-center justify-center gap-2 mt-3 text-xs text-slate-500 dark:text-slate-400">
+            <AlertCircle className="w-3 h-3" />
+            <p>
+              Max {MAX_FILES_PER_BATCH} files • {formatFileSize(MAX_FILE_SIZE)} per file • All processing is local
+            </p>
+          </div>
+          <p className="text-xs text-slate-400 dark:text-slate-500 mt-2">
+            🔒 Secure: Only approved file types accepted
           </p>
         </div>
       </div>
