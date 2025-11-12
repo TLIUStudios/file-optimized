@@ -1,8 +1,11 @@
-
 import { useEffect, useState } from "react";
-import { Moon, Sun, Image as ImageIcon } from "lucide-react";
+import { Moon, Sun, Image as ImageIcon, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Toaster } from "sonner";
+import { Link } from "react-router-dom";
+import { createPageUrl } from "./utils";
+import { base44 } from "@/api/base44Client";
+import { Badge } from "@/components/ui/badge";
 
 export default function Layout({ children }) {
   const [theme, setTheme] = useState(() => {
@@ -11,11 +14,25 @@ export default function Layout({ children }) {
     }
     return 'light';
   });
+  const [user, setUser] = useState(null);
 
   useEffect(() => {
     document.documentElement.classList.toggle('dark', theme === 'dark');
     localStorage.setItem('theme', theme);
   }, [theme]);
+
+  useEffect(() => {
+    const loadUser = async () => {
+      try {
+        const currentUser = await base44.auth.me();
+        setUser(currentUser);
+      } catch (error) {
+        // User not logged in
+        setUser(null);
+      }
+    };
+    loadUser();
+  }, []);
 
   const toggleTheme = () => {
     setTheme(prev => prev === 'light' ? 'dark' : 'light');
@@ -49,7 +66,7 @@ export default function Layout({ children }) {
       
       <header className="sticky top-0 z-50 w-full border-b border-slate-200/50 dark:border-slate-800/50 bg-white/80 dark:bg-slate-950/80 backdrop-blur-lg">
         <div className="container mx-auto px-4 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-3">
+          <Link to={createPageUrl('Home')} className="flex items-center gap-3 hover:opacity-80 transition-opacity">
             <div className="w-10 h-10 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-xl flex items-center justify-center shadow-lg">
               <ImageIcon className="w-6 h-6 text-white" />
             </div>
@@ -57,20 +74,35 @@ export default function Layout({ children }) {
               <h1 className="text-xl font-bold text-slate-900 dark:text-white">ImageCrush</h1>
               <p className="text-xs text-slate-500 dark:text-slate-400">Compress & Convert</p>
             </div>
-          </div>
+          </Link>
           
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={toggleTheme}
-            className="rounded-full hover:bg-slate-100 dark:hover:bg-slate-800"
-          >
-            {theme === 'light' ? (
-              <Moon className="w-5 h-5 text-slate-700 dark:text-slate-300" />
-            ) : (
-              <Sun className="w-5 h-5 text-slate-300" />
+          <div className="flex items-center gap-3">
+            {user && (
+              <Link to={createPageUrl('Profile')}>
+                <Button variant="ghost" className="gap-2">
+                  <User className="w-4 h-4" />
+                  <span className="hidden sm:inline">{user.full_name || user.email}</span>
+                  {user.plan === 'pro' && (
+                    <Badge className="bg-gradient-to-r from-amber-500 to-orange-500 text-white text-xs px-2 py-0.5">
+                      PRO
+                    </Badge>
+                  )}
+                </Button>
+              </Link>
             )}
-          </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={toggleTheme}
+              className="rounded-full hover:bg-slate-100 dark:hover:bg-slate-800"
+            >
+              {theme === 'light' ? (
+                <Moon className="w-5 h-5 text-slate-700 dark:text-slate-300" />
+              ) : (
+                <Sun className="w-5 h-5 text-slate-300" />
+              )}
+            </Button>
+          </div>
         </div>
       </header>
       

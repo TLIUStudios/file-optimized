@@ -1,3 +1,4 @@
+
 import { useState, lazy, Suspense, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Download, Trash2, Sparkles, Shield, Zap, Image as ImageIcon } from "lucide-react";
@@ -160,16 +161,21 @@ export default function Home() {
 
   const handleUpgradeToPro = async () => {
     try {
-      // In production, this would integrate with a payment system
-      // For now, we'll just update the user's plan
-      await base44.auth.updateMe({ plan: 'pro' });
-      setUserPlan('pro');
-      const updatedUser = await base44.auth.me();
-      setUser(updatedUser);
-      toast.success('🎉 Upgraded to Pro! Enjoy your new benefits!');
+      toast.info('Redirecting to checkout...');
+      const { data } = await base44.functions.invoke('createCheckoutSession');
+      
+      if (data.error) {
+        throw new Error(data.error);
+      }
+
+      if (data.url) {
+        window.location.href = data.url;
+      } else {
+        throw new Error('No checkout URL returned');
+      }
     } catch (error) {
       console.error('Error upgrading:', error);
-      toast.error('Failed to upgrade. Please try again.');
+      toast.error('Failed to upgrade. Please try again: ' + error.message);
     }
   };
 
@@ -383,7 +389,7 @@ export default function Home() {
               multiple
               accept="image/*,video/mp4,audio/mp3,audio/wav,audio/mpeg"
               onChange={(e) => handleFilesSelected(e.target.files)}
-              className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+              className="absolute inset-0 w-full h-16 opacity-0 cursor-pointer z-10"
               id="add-more"
             />
             <Button
