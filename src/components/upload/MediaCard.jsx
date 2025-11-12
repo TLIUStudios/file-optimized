@@ -4,7 +4,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Slider } from "@/components/ui/slider";
-import { Download, X, Loader2, CheckCircle2, ArrowRight, Settings2, AlertCircle, Info, Edit2, RefreshCcw, Sparkles, Film, Music, Video, ChevronDown, Check, Wand2 } from "lucide-react";
+import { Download, X, Loader2, CheckCircle2, ArrowRight, Settings2, AlertCircle, Info, Edit2, RefreshCcw, Sparkles, Film, Music, Video, ChevronDown, Check, Wand2, Search } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
@@ -14,7 +14,7 @@ import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
-  TooltipTrigger, // Added TooltipTrigger
+  TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
@@ -24,8 +24,8 @@ import { base44 } from "@/api/base44Client";
 const ImageEditor = lazy(() => import("./ImageEditor"));
 const DownloadModal = lazy(() => import("./DownloadModal"));
 const GifEditor = lazy(() => import("./GifEditor"));
-const VideoEditor = lazy(() => import("./VideoEditor")); // New: Lazy load VideoEditor
-const AudioEditor = lazy(() => import("./AudioEditor")); // New: Lazy load AudioEditor
+const VideoEditor = lazy(() => import("./VideoEditor"));
+const AudioEditor = lazy(() => import("./AudioEditor"));
 
 export default function MediaCard({ image, onRemove, onProcessed, onCompare, autoProcess }) {
   const [processing, setProcessing] = useState(false);
@@ -52,8 +52,10 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
   const [upscaleMultiplier, setUpscaleMultiplier] = useState(null);
   const [originalImageDimensions, setOriginalImageDimensions] = useState({ width: 0, height: 0 });
   const [showGifEditor, setShowGifEditor] = useState(false);
-  const [showVideoEditor, setShowVideoEditor] = useState(false); // New: State for Video Editor
-  const [showAudioEditor, setShowAudioEditor] = useState(false); // New: State for Audio Editor
+
+  // Add video/audio editor states
+  const [showVideoEditor, setShowVideoEditor] = useState(false);
+  const [showAudioEditor, setShowAudioEditor] = useState(false);
 
   // Animation states
   const [animationSettingsOpen, setAnimationSettingsOpen] = useState(false);
@@ -78,6 +80,10 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
   // Add metadata viewer state
   const [showMetadataViewer, setShowMetadataViewer] = useState(false);
   const [fileMetadata, setFileMetadata] = useState(null);
+  const [metadataViewMode, setMetadataViewMode] = useState('basic'); // 'basic' or 'advanced'
+  const [advancedMetadata, setAdvancedMetadata] = useState(null);
+  const [loadingAdvancedMetadata, setLoadingAdvancedMetadata] = useState(false);
+
 
   // Media type detection
   const isImage = image.type.startsWith('image/');
@@ -395,10 +401,114 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
       }
 
       setFileMetadata(metadata);
-      setShowMetadataViewer(true);
+      // No longer automatically show the viewer here. It will be triggered by a button.
     } catch (error) {
-      console.error('Error extracting metadata:', error);
-      toast.error('Failed to extract metadata: ' + error.message);
+      console.error('Error extracting basic metadata:', error);
+      toast.error('Failed to extract basic metadata: ' + error.message);
+    }
+  };
+
+  const extractAdvancedMetadata = async () => {
+    if (!isImage || isGif) {
+      toast.error('Advanced EXIF metadata can only be extracted from static images.');
+      setMetadataViewMode('basic'); // Fallback to basic view
+      return;
+    }
+
+    if (loadingAdvancedMetadata) return;
+
+    setLoadingAdvancedMetadata(true);
+    setAdvancedMetadata(null); // Clear previous advanced metadata
+
+    try {
+      const EXIF = (await import('exif-js')).default;
+      const fileReader = new FileReader();
+      fileReader.onload = (e) => {
+        const arrayBuffer = e.target.result;
+        EXIF.getData(arrayBuffer, function() {
+          if (EXIF.getAllTags(this)) {
+            const allTags = EXIF.getAllTags(this);
+            const gpsInfo = EXIF.getGpsInfo(this);
+            const iptc = EXIF.getIptcData(this);
+            const xmp = EXIF.getXmpData(this);
+            const ifd0 = EXIF.getIfd0TagNames(this); // Get IFD0 tags (often contains make/model)
+
+            // Filter out internal EXIF.js properties or duplicate raw data
+            const cleanTags = (tags) => {
+                const cleaned = {};
+                for (const key in tags) {
+                    // Avoid EXIF.js internal methods/properties, functions, or very large raw data
+                    if (typeof tags[key] !== 'function' &&
+                        !key.startsWith('__') &&
+                        key !== 'GPSIFD' && key !== 'InteropIFD' && // These are often nested or raw
+                        key !== 'thumbnail' && // Thumbnail data can be huge
+                        !(typeof tags[key] === 'object' && tags[key].length > 100) // heuristic for large array data
+                        ) {
+                        cleaned[key] = tags[key];
+                    }
+                }
+                return cleaned;
+            };
+
+            const cleanGps = {};
+            if (gpsInfo && gpsInfo.latitude) cleanGps.latitude = gpsInfo.latitude;
+            if (gpsInfo && gpsInfo.longitude) cleanGps.longitude = gpsInfo.longitude;
+            if (gpsInfo && gpsInfo.altitude) cleanGps.altitude = gpsInfo.altitude;
+            if (gpsInfo && gpsInfo.timestamp) cleanGps.timestamp = gpsInfo.timestamp;
+
+
+            const cleanIptc = {};
+            for (const key in iptc) {
+                if (key !== 'raw') { // raw can be large
+                    cleanIptc[key] = iptc[key];
+                }
+            }
+
+            const cleanXmp = {};
+            if (xmp) {
+                // XMP can be complex, often an XML string. We might just store the string or parse minimally.
+                // For now, let's just store it as a string if it's text.
+                // A more robust solution would be an XML parser, but that's out of scope for this.
+                cleanXmp.raw = typeof xmp === 'string' ? xmp.substring(0, 500) + (xmp.length > 500 ? '...' : '') : JSON.stringify(xmp);
+            }
+
+            const ifd0Tags = {};
+            for (const key of ifd0) {
+              const value = EXIF.getTag(this, key);
+              if (value !== undefined) {
+                ifd0Tags[key] = value;
+              }
+            }
+
+
+            setAdvancedMetadata({
+              exif: cleanTags(allTags),
+              gps: cleanGps,
+              iptc: cleanIptc,
+              xmp: cleanXmp,
+              ifd0: ifd0Tags
+            });
+            setMetadataViewMode('advanced'); // Switch to advanced view once loaded
+            toast.success('Advanced metadata extracted!');
+          } else {
+            setAdvancedMetadata({ exif: {}, gps: {}, iptc: {}, xmp: {}, ifd0: {} });
+            setMetadataViewMode('advanced');
+            toast.info('No EXIF/Advanced metadata found.');
+          }
+          setLoadingAdvancedMetadata(false);
+        });
+      };
+      fileReader.onerror = (err) => {
+        console.error('FileReader error:', err);
+        setLoadingAdvancedMetadata(false);
+        toast.error('Failed to read file for advanced metadata.');
+      };
+      // Read the original image file as ArrayBuffer
+      fileReader.readAsArrayBuffer(image);
+    } catch (error) {
+      console.error('Error extracting advanced metadata:', error);
+      setLoadingAdvancedMetadata(false);
+      toast.error('Failed to load EXIF library or extract advanced metadata: ' + error.message);
     }
   };
 
@@ -1319,7 +1429,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
           throw new Error(`Browser does not support converting to ${targetFormat.toUpperCase()}.`);
         }
 
-        const convertedBlob = await new Promise((resolve) => {
+        const convertedBlob = await new Promise((resolve, reject) => {
           canvas.toBlob((b) => {
             if (b) resolve(b);
             else reject(new Error(`Failed to create ${targetFormat.toUpperCase()} image blob.`));
@@ -1512,10 +1622,9 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
     toast.success("GIF edited successfully. Re-compress to finalize.");
   };
 
-  // New: Handle saving video edits
-  const handleSaveVideoEdit = (newVideoBlob, newVideoUrl) => {
+  const handleSaveVideoEdit = (newVideoUrl, newBlob) => {
     setPreview(newVideoUrl);
-    setOriginalSize(newVideoBlob.size);
+    setOriginalSize(newBlob.size);
     if (processed) {
       setProcessed(false);
       setCompressedPreview(null);
@@ -1526,10 +1635,9 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
     toast.success("Video edited successfully. Re-compress to apply changes.");
   };
 
-  // New: Handle saving audio edits
-  const handleSaveAudioEdit = (newAudioBlob, newAudioUrl) => {
+  const handleSaveAudioEdit = (newAudioUrl, newBlob) => {
     setPreview(newAudioUrl);
-    setOriginalSize(newAudioBlob.size);
+    setOriginalSize(newBlob.size);
     if (processed) {
       setProcessed(false);
       setCompressedPreview(null);
@@ -1626,8 +1734,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
         <div className="grid grid-cols-2 gap-2 p-4 bg-slate-50 dark:bg-slate-950">
           {preview && (
             <div
-              className="relative aspect-square rounded-lg overflow-hidden bg-slate-200 dark:bg-slate-800 cursor-pointer group"
-              onClick={(isImage || isGif) && processed ? handleCompare : undefined}
+              className="relative aspect-square rounded-lg overflow-hidden bg-slate-200 dark:bg-slate-800 group"
             >
               {(isGif && gifFrameCount > 0) ? (
                 <Badge className="absolute -top-8 left-0 bg-slate-900/90 text-white text-xs px-3 py-1.5 font-bold flex items-center gap-1 shadow-lg z-10 rounded-md">
@@ -1688,13 +1795,10 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
                   size="icon"
                   onClick={(e) => {
                     e.stopPropagation();
-                    if (!ffmpegLoaded) {
-                      toast.error('Video processor not loaded yet');
-                      return;
-                    }
                     setShowVideoEditor(true);
                   }}
                   className="absolute top-2 right-2 bg-white/80 hover:bg-white dark:bg-slate-800/80 dark:hover:bg-slate-800 h-7 w-7 rounded-lg"
+                  disabled={!ffmpegLoaded}
                 >
                   <Edit2 className="w-3 h-3" />
                 </Button>
@@ -1705,13 +1809,10 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
                   size="icon"
                   onClick={(e) => {
                     e.stopPropagation();
-                    if (!ffmpegLoaded) {
-                      toast.error('Audio processor not loaded yet');
-                      return;
-                    }
                     setShowAudioEditor(true);
                   }}
-                  className="absolute top-10 right-2 bg-white/80 hover:bg-white dark:bg-slate-800/80 dark:hover:bg-slate-800 h-7 w-7 rounded-lg"
+                  className="absolute top-2 right-2 bg-white/80 hover:bg-white dark:bg-slate-800/80 dark:hover:bg-slate-800 h-7 w-7 rounded-lg"
+                  disabled={!ffmpegLoaded}
                 >
                   <Edit2 className="w-3 h-3" />
                 </Button>
@@ -1846,14 +1947,39 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
           </div>
         </div>
 
-        {/* Metadata Viewer button */}
+        {/* Change Metadata button to Download Original button */}
         <Button
           variant="outline"
           size="sm"
-          onClick={extractMetadata}
+          onClick={() => {
+            const link = document.createElement('a');
+            link.href = preview;
+            link.download = editableFilename;
+            document.body.appendChild(link); // Append to body to make it clickable in all browsers
+            link.click();
+            document.body.removeChild(link); // Clean up
+            URL.revokeObjectURL(link.href); // Free up memory
+            toast.success('Original file downloaded!');
+          }}
           className="w-full justify-center mt-3 text-xs"
         >
-          <Info className="w-3 h-3 mr-1" /> View Metadata
+          <Download className="w-3 h-3 mr-1" /> Download Original
+        </Button>
+
+        {/* New "View Metadata" button */}
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={async () => {
+            await extractMetadata(); // Ensure basic metadata is current
+            setMetadataViewMode('basic'); // Default to basic view
+            setAdvancedMetadata(null); // Clear previous advanced data
+            setLoadingAdvancedMetadata(false); // Reset loading state
+            setShowMetadataViewer(true);
+          }}
+          className="w-full justify-center mt-2 text-xs"
+        >
+          <Search className="w-3 h-3 mr-1" /> View Metadata
         </Button>
 
         {error && (
@@ -2614,25 +2740,23 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
         />
       )}
 
-      {showVideoEditor && isVideo && ( // New: Video Editor Dialog
+      {showVideoEditor && isVideo && ffmpegLoaded && (
         <VideoEditor
           isOpen={showVideoEditor}
           onClose={() => setShowVideoEditor(false)}
-          videoData={image} // Pass the original file object
-          videoUrl={preview} // Pass the Data URL for preview
-          ffmpegRef={ffmpegRef}
+          videoData={preview}
           onSave={handleSaveVideoEdit}
+          ffmpegRef={ffmpegRef}
         />
       )}
 
-      {showAudioEditor && isAudio && ( // New: Audio Editor Dialog
+      {showAudioEditor && isAudio && ffmpegLoaded && (
         <AudioEditor
           isOpen={showAudioEditor}
           onClose={() => setShowAudioEditor(false)}
-          audioData={image} // Pass the original file object
-          audioUrl={preview} // Pass the Data URL for preview
-          ffmpegRef={ffmpegRef}
+          audioData={preview}
           onSave={handleSaveAudioEdit}
+          ffmpegRef={ffmpegRef}
         />
       )}
 
@@ -2649,24 +2773,243 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
 
       {showMetadataViewer && fileMetadata && (
         <Dialog open={showMetadataViewer} onOpenChange={setShowMetadataViewer}>
-          <DialogContent className="sm:max-w-[425px]">
+          <DialogContent className="sm:max-w-[600px] max-h-[80vh] overflow-hidden flex flex-col">
             <DialogHeader>
               <DialogTitle>File Metadata</DialogTitle>
               <DialogDescription>
-                Detailed information about your file.
+                Detailed information about your file
               </DialogDescription>
             </DialogHeader>
-            <div className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-2 text-sm">
-              {Object.entries(fileMetadata).map(([key, value]) => (
-                <div key={key} className="contents">
-                  <span className="font-medium text-slate-600 dark:text-slate-400">
-                    {key.replace(/([A-Z])/g, ' $1').trim().split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')}:
-                  </span>
-                  <span className="text-slate-900 dark:text-white">{String(value)}</span>
-                </div>
-              ))}
+
+            {/* Toggle between Basic and Advanced */}
+            <div className="flex items-center gap-2 border-b pb-3">
+              <Button
+                variant={metadataViewMode === 'basic' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setMetadataViewMode('basic')}
+                className="flex-1"
+              >
+                Basic Info
+              </Button>
+              <Button
+                variant={metadataViewMode === 'advanced' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => {
+                  if (metadataViewMode !== 'advanced') {
+                    if (!advancedMetadata && isImage && !isGif) { // Only try to extract for static images
+                      extractAdvancedMetadata();
+                    } else if (isGif || isVideo || isAudio) {
+                      toast.info('Advanced EXIF metadata is only available for static images.');
+                      setMetadataViewMode('basic'); // Fallback to basic view
+                    } else {
+                      setMetadataViewMode('advanced');
+                    }
+                  }
+                }}
+                disabled={loadingAdvancedMetadata || (isGif || isVideo || isAudio)} // Disable for non-static-images
+                className="flex-1"
+              >
+                {loadingAdvancedMetadata ? (
+                  <>
+                    <Loader2 className="w-3 h-3 mr-1 animate-spin" />
+                    Loading...
+                  </>
+                ) : (
+                  'Advanced (EXIF)'
+                )}
+              </Button>
             </div>
-            <Button onClick={() => setShowMetadataViewer(false)}>Close</Button>
+
+            <div className="flex-1 overflow-y-auto">
+              {metadataViewMode === 'basic' ? (
+                /* Basic Metadata View */
+                <div className="space-y-3">
+                  {Object.entries(fileMetadata).map(([key, value]) => (
+                    <div key={key} className="flex items-start justify-between py-2 px-3 bg-slate-50 dark:bg-slate-950 rounded-lg">
+                      <span className="font-medium text-xs text-slate-600 dark:text-slate-400">
+                        {key.replace(/([A-Z])/g, ' $1').trim().split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')}
+                      </span>
+                      <span className="text-xs text-slate-900 dark:text-white font-mono ml-4 text-right break-all">
+                        {String(value)}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              ) : advancedMetadata ? (
+                /* Advanced Metadata View */
+                <div className="space-y-4">
+                  {/* EXIF Data */}
+                  {Object.keys(advancedMetadata.exif).length > 0 && (
+                    <div>
+                      <h3 className="text-sm font-bold text-slate-900 dark:text-white mb-2 flex items-center gap-2">
+                        <Badge className="bg-blue-600">EXIF</Badge>
+                        Camera & Exposure Data
+                      </h3>
+                      <div className="space-y-1">
+                        {Object.entries(advancedMetadata.exif)
+                          .filter(([key]) => !['latitude', 'longitude'].includes(key.toLowerCase()))
+                          .map(([key, value]) => (
+                            <div key={key} className="flex items-start justify-between py-1.5 px-2 bg-slate-50 dark:bg-slate-950 rounded text-xs">
+                              <span className="font-medium text-slate-600 dark:text-slate-400">
+                                {key}
+                              </span>
+                              <span className="text-slate-900 dark:text-white font-mono ml-4 text-right break-all max-w-[60%]">
+                                {typeof value === 'object' ? JSON.stringify(value) : String(value)}
+                              </span>
+                            </div>
+                          ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* GPS Data */}
+                  {Object.keys(advancedMetadata.gps).length > 0 && (
+                    <div>
+                      <h3 className="text-sm font-bold text-slate-900 dark:text-white mb-2 flex items-center gap-2">
+                        <Badge className="bg-green-600">GPS</Badge>
+                        Location Data
+                      </h3>
+                      <div className="space-y-1">
+                        {Object.entries(advancedMetadata.gps).map(([key, value]) => (
+                          <div key={key} className="flex items-start justify-between py-1.5 px-2 bg-slate-50 dark:bg-slate-950 rounded text-xs">
+                            <span className="font-medium text-slate-600 dark:text-slate-400">
+                              {key}
+                            </span>
+                            <span className="text-slate-900 dark:text-white font-mono ml-4 text-right break-all max-w-[60%]">
+                              {typeof value === 'object' ? JSON.stringify(value) : String(value)}
+                            </span>
+                          </div>
+                        ))}
+                        {advancedMetadata.gps.latitude && advancedMetadata.gps.longitude && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="w-full mt-2"
+                            onClick={() => {
+                              window.open(
+                                `https://www.google.com/maps?q=${advancedMetadata.gps.latitude},${advancedMetadata.gps.longitude}`,
+                                '_blank'
+                              );
+                            }}
+                          >
+                            📍 View on Google Maps
+                          </Button>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* IPTC Data */}
+                  {Object.keys(advancedMetadata.iptc).length > 0 && (
+                    <div>
+                      <h3 className="text-sm font-bold text-slate-900 dark:text-white mb-2 flex items-center gap-2">
+                        <Badge className="bg-purple-600">IPTC</Badge>
+                        Copyright & Keywords
+                      </h3>
+                      <div className="space-y-1">
+                        {Object.entries(advancedMetadata.iptc).map(([key, value]) => (
+                          <div key={key} className="flex items-start justify-between py-1.5 px-2 bg-slate-50 dark:bg-slate-950 rounded text-xs">
+                            <span className="font-medium text-slate-600 dark:text-slate-400">
+                              {key}
+                            </span>
+                            <span className="text-slate-900 dark:text-white font-mono ml-4 text-right break-all max-w-[60%]">
+                              {typeof value === 'object' ? JSON.stringify(value) : String(value)}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* XMP Data */}
+                  {Object.keys(advancedMetadata.xmp).length > 0 && (
+                    <div>
+                      <h3 className="text-sm font-bold text-slate-900 dark:text-white mb-2 flex items-center gap-2">
+                        <Badge className="bg-orange-600">XMP</Badge>
+                        Extended Metadata
+                      </h3>
+                      <div className="space-y-1">
+                        {Object.entries(advancedMetadata.xmp).map(([key, value]) => (
+                          <div key={key} className="flex items-start justify-between py-1.5 px-2 bg-slate-50 dark:bg-slate-950 rounded text-xs">
+                            <span className="font-medium text-slate-600 dark:text-slate-400">
+                              {key}
+                            </span>
+                            <span className="text-slate-900 dark:text-white font-mono ml-4 text-right break-all max-w-[60%]">
+                              {typeof value === 'object' ? JSON.stringify(value) : String(value)}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* IFD0 Data */}
+                  {Object.keys(advancedMetadata.ifd0).length > 0 && (
+                    <div>
+                      <h3 className="text-sm font-bold text-slate-900 dark:text-white mb-2 flex items-center gap-2">
+                        <Badge className="bg-slate-600">IFD0</Badge>
+                        Image File Directory
+                      </h3>
+                      <div className="space-y-1">
+                        {Object.entries(advancedMetadata.ifd0).map(([key, value]) => (
+                          <div key={key} className="flex items-start justify-between py-1.5 px-2 bg-slate-50 dark:bg-slate-950 rounded text-xs">
+                            <span className="font-medium text-slate-600 dark:text-slate-400">
+                              {key}
+                            </span>
+                            <span className="text-slate-900 dark:text-white font-mono ml-4 text-right break-all max-w-[60%]">
+                              {typeof value === 'object' ? JSON.stringify(value) : String(value)}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* No metadata found */}
+                  {Object.keys(advancedMetadata.exif).length === 0 &&
+                   Object.keys(advancedMetadata.gps).length === 0 &&
+                   Object.keys(advancedMetadata.iptc).length === 0 &&
+                   Object.keys(advancedMetadata.xmp).length === 0 &&
+                   Object.keys(advancedMetadata.ifd0).length === 0 && (
+                    <div className="text-center py-8">
+                      <AlertCircle className="w-12 h-12 mx-auto text-slate-400 mb-3" />
+                      <p className="text-sm text-slate-500 dark:text-slate-400">
+                        No advanced metadata found in this image.
+                      </p>
+                      <p className="text-xs text-slate-400 dark:text-slate-500 mt-1">
+                        The image may have been stripped of EXIF data or never contained it.
+                      </p>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="text-center py-8">
+                  <Info className="w-12 h-12 mx-auto text-slate-400 mb-3" />
+                  <p className="text-sm text-slate-500 dark:text-slate-400">
+                    Click "Advanced (EXIF)" to extract detailed metadata
+                  </p>
+                </div>
+              )}
+            </div>
+
+            <div className="border-t pt-3 flex gap-2">
+              {metadataViewMode === 'advanced' && advancedMetadata && (
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    const metadataText = JSON.stringify(advancedMetadata, null, 2);
+                    navigator.clipboard.writeText(metadataText);
+                    toast.success('Metadata copied to clipboard!');
+                  }}
+                  className="flex-1"
+                >
+                  Copy All
+                </Button>
+              )}
+              <Button onClick={() => setShowMetadataViewer(false)} className="flex-1">
+                Close
+              </Button>
+            </div>
           </DialogContent>
         </Dialog>
       )}
