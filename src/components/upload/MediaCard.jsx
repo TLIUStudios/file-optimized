@@ -1046,41 +1046,39 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
     });
 
     const canvas = document.createElement('canvas');
-    let targetWidth = img.width;
-    let targetHeight = img.height;
+    let width = img.width;
+    let height = img.height;
 
     // Handle upscaling with multiplier or custom dimensions
     if (enableUpscale && upscaleMultiplier) {
-      targetWidth = Math.round(img.width * (upscaleMultiplier / 100));
-      targetHeight = Math.round(img.height * (upscaleMultiplier / 100));
+      // Use multiplier
+      width = Math.round(img.width * (upscaleMultiplier / 100));
+      height = Math.round(img.height * (upscaleMultiplier / 100));
     } else if (maxWidth || maxHeight || enableUpscale) {
-      const aspectRatio = img.width / img.height;
+      const aspectRatio = width / height;
 
       if (maxWidth && maxHeight) {
         const widthRatio = maxWidth / img.width;
         const heightRatio = maxHeight / img.height;
-        // For downscaling, use min ratio. For upscaling, use max ratio.
         const ratio = enableUpscale ? Math.max(widthRatio, heightRatio) : Math.min(widthRatio, heightRatio);
 
-        targetWidth = Math.round(img.width * ratio);
-        targetHeight = Math.round(img.height * ratio);
+        width = Math.round(img.width * ratio);
+        height = Math.round(img.height * ratio);
       } else if (maxWidth) {
-        // If enabling upscale or maxWidth is less than current width (downscale).
-        if (enableUpscale || maxWidth < img.width) {
-          targetWidth = maxWidth;
-          targetHeight = Math.round(maxWidth / aspectRatio);
+        if (enableUpscale || maxWidth < width) {
+          width = maxWidth;
+          height = Math.round(maxWidth / aspectRatio);
         }
       } else if (maxHeight) {
-        // Similar logic for maxHeight
-        if (enableUpscale || maxHeight < img.height) {
-          targetHeight = maxHeight;
-          targetWidth = Math.round(maxHeight * aspectRatio);
+        if (enableUpscale || maxHeight < height) {
+          height = maxHeight;
+          width = Math.round(maxHeight * aspectRatio);
         }
       }
     }
 
-    canvas.width = targetWidth;
-    canvas.height = targetHeight;
+    canvas.width = width;
+    canvas.height = height;
 
     const ctx = canvas.getContext('2d');
 
@@ -1089,109 +1087,88 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
       ctx.imageSmoothingQuality = 'high';
     }
 
-    ctx.drawImage(img, 0, 0, targetWidth, targetHeight);
+    ctx.drawImage(img, 0, 0, width, height);
 
-    let outputMimeType = format === 'jpg' ? 'image/jpeg' : `image/${format}`;
-    let finalBlob = null;
-    let finalOutputFormat = format; // This will hold the actual format used for output
+    const mimeType = format === 'jpg' ? 'image/jpeg' : `image/${format}`;
 
-    let currentQualityValue = quality / 100;
+    let baseQuality = quality / 100;
     if (compressionMode === 'aggressive') {
-      currentQualityValue = Math.max(0.5, currentQualityValue - 0.15);
+      baseQuality = Math.max(0.5, baseQuality - 0.15);
     } else if (compressionMode === 'maximum') {
-      currentQualityValue = Math.max(0.3, currentQualityValue - 0.3);
+      baseQuality = Math.max(0.3, baseQuality - 0.3);
     }
 
+    let qualityValue = baseQuality;
+    let blob = null;
     let attempts = 0;
     const maxAttempts = compressionMode === 'aggressive' || compressionMode === 'maximum' ? 8 : 5;
 
     // Try progressively lower quality until we get a smaller file or run out of attempts
     while (attempts < maxAttempts) {
-      finalBlob = await new Promise((resolve) => {
+      blob = await new Promise((resolve) => {
         canvas.toBlob(
           (b) => resolve(b),
-          outputMimeType,
-          currentQualityValue
+          mimeType,
+          qualityValue
         );
       });
 
-      // If upscaling is enabled, we don't care about size reduction.
-      // If size is reduced, or this is the last attempt, break.
-      if (enableUpscale || (finalBlob && finalBlob.size < image.size) || attempts === maxAttempts - 1) {
+      // Break if upscaling, or file is smaller, or this is our last attempt
+      if (enableUpscale || (blob && blob.size < image.size) || attempts === maxAttempts - 1) {
         break;
       }
 
-      currentQualityValue -= compressionMode === 'maximum' ? 0.2 : 0.15;
+      qualityValue -= compressionMode === 'maximum' ? 0.2 : 0.15;
       attempts++;
     }
 
-    // If still larger and not upscaling, try WebP as last resort (unless current format is already WebP)
-    if (!enableUpscale && finalBlob && finalBlob.size >= image.size && finalOutputFormat !== 'webp') {
-      console.log('Trying WebP fallback...');
-      const webpBlob = await new Promise((resolve) => {
-        canvas.toBlob(
-          (b) => resolve(b),
-          'image/webp',
-          0.7 // Default quality for WebP fallback
-        );
-      });
-
-      if (webpBlob && webpBlob.size < image.size) {
-        finalBlob = webpBlob;
-        finalOutputFormat = 'webp'; // Update format to WebP
-        setFormat('webp'); // Also update the state `format` so UI reflects it
-        toast.info('Converted to WebP for better compression');
-      }
-    }
-
-    // If STILL larger after everything, and not upscaling, use original file
-    if (!enableUpscale && finalBlob && finalBlob.size >= image.size) {
-      console.log('Unable to compress further, using original file');
-      finalBlob = image; // Use original file blob
-      finalOutputFormat = format; // Revert to original format if WebP fallback didn't help
-      toast.info('File already optimized - no compression needed');
-
-      // Update states to reflect original file is being used as "compressed"
+    // If file is still larger and we're not upscaling, use the original file
+    if (!enableUpscale && blob && blob.size >= image.size) {
+      console.log('Compressed file is larger, using original file');
+      
+      const compressedUrl = URL.createObjectURL(image);
+      setCompressedPreview(compressedUrl);
       setCompressedSize(image.size);
-      setCompressedPreview(preview); // Use original preview (dataURL)
-      setCompressedBlob(image); // Set original blob
+      setCompressedBlob(image);
       setProcessed(true);
-      setOutputFormat(format); // Ensure outputFormat is consistent with the `format` state
+      setOutputFormat(format);
 
       onProcessed({
         id: image.name,
         originalFile: image,
         compressedBlob: image,
-        compressedUrl: preview,
+        compressedUrl: compressedUrl,
         originalSize: image.size,
         compressedSize: image.size,
-        format: finalOutputFormat,
-        filename: getOutputFilename(finalOutputFormat),
+        format,
+        filename: getOutputFilename(format),
         mediaType: 'image',
-        fileFormat: finalOutputFormat
+        fileFormat: format
       });
-      return; // Exit early as processing is complete
+
+      toast.info(`File already optimized as ${format.toUpperCase()} - 0% savings`);
+      return;
     }
 
-    // If we reach here, a compressed blob (or upscaled blob) was successfully generated.
-    const compressedUrl = URL.createObjectURL(finalBlob);
+    // Successfully compressed to a smaller size (or upscaled)
+    const compressedUrl = URL.createObjectURL(blob);
     setCompressedPreview(compressedUrl);
-    setCompressedSize(finalBlob.size);
-    setCompressedBlob(finalBlob);
+    setCompressedSize(blob.size);
+    setCompressedBlob(blob);
     setProcessed(true);
-    setOutputFormat(finalOutputFormat);
+    setOutputFormat(format);
 
     onProcessed({
       id: image.name,
       originalFile: image,
-      compressedBlob: finalBlob,
+      compressedBlob: blob,
       compressedUrl,
       originalSize: image.size,
-      compressedSize: finalBlob.size,
-      format: finalOutputFormat,
-      filename: getOutputFilename(finalOutputFormat),
+      compressedSize: blob.size,
+      format,
+      filename: getOutputFilename(format),
       mediaType: 'image',
-      fileFormat: finalOutputFormat
+      fileFormat: format
     });
   };
 
