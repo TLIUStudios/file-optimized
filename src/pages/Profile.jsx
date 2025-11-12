@@ -85,17 +85,15 @@ export default function Profile() {
     console.log('🚀 Upgrade clicked from Profile');
     
     setUpgradeError(null);
-    setProcessingCheckout(true);
     
     try {
-      // Check authentication FIRST before calling backend
+      // Check authentication FIRST before showing any loading state
       const isAuth = await base44.auth.isAuthenticated();
       
       if (!isAuth) {
         console.log('❌ User not logged in');
         toast.error('Please log in to upgrade to Pro', { duration: 4000 });
         setShowProModal(false);
-        setProcessingCheckout(false);
         
         setTimeout(() => {
           base44.auth.redirectToLogin(window.location.href);
@@ -103,6 +101,8 @@ export default function Profile() {
         return;
       }
 
+      // Only set processing state and show loading toast AFTER auth check passes
+      setProcessingCheckout(true);
       const toastId = toast.loading('Creating checkout session...', { duration: Infinity });
       
       console.log('Calling createCheckoutSession...');
@@ -116,7 +116,7 @@ export default function Profile() {
 
       const { data } = response;
 
-      // Additional check from backend response
+      // Additional check from backend response (backup)
       if (data.requiresAuth) {
         toast.dismiss(toastId);
         toast.error('Please log in to upgrade to Pro');
