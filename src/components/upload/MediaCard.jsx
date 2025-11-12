@@ -25,7 +25,7 @@ const ImageEditor = lazy(() => import("./ImageEditor"));
 const DownloadModal = lazy(() => import("./DownloadModal"));
 const GifEditor = lazy(() => import("./GifEditor"));
 
-export default function MediaCard({ image, onRemove, onProcessed, onCompare, autoProcess }) {
+export default function MediaCard({ image, onRemove, onProcessed, onCompare, autoProcess, isPro }) {
   const [processing, setProcessing] = useState(false);
   const [processed, setProcessed] = useState(false);
   const [originalSize, setOriginalSize] = useState(0);
@@ -1266,6 +1266,15 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
             ctx.restore();
             frames.push(canvas);
             continue; // Skip normal drawing
+          case 'pan': // Placeholder for PRO animation
+          case 'rotate': // Placeholder for PRO animation
+          case 'slide': // Placeholder for PRO animation
+          case 'bounce': // Placeholder for PRO animation
+            toast.warning(`'${animationType}' animation is a PRO feature and not fully implemented yet.`);
+            break;
+          default:
+            toast.warning(`'${animationType}' animation type not recognized.`);
+            break;
         }
 
         ctx.imageSmoothingEnabled = true;
@@ -2814,6 +2823,11 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
                       <div className="flex items-center gap-2 mb-2">
                         <label className="text-xs font-medium text-slate-700 dark:text-slate-300 mb-2 block">
                           Animation Type
+                          {isPro && (
+                            <Badge className="ml-2 bg-gradient-to-r from-amber-500 to-orange-500 text-white text-[10px] px-2 py-0.5">
+                              PRO
+                            </Badge>
+                          )}
                         </label>
                         <Tooltip>
                           <TooltipTrigger asChild>
@@ -2821,8 +2835,12 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
                           </TooltipTrigger>
                           <TooltipContent className="max-w-xs">
                             <p className="text-xs">
-                              <strong>Smooth Zoom:</strong> Gradual zoom in/out effect<br/>
-                              <strong>Glow Pulse:</strong> Subtle glowing effect that pulses
+                              <strong>Free:</strong> Smooth Zoom, Glow Pulse<br/>
+                              {isPro && (
+                                <>
+                                  <strong>Pro Only:</strong> Pan, Rotate, Slide, Bounce, and more advanced effects!
+                                </>
+                              )}
                             </p>
                           </TooltipContent>
                         </Tooltip>
@@ -2834,6 +2852,14 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
                         <SelectContent>
                           <SelectItem value="zoom">Smooth Zoom</SelectItem>
                           <SelectItem value="glow">Glow Pulse</SelectItem>
+                          {isPro && (
+                            <>
+                              <SelectItem value="pan">Pan (Pro)</SelectItem>
+                              <SelectItem value="rotate">Rotate (Pro)</SelectItem>
+                              <SelectItem value="slide">Slide (Pro)</SelectItem>
+                              <SelectItem value="bounce">Bounce (Pro)</SelectItem>
+                            </>
+                          )}
                         </SelectContent>
                       </Select>
                     </div>
