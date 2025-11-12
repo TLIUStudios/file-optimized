@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Moon, Sun, Image as ImageIcon, User } from "lucide-react";
+import { Moon, Sun, Image as ImageIcon, User, LogIn } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Toaster } from "sonner";
 import { Link } from "react-router-dom";
@@ -15,6 +15,8 @@ export default function Layout({ children }) {
     return 'light';
   });
   const [user, setUser] = useState(null);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [authLoading, setAuthLoading] = useState(true);
 
   useEffect(() => {
     document.documentElement.classList.toggle('dark', theme === 'dark');
@@ -24,11 +26,21 @@ export default function Layout({ children }) {
   useEffect(() => {
     const loadUser = async () => {
       try {
-        const currentUser = await base44.auth.me();
-        setUser(currentUser);
+        const isAuth = await base44.auth.isAuthenticated();
+        setIsAuthenticated(isAuth);
+        
+        if (isAuth) {
+          const currentUser = await base44.auth.me();
+          setUser(currentUser);
+        } else {
+          setUser(null);
+        }
       } catch (error) {
-        // User not logged in
+        console.log('Auth check:', error);
+        setIsAuthenticated(false);
         setUser(null);
+      } finally {
+        setAuthLoading(false);
       }
     };
     loadUser();
@@ -36,6 +48,10 @@ export default function Layout({ children }) {
 
   const toggleTheme = () => {
     setTheme(prev => prev === 'light' ? 'dark' : 'light');
+  };
+
+  const handleLogin = () => {
+    base44.auth.redirectToLogin(window.location.href);
   };
 
   return (
@@ -77,18 +93,31 @@ export default function Layout({ children }) {
           </Link>
           
           <div className="flex items-center gap-3">
-            {user && (
-              <Link to={createPageUrl('Profile')}>
-                <Button variant="ghost" className="gap-2">
-                  <User className="w-4 h-4" />
-                  <span className="hidden sm:inline">{user.full_name || user.email}</span>
-                  {user.plan === 'pro' && (
-                    <Badge className="bg-gradient-to-r from-amber-500 to-orange-500 text-white text-xs px-2 py-0.5">
-                      PRO
-                    </Badge>
-                  )}
-                </Button>
-              </Link>
+            {!authLoading && (
+              <>
+                {isAuthenticated && user ? (
+                  <Link to={createPageUrl('Profile')}>
+                    <Button variant="ghost" className="gap-2">
+                      <User className="w-4 h-4" />
+                      <span className="hidden sm:inline">{user.full_name || user.email}</span>
+                      {user.plan === 'pro' && (
+                        <Badge className="bg-gradient-to-r from-amber-500 to-orange-500 text-white text-xs px-2 py-0.5">
+                          PRO
+                        </Badge>
+                      )}
+                    </Button>
+                  </Link>
+                ) : (
+                  <Button
+                    onClick={handleLogin}
+                    variant="ghost"
+                    className="gap-2"
+                  >
+                    <LogIn className="w-4 h-4" />
+                    <span className="hidden sm:inline">Sign In</span>
+                  </Button>
+                )}
+              </>
             )}
             <Button
               variant="ghost"
