@@ -7,7 +7,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
 import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
-import { cn, validateFiles, sanitizeFilename } from "@/utils";
+import { cn } from "@/lib/utils"; // Assuming cn utility is available here
 
 // Lazy load heavy components for better performance
 const MediaCard = lazy(() => import("../components/upload/MediaCard"));
@@ -36,33 +36,12 @@ export default function Home() {
   const [processingStartTime, setProcessingStartTime] = useState(null);
   const [estimatedTimeRemaining, setEstimatedTimeRemaining] = useState(null);
 
-  const handleFilesSelected = async (files) => {
-    // Additional validation layer (double-check)
-    const validationResult = await validateFiles(files, { isPro: false, skipContentValidation: true });
-
-    if (!validationResult.isValid && validationResult.validFiles.length === 0) {
-      // All files invalid - error already shown by UploadZone
-      return;
-    }
-
-    // Use validated files
-    const filesToAdd = validationResult.validFiles.map(v => ({
-      id: `${sanitizeFilename(v.file.name)}-${Date.now()}-${Math.random()}`,
-      file: v.file,
-      mediaCategory: v.mediaCategory
+  const handleFilesSelected = (files) => {
+    const newFiles = Array.from(files).map(file => ({
+      id: `${file.name}-${Date.now()}-${Math.random()}`,
+      file
     }));
-
-    setImages(prev => [...prev, ...filesToAdd]);
-
-    // Show success message
-    const mediaTypes = [...new Set(filesToAdd.map(f => f.mediaCategory))];
-    const typeStr = mediaTypes.join(', ');
-    toast.success(
-      <div className="space-y-1">
-        <p className="font-semibold">Files Added Successfully</p>
-        <p className="text-xs">{filesToAdd.length} {typeStr} file(s) ready to compress</p>
-      </div>
-    );
+    setImages(prev => [...prev, ...newFiles]);
   };
 
   const handleDragEnd = (result) => {
@@ -347,11 +326,7 @@ export default function Home() {
               type="file"
               multiple
               accept="image/*,video/mp4,audio/mp3,audio/wav,audio/mpeg"
-              onChange={async (e) => {
-                const selectedFiles = Array.from(e.target.files);
-                await handleFilesSelected(selectedFiles);
-                e.target.value = ''; // Clear input
-              }}
+              onChange={(e) => handleFilesSelected(e.target.files)}
               className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
               id="add-more"
             />
