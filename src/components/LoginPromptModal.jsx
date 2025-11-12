@@ -43,39 +43,50 @@ export default function LoginPromptModal({ isOpen, onClose, onLogin, context = "
             </h3>
             
             <div className="space-y-3">
-              <div className="flex items-start gap-3 p-3 rounded-lg bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800">
-                <div className="mt-0.5">
-                  <div className="w-5 h-5 rounded-full bg-emerald-500 flex items-center justify-center">
-                    <Check className="w-3 h-3 text-white" />
-                  </div>
+              {/* Free Plan Card */}
+              <div className="p-4 rounded-lg bg-slate-50 dark:bg-slate-950/30 border border-slate-200 dark:border-slate-800">
+                <div className="flex items-center gap-2 mb-3">
+                  <Shield className="w-5 h-5 text-slate-600 dark:text-slate-400" />
+                  <p className="text-sm font-bold text-slate-900 dark:text-white">Free Plan</p>
                 </div>
-                <div>
-                  <p className="text-sm font-semibold text-slate-900 dark:text-white">Save Your Work</p>
-                  <p className="text-xs text-slate-600 dark:text-slate-400">Access your compressed files anytime, anywhere</p>
+                <div className="space-y-1.5 ml-7">
+                  <div className="flex items-start gap-2">
+                    <Check className="w-4 h-4 text-slate-500 mt-0.5 flex-shrink-0" />
+                    <p className="text-xs text-slate-600 dark:text-slate-400">50MB per file limit</p>
+                  </div>
+                  <div className="flex items-start gap-2">
+                    <Check className="w-4 h-4 text-slate-500 mt-0.5 flex-shrink-0" />
+                    <p className="text-xs text-slate-600 dark:text-slate-400">Max batch: 9 files at once</p>
+                  </div>
+                  <div className="flex items-start gap-2">
+                    <Check className="w-4 h-4 text-slate-500 mt-0.5 flex-shrink-0" />
+                    <p className="text-xs text-slate-600 dark:text-slate-400">Standard processing speed</p>
+                  </div>
                 </div>
               </div>
 
-              <div className="flex items-start gap-3 p-3 rounded-lg bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800">
-                <div className="mt-0.5">
-                  <div className="w-5 h-5 rounded-full bg-blue-500 flex items-center justify-center">
-                    <Shield className="w-3 h-3 text-white" />
+              {/* Pro Plan Card */}
+              <div className="p-4 rounded-lg bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-950/30 dark:to-orange-950/30 border-2 border-amber-300 dark:border-amber-700">
+                <div className="flex items-center gap-2 mb-3">
+                  <Crown className="w-5 h-5 text-amber-600 dark:text-amber-400" />
+                  <div className="flex-1">
+                    <p className="text-sm font-bold text-slate-900 dark:text-white">Upgrade to Pro Plan</p>
+                    <p className="text-xs text-amber-700 dark:text-amber-400 font-medium">$10 USD per month</p>
                   </div>
                 </div>
-                <div>
-                  <p className="text-sm font-semibold text-slate-900 dark:text-white">Track Your Usage</p>
-                  <p className="text-xs text-slate-600 dark:text-slate-400">Monitor your compression history and stats</p>
-                </div>
-              </div>
-
-              <div className="flex items-start gap-3 p-3 rounded-lg bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800">
-                <div className="mt-0.5">
-                  <div className="w-5 h-5 rounded-full bg-amber-500 flex items-center justify-center">
-                    <Crown className="w-3 h-3 text-white" />
+                <div className="space-y-1.5 ml-7">
+                  <div className="flex items-start gap-2">
+                    <Check className="w-4 h-4 text-amber-600 dark:text-amber-400 mt-0.5 flex-shrink-0" />
+                    <p className="text-xs text-slate-700 dark:text-slate-300 font-medium">Unlock 500MB file limit</p>
                   </div>
-                </div>
-                <div>
-                  <p className="text-sm font-semibold text-slate-900 dark:text-white">Upgrade to Pro</p>
-                  <p className="text-xs text-slate-600 dark:text-slate-400">Unlock 500MB files, 30 file batches, and advanced effects</p>
+                  <div className="flex items-start gap-2">
+                    <Check className="w-4 h-4 text-amber-600 dark:text-amber-400 mt-0.5 flex-shrink-0" />
+                    <p className="text-xs text-slate-700 dark:text-slate-300 font-medium">Max batch: 30 files at once</p>
+                  </div>
+                  <div className="flex items-start gap-2">
+                    <Check className="w-4 h-4 text-amber-600 dark:text-amber-400 mt-0.5 flex-shrink-0" />
+                    <p className="text-xs text-slate-700 dark:text-slate-300 font-medium">Priority processing speed</p>
+                  </div>
                 </div>
               </div>
             </div>
