@@ -892,7 +892,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
           tempCtx.putImageData(imageData, 0, 0);
 
           backgroundCtx.imageSmoothingEnabled = true;
-          backgroundCtx.imageSmoothingQuality = 'high';
+            backgroundCtx.imageSmoothingQuality = 'high';
           backgroundCtx.drawImage(
             tempCanvas,
             frame.dims.left || 0,
@@ -2270,9 +2270,19 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
                 {isVideo && ffmpegLoaded && (
                   <>
                     <div>
-                      <label className="text-xs font-medium text-slate-700 dark:text-slate-300 mb-2 block">
-                        Quality: {quality}%
-                      </label>
+                      <div className="flex items-center gap-2 mb-2">
+                        <label className="text-xs font-medium text-slate-700 dark:text-slate-300">
+                          Quality: {quality}%
+                        </label>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Info className="w-3 h-3 text-slate-400 cursor-help" />
+                          </TooltipTrigger>
+                          <TooltipContent className="max-w-xs">
+                            <p className="text-xs">Controls the visual quality of the video. Lower values = smaller file size but more compression artifacts. 70-85% is usually optimal.</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </div>
                       <Slider
                         value={[quality]}
                         onValueChange={(value) => setQuality(value[0])}
@@ -2285,9 +2295,19 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
                     </div>
 
                     <div>
-                      <label className="text-xs font-medium text-slate-700 dark:text-slate-300 mb-2 block">
-                        Video Bitrate: {videoBitrate} kbps
-                      </label>
+                      <div className="flex items-center gap-2 mb-2">
+                        <label className="text-xs font-medium text-slate-700 dark:text-slate-300">
+                          Video Bitrate: {videoBitrate} kbps
+                        </label>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Info className="w-3 h-3 text-slate-400 cursor-help" />
+                          </TooltipTrigger>
+                          <TooltipContent className="max-w-xs">
+                            <p className="text-xs">Controls the data rate of the video stream. Higher bitrate = better quality but larger file size. 1000-2000 kbps is good for most videos.</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </div>
                       <Slider
                         value={[videoBitrate]}
                         onValueChange={(value) => setVideoBitrate(value[0])}
@@ -2300,9 +2320,19 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
                     </div>
 
                     <div>
-                      <label className="text-xs font-medium text-slate-700 dark:text-slate-300 mb-2 block">
-                        Resolution
-                      </label>
+                      <div className="flex items-center gap-2 mb-2">
+                        <label className="text-xs font-medium text-slate-700 dark:text-slate-300">
+                          Resolution
+                        </label>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Info className="w-3 h-3 text-slate-400 cursor-help" />
+                          </TooltipTrigger>
+                          <TooltipContent className="max-w-xs">
+                            <p className="text-xs">Scales video to target resolution. Lower resolution = smaller file size. Original maintains source quality. Use 720p for web, 1080p for high quality.</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </div>
                       <Select value={videoResolution} onValueChange={setVideoResolution} disabled={processing}>
                         <SelectTrigger className="h-9">
                           <SelectValue />
@@ -2317,9 +2347,19 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
                     </div>
 
                     <div>
-                      <label className="text-xs font-medium text-slate-700 dark:text-slate-300 mb-2 block">
-                        Frame Rate: {frameRate} fps
-                      </label>
+                      <div className="flex items-center gap-2 mb-2">
+                        <label className="text-xs font-medium text-slate-700 dark:text-slate-300">
+                          Frame Rate: {frameRate} fps
+                        </label>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Info className="w-3 h-3 text-slate-400 cursor-help" />
+                          </TooltipTrigger>
+                          <TooltipContent className="max-w-xs">
+                            <p className="text-xs">Number of frames per second. Lower fps = smaller file size but less smooth motion. 24-30fps is standard, 60fps for smooth action.</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </div>
                       <Slider
                         value={[frameRate]}
                         onValueChange={(value) => setFrameRate(value[0])}
@@ -2332,9 +2372,19 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
                     </div>
 
                     <div>
-                      <label className="text-xs font-medium text-slate-700 dark:text-slate-300 mb-2 block">
-                        Encoding Preset
-                      </label>
+                      <div className="flex items-center gap-2 mb-2">
+                        <label className="text-xs font-medium text-slate-700 dark:text-slate-300">
+                          Encoding Preset
+                        </label>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Info className="w-3 h-3 text-slate-400 cursor-help" />
+                          </TooltipTrigger>
+                          <TooltipContent className="max-w-xs">
+                            <p className="text-xs">Balances encoding speed vs compression efficiency. Fast = quick processing, larger files. Slow = better compression, longer processing. Medium is recommended.</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </div>
                       <Select value={videoPreset} onValueChange={setVideoPreset} disabled={processing}>
                         <SelectTrigger className="h-9">
                           <SelectValue />
@@ -2350,9 +2400,19 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
                     </div>
 
                     <div>
-                      <label className="text-xs font-medium text-slate-700 dark:text-slate-300 mb-2 block">
-                        Audio Bitrate: {audioBitrate} kbps
-                      </label>
+                      <div className="flex items-center gap-2 mb-2">
+                        <label className="text-xs font-medium text-slate-700 dark:text-slate-300">
+                          Audio Bitrate: {audioBitrate} kbps
+                        </label>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Info className="w-3 h-3 text-slate-400 cursor-help" />
+                          </TooltipTrigger>
+                          <TooltipContent className="max-w-xs">
+                            <p className="text-xs">Controls audio quality. 128 kbps is standard quality, 192-256 kbps for high quality, 64-96 kbps for voice/small files.</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </div>
                       <Slider
                         value={[audioBitrate]}
                         onValueChange={(value) => setAudioBitrate(value[0])}
@@ -2370,9 +2430,19 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
                 {isAudio && ffmpegLoaded && (
                   <>
                     <div>
-                      <label className="text-xs font-medium text-slate-700 dark:text-slate-300 mb-2 block">
-                        Audio Bitrate: {audioBitrate} kbps
-                      </label>
+                      <div className="flex items-center gap-2 mb-2">
+                        <label className="text-xs font-medium text-slate-700 dark:text-slate-300">
+                          Audio Bitrate: {audioBitrate} kbps
+                        </label>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Info className="w-3 h-3 text-slate-400 cursor-help" />
+                          </TooltipTrigger>
+                          <TooltipContent className="max-w-xs">
+                            <p className="text-xs">Controls audio quality. 128 kbps is standard quality, 192-256 kbps for high quality, 64-96 kbps for voice/small files.</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </div>
                       <Slider
                         value={[audioBitrate]}
                         onValueChange={(value) => setAudioBitrate(value[0])}
@@ -2385,9 +2455,19 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
                     </div>
 
                     <div>
-                      <label className="text-xs font-medium text-slate-700 dark:text-slate-300 mb-2 block">
-                        Audio Quality
-                      </label>
+                      <div className="flex items-center gap-2 mb-2">
+                        <label className="text-xs font-medium text-slate-700 dark:text-slate-300">
+                          Audio Quality
+                        </label>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Info className="w-3 h-3 text-slate-400 cursor-help" />
+                          </TooltipTrigger>
+                          <TooltipContent className="max-w-xs">
+                            <p className="text-xs">Preset quality levels. High = best sound quality, larger file. Standard = balanced quality/size. Low = smallest files, noticeable quality loss.</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </div>
                       <Select value={audioQuality} onValueChange={setAudioQuality} disabled={processing}>
                         <SelectTrigger className="h-9">
                           <SelectValue />
@@ -2410,6 +2490,18 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
                         <label className="text-xs font-medium text-slate-700 dark:text-slate-300">
                           Compression Mode
                         </label>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Info className="w-3 h-3 text-slate-400 cursor-help" />
+                          </TooltipTrigger>
+                          <TooltipContent className="max-w-xs">
+                            <p className="text-xs">
+                              <strong>Balanced:</strong> Good quality with moderate compression<br/>
+                              <strong>Aggressive:</strong> Smaller files with slight quality loss<br/>
+                              <strong>Maximum:</strong> Smallest files, noticeable quality reduction
+                            </p>
+                          </TooltipContent>
+                        </Tooltip>
                       </div>
                       <Select value={compressionMode} onValueChange={setCompressionMode} disabled={processing}>
                         <SelectTrigger className="h-9">
@@ -2428,6 +2520,14 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
                         <label className="text-xs font-medium text-slate-700 dark:text-slate-300">
                           Quality: {quality}%
                         </label>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Info className="w-3 h-3 text-slate-400 cursor-help" />
+                          </TooltipTrigger>
+                          <TooltipContent className="max-w-xs">
+                            <p className="text-xs">Lower quality = smaller file size. Works for JPG and WebP formats. PNG and AVIF ignore this setting (lossless/browser limitation). 70-85% is usually optimal.</p>
+                          </TooltipContent>
+                        </Tooltip>
                       </div>
                       <Slider
                         value={[quality]}
@@ -2447,6 +2547,14 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
                             <label className="text-xs font-medium text-slate-700 dark:text-slate-300">
                               Max Width (px)
                             </label>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Info className="w-3 h-3 text-slate-400 cursor-help" />
+                              </TooltipTrigger>
+                              <TooltipContent className="max-w-xs">
+                                <p className="text-xs">Scales image proportionally to fit within this width while maintaining aspect ratio. Leave empty to keep original width.</p>
+                              </TooltipContent>
+                            </Tooltip>
                           </div>
                           <input
                             type="number"
@@ -2462,6 +2570,14 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
                             <label className="text-xs font-medium text-slate-700 dark:text-slate-300">
                               Max Height (px)
                             </label>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Info className="w-3 h-3 text-slate-400 cursor-help" />
+                              </TooltipTrigger>
+                              <TooltipContent className="max-w-xs">
+                                <p className="text-xs">Scales image proportionally to fit within this height while maintaining aspect ratio. Leave empty to keep original height.</p>
+                              </TooltipContent>
+                            </Tooltip>
                           </div>
                           <input
                             type="number"
@@ -2478,9 +2594,19 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
                     {(isImage && !isGif) && (
                       <div className="space-y-3 pt-2 border-t border-slate-200 dark:border-slate-800">
                         <div className="flex items-center justify-between">
-                          <label className="text-xs font-medium text-slate-700 dark:text-slate-300">
-                            Strip Metadata
-                          </label>
+                          <div className="flex items-center gap-2">
+                            <label className="text-xs font-medium text-slate-700 dark:text-slate-300">
+                              Strip Metadata
+                            </label>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Info className="w-3 h-3 text-slate-400 cursor-help" />
+                              </TooltipTrigger>
+                              <TooltipContent className="max-w-xs">
+                                <p className="text-xs">Removes EXIF data, GPS coordinates, camera info, and other metadata to reduce file size and improve privacy.</p>
+                              </TooltipContent>
+                            </Tooltip>
+                          </div>
                           <Switch
                             checked={stripMetadata}
                             onCheckedChange={setStripMetadata}
@@ -2489,9 +2615,19 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
                         </div>
 
                         <div className="flex items-center justify-between">
-                          <label className="text-xs font-medium text-slate-700 dark:text-slate-300">
-                            Noise Reduction
-                          </label>
+                          <div className="flex items-center gap-2">
+                            <label className="text-xs font-medium text-slate-700 dark:text-slate-300">
+                              Noise Reduction
+                            </label>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Info className="w-3 h-3 text-slate-400 cursor-help" />
+                              </TooltipTrigger>
+                              <TooltipContent className="max-w-xs">
+                                <p className="text-xs">Applies high-quality smoothing to reduce image noise and grain, which can help achieve better compression ratios and cleaner results.</p>
+                              </TooltipContent>
+                            </Tooltip>
+                          </div>
                           <Switch
                             checked={noiseReduction}
                             onCheckedChange={setNoiseReduction}
@@ -2577,7 +2713,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
                         <Info className="w-3 h-3 text-slate-400 cursor-help" />
                       </TooltipTrigger>
                       <TooltipContent className="max-w-xs">
-                        <p className="text-xs">Allow increasing image dimensions beyond original size</p>
+                        <p className="text-xs">Allow increasing image dimensions beyond original size. Useful for enlarging small images, though quality may decrease with large upscaling.</p>
                       </TooltipContent>
                     </Tooltip>
                   </div>
@@ -2598,9 +2734,19 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
                 {enableUpscale && (
                   <>
                     <div>
-                      <label className="text-xs font-medium text-slate-700 dark:text-slate-300 mb-2 block">
-                        Upscale Multiplier
-                      </label>
+                      <div className="flex items-center gap-2 mb-2">
+                        <label className="text-xs font-medium text-slate-700 dark:text-slate-300 mb-2 block">
+                          Upscale Multiplier
+                        </label>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Info className="w-3 h-3 text-slate-400 cursor-help" />
+                          </TooltipTrigger>
+                          <TooltipContent className="max-w-xs">
+                            <p className="text-xs">Quick preset multipliers to scale your image. 100% = original size, 200% = double size, etc. Higher values may reduce sharpness.</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </div>
                       <div className="grid grid-cols-3 gap-2">
                         {[100, 150, 200, 300, 400, 500].map((multiplier) => (
                           <Button
@@ -2626,9 +2772,19 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
                     </div>
 
                     <div className="pt-2 border-t border-slate-200 dark:border-slate-800">
-                      <label className="text-xs font-medium text-slate-700 dark:text-slate-300 mb-2 block">
-                        Or Set Custom Dimensions
-                      </label>
+                      <div className="flex items-center gap-2 mb-2">
+                        <label className="text-xs font-medium text-slate-700 dark:text-slate-300 mb-2 block">
+                          Or Set Custom Dimensions
+                        </label>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Info className="w-3 h-3 text-slate-400 cursor-help" />
+                          </TooltipTrigger>
+                          <TooltipContent className="max-w-xs">
+                            <p className="text-xs">Manually specify target width and/or height in pixels. Aspect ratio will be maintained automatically.</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </div>
                       <div className="grid grid-cols-2 gap-2">
                         <div>
                           <label className="text-[10px] text-slate-500 dark:text-slate-400 mb-1 block">
@@ -2699,7 +2855,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
                         <Info className="w-3 h-3 text-slate-400 cursor-help" />
                       </TooltipTrigger>
                       <TooltipContent className="max-w-xs">
-                        <p className="text-xs">Animate your image with smooth camera effects</p>
+                        <p className="text-xs">Transform your static image into an animated GIF with smooth camera effects. Perfect for social media posts and engaging content.</p>
                       </TooltipContent>
                     </Tooltip>
                   </div>
@@ -2733,9 +2889,22 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
                     )}
 
                     <div>
-                      <label className="text-xs font-medium text-slate-700 dark:text-slate-300 mb-2 block">
-                        Animation Type
-                      </label>
+                      <div className="flex items-center gap-2 mb-2">
+                        <label className="text-xs font-medium text-slate-700 dark:text-slate-300 mb-2 block">
+                          Animation Type
+                        </label>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Info className="w-3 h-3 text-slate-400 cursor-help" />
+                          </TooltipTrigger>
+                          <TooltipContent className="max-w-xs">
+                            <p className="text-xs">
+                              <strong>Smooth Zoom:</strong> Gradual zoom in/out effect<br/>
+                              <strong>Glow Pulse:</strong> Subtle glowing effect that pulses
+                            </p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </div>
                       <Select value={animationType} onValueChange={setAnimationType} disabled={processing}>
                         <SelectTrigger className="h-9">
                           <SelectValue />
@@ -2748,9 +2917,19 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
                     </div>
 
                     <div>
-                      <label className="text-xs font-medium text-slate-700 dark:text-slate-300 mb-2 block">
-                        Animation Duration: {animationDuration}s
-                      </label>
+                      <div className="flex items-center gap-2 mb-2">
+                        <label className="text-xs font-medium text-slate-700 dark:text-slate-300 mb-2 block">
+                          Animation Duration: {animationDuration}s
+                        </label>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Info className="w-3 h-3 text-slate-400 cursor-help" />
+                          </TooltipTrigger>
+                          <TooltipContent className="max-w-xs">
+                            <p className="text-xs">Total length of the animation loop in seconds. Shorter = faster effect, Longer = smoother, more gradual effect. 3-5s recommended.</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </div>
                       <Slider
                         value={[animationDuration]}
                         onValueChange={(value) => setAnimationDuration(value[0])}
