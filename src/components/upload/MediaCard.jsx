@@ -14,7 +14,7 @@ import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
-  TooltipTrigger, // Added TooltipTrigger
+  TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
@@ -24,6 +24,8 @@ import { base44 } from "@/api/base44Client";
 const ImageEditor = lazy(() => import("./ImageEditor"));
 const DownloadModal = lazy(() => import("./DownloadModal"));
 const GifEditor = lazy(() => import("./GifEditor"));
+const VideoEditor = lazy(() => import("./VideoEditor"));
+const AudioEditor = lazy(() => import("./AudioEditor"));
 
 export default function MediaCard({ image, onRemove, onProcessed, onCompare, autoProcess }) {
   const [processing, setProcessing] = useState(false);
@@ -50,6 +52,10 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
   const [upscaleMultiplier, setUpscaleMultiplier] = useState(null);
   const [originalImageDimensions, setOriginalImageDimensions] = useState({ width: 0, height: 0 });
   const [showGifEditor, setShowGifEditor] = useState(false);
+
+  // Add video/audio editor states
+  const [showVideoEditor, setShowVideoEditor] = useState(false);
+  const [showAudioEditor, setShowAudioEditor] = useState(false);
 
   // Animation states
   const [animationSettingsOpen, setAnimationSettingsOpen] = useState(false);
@@ -1508,6 +1514,31 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
     toast.success("GIF edited successfully. Re-compress to finalize.");
   };
 
+  const handleSaveVideoEdit = (newVideoUrl, newBlob) => {
+    setPreview(newVideoUrl);
+    setOriginalSize(newBlob.size);
+    if (processed) {
+      setProcessed(false);
+      setCompressedPreview(null);
+      setCompressedSize(0);
+      setError(null);
+    }
+    setShowVideoEditor(false);
+    toast.success("Video edited successfully. Re-compress to apply changes.");
+  };
+
+  const handleSaveAudioEdit = (newAudioUrl, newBlob) => {
+    setPreview(newAudioUrl);
+    setOriginalSize(newBlob.size);
+    if (processed) {
+      setProcessed(false);
+      setCompressedPreview(null);
+      setCompressedSize(0);
+      setError(null);
+    }
+    setShowAudioEditor(false);
+    toast.success("Audio edited successfully. Re-compress to apply changes.");
+  };
 
   const convertFormat = async (newFormat) => {
     if (!compressedPreview || processing) return;
@@ -1651,6 +1682,34 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
                   <Wand2 className="w-3 h-3" />
                 </Button>
               )}
+              {isVideo && (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setShowVideoEditor(true);
+                  }}
+                  className="absolute top-2 right-2 bg-white/80 hover:bg-white dark:bg-slate-800/80 dark:hover:bg-slate-800 h-7 w-7 rounded-lg"
+                  disabled={!ffmpegLoaded}
+                >
+                  <Edit2 className="w-3 h-3" />
+                </Button>
+              )}
+              {isAudio && (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setShowAudioEditor(true);
+                  }}
+                  className="absolute top-2 right-2 bg-white/80 hover:bg-white dark:bg-slate-800/80 dark:hover:bg-slate-800 h-7 w-7 rounded-lg"
+                  disabled={!ffmpegLoaded}
+                >
+                  <Edit2 className="w-3 h-3" />
+                </Button>
+              )}
             </div>
           )}
           {compressedPreview ? (
@@ -1781,14 +1840,20 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
           </div>
         </div>
 
-        {/* Metadata Viewer button */}
+        {/* Change Metadata button to Download Original button */}
         <Button
           variant="outline"
           size="sm"
-          onClick={extractMetadata}
+          onClick={() => {
+            const link = document.createElement('a');
+            link.href = preview;
+            link.download = editableFilename;
+            link.click();
+            toast.success('Original file downloaded!');
+          }}
           className="w-full justify-center mt-3 text-xs"
         >
-          <Info className="w-3 h-3 mr-1" /> View Metadata
+          <Download className="w-3 h-3 mr-1" /> Download Original
         </Button>
 
         {error && (
@@ -2546,6 +2611,26 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
           onClose={() => setShowGifEditor(false)}
           gifData={preview}
           onSave={handleSaveGifEdit}
+        />
+      )}
+
+      {showVideoEditor && isVideo && ffmpegLoaded && (
+        <VideoEditor
+          isOpen={showVideoEditor}
+          onClose={() => setShowVideoEditor(false)}
+          videoData={preview}
+          onSave={handleSaveVideoEdit}
+          ffmpegRef={ffmpegRef}
+        />
+      )}
+
+      {showAudioEditor && isAudio && ffmpegLoaded && (
+        <AudioEditor
+          isOpen={showAudioEditor}
+          onClose={() => setShowAudioEditor(false)}
+          audioData={preview}
+          onSave={handleSaveAudioEdit}
+          ffmpegRef={ffmpegRef}
         />
       )}
 
