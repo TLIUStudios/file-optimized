@@ -61,6 +61,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
   // Processing time states
   const [processingStartTime, setProcessingStartTime] = useState(null);
   const [estimatedTimeForFile, setEstimatedTimeForFile] = useState(null);
+  const [processingProgress, setProcessingProgress] = useState(0);
 
   // GIF.js states (kept for regular GIF processing)
   const [gifJsLoaded, setGifJsLoaded] = useState(false);
@@ -299,11 +300,16 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
 
         const remaining = Math.max(0, estimatedTotal - elapsed);
         setEstimatedTimeForFile(Math.ceil(remaining / 1000));
-      }, 500);
+        
+        // Calculate progress percentage (0-100)
+        const progress = Math.min(95, (elapsed / estimatedTotal) * 100);
+        setProcessingProgress(progress);
+      }, 100);
 
       return () => clearInterval(interval);
     } else {
       setEstimatedTimeForFile(null);
+      setProcessingProgress(0);
     }
   }, [processing, processingStartTime, isGif, isVideo, isImage, enableAnimation, gifFrameCount, image.size]);
 
@@ -1398,17 +1404,21 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
           throw new Error(`Browser does not support converting to ${targetFormat.toUpperCase()}.`);
         }
 
-        const convertedBlob = await new Promise((resolve, reject) => {
+        const convertedBlob = await new Promise((resolve) => {
           canvas.toBlob((b) => {
             if (b) resolve(b);
-            else reject(new Error(`Failed to create ${targetFormat.toUpperCase()} image blob.`));
+            else {
+              console.warn(`Failed to create ${targetFormat.toUpperCase()} image blob. Falling back to original.`);
+              resolve(blobToDownload); // Fallback to original blob if conversion fails
+            }
           }, mimeType, quality / 100); // Use quality slider value
         });
         finalBlob = convertedBlob;
       } catch (error) {
         console.error("Error during on-the-fly image conversion for download:", error);
-        toast.error(`Failed to convert image to ${targetFormat} for download: ${error.message}`);
-        return;
+        toast.error(`Failed to convert image to ${targetFormat} for download: ${error.message}. Downloading original format.`);
+        // Fallback to original blob if conversion fails
+        finalBlob = blobToDownload;
       }
     }
 
@@ -2559,19 +2569,33 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
             <Button
               onClick={processMedia}
               disabled={processing || (isVideo && !ffmpegLoaded) || (isAudio && !ffmpegLoaded) || (isGif && format === 'mp4' && !ffmpegLoaded) || (((isGif && format === 'gif') || (isImage && !isGif && enableAnimation)) && !gifJsLoaded)}
-              className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white"
+              className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white relative overflow-hidden"
             >
-              {processing ? (
-                <>
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  Processing...
-                </>
-              ) : (
-                <>
-                  {MediaIcon && <MediaIcon className="w-4 h-4 mr-2" />}
-                  {enableAnimation ? 'Create Animation' : (isVideo ? 'Compress Video' : isAudio ? 'Compress Audio' : isGif ? 'Compress GIF' : 'Compress Image')}
-                </>
+              {/* Progress bar background */}
+              {processing && (
+                <div
+                  className="absolute inset-0 bg-emerald-500 transition-all duration-300 ease-linear"
+                  style={{
+                    width: `${processingProgress}%`,
+                    left: 0,
+                  }}
+                />
               )}
+              
+              {/* Button content */}
+              <span className="relative z-10 flex items-center justify-center">
+                {processing ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Optimizing... {Math.round(processingProgress)}%
+                  </>
+                ) : (
+                  <>
+                    {MediaIcon && <MediaIcon className="w-4 h-4 mr-2" />}
+                    {enableAnimation ? 'Create Animation' : 'Optimize Asset'}
+                  </>
+                )}
+              </span>
             </Button>
           ) : (
             <>
