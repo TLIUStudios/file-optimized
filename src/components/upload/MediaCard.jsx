@@ -14,7 +14,6 @@ import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
-  TooltipTrigger, // Added TooltipTrigger
 } from "@/components/ui/tooltip";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
@@ -352,23 +351,6 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
     return `${ratioW}:${ratioH}`;
   };
 
-  const formatDuration = (seconds) => {
-    if (isNaN(seconds) || seconds < 0) return 'N/A';
-    const hours = Math.floor(seconds / 3600);
-    const minutes = Math.floor((seconds % 3600) / 60);
-    const remainingSeconds = Math.floor(seconds % 60);
-
-    let result = '';
-    if (hours > 0) {
-      result += `${hours}h `;
-    }
-    if (minutes > 0 || hours > 0) { // Show minutes if any, or if hours are present
-      result += `${minutes.toString().padStart(2, '0')}m `;
-    }
-    result += `${remainingSeconds.toString().padStart(2, '0')}s`;
-    return result.trim();
-  };
-
   // Add function to extract metadata
   const extractMetadata = async () => {
     try {
@@ -376,7 +358,6 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
         name: editableFilename,
         type: image.type,
         size: formatFileSize(originalSize),
-        sizeBytes: originalSize, // Raw bytes for technical details
         lastModified: new Date(image.lastModified).toLocaleString(),
       };
 
@@ -389,92 +370,23 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
         });
         metadata.width = img.width;
         metadata.height = img.height;
-        metadata.resolution = `${img.width}x${img.height}`;
         metadata.aspectRatio = getAspectRatio(img.width, img.height);
-        metadata.megapixels = ((img.width * img.height) / 1_000_000).toFixed(2);
-        metadata.colorDepth = '24-bit RGB'; // Standard for most web images
-        // Rough estimate for bits per pixel (effective, not color depth)
-        const effectiveBpp = (img.width * img.height > 0) ? (originalSize * 8) / (img.width * img.height) : 0;
-        metadata.bitsPerPixel = effectiveBpp > 0 ? `${effectiveBpp.toFixed(1)} bpp` : 'N/A';
-        metadata.quality = `${quality}%`; // The current quality setting
       } else if (isGif) {
         metadata.width = gifSettings.width || 'N/A';
         metadata.height = gifSettings.height || 'N/A';
-        metadata.resolution = gifSettings.width && gifSettings.height ? `${gifSettings.width}x${gifSettings.height}` : 'N/A';
-        metadata.aspectRatio = getAspectRatio(gifSettings.width, gifSettings.height);
-        metadata.megapixels = gifSettings.width && gifSettings.height ? ((gifSettings.width * gifSettings.height) / 1_000_000).toFixed(2) : 'N/A';
         metadata.frames = gifFrameCount || 'N/A';
-        metadata.animated = true;
-
-        if (gifSettings.frames && gifSettings.frames.length > 0) {
-          const totalDelayCentiseconds = gifSettings.frames.reduce((sum, f) => sum + (f.delay || 0), 0);
-          const totalDelayMs = totalDelayCentiseconds * 10;
-          const avgDelayMs = totalDelayMs / gifSettings.frames.length;
-          metadata.averageFrameDelay = `${(avgDelayMs / 1000).toFixed(2)}s`;
-          metadata.fps = avgDelayMs > 0 ? (1000 / avgDelayMs).toFixed(1) : 'N/A';
-          metadata.duration = formatDuration(totalDelayMs / 1000);
-          metadata.durationSeconds = (totalDelayMs / 1000).toFixed(1);
-        } else {
-          metadata.averageFrameDelay = 'N/A';
-          metadata.fps = 'N/A';
-          metadata.duration = 'N/A';
-          metadata.durationSeconds = 'N/A';
-        }
-        metadata.colorDepth = '8-bit (palette)'; // GIFs are 8-bit paletted
-        metadata.bitsPerPixel = '8 bpp'; // Intrinsic color depth for GIF
-        metadata.quality = 'Optimal (GIF.js)'; // As per settings, it's optimized
-      } else if (isVideo || isAudio) {
-        const mediaElement = isVideo ? document.createElement('video') : document.createElement('audio');
-        mediaElement.preload = 'metadata';
-        mediaElement.src = preview;
-
-        await new Promise((resolve, reject) => {
-          mediaElement.onloadedmetadata = () => {
-            metadata.duration = formatDuration(mediaElement.duration);
-            metadata.durationSeconds = mediaElement.duration.toFixed(1);
-            
-            // Estimated bitrate calculation based on file size and duration
-            if (mediaElement.duration > 0) {
-              const estimatedBitrateKbps = (originalSize * 8) / (mediaElement.duration * 1024);
-              metadata.estimatedBitrate = `${estimatedBitrateKbps.toFixed(0)} kbps`;
-              metadata.estimatedBitrateMbps = `${(estimatedBitrateKbps / 1024).toFixed(2)} Mbps`;
-            } else {
-              metadata.estimatedBitrate = 'N/A';
-              metadata.estimatedBitrateMbps = 'N/A';
-            }
-
-            if (isVideo) {
-              metadata.width = mediaElement.videoWidth;
-              metadata.height = mediaElement.videoHeight;
-              metadata.resolution = `${mediaElement.videoWidth}x${mediaElement.videoHeight}`;
-              metadata.aspectRatio = getAspectRatio(mediaElement.videoWidth, mediaElement.videoHeight);
-              metadata.megapixels = ((mediaElement.videoWidth * mediaElement.videoHeight) / 1_000_000).toFixed(2);
-              // Check for audio tracks
-              metadata.hasAudio = (mediaElement.mozHasAudio || mediaElement.webkitAudioDecodedByteCount > 0 || (mediaElement.audioTracks && mediaElement.audioTracks.length > 0)) ? 'Yes' : 'No';
-              metadata.fps = 'N/A (Requires codec parse)'; // Browser doesn't easily expose FPS
-              metadata.quality = 'Variable (H.264/AAC)'; // Example for video
-              metadata.colorDepth = '24-bit'; // Common for videos
-            } else if (isAudio) {
-              metadata.quality = audioQuality;
-              // Check channel count if available
-              metadata.channels = (mediaElement.channelCount && mediaElement.channelCount > 0) ? `${mediaElement.channelCount} channel(s)` : 'N/A';
-            }
-            resolve();
-          };
-          mediaElement.onerror = () => reject(new Error('Failed to load media metadata.'));
-        });
+        metadata.aspectRatio = getAspectRatio(gifSettings.width, gifSettings.height);
+      } else if (isVideo) {
+        metadata.format = 'Video File';
+      } else if (isAudio) {
+        metadata.format = 'Audio File';
       }
 
       if (processed) {
         metadata.compressedSize = formatFileSize(compressedSize);
-        metadata.compressedSizeBytes = compressedSize; // Raw bytes for technical details
         metadata.savings = `${savingsPercent}%`;
-        metadata.savingsBytes = formatFileSize(originalSize - compressedSize);
         metadata.compressedFormat = displayCompressedExt;
         if (outputGifFrameCount > 0) metadata.compressedFrames = outputGifFrameCount;
-        metadata.compressionRatio = compressedSize > 0 ? `${(originalSize / compressedSize).toFixed(2)}:1` : 'N/A';
-        // Size change shows absolute %
-        metadata.sizeChange = `${sizeIncreased ? '+' : '-'}${Math.abs(parseFloat(savingsPercent))}%`;
       }
 
       setFileMetadata(metadata);
@@ -2647,145 +2559,29 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
         />
       )}
 
-      {/* Metadata Viewer Modal */}
-        {showMetadataViewer && fileMetadata && (
-          <Dialog open={showMetadataViewer} onOpenChange={setShowMetadataViewer}>
-            <DialogContent className="sm:max-w-[550px] max-h-[80vh] overflow-y-auto">
-              <DialogHeader>
-                <DialogTitle className="flex items-center gap-2">
-                  <Info className="w-5 h-5 text-emerald-600" />
-                  File Metadata
-                </DialogTitle>
-                <DialogDescription>
-                  Detailed information about your {isVideo ? 'video' : isAudio ? 'audio' : isGif ? 'GIF' : 'image'} file
-                </DialogDescription>
-              </DialogHeader>
-              
-              <div className="space-y-4">
-                {/* Basic Information */}
-                <div>
-                  <h3 className="font-semibold text-sm text-slate-900 dark:text-white mb-2 flex items-center gap-2">
-                    📄 Basic Information
-                  </h3>
-                  <div className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-2 text-sm bg-slate-50 dark:bg-slate-950 rounded-lg p-3">
-                    {(['name', 'type', 'size', 'lastModified']).map((key) => 
-                      fileMetadata[key] && (
-                        <div key={key} className="contents" key={`${key}-${fileMetadata[key]}`}>
-                          <span className="font-medium text-slate-600 dark:text-slate-400">
-                            {key.replace(/([A-Z])/g, ' $1').trim().split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')}:
-                          </span>
-                          <span className="text-slate-900 dark:text-white break-words">{String(fileMetadata[key])}</span>
-                        </div>
-                      )
-                    )}
-                  </div>
+      {showMetadataViewer && fileMetadata && (
+        <Dialog open={showMetadataViewer} onOpenChange={setShowMetadataViewer}>
+          <DialogContent className="sm:max-w-[425px]">
+            <DialogHeader>
+              <DialogTitle>File Metadata</DialogTitle>
+              <DialogDescription>
+                Detailed information about your file.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-2 text-sm">
+              {Object.entries(fileMetadata).map(([key, value]) => (
+                <div key={key} className="contents">
+                  <span className="font-medium text-slate-600 dark:text-slate-400">
+                    {key.replace(/([A-Z])/g, ' $1').trim().split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')}:
+                  </span>
+                  <span className="text-slate-900 dark:text-white">{String(value)}</span>
                 </div>
-
-                {/* Media Properties */}
-                {(isImage || isVideo || isGif) && (
-                  <div>
-                    <h3 className="font-semibold text-sm text-slate-900 dark:text-white mb-2 flex items-center gap-2">
-                      {isVideo ? '🎬' : isGif ? '🎞️' : '🖼️'} Media Properties
-                    </h3>
-                    <div className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-2 text-sm bg-slate-50 dark:bg-slate-950 rounded-lg p-3">
-                      {(['width', 'height', 'resolution', 'aspectRatio', 'megapixels', 'frames', 'fps', 'duration', 'durationSeconds', 'averageFrameDelay', 'animated', 'quality', 'colorDepth', 'bitsPerPixel']).map((key) => 
-                        fileMetadata[key] && (
-                          <div key={key} className="contents" key={`${key}-${fileMetadata[key]}`}>
-                            <span className="font-medium text-slate-600 dark:text-slate-400">
-                              {key.replace(/([A-Z])/g, ' $1').trim().split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')}:
-                            </span>
-                            <span className="text-slate-900 dark:text-white">{String(fileMetadata[key])}</span>
-                          </div>
-                        )
-                      )}
-                    </div>
-                  </div>
-                )}
-
-                {/* Audio Properties */}
-                {(isAudio || (isVideo && fileMetadata.hasAudio === 'Yes')) && (
-                  <div>
-                    <h3 className="font-semibold text-sm text-slate-900 dark:text-white mb-2 flex items-center gap-2">
-                      🎵 Audio Properties
-                    </h3>
-                    <div className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-2 text-sm bg-slate-50 dark:bg-slate-950 rounded-lg p-3">
-                      {(['duration', 'durationSeconds', 'estimatedBitrate', 'estimatedBitrateMbps', 'quality', 'channels', 'hasAudio']).map((key) => 
-                        fileMetadata[key] && (
-                          <div key={key} className="contents" key={`${key}-${fileMetadata[key]}`}>
-                            <span className="font-medium text-slate-600 dark:text-slate-400">
-                              {key.replace(/([A-Z])/g, ' $1').trim().split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')}:
-                            </span>
-                            <span className="text-slate-900 dark:text-white">{String(fileMetadata[key])}</span>
-                          </div>
-                        )
-                      )}
-                    </div>
-                  </div>
-                )}
-
-                {/* Compression Results */}
-                {processed && (
-                  <div>
-                    <h3 className="font-semibold text-sm text-slate-900 dark:text-white mb-2 flex items-center gap-2">
-                      ✨ Compression Results
-                    </h3>
-                    <div className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-2 text-sm bg-emerald-50 dark:bg-emerald-950/30 rounded-lg p-3 border border-emerald-200 dark:border-emerald-800">
-                      {(['compressedSize', 'compressedFormat', 'compressedFrames', 'savings', 'savingsBytes', 'compressionRatio', 'sizeChange']).map((key) => 
-                        fileMetadata[key] && (
-                          <div key={key} className="contents" key={`${key}-${fileMetadata[key]}`}>
-                            <span className="font-medium text-emerald-700 dark:text-emerald-400">
-                              {key.replace(/([A-Z])/g, ' $1').trim().split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')}:
-                            </span>
-                            <span className={cn(
-                              "font-semibold",
-                              key === 'sizeChange' 
-                                ? (compressedSize > originalSize ? "text-red-600 dark:text-red-400" : "text-emerald-600 dark:text-emerald-400")
-                                : "text-emerald-900 dark:text-emerald-100"
-                            )}>{String(fileMetadata[key])}</span>
-                          </div>
-                        )
-                      )}
-                    </div>
-                  </div>
-                )}
-
-                {/* Technical Details */}
-                <div>
-                  <h3 className="font-semibold text-sm text-slate-900 dark:text-white mb-2 flex items-center gap-2">
-                    ⚙️ Technical Details
-                  </h3>
-                  <div className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-2 text-sm bg-slate-50 dark:bg-slate-950 rounded-lg p-3">
-                    <span className="font-medium text-slate-600 dark:text-slate-400">Processing:</span>
-                    <span className="text-slate-900 dark:text-white">Client-side (Browser)</span>
-                    
-                    <span className="font-medium text-slate-600 dark:text-slate-400">Privacy:</span>
-                    <span className="text-slate-900 dark:text-white">✅ Never uploaded to server</span>
-                    
-                    {fileMetadata.sizeBytes && (
-                      <>
-                        <span className="font-medium text-slate-600 dark:text-slate-400">Original Size (bytes):</span>
-                        <span className="text-slate-900 dark:text-white font-mono text-xs">{fileMetadata.sizeBytes.toLocaleString()}</span>
-                      </>
-                    )}
-                    
-                    {fileMetadata.compressedSizeBytes && (
-                      <>
-                        <span className="font-medium text-slate-600 dark:text-slate-400">Compressed Size (bytes):</span>
-                        <span className="text-slate-900 dark:text-white font-mono text-xs">{fileMetadata.compressedSizeBytes.toLocaleString()}</span>
-                      </>
-                    )}
-                  </div>
-                </div>
-              </div>
-
-              <div className="flex justify-end pt-4 border-t border-slate-200 dark:border-slate-800">
-                <Button onClick={() => setShowMetadataViewer(false)} className="bg-emerald-600 hover:bg-emerald-700">
-                  Close
-                </Button>
-              </div>
-            </DialogContent>
-          </Dialog>
-        )}
+              ))}
+            </div>
+            <Button onClick={() => setShowMetadataViewer(false)}>Close</Button>
+          </DialogContent>
+        </Dialog>
+      )}
     </Card>
   );
 }
