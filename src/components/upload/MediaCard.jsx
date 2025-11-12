@@ -4,7 +4,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Slider } from "@/components/ui/slider";
-import { Download, X, Loader2, CheckCircle2, ArrowRight, Settings2, AlertCircle, Info, Edit2, RefreshCcw, Sparkles, Film, Music, Video, ChevronDown, Check, Wand2 } from "lucide-react";
+import { Download, X, Loader2, CheckCircle2, ArrowRight, Settings2, AlertCircle, Info, Edit2, RefreshCcw, Sparkles, Film, Music, Video, ChevronDown, Check, Wand2, ImageIcon } from "lucide-react"; // Added ImageIcon
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
@@ -359,6 +359,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
         name: editableFilename,
         type: image.type,
         size: formatFileSize(originalSize),
+        sizeBytes: originalSize, // Store raw bytes for comparison chart
         lastModified: new Date(image.lastModified).toLocaleString(),
       };
 
@@ -366,26 +367,72 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
         const img = new Image();
         img.src = preview;
         await new Promise((resolve, reject) => {
-          img.onload = resolve;
+          img.onload = () => {
+            metadata.width = img.width;
+            metadata.height = img.height;
+            metadata.aspectRatio = getAspectRatio(img.width, img.height);
+            metadata.megapixels = (img.width * img.height / 1_000_000).toFixed(2) + ' MP';
+            metadata.colorDepth = '24-bit'; // Common for web images
+            resolve();
+          };
           img.onerror = () => reject(new Error('Failed to load image for metadata.'));
         });
-        metadata.width = img.width;
-        metadata.height = img.height;
-        metadata.aspectRatio = getAspectRatio(img.width, img.height);
       } else if (isGif) {
         metadata.width = gifSettings.width || 'N/A';
         metadata.height = gifSettings.height || 'N/A';
-        metadata.frames = gifFrameCount || 'N/A';
         metadata.aspectRatio = getAspectRatio(gifSettings.width, gifSettings.height);
+        metadata.frames = gifFrameCount || 'N/A';
+        if (gifSettings.width > 0 && gifSettings.height > 0) {
+            metadata.megapixels = (gifSettings.width * gifSettings.height / 1_000_000).toFixed(2) + ' MP';
+        }
+        metadata.colorDepth = '8-bit'; // Standard for GIFs
+        if (gifSettings.frames && gifSettings.frames.length > 0) {
+            const totalDelayMs = gifSettings.frames.reduce((sum, frame) => sum + (frame.delay * 10 || 100), 0);
+            metadata.totalDuration = (totalDelayMs / 1000).toFixed(2) + ' s';
+            const avgDelay = totalDelayMs / gifSettings.frames.length;
+            metadata.avgFrameDelay = avgDelay.toFixed(2) + ' ms';
+            metadata.fps = (avgDelay > 0 ? (1000 / avgDelay).toFixed(1) : 'N/A') + ' fps';
+        }
       } else if (isVideo) {
-        metadata.format = 'Video File';
+        const videoElement = document.createElement('video');
+        videoElement.src = preview;
+        await new Promise((resolve, reject) => {
+          videoElement.onloadedmetadata = () => {
+            metadata.width = videoElement.videoWidth;
+            metadata.height = videoElement.videoHeight;
+            metadata.duration = videoElement.duration.toFixed(2) + ' s';
+            metadata.aspectRatio = getAspectRatio(videoElement.videoWidth, videoElement.videoHeight);
+            metadata.megapixels = (videoElement.videoWidth * videoElement.videoHeight / 1_000_000).toFixed(2) + ' MP';
+            // Estimate bitrate: size (bits) / duration (seconds)
+            metadata.estimatedBitrate = videoElement.duration > 0 ?
+                ((originalSize * 8) / videoElement.duration / 1000).toFixed(0) + ' kbps' : 'N/A';
+            resolve();
+          };
+          videoElement.onerror = () => reject(new Error('Failed to load video metadata.'));
+          videoElement.load(); // Start loading the video to trigger metadata event
+        });
       } else if (isAudio) {
-        metadata.format = 'Audio File';
+        const audioElement = document.createElement('audio');
+        audioElement.src = preview;
+        await new Promise((resolve, reject) => {
+          audioElement.onloadedmetadata = () => {
+            metadata.duration = audioElement.duration.toFixed(2) + ' s';
+            // Estimate bitrate: size (bits) / duration (seconds)
+            metadata.estimatedBitrate = audioElement.duration > 0 ?
+                ((originalSize * 8) / audioElement.duration / 1000).toFixed(0) + ' kbps' : 'N/A';
+            resolve();
+          };
+          audioElement.onerror = () => reject(new Error('Failed to load audio metadata.'));
+          audioElement.load(); // Start loading the audio to trigger metadata event
+        });
       }
 
       if (processed) {
         metadata.compressedSize = formatFileSize(compressedSize);
+        metadata.compressedSizeBytes = compressedSize; // Store raw bytes
         metadata.savings = `${savingsPercent}%`;
+        metadata.savingsBytes = formatFileSize(Math.abs(originalSize - compressedSize));
+        metadata.compressionRatio = compressedSize > 0 ? (originalSize / compressedSize).toFixed(2) + ':1' : 'N/A';
         metadata.compressedFormat = displayCompressedExt;
         if (outputGifFrameCount > 0) metadata.compressedFrames = outputGifFrameCount;
       }
@@ -2562,24 +2609,160 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
 
       {showMetadataViewer && fileMetadata && (
         <Dialog open={showMetadataViewer} onOpenChange={setShowMetadataViewer}>
-          <DialogContent className="sm:max-w-[425px]">
+          <DialogContent className="sm:max-w-[500px] max-h-[80vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>File Metadata</DialogTitle>
               <DialogDescription>
-                Detailed information about your file.
+                Comprehensive information about your file
               </DialogDescription>
             </DialogHeader>
-            <div className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-2 text-sm">
-              {Object.entries(fileMetadata).map(([key, value]) => (
-                <div key={key} className="contents">
-                  <span className="font-medium text-slate-600 dark:text-slate-400">
-                    {key.replace(/([A-Z])/g, ' $1').trim().split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')}:
-                  </span>
-                  <span className="text-slate-900 dark:text-white">{String(value)}</span>
+            <div className="space-y-6">
+              {/* Basic Info Section */}
+              <div>
+                <h3 className="text-sm font-semibold text-slate-900 dark:text-white mb-3 flex items-center gap-2">
+                  <Info className="w-4 h-4" />
+                  Basic Information
+                </h3>
+                <div className="space-y-2 bg-slate-50 dark:bg-slate-950 rounded-lg p-3">
+                  {['name', 'type', 'size', 'lastModified'].map(key =>
+                    fileMetadata[key] !== undefined && fileMetadata[key] !== null && (
+                      <div key={key} className="flex justify-between text-sm">
+                        <span className="font-medium text-slate-600 dark:text-slate-400">
+                          {key.replace(/([A-Z])/g, ' $1').trim().split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')}:
+                        </span>
+                        <span className="text-slate-900 dark:text-white font-mono text-xs">
+                          {String(fileMetadata[key])}
+                        </span>
+                      </div>
+                    )
+                  )}
                 </div>
-              ))}
+              </div>
+
+              {/* Media Properties Section */}
+              {(isImage || isVideo || isGif) && (
+                <div>
+                  <h3 className="text-sm font-semibold text-slate-900 dark:text-white mb-3 flex items-center gap-2">
+                    {isVideo ? <Video className="w-4 h-4" /> : isGif ? <Film className="w-4 h-4" /> : <ImageIcon className="w-4 h-4" />}
+                    {isVideo ? 'Video' : isGif ? 'Animation' : 'Image'} Properties
+                  </h3>
+                  <div className="space-y-2 bg-slate-50 dark:bg-slate-950 rounded-lg p-3">
+                    {['width', 'height', 'aspectRatio', 'megapixels', 'frames', 'totalDuration', 'avgFrameDelay', 'fps', 'duration', 'estimatedBitrate', 'colorDepth'].map(key =>
+                      fileMetadata[key] !== undefined && fileMetadata[key] !== null && (
+                        <div key={key} className="flex justify-between text-sm">
+                          <span className="font-medium text-slate-600 dark:text-slate-400">
+                            {key.replace(/([A-Z])/g, ' $1').trim().split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')}:
+                          </span>
+                          <span className="text-slate-900 dark:text-white font-mono text-xs">
+                            {String(fileMetadata[key])}
+                          </span>
+                        </div>
+                      )
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Audio Properties Section */}
+              {isAudio && (
+                <div>
+                  <h3 className="text-sm font-semibold text-slate-900 dark:text-white mb-3 flex items-center gap-2">
+                    <Music className="w-4 h-4" />
+                    Audio Properties
+                  </h3>
+                  <div className="space-y-2 bg-slate-50 dark:bg-slate-950 rounded-lg p-3">
+                    {['duration', 'estimatedBitrate'].map(key =>
+                      fileMetadata[key] !== undefined && fileMetadata[key] !== null && (
+                        <div key={key} className="flex justify-between text-sm">
+                          <span className="font-medium text-slate-600 dark:text-slate-400">
+                            {key.replace(/([A-Z])/g, ' $1').trim().split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')}:
+                          </span>
+                          <span className="text-slate-900 dark:text-white font-mono text-xs">
+                            {String(fileMetadata[key])}
+                          </span>
+                        </div>
+                      )
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Compression Info Section */}
+              {processed && (
+                <div>
+                  <h3 className="text-sm font-semibold text-slate-900 dark:text-white mb-3 flex items-center gap-2">
+                    <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                    Compression Results
+                  </h3>
+                  <div className="space-y-2 bg-emerald-50 dark:bg-emerald-950/30 rounded-lg p-3 border border-emerald-200 dark:border-emerald-800">
+                    {['compressedFormat', 'compressedSize', 'savings', 'savingsBytes', 'compressionRatio', 'compressedFrames'].map(key =>
+                      fileMetadata[key] !== undefined && fileMetadata[key] !== null && (
+                        <div key={key} className="flex justify-between text-sm">
+                          <span className="font-medium text-emerald-700 dark:text-emerald-400">
+                            {key.replace(/([A-Z])/g, ' $1').trim().split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')}:
+                          </span>
+                          <span className="text-emerald-900 dark:text-emerald-300 font-mono text-xs font-bold">
+                            {String(fileMetadata[key])}
+                          </span>
+                        </div>
+                      )
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Size Comparison Chart (if processed) */}
+              {processed && fileMetadata.sizeBytes !== undefined && fileMetadata.compressedSizeBytes !== undefined && (
+                <div>
+                  <h3 className="text-sm font-semibold text-slate-900 dark:text-white mb-3">Size Comparison</h3>
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2">
+                      <div className="flex-1 h-8 bg-slate-200 dark:bg-slate-800 rounded-lg overflow-hidden">
+                        <div
+                          className="h-full bg-slate-600 dark:bg-slate-400 flex items-center justify-end pr-2"
+                          style={{ width: '100%' }}
+                        >
+                          <span className="text-xs text-white font-semibold">Original</span>
+                        </div>
+                      </div>
+                      <span className="text-xs font-mono w-20 text-right">{fileMetadata.size}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <div className="flex-1 h-8 bg-slate-200 dark:bg-slate-800 rounded-lg overflow-hidden">
+                        <div
+                          className="h-full bg-emerald-600 dark:bg-emerald-500 flex items-center justify-end pr-2"
+                          style={{
+                            width: `${Math.max(0, Math.min(100, (fileMetadata.compressedSizeBytes / fileMetadata.sizeBytes) * 100))}%`
+                          }}
+                        >
+                          <span className="text-xs text-white font-semibold">Compressed</span>
+                        </div>
+                      </div>
+                      <span className="text-xs font-mono w-20 text-right">{fileMetadata.compressedSize}</span>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
-            <Button onClick={() => setShowMetadataViewer(false)}>Close</Button>
+            <div className="flex justify-end gap-2 pt-4 border-t">
+              <Button variant="outline" onClick={() => setShowMetadataViewer(false)}>Close</Button>
+              <Button
+                onClick={() => {
+                  const text = Object.entries(fileMetadata)
+                    .filter(([, value]) => value !== undefined && value !== null) // Filter out undefined/null values for copy
+                    .map(([key, value]) => {
+                      const formattedKey = key.replace(/([A-Z])/g, ' $1').trim().split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+                      return `${formattedKey}: ${value}`;
+                    })
+                    .join('\n');
+                  navigator.clipboard.writeText(text);
+                  toast.success('Metadata copied to clipboard!');
+                }}
+                className="bg-emerald-600 hover:bg-emerald-700 text-white"
+              >
+                Copy All
+              </Button>
+            </div>
           </DialogContent>
         </Dialog>
       )}
