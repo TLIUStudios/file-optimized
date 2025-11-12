@@ -1,9 +1,9 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Check, Zap, Sparkles, Film, TrendingUp, Loader2 } from "lucide-react";
+import { Check, Zap, Sparkles, Film, TrendingUp, Loader2, AlertCircle } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 
-export default function ProUpgradeModal({ isOpen, onClose, onUpgrade, processing = false }) {
+export default function ProUpgradeModal({ isOpen, onClose, onUpgrade, processing = false, error = null }) {
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-[500px] p-0 overflow-hidden bg-gradient-to-br from-slate-50 to-white dark:from-slate-950 dark:to-slate-900">
@@ -28,6 +28,19 @@ export default function ProUpgradeModal({ isOpen, onClose, onUpgrade, processing
 
         {/* Content */}
         <div className="p-6 space-y-6">
+          {/* Error Display */}
+          {error && (
+            <div className="bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800 rounded-lg p-4">
+              <div className="flex items-start gap-2">
+                <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
+                <div className="flex-1">
+                  <p className="text-sm font-medium text-red-900 dark:text-red-100">Error</p>
+                  <p className="text-xs text-red-700 dark:text-red-300 mt-1">{error}</p>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Price */}
           <div className="text-center py-4 bg-slate-100 dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800">
             <p className="text-sm text-slate-600 dark:text-slate-400 mb-1">Starting at</p>
@@ -101,7 +114,7 @@ export default function ProUpgradeModal({ isOpen, onClose, onUpgrade, processing
             <Button
               onClick={onUpgrade}
               disabled={processing}
-              className="w-full bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-semibold h-12 text-base shadow-lg"
+              className="w-full bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-semibold h-12 text-base shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {processing ? (
                 <>

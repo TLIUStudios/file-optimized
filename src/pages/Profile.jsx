@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery } from "@tanstack/react-query";
@@ -19,7 +20,8 @@ import {
   TrendingUp,
   Film,
   CheckCircle2,
-  AlertCircle
+  AlertCircle,
+  X // Added X for the debug panel close button
 } from "lucide-react";
 import { toast } from "sonner";
 import { motion } from "framer-motion";
@@ -32,6 +34,7 @@ export default function Profile() {
   const [processingPortal, setProcessingPortal] = useState(false);
   const [showProModal, setShowProModal] = useState(false);
   const [debugInfo, setDebugInfo] = useState(null);
+  const [upgradeError, setUpgradeError] = useState(null); // Added this state
 
   // Load user data
   useEffect(() => {
@@ -54,10 +57,11 @@ export default function Profile() {
     const params = new URLSearchParams(window.location.hash.split('?')[1]);
     if (params.get('success') === 'true') {
       toast.success('🎉 Welcome to Pro! Your subscription is now active.');
+      // Reload user data after a short delay to ensure subscription status is updated
       setTimeout(async () => {
         const updatedUser = await base44.auth.me();
         setUser(updatedUser);
-      }, 2000);
+      }, 2000); 
     }
     if (params.get('canceled') === 'true') {
       toast.info('Checkout canceled. You can upgrade anytime!');
@@ -79,63 +83,67 @@ export default function Profile() {
   });
 
   const handleUpgrade = async () => {
-    console.log('🚀 Starting upgrade process');
-    setDebugInfo({ step: 'Starting...', timestamp: Date.now() });
+    console.log('🚀 Upgrade clicked - checking prerequisites...');
+    console.log('User:', user?.email, 'ID:', user?.id);
+    
+    setUpgradeError(null); // Reset error state on new attempt
+    setProcessingCheckout(true);
     
     try {
-      setProcessingCheckout(true);
-      const toastId = toast.loading('Creating checkout session...', { duration: Infinity });
-
-      setDebugInfo({ step: 'Calling function...', timestamp: Date.now() });
-      console.log('Invoking createCheckoutSession function...');
+      // Show immediate feedback
+      const toastId = toast.loading('Connecting to Stripe...', { duration: Infinity });
       
-      const startTime = Date.now();
-      const response = await base44.functions.invoke('createCheckoutSession');
-      const elapsed = Date.now() - startTime;
+      console.log('Step 1: Calling backend function...');
       
-      setDebugInfo({ 
-        step: 'Got response', 
-        elapsed: `${elapsed}ms`,
-        response: JSON.stringify(response, null, 2)
-      });
+      // Call with explicit timeout
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 20000); // 20 second timeout
       
-      console.log('Response received in', elapsed, 'ms');
-      console.log('Full response:', response);
-
-      if (!response || !response.data) {
-        throw new Error('Invalid response structure');
+      let response;
+      try {
+        response = await base44.functions.invoke('createCheckoutSession'); // The base44 client already supports AbortController
+        clearTimeout(timeoutId); // Clear timeout if response received before timeout
+      } catch (invokeError) {
+        clearTimeout(timeoutId); // Clear timeout even if invoke fails
+        if (invokeError.name === 'AbortError') {
+          throw new Error('Request timed out after 20 seconds. Please check your internet connection or try again.');
+        }
+        throw invokeError; // Re-throw other errors
+      }
+      
+      console.log('Step 2: Got response:', response);
+      
+      if (!response?.data) {
+        throw new Error('Invalid response from server - no data returned.');
       }
 
       const { data } = response;
+      console.log('Step 3: Response data:', data);
 
       if (data.error) {
-        setDebugInfo({ step: 'Error in response', error: data.error });
-        throw new Error(data.error);
+        throw new Error(data.error || 'Unknown error occurred during checkout session creation.');
       }
 
       if (!data.url) {
-        setDebugInfo({ step: 'No URL', data: JSON.stringify(data) });
-        throw new Error('No checkout URL returned');
+        throw new Error('No checkout URL received from Stripe.');
       }
 
-      console.log('Redirecting to:', data.url);
-      setDebugInfo({ step: 'Redirecting...', url: data.url });
-      
+      console.log('Step 4: Redirecting to:', data.url);
       toast.dismiss(toastId);
       toast.success('Redirecting to Stripe...');
       
-      window.location.href = data.url;
+      // Redirect after short delay for better UX
+      setTimeout(() => {
+        window.location.href = data.url;
+      }, 500);
 
     } catch (error) {
-      console.error('❌ Upgrade error:', error);
-      setDebugInfo({ 
-        step: 'Error', 
-        error: error.message,
-        stack: error.stack 
-      });
+      console.error('❌ Upgrade failed:', error);
       
-      toast.error(error.message || 'Failed to start checkout', { duration: 6000 });
-      setProcessingCheckout(false);
+      const errorMessage = error.message || 'Failed to start checkout. Please try again.';
+      setUpgradeError(errorMessage); // Set the error message for the modal
+      toast.error(errorMessage, { duration: 8000 });
+      setProcessingCheckout(false); // Stop processing state
     }
   };
 
@@ -547,9 +555,14 @@ export default function Profile() {
       {showProModal && (
         <ProUpgradeModal
           isOpen={showProModal}
-          onClose={() => setShowProModal(false)}
+          onClose={() => {
+            setShowProModal(false);
+            setUpgradeError(null); // Clear error when modal closes
+            setProcessingCheckout(false); // Ensure processing is false when modal closes
+          }}
           onUpgrade={handleUpgrade}
           processing={processingCheckout}
+          error={upgradeError} // Pass the upgrade error to the modal
         />
       )}
     </div>
