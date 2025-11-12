@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
-import { X, Play, Pause, RotateCw, Crop, Type, Scissors, Gauge, Blur, Download } from "lucide-react";
+import { X, Play, Pause, RotateCw, Crop, Type, Scissors, Gauge, Eye, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
 import { Input } from "@/components/ui/input";
@@ -26,7 +26,6 @@ export default function VideoEditor({ isOpen, onClose, videoData, onSave, ffmpeg
   const [processing, setProcessing] = useState(false);
   
   const videoRef = useRef(null);
-  const canvasRef = useRef(null);
 
   useEffect(() => {
     if (isOpen && videoRef.current) {
@@ -455,7 +454,7 @@ export default function VideoEditor({ isOpen, onClose, videoData, onSave, ffmpeg
                       <div className="flex items-center justify-between mb-2">
                         <Label className="text-sm font-semibold">Blur Areas</Label>
                         <Button size="sm" variant="outline" onClick={addBlurArea}>
-                          <Blur className="w-3 h-3 mr-1" />
+                          <Eye className="w-3 h-3 mr-1" />
                           Add Blur
                         </Button>
                       </div>
