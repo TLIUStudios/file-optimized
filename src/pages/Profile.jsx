@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery } from "@tanstack/react-query";
@@ -19,7 +18,8 @@ import {
   Zap,
   TrendingUp,
   Film,
-  CheckCircle2
+  CheckCircle2,
+  AlertCircle
 } from "lucide-react";
 import { toast } from "sonner";
 import { motion } from "framer-motion";
@@ -31,6 +31,7 @@ export default function Profile() {
   const [processingCheckout, setProcessingCheckout] = useState(false);
   const [processingPortal, setProcessingPortal] = useState(false);
   const [showProModal, setShowProModal] = useState(false);
+  const [debugInfo, setDebugInfo] = useState(null);
 
   // Load user data
   useEffect(() => {
@@ -38,15 +39,6 @@ export default function Profile() {
       try {
         const currentUser = await base44.auth.me();
         setUser(currentUser);
-        
-        // TEST: Try calling test function
-        console.log('🧪 Testing backend function connectivity...');
-        try {
-          const testResult = await base44.functions.invoke('testCheckout');
-          console.log('✅ Backend functions working:', testResult);
-        } catch (testError) {
-          console.error('❌ Backend functions not working:', testError);
-        }
       } catch (error) {
         console.error('Error loading user:', error);
         toast.error('Failed to load user data');
@@ -62,7 +54,6 @@ export default function Profile() {
     const params = new URLSearchParams(window.location.hash.split('?')[1]);
     if (params.get('success') === 'true') {
       toast.success('🎉 Welcome to Pro! Your subscription is now active.');
-      // Refresh user data
       setTimeout(async () => {
         const updatedUser = await base44.auth.me();
         setUser(updatedUser);
@@ -88,70 +79,62 @@ export default function Profile() {
   });
 
   const handleUpgrade = async () => {
-    console.log('🚀 handleUpgrade called');
-    console.log('User data:', user);
+    console.log('🚀 Starting upgrade process');
+    setDebugInfo({ step: 'Starting...', timestamp: Date.now() });
     
     try {
       setProcessingCheckout(true);
       const toastId = toast.loading('Creating checkout session...', { duration: Infinity });
 
-      console.log('Calling createCheckoutSession...');
+      setDebugInfo({ step: 'Calling function...', timestamp: Date.now() });
+      console.log('Invoking createCheckoutSession function...');
       
-      // Try the function call with explicit error handling
-      const response = await base44.functions.invoke('createCheckoutSession')
-        .catch(err => {
-          console.error('Function invoke error:', err);
-          throw err;
-        });
+      const startTime = Date.now();
+      const response = await base44.functions.invoke('createCheckoutSession');
+      const elapsed = Date.now() - startTime;
       
-      console.log('Got response:', response);
+      setDebugInfo({ 
+        step: 'Got response', 
+        elapsed: `${elapsed}ms`,
+        response: JSON.stringify(response, null, 2)
+      });
+      
+      console.log('Response received in', elapsed, 'ms');
+      console.log('Full response:', response);
 
-      // Check response structure
-      if (!response) {
-        throw new Error('No response from function');
-      }
-
-      if (!response.data) {
-        throw new Error('No data in response');
+      if (!response || !response.data) {
+        throw new Error('Invalid response structure');
       }
 
       const { data } = response;
-      console.log('Response data:', data);
 
       if (data.error) {
-        console.error('Error in response:', data);
-        throw new Error(data.error + (data.details ? ' - ' + data.details : ''));
+        setDebugInfo({ step: 'Error in response', error: data.error });
+        throw new Error(data.error);
       }
 
       if (!data.url) {
-        console.error('No URL in response:', data);
-        throw new Error('No checkout URL returned from Stripe');
+        setDebugInfo({ step: 'No URL', data: JSON.stringify(data) });
+        throw new Error('No checkout URL returned');
       }
 
       console.log('Redirecting to:', data.url);
+      setDebugInfo({ step: 'Redirecting...', url: data.url });
+      
       toast.dismiss(toastId);
-      toast.success('Redirecting to Stripe checkout...');
+      toast.success('Redirecting to Stripe...');
       
       window.location.href = data.url;
 
     } catch (error) {
-      console.error('❌ Error in handleUpgrade:', error);
-      console.error('Error type:', typeof error);
-      console.error('Error keys:', Object.keys(error));
-      console.error('Error message:', error.message);
-      console.error('Error stack:', error.stack);
+      console.error('❌ Upgrade error:', error);
+      setDebugInfo({ 
+        step: 'Error', 
+        error: error.message,
+        stack: error.stack 
+      });
       
-      let errorMessage = 'Failed to start checkout. Please try again.';
-      
-      if (error.message.includes('timeout')) {
-        errorMessage = '⏱️ Request timed out. Please check your connection and try again.';
-      } else if (error.message.includes('Unauthorized')) {
-        errorMessage = '🔒 Please log in again and try once more.';
-      } else if (error.message) {
-        errorMessage = error.message;
-      }
-      
-      toast.error(errorMessage, { duration: 6000 });
+      toast.error(error.message || 'Failed to start checkout', { duration: 6000 });
       setProcessingCheckout(false);
     }
   };
@@ -210,6 +193,29 @@ export default function Profile() {
 
   return (
     <div className="max-w-6xl mx-auto space-y-6">
+      {/* Debug Panel - Remove this after fixing */}
+      {debugInfo && (
+        <Card className="p-4 bg-yellow-50 dark:bg-yellow-950/20 border-yellow-200 dark:border-yellow-800">
+          <div className="flex items-start gap-2">
+            <AlertCircle className="w-5 h-5 text-yellow-600 flex-shrink-0 mt-0.5" />
+            <div className="flex-1">
+              <h4 className="font-semibold text-yellow-900 dark:text-yellow-100 text-sm">Debug Info</h4>
+              <pre className="text-xs text-yellow-800 dark:text-yellow-200 mt-2 whitespace-pre-wrap">
+                {JSON.stringify(debugInfo, null, 2)}
+              </pre>
+            </div>
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              onClick={() => setDebugInfo(null)}
+              className="text-yellow-600"
+            >
+              <X className="w-4 h-4" />
+            </Button>
+          </div>
+        </Card>
+      )}
+
       {/* Header */}
       <motion.div
         initial={{ opacity: 0, y: -20 }}
