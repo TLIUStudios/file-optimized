@@ -418,7 +418,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
           if (video.videoHeight >= 2160) metadata.quality = '4K UHD';
           else if (video.videoHeight >= 1440) metadata.quality = '2K QHD';
           else if (video.videoHeight >= 1080) metadata.quality = 'Full HD (1080p)';
-          else if (video.videoHeight >= 720) metadata.quality = 'HD (720p)';
+          else if (video.videoHeight >= 720) metadata.quality = 'HD (70p)';
           else if (video.videoHeight >= 480) metadata.quality = 'SD (480p)';
           else metadata.quality = 'Low Resolution';
         }
@@ -1959,19 +1959,71 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
                   <TooltipContent className="max-w-xs">
                     <div className="text-xs space-y-2">
                       <p className="font-semibold">Format Recommendations:</p>
-                      <div>
-                        <p className="font-medium">Maximum Compression:</p>
-                        <p>• WebP (best quality control)</p>
-                        <p>• JPG (universal support)</p>
-                      </div>
-                      <div>
-                        <p className="font-medium">Lossless:</p>
-                        <p>• PNG (quality slider won't matter)</p>
-                      </div>
-                      <div>
-                        <p className="font-medium">Modern/Best:</p>
-                        <p>• WebP (best balance of compression + browser support)</p>
-                      </div>
+                      {isImage && !isGif && (
+                        <>
+                          <div>
+                            <p className="font-medium">Maximum Compression:</p>
+                            <p>• WebP (best quality control)</p>
+                            <p>• JPG (universal support)</p>
+                          </div>
+                          <div>
+                            <p className="font-medium">Lossless:</p>
+                            <p>• PNG (quality slider won't matter)</p>
+                          </div>
+                          <div>
+                            <p className="font-medium">Modern/Best:</p>
+                            <p>• WebP (best balance of compression + browser support)</p>
+                          </div>
+                        </>
+                      )}
+                      {isGif && (
+                        <>
+                          <div>
+                            <p className="font-medium">GIF:</p>
+                            <p>• Best for animations</p>
+                            <p>• Preserves all frames</p>
+                            <p>• Universal support</p>
+                          </div>
+                          <div>
+                            <p className="font-medium">MP4:</p>
+                            <p>• Smaller file size</p>
+                            <p>• Better compression</p>
+                            <p>• Modern browsers only</p>
+                          </div>
+                        </>
+                      )}
+                      {isVideo && !isGif && (
+                        <>
+                          <div>
+                            <p className="font-medium">MP4:</p>
+                            <p>• Universal support</p>
+                            <p>• Best for video content</p>
+                            <p>• Adjustable quality & bitrate</p>
+                          </div>
+                          <div>
+                            <p className="font-medium">GIF:</p>
+                            <p>• For short clips/loops</p>
+                            <p>• Larger file size</p>
+                            <p>• Best under 5 seconds</p>
+                          </div>
+                        </>
+                      )}
+                      {isAudio && (
+                        <>
+                          <div>
+                            <p className="font-medium">MP3:</p>
+                            <p>• Universal support</p>
+                            <p>• Smaller file size</p>
+                            <p>• Adjustable quality & bitrate</p>
+                          </div>
+                          <div>
+                            <p className="font-medium">WAV:</p>
+                            <p>• Lossless audio</p>
+                            <p>• Larger file size</p>
+                            <p>• Professional quality</p>
+                          </div>
+                        </>
+                      )}
                     </div>
                   </TooltipContent>
                 </Tooltip>
@@ -2014,19 +2066,71 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
                   <TooltipContent className="max-w-xs">
                     <div className="text-xs space-y-2">
                       <p className="font-semibold">Format Recommendations:</p>
-                      <div>
-                        <p className="font-medium">Maximum Compression:</p>
-                        <p>• WebP (best quality control)</p>
-                        <p>• JPG (universal support)</p>
-                      </div>
-                      <div>
-                        <p className="font-medium">Lossless:</p>
-                        <p>• PNG (quality slider won't matter)</p>
-                      </div>
-                      <div>
-                        <p className="font-medium">Modern/Best:</p>
-                        <p>• WebP (best balance of compression + browser support)</p>
-                      </div>
+                      {isImage && !isGif && (
+                        <>
+                          <div>
+                            <p className="font-medium">Maximum Compression:</p>
+                            <p>• WebP (best quality control)</p>
+                            <p>• JPG (universal support)</p>
+                          </div>
+                          <div>
+                            <p className="font-medium">Lossless:</p>
+                            <p>• PNG (quality slider won't matter)</p>
+                          </div>
+                          <div>
+                            <p className="font-medium">Modern/Best:</p>
+                            <p>• WebP (best balance of compression + browser support)</p>
+                          </div>
+                        </>
+                      )}
+                      {isGif && (
+                        <>
+                          <div>
+                            <p className="font-medium">GIF:</p>
+                            <p>• Best for animations</p>
+                            <p>• Preserves all frames</p>
+                            <p>• Universal support</p>
+                          </div>
+                          <div>
+                            <p className="font-medium">MP4:</p>
+                            <p>• Smaller file size</p>
+                            <p>• Better compression</p>
+                            <p>• Modern browsers only</p>
+                          </div>
+                        </>
+                      )}
+                      {isVideo && !isGif && (
+                        <>
+                          <div>
+                            <p className="font-medium">MP4:</p>
+                            <p>• Universal support</p>
+                            <p>• Best for video content</p>
+                            <p>• Adjustable quality & bitrate</p>
+                          </div>
+                          <div>
+                            <p className="font-medium">GIF:</p>
+                            <p>• For short clips/loops</p>
+                            <p>• Larger file size</p>
+                            <p>• Best under 5 seconds</p>
+                          </div>
+                        </>
+                      )}
+                      {isAudio && (
+                        <>
+                          <div>
+                            <p className="font-medium">MP3:</p>
+                            <p>• Universal support</p>
+                            <p>• Smaller file size</p>
+                            <p>• Adjustable quality & bitrate</p>
+                          </div>
+                          <div>
+                            <p className="font-medium">WAV:</p>
+                            <p>• Lossless audio</p>
+                            <p>• Larger file size</p>
+                            <p>• Professional quality</p>
+                          </div>
+                        </>
+                      )}
                     </div>
                   </TooltipContent>
                 </Tooltip>
