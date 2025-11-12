@@ -1,3 +1,4 @@
+
 import { useState, lazy, Suspense, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Download, Trash2, Sparkles, Shield, Zap, Image as ImageIcon } from "lucide-react";
@@ -168,17 +169,27 @@ export default function Home() {
     setUpgradeError(null);
     
     try {
-      // Check authentication FIRST before showing any loading state
-      const isAuth = await base44.auth.isAuthenticated();
+      // Try to get the user - this is more reliable than isAuthenticated()
+      let currentUser;
+      try {
+        currentUser = await base44.auth.me();
+      } catch (error) {
+        console.log('❌ User not logged in (auth.me() failed)');
+        setShowProModal(false);
+        setShowLoginPrompt(true);
+        return;
+      }
       
-      if (!isAuth) {
-        console.log('❌ User not logged in');
+      if (!currentUser) {
+        console.log('❌ No user found');
         setShowProModal(false);
         setShowLoginPrompt(true);
         return;
       }
 
-      // Only set processing state and show loading toast AFTER auth check passes
+      console.log('✅ User authenticated:', currentUser.email);
+
+      // Only set processing state AFTER confirming user is authenticated
       setProcessingCheckout(true);
       const toastId = toast.loading('Creating checkout session...', { duration: Infinity });
       
@@ -228,6 +239,15 @@ export default function Home() {
 
     } catch (error) {
       console.error('Upgrade failed:', error);
+      
+      // If it's an authentication error, show login prompt instead of error
+      if (error.message?.includes('401') || error.message?.includes('Unauthorized')) {
+        console.log('❌ Authentication error - showing login prompt');
+        setShowProModal(false);
+        setShowLoginPrompt(true);
+        setProcessingCheckout(false);
+        return;
+      }
       
       const errorMessage = error.message || 'Failed to start checkout';
       setUpgradeError(errorMessage);
