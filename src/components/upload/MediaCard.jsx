@@ -65,7 +65,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
 
   // GIF.js states (kept for regular GIF processing)
   const [gifJsLoaded, setGifJsLoaded] = useState(false);
-  const [workerBlobUrl, setWorkerBlobUrl] = useState(null);
+  const [workerBlobUrl, setWorkerBlobUrl, ] = useState(null);
   const [outputGifFrameCount, setOutputGifFrameCount] = useState(0);
 
   // Editable filename
@@ -1130,89 +1130,133 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
 
     ctx.drawImage(img, 0, 0, width, height);
 
-    // Special handling for PNG compression
-    if (format === 'png' && upngLoaded && window.UPNG) {
-      try {
-        console.log('🎨 Using UPNG.js for advanced PNG compression...');
+    // Special handling for PNG compression with UPNG.js
+    if (format === 'png') {
+      // Wait for UPNG to load if it hasn't yet
+      if (!upngLoaded || !window.UPNG) {
+        console.log('⏳ Waiting for UPNG.js to load...');
+        toast.info('Loading PNG compression engine...', { id: 'upng-load' });
         
-        // Get image data from canvas
-        const imageData = ctx.getImageData(0, 0, width, height);
+        // Wait up to 3 seconds for UPNG to load
+        const startWait = Date.now();
+        while (!window.UPNG && (Date.now() - startWait) < 3000) {
+          await new Promise(resolve => setTimeout(resolve, 100));
+        }
         
-        // Calculate number of colors based on quality
-        // Higher quality = more colors, lower quality = fewer colors (better compression)
-        const colors = Math.max(2, Math.min(256, Math.round(256 * (quality / 100))));
+        toast.dismiss('upng-load');
         
-        console.log(`Colors: ${colors} (quality: ${quality}%)`);
-        
-        // Encode with UPNG using quantization for lossy compression
-        const pngBuffer = window.UPNG.encode(
-          [imageData.data.buffer],
-          width,
-          height,
-          colors, // Number of colors (2-256)
-          []
-        );
-        
-        const blob = new Blob([pngBuffer], { type: 'image/png' });
-        
-        console.log(`✅ PNG compressed: ${(blob.size / 1024).toFixed(1)}KB (${colors} colors)`);
-        
-        // If compressed file is larger and we're not upscaling, use original
-        if (!enableUpscale && blob.size >= image.size) {
-          console.log('Compressed PNG is larger, using original file');
+        if (!window.UPNG) {
+          console.error('❌ UPNG.js failed to load after waiting');
+          toast.error('PNG compression engine failed to load. Using standard compression.');
+        } else {
+          console.log('✅ UPNG.js loaded after waiting');
+          setUpngLoaded(true);
+        }
+      }
+
+      // Try UPNG compression
+      if (upngLoaded && window.UPNG) {
+        try {
+          console.log('🎨 Using UPNG.js for advanced PNG compression...');
           
-          const compressedUrl = URL.createObjectURL(image);
+          // Get image data from canvas
+          const imageData = ctx.getImageData(0, 0, width, height);
+          
+          // Calculate number of colors based on quality - MORE AGGRESSIVE
+          // Lower quality = fewer colors = better compression (like TinyPNG)
+          let colors;
+          if (quality >= 90) {
+            colors = 256; // Maximum colors for high quality
+          } else if (quality >= 80) {
+            colors = Math.round(128 + ((quality - 80) / 10) * 128); // 128-256 colors
+          } else if (quality >= 70) {
+            colors = Math.round(64 + ((quality - 70) / 10) * 64); // 64-128 colors
+          } else if (quality >= 50) {
+            colors = Math.round(32 + ((quality - 50) / 20) * 32); // 32-64 colors
+          } else {
+            colors = Math.max(16, Math.round(quality / 3)); // 16-32 colors for aggressive compression
+          }
+          
+          console.log(`PNG Compression: ${colors} colors (quality: ${quality}%)`);
+          
+          // Use UPNG's quantization - THIS IS THE KEY TO TINYPNG-LIKE COMPRESSION
+          const rgba = imageData.data;
+          
+          // Encode with UPNG - quantize to reduce colors (lossy compression)
+          const pngBuffer = window.UPNG.encode(
+            [rgba.buffer],
+            width,
+            height,
+            colors, // Number of colors - this is what makes it lossy and compresses well
+            []
+          );
+          
+          const blob = new Blob([pngBuffer], { type: 'image/png' });
+          
+          const savingsEstimate = ((1 - blob.size / image.size) * 100).toFixed(1);
+          console.log(`✅ PNG compressed: ${(blob.size / 1024).toFixed(1)}KB with ${colors} colors (${savingsEstimate}% savings)`);
+          
+          // If compressed file is larger and we're not upscaling, use original
+          if (!enableUpscale && blob.size >= image.size) {
+            console.log('⚠️ Compressed PNG is larger than original, using original file');
+            
+            const compressedUrl = URL.createObjectURL(image);
+            setCompressedPreview(compressedUrl);
+            setCompressedSize(image.size);
+            setCompressedBlob(image);
+            setProcessed(true);
+            setOutputFormat(format);
+
+            onProcessed({
+              id: image.name,
+              originalFile: image,
+              compressedBlob: image,
+              compressedUrl: compressedUrl,
+              originalSize: image.size,
+              compressedSize: image.size,
+              format,
+              filename: getOutputFilename(format),
+              mediaType: 'image',
+              fileFormat: format
+            });
+
+            toast.info(`PNG already optimized - 0% savings`);
+            return;
+          }
+
+          // Success! Use the compressed PNG
+          const compressedUrl = URL.createObjectURL(blob);
           setCompressedPreview(compressedUrl);
-          setCompressedSize(image.size);
-          setCompressedBlob(image);
+          setCompressedSize(blob.size);
+          setCompressedBlob(blob);
           setProcessed(true);
           setOutputFormat(format);
 
           onProcessed({
             id: image.name,
             originalFile: image,
-            compressedBlob: image,
-            compressedUrl: compressedUrl,
+            compressedBlob: blob,
+            compressedUrl,
             originalSize: image.size,
-            compressedSize: image.size,
+            compressedSize: blob.size,
             format,
             filename: getOutputFilename(format),
             mediaType: 'image',
             fileFormat: format
           });
 
-          toast.info(`PNG already optimized - 0% savings`);
+          const savings = ((1 - blob.size / image.size) * 100).toFixed(1);
+          toast.success(`PNG compressed! Saved ${savings}% (${colors} colors)`);
           return;
+          
+        } catch (error) {
+          console.error('❌ UPNG compression failed:', error);
+          toast.error('Advanced PNG compression failed: ' + error.message);
+          // Fall through to standard compression
         }
-
-        const compressedUrl = URL.createObjectURL(blob);
-        setCompressedPreview(compressedUrl);
-        setCompressedSize(blob.size);
-        setCompressedBlob(blob);
-        setProcessed(true);
-        setOutputFormat(format);
-
-        onProcessed({
-          id: image.name,
-          originalFile: image,
-          compressedBlob: blob,
-          compressedUrl,
-          originalSize: image.size,
-          compressedSize: blob.size,
-          format,
-          filename: getOutputFilename(format),
-          mediaType: 'image',
-          fileFormat: format
-        });
-
-        const savings = ((1 - blob.size / image.size) * 100).toFixed(1);
-        toast.success(`PNG compressed! Saved ${savings}%`);
-        return;
-        
-      } catch (error) {
-        console.error('UPNG compression failed, falling back to standard:', error);
+      } else {
+        console.warn('⚠️ UPNG.js not available, falling back to standard PNG compression');
         toast.warning('Using standard PNG compression (limited)');
-        // Fall through to standard compression
       }
     }
 
@@ -2848,6 +2892,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
                           </TooltipTrigger>
                           <TooltipContent className="max-w-xs">
                             <p className="text-xs">Manually specify target width and/or height in pixels. Aspect ratio will be maintained automatically.</p>
+                          </p>
                           </TooltipContent>
                         </Tooltip>
                       </div>
