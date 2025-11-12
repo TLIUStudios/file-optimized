@@ -8,12 +8,26 @@ Deno.serve(async (req) => {
     // Initialize Base44 client
     const base44 = createClientFromRequest(req);
     
+    // Check if user is authenticated first
+    const isAuthenticated = await base44.auth.isAuthenticated();
+    
+    if (!isAuthenticated) {
+      console.log('❌ User not authenticated');
+      return Response.json({ 
+        error: 'Please log in to upgrade to Pro',
+        requiresAuth: true
+      }, { status: 401 });
+    }
+
     // Get user
     const user = await base44.auth.me();
 
     if (!user) {
-      console.error('❌ No user found');
-      return Response.json({ error: 'Unauthorized - please log in' }, { status: 401 });
+      console.error('❌ No user found after auth check');
+      return Response.json({ 
+        error: 'Please log in to continue',
+        requiresAuth: true
+      }, { status: 401 });
     }
 
     console.log('✅ User authenticated:', user.email);
@@ -41,15 +55,13 @@ Deno.serve(async (req) => {
       apiVersion: '2023-10-16',
     });
 
-    // FIXED: Get proper origin for live app
-    // Extract the base URL from referer or origin
+    // Get proper origin for live app
     let origin = 'https://imagecrush.base44.com'; // Default fallback
     
     const referer = req.headers.get('referer');
     const originHeader = req.headers.get('origin');
     
     if (referer) {
-      // Extract base URL from referer (remove hash and trailing slash)
       const url = new URL(referer);
       origin = `${url.protocol}//${url.host}`;
     } else if (originHeader) {
@@ -73,13 +85,10 @@ Deno.serve(async (req) => {
         user_id: user.id,
         user_email: user.email,
       },
-      // Allow promotion codes
       allow_promotion_codes: true,
     };
 
     console.log('Creating checkout session...');
-    console.log('Success URL:', sessionParams.success_url);
-    console.log('Cancel URL:', sessionParams.cancel_url);
 
     // Create Checkout Session
     const session = await stripe.checkout.sessions.create(sessionParams);
@@ -94,7 +103,6 @@ Deno.serve(async (req) => {
   } catch (error) {
     console.error('❌ ERROR:', error.message);
     console.error('Error type:', error.type);
-    console.error('Stack:', error.stack);
     
     return Response.json({ 
       error: error.message || 'Failed to create checkout session',

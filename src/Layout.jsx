@@ -1,11 +1,18 @@
 import { useEffect, useState } from "react";
-import { Moon, Sun, Image as ImageIcon, User, LogIn } from "lucide-react";
+import { Moon, Sun, Image as ImageIcon, User, LogIn, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Toaster } from "sonner";
 import { Link } from "react-router-dom";
 import { createPageUrl } from "./utils";
 import { base44 } from "@/api/base44Client";
 import { Badge } from "@/components/ui/badge";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 export default function Layout({ children }) {
   const [theme, setTheme] = useState(() => {
@@ -54,6 +61,12 @@ export default function Layout({ children }) {
     base44.auth.redirectToLogin(window.location.href);
   };
 
+  const handleLogout = async () => {
+    await base44.auth.logout();
+  };
+
+  const isPro = user?.plan === 'pro';
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-950 dark:to-slate-900 transition-colors duration-300">
       <Toaster position="top-center" richColors />
@@ -96,17 +109,56 @@ export default function Layout({ children }) {
             {!authLoading && (
               <>
                 {isAuthenticated && user ? (
-                  <Link to={createPageUrl('Profile')}>
-                    <Button variant="ghost" className="gap-2">
-                      <User className="w-4 h-4" />
-                      <span className="hidden sm:inline">{user.full_name || user.email}</span>
-                      {user.plan === 'pro' && (
-                        <Badge className="bg-gradient-to-r from-amber-500 to-orange-500 text-white text-xs px-2 py-0.5">
-                          PRO
-                        </Badge>
-                      )}
-                    </Button>
-                  </Link>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" className="gap-2">
+                        <User className="w-4 h-4" />
+                        <span className="hidden sm:inline">{user.full_name || user.email}</span>
+                        {isPro ? (
+                          <Badge className="bg-gradient-to-r from-amber-500 to-orange-500 text-white text-xs px-2 py-0.5 font-bold">
+                            PRO
+                          </Badge>
+                        ) : (
+                          <Badge variant="outline" className="text-xs px-2 py-0.5">
+                            FREE
+                          </Badge>
+                        )}
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="w-56">
+                      <div className="px-2 py-1.5">
+                        <p className="text-sm font-medium text-slate-900 dark:text-white">
+                          {user.full_name || 'User'}
+                        </p>
+                        <p className="text-xs text-slate-500 dark:text-slate-400">
+                          {user.email}
+                        </p>
+                        <div className="mt-1">
+                          {isPro ? (
+                            <Badge className="bg-gradient-to-r from-amber-500 to-orange-500 text-white text-xs">
+                              PRO PLAN
+                            </Badge>
+                          ) : (
+                            <Badge variant="outline" className="text-xs">
+                              FREE PLAN
+                            </Badge>
+                          )}
+                        </div>
+                      </div>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem asChild>
+                        <Link to={createPageUrl('Profile')} className="cursor-pointer">
+                          <User className="w-4 h-4 mr-2" />
+                          Profile & Settings
+                        </Link>
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem onClick={handleLogout} className="text-red-600 dark:text-red-400 cursor-pointer">
+                        <LogOut className="w-4 h-4 mr-2" />
+                        Log Out
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                 ) : (
                   <Button
                     onClick={handleLogin}

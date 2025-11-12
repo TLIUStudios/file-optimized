@@ -181,6 +181,20 @@ export default function Home() {
 
       const { data } = response;
 
+      // Check if user needs to log in
+      if (data.requiresAuth) {
+        toast.dismiss(toastId);
+        toast.error('Please log in to upgrade to Pro');
+        setShowProModal(false);
+        setProcessingCheckout(false);
+        
+        // Redirect to login after a brief delay
+        setTimeout(() => {
+          base44.auth.redirectToLogin(window.location.href);
+        }, 1500);
+        return;
+      }
+
       if (data.error) {
         throw new Error(data.error);
       }

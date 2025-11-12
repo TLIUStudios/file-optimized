@@ -101,6 +101,19 @@ export default function Profile() {
 
       const { data } = response;
 
+      // Check if user needs to log in (shouldn't happen on Profile page, but just in case)
+      if (data.requiresAuth) {
+        toast.dismiss(toastId);
+        toast.error('Please log in to upgrade to Pro');
+        setShowProModal(false);
+        setProcessingCheckout(false);
+        
+        setTimeout(() => {
+          base44.auth.redirectToLogin(window.location.href);
+        }, 1500);
+        return;
+      }
+
       if (data.error) {
         throw new Error(data.error);
       }
