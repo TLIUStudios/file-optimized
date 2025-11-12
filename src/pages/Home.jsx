@@ -1,3 +1,4 @@
+
 import { useState, lazy, Suspense, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Download, Trash2, Sparkles, Shield, Zap, Image as ImageIcon } from "lucide-react";
@@ -192,12 +193,16 @@ export default function Home() {
       toast.dismiss(toastId);
       toast.success('Redirecting to Stripe checkout...');
       
-      // Close modal and redirect immediately
+      // Close modal
       setShowProModal(false);
       
-      // Small delay for UX, then redirect
+      // CRITICAL FIX: Redirect at top level to break out of iframe
       setTimeout(() => {
-        window.location.href = data.url;
+        if (window.top) {
+          window.top.location.href = data.url;
+        } else {
+          window.location.href = data.url;
+        }
       }, 300);
 
     } catch (error) {

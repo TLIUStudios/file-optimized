@@ -1,15 +1,16 @@
+
 import { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { 
-  User, 
-  Crown, 
-  Calendar, 
-  CreditCard, 
-  Settings, 
+import {
+  User,
+  Crown,
+  Calendar,
+  CreditCard,
+  Settings,
   Download,
   ExternalLink,
   Loader2,
@@ -59,7 +60,7 @@ export default function Profile() {
       setTimeout(async () => {
         const updatedUser = await base44.auth.me();
         setUser(updatedUser);
-      }, 2000); 
+      }, 2000);
     }
     if (params.get('canceled') === 'true') {
       toast.info('Checkout canceled. You can upgrade anytime!');
@@ -82,18 +83,18 @@ export default function Profile() {
 
   const handleUpgrade = async () => {
     console.log('🚀 Upgrade clicked');
-    
+
     setUpgradeError(null);
     setProcessingCheckout(true);
-    
+
     try {
       const toastId = toast.loading('Creating checkout session...', { duration: Infinity });
-      
+
       console.log('Calling createCheckoutSession...');
       const response = await base44.functions.invoke('createCheckoutSession');
-      
+
       console.log('Response:', response);
-      
+
       if (!response?.data) {
         throw new Error('Invalid response from server');
       }
@@ -111,18 +112,22 @@ export default function Profile() {
       console.log('Redirecting to:', data.url);
       toast.dismiss(toastId);
       toast.success('Redirecting to Stripe checkout...');
-      
-      // Close modal and redirect immediately
+
+      // Close modal
       setShowProModal(false);
-      
-      // Small delay for UX, then redirect
+
+      // CRITICAL FIX: Redirect at top level to break out of iframe
       setTimeout(() => {
-        window.location.href = data.url;
+        if (window.top) {
+          window.top.location.href = data.url;
+        } else {
+          window.location.href = data.url;
+        }
       }, 300);
 
     } catch (error) {
       console.error('Upgrade failed:', error);
-      
+
       const errorMessage = error.message || 'Failed to start checkout';
       setUpgradeError(errorMessage);
       toast.error(errorMessage, { duration: 8000 });
@@ -136,7 +141,7 @@ export default function Profile() {
       toast.info('Opening billing portal...');
 
       const { data } = await base44.functions.invoke('createPortalSession');
-      
+
       if (data.error) {
         throw new Error(data.error);
       }
@@ -384,8 +389,8 @@ export default function Profile() {
                             <p className="text-sm font-medium text-slate-900 dark:text-white">
                               ${bill.amount.toFixed(2)} {bill.currency.toUpperCase()}
                             </p>
-                            <Badge 
-                              variant="outline" 
+                            <Badge
+                              variant="outline"
                               className={bill.status === 'paid' ? 'border-green-500 text-green-700 dark:text-green-400' : ''}
                             >
                               {bill.status}
