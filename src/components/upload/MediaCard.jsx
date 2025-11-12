@@ -4,7 +4,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Slider } from "@/components/ui/slider";
-import { Download, X, Loader2, CheckCircle2, ArrowRight, Settings2, AlertCircle, Info, Edit2, RefreshCcw, Sparkles, Film, Music, Video, ChevronDown, Check, Wand2 } from "lucide-react";
+import { Download, X, Loader2, CheckCircle2, ArrowRight, Settings2, AlertCircle, Info, Edit2, RefreshCcw, Sparkles, Film, Music, Video, ChevronDown, Check, Wand2, ImageIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
@@ -102,6 +102,10 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
   const ffmpegRef = useRef(null);
 
   const processMediaRef = useRef(null);
+
+  // Determine media icon for the button
+  const mediaIcon = isVideo ? Video : isAudio ? Music : isGif ? Film : isImage ? ImageIcon : null;
+  const MediaIcon = mediaIcon;
 
   // Load FFmpeg when video/audio is uploaded - IMPROVED ERROR HANDLING
   useEffect(() => {
@@ -1380,9 +1384,6 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
   } else if (isAudio) {
     availableFormats = ['mp3', 'wav'];
   }
-
-  const mediaIcon = isVideo ? Video : isAudio ? Music : isGif ? Film : null;
-  const MediaIcon = mediaIcon;
 
   const performSingleMediaDownload = async (blobToDownload, targetFormat, mediaType, filename) => {
     if (!blobToDownload) {
