@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery } from "@tanstack/react-query";
@@ -79,45 +78,62 @@ export default function Profile() {
   });
 
   const handleUpgrade = async () => {
+    console.log('🚀 handleUpgrade called');
+    
     try {
       setProcessingCheckout(true);
-      toast.info('Creating checkout session...', { id: 'checkout' });
+      const toastId = toast.loading('Creating checkout session...', { duration: Infinity });
 
-      // Add timeout to prevent hanging
+      console.log('Invoking createCheckoutSession function...');
+      
+      // Add timeout
       const timeoutPromise = new Promise((_, reject) => 
-        setTimeout(() => reject(new Error('Request timeout - please try again')), 15000)
+        setTimeout(() => reject(new Error('Request timeout after 15 seconds')), 15000)
       );
 
-      const checkoutPromise = base44.functions.invoke('createCheckoutSession');
+      const invokePromise = base44.functions.invoke('createCheckoutSession');
 
-      const response = await Promise.race([checkoutPromise, timeoutPromise]);
-      const { data } = response;
+      const response = await Promise.race([invokePromise, timeoutPromise]);
       
-      console.log('Checkout response:', data);
+      console.log('Function response:', response);
+      console.log('Response status:', response.status);
+      console.log('Response data:', response.data);
+
+      const { data } = response;
 
       if (data.error) {
-        throw new Error(data.error);
+        console.error('Error in response:', data);
+        throw new Error(data.error + (data.details ? ' - ' + data.details : ''));
       }
 
-      if (data.url) {
-        toast.dismiss('checkout');
-        toast.success('Redirecting to Stripe...');
-        window.location.href = data.url;
-      } else {
+      if (!data.url) {
+        console.error('No URL in response:', data);
         throw new Error('No checkout URL returned from Stripe');
       }
+
+      console.log('Redirecting to:', data.url);
+      toast.dismiss(toastId);
+      toast.success('Redirecting to Stripe checkout...');
+      
+      // Small delay to show success message
+      setTimeout(() => {
+        window.location.href = data.url;
+      }, 500);
+
     } catch (error) {
-      console.error('Error creating checkout:', error);
-      toast.dismiss('checkout');
+      console.error('❌ Error in handleUpgrade:', error);
       
       let errorMessage = 'Failed to start checkout. Please try again.';
+      
       if (error.message.includes('timeout')) {
-        errorMessage = 'Request timed out. Please check your internet connection and try again.';
+        errorMessage = '⏱️ Request timed out. Please check your connection and try again.';
+      } else if (error.message.includes('Unauthorized')) {
+        errorMessage = '🔒 Please log in again and try once more.';
       } else if (error.message) {
         errorMessage = error.message;
       }
       
-      toast.error(errorMessage, { duration: 5000 });
+      toast.error(errorMessage, { duration: 6000 });
       setProcessingCheckout(false);
     }
   };
