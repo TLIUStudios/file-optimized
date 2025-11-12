@@ -26,6 +26,7 @@ import {
 import { toast } from "sonner";
 import { motion } from "framer-motion";
 import ProUpgradeModal from "../components/ProUpgradeModal";
+import LoginPromptModal from "../components/LoginPromptModal";
 
 export default function Profile() {
   const [user, setUser] = useState(null);
@@ -34,6 +35,7 @@ export default function Profile() {
   const [processingPortal, setProcessingPortal] = useState(false);
   const [showProModal, setShowProModal] = useState(false);
   const [upgradeError, setUpgradeError] = useState(null);
+  const [showLoginPrompt, setShowLoginPrompt] = useState(false);
 
   // Load user data
   useEffect(() => {
@@ -92,12 +94,8 @@ export default function Profile() {
       
       if (!isAuth) {
         console.log('❌ User not logged in');
-        toast.error('Please log in to upgrade to Pro', { duration: 4000 });
         setShowProModal(false);
-        
-        setTimeout(() => {
-          base44.auth.redirectToLogin(window.location.href);
-        }, 1500);
+        setShowLoginPrompt(true);
         return;
       }
 
@@ -119,13 +117,9 @@ export default function Profile() {
       // Additional check from backend response (backup)
       if (data.requiresAuth) {
         toast.dismiss(toastId);
-        toast.error('Please log in to upgrade to Pro');
         setShowProModal(false);
         setProcessingCheckout(false);
-        
-        setTimeout(() => {
-          base44.auth.redirectToLogin(window.location.href);
-        }, 1500);
+        setShowLoginPrompt(true);
         return;
       }
 
@@ -189,6 +183,11 @@ export default function Profile() {
 
   const handleLogout = async () => {
     await base44.auth.logout();
+  };
+
+  const handleLoginFromPrompt = () => {
+    setShowLoginPrompt(false);
+    base44.auth.redirectToLogin(window.location.href);
   };
 
   if (loading) {
@@ -558,6 +557,14 @@ export default function Profile() {
           error={upgradeError}
         />
       )}
+
+      {/* Login Prompt Modal */}
+      <LoginPromptModal
+        isOpen={showLoginPrompt}
+        onClose={() => setShowLoginPrompt(false)}
+        onLogin={handleLoginFromPrompt}
+        context="upgrade"
+      />
     </div>
   );
 }

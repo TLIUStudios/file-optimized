@@ -13,6 +13,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import LoginPromptModal from "./components/LoginPromptModal";
 
 export default function Layout({ children }) {
   const [theme, setTheme] = useState(() => {
@@ -24,6 +25,7 @@ export default function Layout({ children }) {
   const [user, setUser] = useState(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [authLoading, setAuthLoading] = useState(true);
+  const [showLoginPrompt, setShowLoginPrompt] = useState(false);
 
   useEffect(() => {
     document.documentElement.classList.toggle('dark', theme === 'dark');
@@ -57,7 +59,12 @@ export default function Layout({ children }) {
     setTheme(prev => prev === 'light' ? 'dark' : 'light');
   };
 
-  const handleLogin = () => {
+  const handleLoginClick = () => {
+    setShowLoginPrompt(true);
+  };
+
+  const handleLoginConfirm = () => {
+    setShowLoginPrompt(false);
     base44.auth.redirectToLogin(window.location.href);
   };
 
@@ -161,7 +168,7 @@ export default function Layout({ children }) {
                   </DropdownMenu>
                 ) : (
                   <Button
-                    onClick={handleLogin}
+                    onClick={handleLoginClick}
                     variant="ghost"
                     className="gap-2"
                   >
@@ -199,6 +206,14 @@ export default function Layout({ children }) {
           </p>
         </div>
       </footer>
+
+      {/* Login Prompt Modal */}
+      <LoginPromptModal
+        isOpen={showLoginPrompt}
+        onClose={() => setShowLoginPrompt(false)}
+        onLogin={handleLoginConfirm}
+        context="general"
+      />
     </div>
   );
 }

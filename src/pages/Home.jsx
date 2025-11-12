@@ -1,4 +1,3 @@
-
 import { useState, lazy, Suspense, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Download, Trash2, Sparkles, Shield, Zap, Image as ImageIcon } from "lucide-react";
@@ -9,6 +8,7 @@ import { toast } from "sonner";
 import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
 import { cn } from "@/lib/utils";
 import { base44 } from "@/api/base44Client";
+import LoginPromptModal from "../components/LoginPromptModal";
 
 // Lazy load heavy components for better performance
 const MediaCard = lazy(() => import("../components/upload/MediaCard"));
@@ -42,6 +42,7 @@ export default function Home() {
   const [user, setUser] = useState(null);
   const [processingCheckout, setProcessingCheckout] = useState(false);
   const [upgradeError, setUpgradeError] = useState(null);
+  const [showLoginPrompt, setShowLoginPrompt] = useState(false);
 
   // Load user and their plan
   useEffect(() => {
@@ -172,13 +173,8 @@ export default function Home() {
       
       if (!isAuth) {
         console.log('❌ User not logged in');
-        toast.error('Please log in to upgrade to Pro', { duration: 4000 });
         setShowProModal(false);
-        
-        // Redirect to login after a brief delay
-        setTimeout(() => {
-          base44.auth.redirectToLogin(window.location.href);
-        }, 1500);
+        setShowLoginPrompt(true);
         return;
       }
 
@@ -200,13 +196,9 @@ export default function Home() {
       // Additional check from backend response (backup)
       if (data.requiresAuth) {
         toast.dismiss(toastId);
-        toast.error('Please log in to upgrade to Pro');
         setShowProModal(false);
         setProcessingCheckout(false);
-        
-        setTimeout(() => {
-          base44.auth.redirectToLogin(window.location.href);
-        }, 1500);
+        setShowLoginPrompt(true);
         return;
       }
 
@@ -242,6 +234,11 @@ export default function Home() {
       toast.error(errorMessage, { duration: 8000 });
       setProcessingCheckout(false);
     }
+  };
+
+  const handleLoginFromPrompt = () => {
+    setShowLoginPrompt(false);
+    base44.auth.redirectToLogin(window.location.href);
   };
 
   const totalOriginalSize = images.reduce((sum, img) => sum + img.file.size, 0);
@@ -546,6 +543,14 @@ export default function Home() {
           />
         </Suspense>
       )}
+
+      {/* Login Prompt Modal */}
+      <LoginPromptModal
+        isOpen={showLoginPrompt}
+        onClose={() => setShowLoginPrompt(false)}
+        onLogin={handleLoginFromPrompt}
+        context="upgrade"
+      />
     </div>
   );
 }
