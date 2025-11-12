@@ -371,22 +371,86 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
         metadata.width = img.width;
         metadata.height = img.height;
         metadata.aspectRatio = getAspectRatio(img.width, img.height);
+        metadata.megapixels = ((img.width * img.height) / 1000000).toFixed(2) + ' MP';
+        metadata.format = originalExt;
       } else if (isGif) {
         metadata.width = gifSettings.width || 'N/A';
         metadata.height = gifSettings.height || 'N/A';
         metadata.frames = gifFrameCount || 'N/A';
         metadata.aspectRatio = getAspectRatio(gifSettings.width, gifSettings.height);
+        metadata.format = 'Animated GIF';
+        
+        // Calculate GIF duration
+        if (gifSettings.frames && gifSettings.frames.length > 0) {
+          // gifuct-js frames delays are in centiseconds, sum and convert to seconds
+          const totalDuration = gifSettings.frames.reduce((sum, frame) => sum + (frame.delay || 10), 0); // Default 10 centiseconds (100ms)
+          const seconds = totalDuration / 100; // Convert centiseconds to seconds
+          metadata.duration = formatDuration(seconds);
+          if (seconds > 0) {
+            metadata.fps = (gifFrameCount / seconds).toFixed(1) + ' fps';
+          }
+        }
       } else if (isVideo) {
-        metadata.format = 'Video File';
+        metadata.format = 'Video (' + originalExt + ')';
+        
+        // Extract video metadata
+        const video = document.createElement('video');
+        video.src = preview;
+        
+        await new Promise((resolve, reject) => {
+          video.onloadedmetadata = () => { resolve(); };
+          video.onerror = () => reject(new Error('Failed to load video metadata.'));
+        });
+        
+        metadata.duration = formatDuration(video.duration);
+        metadata.width = video.videoWidth;
+        metadata.height = video.videoHeight;
+        metadata.aspectRatio = getAspectRatio(video.videoWidth, video.videoHeight);
+        
+        if (video.videoWidth && video.videoHeight) {
+          metadata.resolution = `${video.videoWidth}×${video.videoHeight}`;
+          if (video.videoHeight >= 2160) metadata.quality = '4K UHD';
+          else if (video.videoHeight >= 1440) metadata.quality = '2K QHD';
+          else if (video.videoHeight >= 1080) metadata.quality = 'Full HD (1080p)';
+          else if (video.videoHeight >= 720) metadata.quality = 'HD (720p)';
+          else if (video.videoHeight >= 480) metadata.quality = 'SD (480p)';
+          else metadata.quality = 'Low Resolution';
+        }
       } else if (isAudio) {
-        metadata.format = 'Audio File';
+        metadata.format = 'Audio (' + originalExt + ')';
+        
+        // Extract audio metadata
+        const audio = document.createElement('audio');
+        audio.src = preview;
+        
+        await new Promise((resolve, reject) => {
+          audio.onloadedmetadata = () => { resolve(); };
+          audio.onerror = () => reject(new Error('Failed to load audio metadata.'));
+        });
+        
+        metadata.duration = formatDuration(audio.duration);
+        
+        // Calculate bitrate estimate
+        if (audio.duration > 0 && originalSize > 0) {
+          const bitrateKbps = ((originalSize * 8) / audio.duration / 1000).toFixed(0);
+          metadata.estimatedBitrate = bitrateKbps + ' kbps';
+        }
       }
 
       if (processed) {
         metadata.compressedSize = formatFileSize(compressedSize);
-        metadata.savings = `${savingsPercent}%`;
+        const savings = ((1 - compressedSize / originalSize) * 100).toFixed(1);
+        metadata.compressionRatio = (savings >= 0 ? '-' : '+') + Math.abs(parseFloat(savings)) + '%';
         metadata.compressedFormat = displayCompressedExt;
-        if (outputGifFrameCount > 0) metadata.compressedFrames = outputGifFrameCount;
+        
+        if (outputGifFrameCount > 0) {
+          metadata.compressedFrames = outputGifFrameCount;
+        }
+        
+        // Add compression efficiency
+        if (compressedSize < originalSize) {
+          metadata.spaceSaved = formatFileSize(originalSize - compressedSize);
+        }
       }
 
       setFileMetadata(metadata);
@@ -395,6 +459,26 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
       console.error('Error extracting metadata:', error);
       toast.error('Failed to extract metadata: ' + error.message);
     }
+  };
+
+  // Helper function to format duration
+  const formatDuration = (seconds) => {
+    if (isNaN(seconds) || seconds === Infinity || seconds === null) return 'N/A';
+    
+    const hours = Math.floor(seconds / 3600);
+    const minutes = Math.floor((seconds % 3600) / 60);
+    const secs = Math.floor(seconds % 60);
+    
+    let parts = [];
+    if (hours > 0) {
+      parts.push(`${hours}h`);
+    }
+    if (minutes > 0 || hours > 0) { // Always show minutes if hours are shown or if minutes exist
+      parts.push(`${minutes}m`);
+    }
+    parts.push(`${secs}s`); // Always show seconds
+
+    return parts.join(' ');
   };
 
   const processMedia = async () => {
