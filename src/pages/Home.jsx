@@ -1,5 +1,4 @@
-
-import { useState, lazy, Suspense } from "react";
+import { useState, lazy, Suspense, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Download, Trash2, Sparkles, Shield, Zap, Image as ImageIcon } from "lucide-react";
 import UploadZone from "../components/upload/UploadZone";
@@ -7,11 +6,13 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
 import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
-import { cn } from "@/lib/utils"; // Assuming cn utility is available here
+import { cn } from "@/lib/utils";
+import { base44 } from "@/api/base44Client";
 
 // Lazy load heavy components for better performance
 const MediaCard = lazy(() => import("../components/upload/MediaCard"));
 const ImageComparisonModal = lazy(() => import("../components/comparison/ImageComparisonModal"));
+const ProUpgradeModal = lazy(() => import("../components/ProUpgradeModal"));
 
 // Loading fallback for image cards
 function ImageCardSkeleton() {
@@ -35,6 +36,24 @@ export default function Home() {
   const [autoProcessTrigger, setAutoProcessTrigger] = useState(0);
   const [processingStartTime, setProcessingStartTime] = useState(null);
   const [estimatedTimeRemaining, setEstimatedTimeRemaining] = useState(null);
+  const [userPlan, setUserPlan] = useState('free');
+  const [showProModal, setShowProModal] = useState(false);
+  const [user, setUser] = useState(null);
+
+  // Load user and their plan
+  useEffect(() => {
+    const loadUser = async () => {
+      try {
+        const currentUser = await base44.auth.me();
+        setUser(currentUser);
+        setUserPlan(currentUser?.plan || 'free');
+      } catch (error) {
+        console.log('User not logged in or error loading user:', error);
+        setUserPlan('free');
+      }
+    };
+    loadUser();
+  }, []);
 
   const handleFilesSelected = (files) => {
     const newFiles = Array.from(files).map(file => ({
@@ -139,6 +158,21 @@ export default function Home() {
     toast.success('Zip file downloaded!');
   };
 
+  const handleUpgradeToPro = async () => {
+    try {
+      // In production, this would integrate with a payment system
+      // For now, we'll just update the user's plan
+      await base44.auth.updateMe({ plan: 'pro' });
+      setUserPlan('pro');
+      const updatedUser = await base44.auth.me();
+      setUser(updatedUser);
+      toast.success('🎉 Upgraded to Pro! Enjoy your new benefits!');
+    } catch (error) {
+      console.error('Error upgrading:', error);
+      toast.error('Failed to upgrade. Please try again.');
+    }
+  };
+
   const totalOriginalSize = images.reduce((sum, img) => sum + img.file.size, 0);
   const totalCompressedSize = Object.values(processedImages).reduce(
     (sum, img) => sum + img.compressedSize, 0
@@ -161,6 +195,8 @@ export default function Home() {
     return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
   };
 
+  const isPro = userPlan === 'pro';
+
   return (
     <div className="max-w-7xl mx-auto">
       {/* Hero Section */}
@@ -169,10 +205,29 @@ export default function Home() {
         animate={{ opacity: 1, y: 0 }}
         className="text-center mb-12"
       >
-        <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-emerald-100 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-400 text-sm font-medium mb-6">
-          <Shield className="w-4 h-4" />
-          100% Private & Secure
+        <div className="flex items-center justify-center gap-3 mb-6">
+          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-emerald-100 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-400 text-sm font-medium">
+            <Shield className="w-4 h-4" />
+            100% Private & Secure
+          </div>
+          {isPro && (
+            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-amber-500 to-orange-500 text-white text-sm font-bold shadow-lg">
+              <Zap className="w-4 h-4" />
+              PRO
+            </div>
+          )}
+          {!isPro && (
+            <Button
+              onClick={() => setShowProModal(true)}
+              className="bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-semibold shadow-lg"
+              size="sm"
+            >
+              <Sparkles className="w-4 h-4 mr-2" />
+              Upgrade to Pro
+            </Button>
+          )}
         </div>
+
         <h1 className="text-4xl md:text-6xl font-bold text-slate-900 dark:text-white mb-4">
           Compress & Convert
           <span className="block text-emerald-600 dark:text-emerald-400">Images, Videos & Audio</span>
@@ -230,6 +285,7 @@ export default function Home() {
             onFilesSelected={handleFilesSelected}
             isDragActive={isDragActive}
             onDragStateChange={setIsDragActive}
+            userPlan={userPlan}
           />
         </motion.div>
       )}
@@ -370,6 +426,7 @@ export default function Home() {
                               onProcessed={(data) => handleImageProcessed(image.id, data)}
                               onCompare={handleCompare}
                               autoProcess={!processedImages[image.id] && autoProcessTrigger}
+                              userPlan={userPlan}
                             />
                           </Suspense>
                         </div>
@@ -398,6 +455,17 @@ export default function Home() {
             mediaType={comparisonData.mediaType}
             fileFormat={comparisonData.fileFormat}
             generatedAnimations={comparisonData.animations || null}
+          />
+        </Suspense>
+      )}
+
+      {/* Pro Upgrade Modal */}
+      {showProModal && (
+        <Suspense fallback={null}>
+          <ProUpgradeModal
+            isOpen={showProModal}
+            onClose={() => setShowProModal(false)}
+            onUpgrade={handleUpgradeToPro}
           />
         </Suspense>
       )}

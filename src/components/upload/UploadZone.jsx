@@ -22,19 +22,17 @@ const ALLOWED_TYPES = {
   'audio/x-wav': ['.wav'],
 };
 
-const MAX_FILES_PER_BATCH = 9;
+const MAX_FILES_PER_BATCH_FREE = 9;
+const MAX_FILES_PER_BATCH_PRO = 30;
 const MAX_FILE_SIZE_FREE = 50 * 1024 * 1024; // 50MB in bytes
 const MAX_FILE_SIZE_PRO = 500 * 1024 * 1024; // 500MB in bytes
 
-// For now, assume free tier (in production, this would come from user subscription)
-const MAX_FILE_SIZE = MAX_FILE_SIZE_FREE;
-
-const validateFile = (file) => {
+const validateFile = (file, maxFileSize) => {
   const errors = [];
   
   // Check file size
-  if (file.size > MAX_FILE_SIZE) {
-    const maxSizeMB = Math.floor(MAX_FILE_SIZE / 1024 / 1024);
+  if (file.size > maxFileSize) {
+    const maxSizeMB = Math.floor(maxFileSize / 1024 / 1024);
     errors.push(`File "${file.name}" exceeds ${maxSizeMB}MB limit (${(file.size / 1024 / 1024).toFixed(1)}MB)`);
   }
   
@@ -55,7 +53,11 @@ const validateFile = (file) => {
   };
 };
 
-export default function UploadZone({ onFilesSelected, isDragActive, onDragStateChange }) {
+export default function UploadZone({ onFilesSelected, isDragActive, onDragStateChange, userPlan = 'free' }) {
+  const isPro = userPlan === 'pro';
+  const maxFileSize = isPro ? MAX_FILE_SIZE_PRO : MAX_FILE_SIZE_FREE;
+  const maxFilesPerBatch = isPro ? MAX_FILES_PER_BATCH_PRO : MAX_FILES_PER_BATCH_FREE;
+
   const handleDrag = useCallback((e) => {
     e.preventDefault();
     e.stopPropagation();
@@ -84,8 +86,8 @@ export default function UploadZone({ onFilesSelected, isDragActive, onDragStateC
 
   const processFiles = (files) => {
     // Check batch size limit
-    if (files.length > MAX_FILES_PER_BATCH) {
-      toast.error(`Maximum ${MAX_FILES_PER_BATCH} files allowed per batch. You selected ${files.length} files.`, {
+    if (files.length > maxFilesPerBatch) {
+      toast.error(`Maximum ${maxFilesPerBatch} files allowed per batch${isPro ? '' : ' (Pro: 30 files)'}. You selected ${files.length} files.`, {
         duration: 5000
       });
       return;
@@ -95,7 +97,7 @@ export default function UploadZone({ onFilesSelected, isDragActive, onDragStateC
     const rejectedFiles = [];
 
     files.forEach(file => {
-      const validation = validateFile(file);
+      const validation = validateFile(file, maxFileSize);
       if (validation.isValid) {
         validFiles.push(file);
       } else {
@@ -183,9 +185,14 @@ export default function UploadZone({ onFilesSelected, isDragActive, onDragStateC
           <div className="flex items-center justify-center gap-2 mt-3 text-xs text-slate-500 dark:text-slate-400">
             <AlertCircle className="w-3 h-3" />
             <p>
-              Max {MAX_FILES_PER_BATCH} files • {formatFileSize(MAX_FILE_SIZE)} per file • All processing is local
+              Max {maxFilesPerBatch} files • {formatFileSize(maxFileSize)} per file • All processing is local
             </p>
           </div>
+          {isPro && (
+            <div className="mt-2 inline-flex items-center gap-1 px-3 py-1 rounded-full bg-gradient-to-r from-amber-500 to-orange-500 text-white text-xs font-bold shadow-lg">
+              ⚡ PRO Benefits Active
+            </div>
+          )}
           <p className="text-xs text-slate-400 dark:text-slate-500 mt-2">
             🔒 Secure: Only approved file types accepted
           </p>
