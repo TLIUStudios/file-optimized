@@ -1,4 +1,3 @@
-
 import { useState, lazy, Suspense, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Download, Trash2, Sparkles, Shield, Zap, Image as ImageIcon } from "lucide-react";
@@ -10,11 +9,11 @@ import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
 import { cn } from "@/lib/utils";
 import { base44 } from "@/api/base44Client";
 import LoginPromptModal from "../components/LoginPromptModal";
+import ProUpgradeModal from "../components/ProUpgradeModal";
 
 // Lazy load heavy components for better performance
 const MediaCard = lazy(() => import("../components/upload/MediaCard"));
 const ImageComparisonModal = lazy(() => import("../components/comparison/ImageComparisonModal"));
-const ProUpgradeModal = lazy(() => import("../components/ProUpgradeModal"));
 
 // Loading fallback for image cards
 function ImageCardSkeleton() {
@@ -549,19 +548,17 @@ export default function Home() {
 
       {/* Pro Upgrade Modal */}
       {showProModal && (
-        <Suspense fallback={null}>
-          <ProUpgradeModal
-            isOpen={showProModal}
-            onClose={() => {
-              setShowProModal(false);
-              setUpgradeError(null);
-              setProcessingCheckout(false);
-            }}
-            onUpgrade={handleUpgradeToPro}
-            processing={processingCheckout}
-            error={upgradeError}
-          />
-        </Suspense>
+        <ProUpgradeModal
+          isOpen={showProModal}
+          onClose={() => {
+            setShowProModal(false);
+            setUpgradeError(null);
+            setProcessingCheckout(false);
+          }}
+          onUpgrade={handleUpgradeToPro}
+          processing={processingCheckout}
+          error={upgradeError}
+        />
       )}
 
       {/* Login Prompt Modal */}
