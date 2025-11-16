@@ -734,11 +734,18 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
     } else if (maxWidth || maxHeight || enableUpscale) {
       const aspectRatio = width / height;
       if (maxWidth && maxHeight) {
-        const widthRatio = maxWidth / img.width;
-        const heightRatio = maxHeight / img.height;
-        const ratio = enableUpscale ? Math.max(widthRatio, heightRatio) : Math.min(widthRatio, heightRatio);
-        width = Math.round(img.width * ratio);
-        height = Math.round(img.height * ratio);
+        // If Standard Resolutions is enabled, use exact dimensions
+        if (useStandardResolutions) {
+          width = maxWidth;
+          height = maxHeight;
+        } else {
+          // Otherwise maintain aspect ratio
+          const widthRatio = maxWidth / img.width;
+          const heightRatio = maxHeight / img.height;
+          const ratio = enableUpscale ? Math.max(widthRatio, heightRatio) : Math.min(widthRatio, heightRatio);
+          width = Math.round(img.width * ratio);
+          height = Math.round(img.height * ratio);
+        }
       } else if (maxWidth) {
         if (enableUpscale || maxWidth < width) {
           width = maxWidth;
