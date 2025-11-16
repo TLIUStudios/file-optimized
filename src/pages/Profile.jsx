@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery } from "@tanstack/react-query";
@@ -565,6 +564,7 @@ export default function Profile() {
       {/* Pro Upgrade Modal */}
       {showProModal && (
         <ProUpgradeModal
+          key={`pro-modal-${Date.now()}`}
           isOpen={showProModal}
           onClose={() => {
             setShowProModal(false);

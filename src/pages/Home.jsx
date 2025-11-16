@@ -549,6 +549,7 @@ export default function Home() {
       {/* Pro Upgrade Modal */}
       {showProModal && (
         <ProUpgradeModal
+          key={`pro-modal-${Date.now()}`}
           isOpen={showProModal}
           onClose={() => {
             setShowProModal(false);
