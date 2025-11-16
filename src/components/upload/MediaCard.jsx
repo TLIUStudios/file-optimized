@@ -1549,7 +1549,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
                 {enableUpscale && (
                   <>
                     {originalImageDimensions.width > 0 && originalImageDimensions.height > 0 && (
-                      <div className="bg-slate-50 dark:bg-slate-900 rounded-lg p-3 space-y-2">
+                      <div className="bg-slate-900 dark:bg-slate-950 rounded-lg p-3 space-y-2">
                         <div className="flex items-center justify-between text-xs">
                           <span className="text-slate-500 dark:text-slate-400">Current Resolution:</span>
                           <span className="font-medium text-slate-900 dark:text-white">{originalImageDimensions.width} × {originalImageDimensions.height}</span>
