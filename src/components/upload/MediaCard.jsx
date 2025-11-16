@@ -951,13 +951,51 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
         img.onload = resolve;
         img.onerror = () => reject(new Error('Failed to load image'));
       });
-      let width = Math.min(img.width, 800);
-      let height = Math.min(img.height, 800);
-      if (img.width > width || img.height > height) {
-        const ratio = Math.min(width / img.width, height / img.height);
+      
+      // Apply user's dimension settings (upscale/resize)
+      let width = img.width;
+      let height = img.height;
+
+      if (enableUpscale && upscaleMultiplier) {
+        // Using multiplier percentage
+        width = Math.round(img.width * (upscaleMultiplier / 100));
+        height = Math.round(img.height * (upscaleMultiplier / 100));
+      } else if ((maxWidth && maxHeight) && useStandardResolutions) {
+        // EXACT dimensions when Standard Resolutions is enabled
+        width = maxWidth;
+        height = maxHeight;
+      } else if (maxWidth && maxHeight) {
+        // Both dimensions set but maintaining aspect ratio
+        const aspectRatio = width / height;
+        const widthRatio = maxWidth / img.width;
+        const heightRatio = maxHeight / img.height;
+        const ratio = enableUpscale ? Math.max(widthRatio, heightRatio) : Math.min(widthRatio, heightRatio);
         width = Math.round(img.width * ratio);
         height = Math.round(img.height * ratio);
+      } else if (maxWidth) {
+        // Only width specified - maintain aspect ratio
+        const aspectRatio = width / height;
+        if (enableUpscale || maxWidth < width) {
+          width = maxWidth;
+          height = Math.round(maxWidth / aspectRatio);
+        }
+      } else if (maxHeight) {
+        // Only height specified - maintain aspect ratio
+        const aspectRatio = width / height;
+        if (enableUpscale || maxHeight < height) {
+          height = maxHeight;
+          width = Math.round(maxHeight * aspectRatio);
+        }
+      } else {
+        // Default: cap at 800px for reasonable file size
+        if (img.width > 800 || img.height > 800) {
+          const ratio = Math.min(800 / img.width, 800 / img.height);
+          width = Math.round(img.width * ratio);
+          height = Math.round(img.height * ratio);
+        }
       }
+      
+      // Ensure even dimensions for GIF encoding
       width = width % 2 === 0 ? width : width - 1;
       height = height % 2 === 0 ? height : height - 1;
       const totalFrames = 120;
@@ -998,9 +1036,13 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
       }
       toast.info('Rendering GIF...', { id: 'anim-gen' });
       const GIF = window.GIF;
+      
+      // Apply user's quality setting (1-10 scale for GIF, lower is better quality but larger file)
+      const gifQuality = Math.round((100 - quality) / 10); // Convert 0-100 to 10-0 scale
+      
       const gif = new GIF({
         workers: 4,
-        quality: 5,
+        quality: Math.max(1, Math.min(10, gifQuality)), // Clamp between 1-10
         width,
         height,
         workerScript: workerBlobUrl,
