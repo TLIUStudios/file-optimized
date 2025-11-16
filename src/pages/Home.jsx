@@ -330,9 +330,9 @@ export default function Home() {
           }
         </div>
 
-        <h1 className="text-4xl md:text-6xl font-bold text-slate-900 dark:text-white mb-4">Compress, Upscale, & Convert
-Images, Videos, and Audio
-
+        <h1 className="text-4xl md:text-6xl font-bold text-slate-900 dark:text-white mb-4">
+          Compress, Upscale, & Convert
+          <span className="block text-2xl md:text-3xl text-emerald-600 dark:text-emerald-400">Images, Videos, and Audio</span>
         </h1>
         <p className="text-lg text-slate-600 dark:text-slate-400 max-w-2xl mx-auto">
           Fast, secure, and powerful media compression. Reduce file size by up to 90% 
