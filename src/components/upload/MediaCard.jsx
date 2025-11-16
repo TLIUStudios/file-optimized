@@ -81,6 +81,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
   const [ffmpegLoadError, setFfmpegLoadError] = useState(null);
   const ffmpegRef = useRef(null);
   const processMediaRef = useRef(null);
+  const [settingsChanged, setSettingsChanged] = useState(false);
   const mediaIcon = isVideo ? Video : isAudio ? Music : isGif ? Film : isImage ? ImageIcon : null;
   const MediaIcon = mediaIcon;
 
@@ -223,6 +224,15 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
     }
   }, [useStandardResolutions]);
 
+  // Track settings changes after processing
+  useEffect(() => {
+    if (processed) {
+      setSettingsChanged(true);
+    }
+  }, [quality, format, maxWidth, maxHeight, compressionMode, stripMetadata, noiseReduction, 
+      enableUpscale, upscaleMultiplier, useStandardResolutions, enableAnimation, animationType, 
+      animationDuration, videoBitrate, audioBitrate, frameRate, videoPreset, videoResolution, audioQuality]);
+
   useEffect(() => {
     if (processing && processingStartTime) {
       const interval = setInterval(() => {
@@ -326,6 +336,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
     setError(null);
     setOutputFormat(null);
     setOutputGifFrameCount(0);
+    setSettingsChanged(false);
     try {
       if (isImage && !isGif && enableAnimation) await processImageToAnimation();
       else if (isVideo) {
@@ -1814,8 +1825,17 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
               </Button>
             ) : (
               <>
-                <Button onClick={processMedia} variant="outline" className="flex-1" disabled={processing || (isVideo && !ffmpegLoaded) || (isAudio && !ffmpegLoaded) || (isGif && format === 'mp4' && !ffmpegLoaded) || (((isGif && format === 'gif') || (isImage && !isGif && enableAnimation)) && !gifJsLoaded)}>
-                  <RefreshCcw className="w-4 h-4 mr-2" />Reprocess
+                <Button 
+                  onClick={processMedia} 
+                  variant={settingsChanged ? "default" : "outline"} 
+                  className={cn(
+                    "flex-1",
+                    settingsChanged && "bg-red-600 hover:bg-red-700 text-white animate-pulse"
+                  )} 
+                  disabled={processing || (isVideo && !ffmpegLoaded) || (isAudio && !ffmpegLoaded) || (isGif && format === 'mp4' && !ffmpegLoaded) || (((isGif && format === 'gif') || (isImage && !isGif && enableAnimation)) && !gifJsLoaded)}
+                >
+                  <RefreshCcw className={cn("w-4 h-4 mr-2", settingsChanged && "animate-spin")} />
+                  Reprocess
                 </Button>
                 <Button onClick={() => downloadMedia()} className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white" disabled={processing}>
                   <Download className="w-4 h-4 mr-2" />Download
