@@ -25,8 +25,8 @@ function ImageCardSkeleton() {
       </div>
       <Skeleton className="h-4 w-3/4" />
       <Skeleton className="h-10 w-full" />
-    </div>
-  );
+    </div>);
+
 }
 
 export default function Home() {
@@ -60,11 +60,11 @@ export default function Home() {
   }, []);
 
   const handleFilesSelected = (files) => {
-    const newFiles = Array.from(files).map(file => ({
+    const newFiles = Array.from(files).map((file) => ({
       id: `${file.name}-${Date.now()}-${Math.random()}`,
       file
     }));
-    setImages(prev => [...prev, ...newFiles]);
+    setImages((prev) => [...prev, ...newFiles]);
   };
 
   const handleDragEnd = (result) => {
@@ -79,8 +79,8 @@ export default function Home() {
   };
 
   const removeImage = (id) => {
-    setImages(prev => prev.filter(img => img.id !== id));
-    setProcessedImages(prev => {
+    setImages((prev) => prev.filter((img) => img.id !== id));
+    setProcessedImages((prev) => {
       const newProcessed = { ...prev };
       delete newProcessed[id];
       return newProcessed;
@@ -88,12 +88,12 @@ export default function Home() {
   };
 
   const handleImageProcessed = (id, data) => {
-    setProcessedImages(prev => {
+    setProcessedImages((prev) => {
       const newProcessed = {
         ...prev,
         [id]: data
       };
-      
+
       // Update time estimation
       if (processingStartTime && Object.keys(newProcessed).length < images.length) {
         const elapsed = Date.now() - processingStartTime;
@@ -107,7 +107,7 @@ export default function Home() {
         setEstimatedTimeRemaining(null);
         setProcessingStartTime(null);
       }
-      
+
       return newProcessed;
     });
   };
@@ -124,18 +124,18 @@ export default function Home() {
   };
 
   const processAllImages = async () => {
-    const unprocessedImages = images.filter(img => !processedImages[img.id]);
-    
+    const unprocessedImages = images.filter((img) => !processedImages[img.id]);
+
     if (unprocessedImages.length === 0) {
       toast.success('All images are already processed!');
       return;
     }
-    
+
     setProcessingStartTime(Date.now());
     // Initial estimate: 3 seconds per image (can be adjusted)
-    setEstimatedTimeRemaining(unprocessedImages.length * 3); 
+    setEstimatedTimeRemaining(unprocessedImages.length * 3);
     toast.info(`Processing ${unprocessedImages.length} images...`);
-    setAutoProcessTrigger(prev => prev + 1);
+    setAutoProcessTrigger((prev) => prev + 1);
   };
 
   const downloadAll = async () => {
@@ -145,11 +145,11 @@ export default function Home() {
     }
 
     toast.info('Creating zip file...');
-    
+
     const JSZip = (await import('https://cdn.jsdelivr.net/npm/jszip@3.10.1/+esm')).default;
     const zip = new JSZip();
 
-    Object.values(processedImages).forEach(img => {
+    Object.values(processedImages).forEach((img) => {
       zip.file(img.filename, img.compressedBlob);
     });
 
@@ -158,15 +158,15 @@ export default function Home() {
     link.href = URL.createObjectURL(content);
     link.download = `compressed-images-${Date.now()}.zip`;
     link.click();
-    
+
     toast.success('Zip file downloaded!');
   };
 
   const handleUpgradeToPro = async () => {
     console.log('🚀 Upgrade clicked from Home page');
-    
+
     setUpgradeError(null);
-    
+
     try {
       // Try to get the user - this is more reliable than isAuthenticated()
       let currentUser;
@@ -178,7 +178,7 @@ export default function Home() {
         setShowLoginPrompt(true);
         return;
       }
-      
+
       if (!currentUser) {
         console.log('❌ No user found');
         setShowProModal(false);
@@ -191,12 +191,12 @@ export default function Home() {
       // Only set processing state AFTER confirming user is authenticated
       setProcessingCheckout(true);
       const toastId = toast.loading('Creating checkout session...', { duration: Infinity });
-      
+
       console.log('Calling createCheckoutSession...');
       const response = await base44.functions.invoke('createCheckoutSession');
-      
+
       console.log('Response:', response);
-      
+
       if (!response?.data) {
         throw new Error('Invalid response from server');
       }
@@ -223,10 +223,10 @@ export default function Home() {
       console.log('Redirecting to:', data.url);
       toast.dismiss(toastId);
       toast.success('Redirecting to Stripe checkout...');
-      
+
       // Close modal
       setShowProModal(false);
-      
+
       // Redirect at top level to break out of iframe
       setTimeout(() => {
         if (window.top) {
@@ -238,7 +238,7 @@ export default function Home() {
 
     } catch (error) {
       console.error('Upgrade failed:', error);
-      
+
       // If it's an authentication error, show login prompt instead of error
       if (error.message?.includes('401') || error.message?.includes('Unauthorized')) {
         console.log('❌ Authentication error - showing login prompt');
@@ -247,7 +247,7 @@ export default function Home() {
         setProcessingCheckout(false);
         return;
       }
-      
+
       const errorMessage = error.message || 'Failed to start checkout';
       setUpgradeError(errorMessage);
       toast.error(errorMessage, { duration: 8000 });
@@ -265,14 +265,14 @@ export default function Home() {
     (sum, img) => sum + img.compressedSize, 0
   );
   const totalSavings = totalOriginalSize - totalCompressedSize;
-  
+
   // Calculate absolute percentage for display
-  const savingsPercent = totalOriginalSize > 0 
-    ? Math.abs((totalSavings / totalOriginalSize) * 100).toFixed(1)
-    : '0';
-  
-  const unprocessedCount = images.filter(img => !processedImages[img.id]).length;
-  
+  const savingsPercent = totalOriginalSize > 0 ?
+  Math.abs(totalSavings / totalOriginalSize * 100).toFixed(1) :
+  '0';
+
+  const unprocessedCount = images.filter((img) => !processedImages[img.id]).length;
+
   // Check if compression actually increased total size
   const sizeIncreased = totalCompressedSize > totalOriginalSize;
 
@@ -287,30 +287,30 @@ export default function Home() {
   return (
     <div className="max-w-7xl mx-auto">
       {/* Hero Section */}
-      <motion.div 
+      <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="text-center mb-12"
-      >
+        className="text-center mb-12">
+
         <div className="flex items-center justify-center gap-3 mb-6">
           <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-emerald-100 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-400 text-sm font-medium">
             <Shield className="w-4 h-4" />
             100% Private & Secure
           </div>
-          {isPro && (
-            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-amber-500 to-orange-500 text-white text-sm font-bold shadow-lg">
+          {isPro &&
+          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-amber-500 to-orange-500 text-white text-sm font-bold shadow-lg">
               <Zap className="w-4 h-4" />
               PRO
             </div>
-          )}
-          {!isPro && (
-            <div className="relative">
+          }
+          {!isPro &&
+          <div className="relative">
               <div className="absolute -inset-1 bg-gradient-to-r from-yellow-400 via-amber-500 to-orange-500 rounded-lg opacity-75 blur animate-pulse" style={{ animationDuration: '2s' }}></div>
               <Button
-                onClick={() => setShowProModal(true)}
-                className="relative bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-semibold shadow-lg overflow-hidden"
-                size="sm"
-              >
+              onClick={() => setShowProModal(true)}
+              className="relative bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-semibold shadow-lg overflow-hidden"
+              size="sm">
+
                 <div className="absolute inset-0">
                   <div className="absolute top-1 left-[15%] w-1.5 h-1.5 bg-yellow-200 rounded-full animate-ping" style={{ animationDuration: '1.5s' }} />
                   <div className="absolute top-1.5 left-[35%] w-1 h-1 bg-white rounded-full animate-ping" style={{ animationDuration: '1.8s', animationDelay: '0.3s' }} />
@@ -327,12 +327,12 @@ export default function Home() {
                 </span>
               </Button>
             </div>
-          )}
+          }
         </div>
 
-        <h1 className="text-4xl md:text-6xl font-bold text-slate-900 dark:text-white mb-4">
-          Compress & Convert
-          <span className="block text-emerald-600 dark:text-emerald-400">Images, Videos & Audio</span>
+        <h1 className="text-4xl md:text-6xl font-bold text-slate-900 dark:text-white mb-4">Compress, Upscale, & Convert
+Images, Videos, and Audio
+
         </h1>
         <p className="text-lg text-slate-600 dark:text-slate-400 max-w-2xl mx-auto">
           Fast, secure, and powerful media compression. Reduce file size by up to 90% 
@@ -367,9 +367,9 @@ export default function Home() {
             </div>
             <h3 className="font-semibold text-slate-900 dark:text-white mb-2">Multiple Formats</h3>
             <p className="text-sm text-slate-600 dark:text-slate-400">
-              <strong>Images:</strong> JPEG, PNG, WEBP, AVIF, GIF<br/>
-              <strong>Video:</strong> MP4<br/>
-              <strong>Audio:</strong> MP3, WAV<br/>
+              <strong>Images:</strong> JPEG, PNG, WEBP, AVIF, GIF<br />
+              <strong>Video:</strong> MP4<br />
+              <strong>Audio:</strong> MP3, WAV<br />
               <span className="text-xs">Convert between any format instantly.</span>
             </p>
           </div>
@@ -377,28 +377,28 @@ export default function Home() {
       </motion.div>
 
       {/* Upload Zone */}
-      {images.length === 0 && (
-        <motion.div
-          initial={{ opacity: 0, scale: 0.95 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ delay: 0.2 }}
-        >
+      {images.length === 0 &&
+      <motion.div
+        initial={{ opacity: 0, scale: 0.95 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ delay: 0.2 }}>
+
           <UploadZone
-            onFilesSelected={handleFilesSelected}
-            isDragActive={isDragActive}
-            onDragStateChange={setIsDragActive}
-            userPlan={userPlan}
-          />
+          onFilesSelected={handleFilesSelected}
+          isDragActive={isDragActive}
+          onDragStateChange={setIsDragActive}
+          userPlan={userPlan} />
+
         </motion.div>
-      )}
+      }
 
       {/* Images Grid */}
-      {images.length > 0 && (
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          className="space-y-6"
-        >
+      {images.length > 0 &&
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        className="space-y-6">
+
           {/* Stats Bar */}
           <div className="bg-white dark:bg-slate-900 rounded-2xl p-6 border border-slate-200 dark:border-slate-800 shadow-lg">
             <div className="flex flex-wrap items-center justify-between gap-4">
@@ -416,26 +416,26 @@ export default function Home() {
                     {Object.keys(processedImages).length}/{images.length}
                   </p>
                 </div>
-                {Object.keys(processedImages).length > 0 && (
-                  <>
+                {Object.keys(processedImages).length > 0 &&
+              <>
                     <div className="h-12 w-px bg-slate-200 dark:bg-slate-800 hidden sm:block" />
                     <div>
                       <p className="text-sm text-slate-500 dark:text-slate-400">
                         {sizeIncreased ? 'Total Change' : 'Total Savings'}
                       </p>
                       <p className={cn(
-                        "text-2xl font-bold",
-                        sizeIncreased 
-                          ? "text-red-600 dark:text-red-400" 
-                          : "text-emerald-600 dark:text-emerald-400"
-                      )}>
+                    "text-2xl font-bold",
+                    sizeIncreased ?
+                    "text-red-600 dark:text-red-400" :
+                    "text-emerald-600 dark:text-emerald-400"
+                  )}>
                         {sizeIncreased ? '+' : '-'} {savingsPercent}%
                       </p>
                     </div>
                   </>
-                )}
-                {estimatedTimeRemaining !== null && (
-                  <>
+              }
+                {estimatedTimeRemaining !== null &&
+              <>
                     <div className="h-12 w-px bg-slate-200 dark:bg-slate-800 hidden sm:block" />
                     <div>
                       <p className="text-sm text-slate-500 dark:text-slate-400">Time Remaining</p>
@@ -444,33 +444,33 @@ export default function Home() {
                       </p>
                     </div>
                   </>
-                )}
+              }
               </div>
 
               <div className="flex gap-2 flex-wrap">
-                {unprocessedCount > 0 && (
-                  <Button
-                    onClick={processAllImages}
-                    className="bg-blue-600 hover:bg-blue-700 text-white"
-                  >
+                {unprocessedCount > 0 &&
+              <Button
+                onClick={processAllImages}
+                className="bg-blue-600 hover:bg-blue-700 text-white">
+
                     <Zap className="w-4 h-4 mr-2" />
                     Process All Remaining
                   </Button>
-                )}
-                {Object.keys(processedImages).length > 0 && (
-                  <Button
-                    onClick={downloadAll}
-                    className="bg-emerald-600 hover:bg-emerald-700 text-white"
-                  >
+              }
+                {Object.keys(processedImages).length > 0 &&
+              <Button
+                onClick={downloadAll}
+                className="bg-emerald-600 hover:bg-emerald-700 text-white">
+
                     <Download className="w-4 h-4 mr-2" />
                     Download All ({Object.keys(processedImages).length})
                   </Button>
-                )}
+              }
                 <Button
-                  onClick={clearAll}
-                  variant="outline"
-                  className="border-red-200 text-red-600 hover:bg-red-50 dark:border-red-900 dark:text-red-400 dark:hover:bg-red-950"
-                >
+                onClick={clearAll}
+                variant="outline"
+                className="border-red-200 text-red-600 hover:bg-red-50 dark:border-red-900 dark:text-red-400 dark:hover:bg-red-950">
+
                   <Trash2 className="w-4 h-4 mr-2" />
                   Clear All
                 </Button>
@@ -481,17 +481,17 @@ export default function Home() {
           {/* Add More Button */}
           <div className="relative">
             <input
-              type="file"
-              multiple
-              accept="image/*,video/mp4,audio/mp3,audio/wav,audio/mpeg"
-              onChange={(e) => handleFilesSelected(e.target.files)}
-              className="absolute inset-0 w-full h-16 opacity-0 cursor-pointer z-10"
-              id="add-more"
-            />
+            type="file"
+            multiple
+            accept="image/*,video/mp4,audio/mp3,audio/wav,audio/mpeg"
+            onChange={(e) => handleFilesSelected(e.target.files)}
+            className="absolute inset-0 w-full h-16 opacity-0 cursor-pointer z-10"
+            id="add-more" />
+
             <Button
-              variant="outline"
-              className="w-full h-16 border-2 border-dashed hover:border-emerald-400 dark:hover:border-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-950/20"
-            >
+            variant="outline"
+            className="w-full h-16 border-2 border-dashed hover:border-emerald-400 dark:hover:border-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-950/20">
+
               <Sparkles className="w-5 h-5 mr-2" />
               Add More Files
             </Button>
@@ -500,90 +500,90 @@ export default function Home() {
           {/* Images Grid with Drag & Drop */}
           <DragDropContext onDragEnd={handleDragEnd}>
             <Droppable droppableId="images" direction="horizontal">
-              {(provided) => (
+              {(provided) =>
+            <div
+              {...provided.droppableProps}
+              ref={provided.innerRef}
+              className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-8">
+
+                  {images.map((image, index) =>
+              <Draggable key={image.id} draggableId={image.id} index={index}>
+                      {(provided, snapshot) =>
                 <div
-                  {...provided.droppableProps}
                   ref={provided.innerRef}
-                  className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-8"
-                >
-                  {images.map((image, index) => (
-                    <Draggable key={image.id} draggableId={image.id} index={index}>
-                      {(provided, snapshot) => (
-                        <div
-                          ref={provided.innerRef}
-                          {...provided.draggableProps}
-                          {...provided.dragHandleProps}
-                          style={{
-                            ...provided.draggableProps.style,
-                            opacity: snapshot.isDragging ? 0.8 : 1,
-                            transform: snapshot.isDragging 
-                              ? `${provided.draggableProps.style?.transform} scale(1.05)`
-                              : provided.draggableProps.style?.transform
-                          }}
-                        >
+                  {...provided.draggableProps}
+                  {...provided.dragHandleProps}
+                  style={{
+                    ...provided.draggableProps.style,
+                    opacity: snapshot.isDragging ? 0.8 : 1,
+                    transform: snapshot.isDragging ?
+                    `${provided.draggableProps.style?.transform} scale(1.05)` :
+                    provided.draggableProps.style?.transform
+                  }}>
+
                           <Suspense fallback={<ImageCardSkeleton />}>
                             <MediaCard
-                              image={image.file}
-                              onRemove={() => removeImage(image.id)}
-                              onProcessed={(data) => handleImageProcessed(image.id, data)}
-                              onCompare={handleCompare}
-                              autoProcess={!processedImages[image.id] && autoProcessTrigger}
-                              isPro={isPro}
-                            />
+                      image={image.file}
+                      onRemove={() => removeImage(image.id)}
+                      onProcessed={(data) => handleImageProcessed(image.id, data)}
+                      onCompare={handleCompare}
+                      autoProcess={!processedImages[image.id] && autoProcessTrigger}
+                      isPro={isPro} />
+
                           </Suspense>
                         </div>
-                      )}
+                }
                     </Draggable>
-                  ))}
+              )}
                   {provided.placeholder}
                 </div>
-              )}
+            }
             </Droppable>
           </DragDropContext>
         </motion.div>
-      )}
+      }
 
       {/* Comparison Modal */}
-      {comparisonData && (
-        <Suspense fallback={null}>
+      {comparisonData &&
+      <Suspense fallback={null}>
           <ImageComparisonModal
-            isOpen={!!comparisonData}
-            onClose={() => setComparisonData(null)}
-            originalImage={comparisonData.original}
-            compressedImage={comparisonData.compressed}
-            originalSize={comparisonData.originalSize}
-            compressedSize={comparisonData.compressedSize}
-            fileName={comparisonData.fileName}
-            mediaType={comparisonData.mediaType}
-            fileFormat={comparisonData.fileFormat}
-            generatedAnimations={comparisonData.animations || null}
-          />
+          isOpen={!!comparisonData}
+          onClose={() => setComparisonData(null)}
+          originalImage={comparisonData.original}
+          compressedImage={comparisonData.compressed}
+          originalSize={comparisonData.originalSize}
+          compressedSize={comparisonData.compressedSize}
+          fileName={comparisonData.fileName}
+          mediaType={comparisonData.mediaType}
+          fileFormat={comparisonData.fileFormat}
+          generatedAnimations={comparisonData.animations || null} />
+
         </Suspense>
-      )}
+      }
 
       {/* Pro Upgrade Modal */}
-      {showProModal && (
-        <ProUpgradeModal
-          key={`pro-modal-${Date.now()}`}
-          isOpen={showProModal}
-          onClose={() => {
-            setShowProModal(false);
-            setUpgradeError(null);
-            setProcessingCheckout(false);
-          }}
-          onUpgrade={handleUpgradeToPro}
-          processing={processingCheckout}
-          error={upgradeError}
-        />
-      )}
+      {showProModal &&
+      <ProUpgradeModal
+        key={`pro-modal-${Date.now()}`}
+        isOpen={showProModal}
+        onClose={() => {
+          setShowProModal(false);
+          setUpgradeError(null);
+          setProcessingCheckout(false);
+        }}
+        onUpgrade={handleUpgradeToPro}
+        processing={processingCheckout}
+        error={upgradeError} />
+
+      }
 
       {/* Login Prompt Modal */}
       <LoginPromptModal
         isOpen={showLoginPrompt}
         onClose={() => setShowLoginPrompt(false)}
         onLogin={handleLoginFromPrompt}
-        context="upgrade"
-      />
-    </div>
-  );
+        context="upgrade" />
+
+    </div>);
+
 }
