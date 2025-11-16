@@ -46,7 +46,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
   const [upscaleSettingsOpen, setUpscaleSettingsOpen] = useState(false);
   const [upscaleMultiplier, setUpscaleMultiplier] = useState(null);
   const [originalImageDimensions, setOriginalImageDimensions] = useState({ width: 0, height: 0 });
-  const [useStandardResolutions, setUseStandardResolutions] = useState(false);
+  const [useStandardResolutions, setUseStandardResolutions] = useState(true);
   const [lastPresetSelected, setLastPresetSelected] = useState(null);
   const [showGifEditor, setShowGifEditor] = useState(false);
   const [animationSettingsOpen, setAnimationSettingsOpen] = useState(false);
