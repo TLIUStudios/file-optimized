@@ -19,9 +19,8 @@ import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
 import { base44 } from "@/api/base44Client";
 
-// Lazy load the editor and download modal
+// Lazy load the editor
 const ImageEditor = lazy(() => import("./ImageEditor"));
-const DownloadModal = lazy(() => import("./DownloadModal"));
 const GifEditor = lazy(() => import("./GifEditor"));
 
 export default function MediaCard({ image, onRemove, onProcessed, onCompare, autoProcess, isPro }) {
@@ -42,7 +41,6 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
   const [noiseReduction, setNoiseReduction] = useState(false);
   const [showEditor, setShowEditor] = useState(false);
   const [outputFormat, setOutputFormat] = useState(null);
-  const [showDownloadModal, setShowDownloadModal] = useState(false);
   const [compressedBlob, setCompressedBlob] = useState(null);
   const [enableUpscale, setEnableUpscale] = useState(false);
   const [upscaleSettingsOpen, setUpscaleSettingsOpen] = useState(false);
@@ -1180,22 +1178,22 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
     }
   };
 
-  const downloadMedia = async (formatOverride = null) => {
+  const downloadMedia = async () => {
     if (!compressedBlob && generatedAnimations.length === 0) {
       toast.error("No processed file available for download.");
       return;
     }
-    const mediaType = isVideo ? 'video' : isAudio ? 'audio' : 'image';
-    const currentCompressedFormat = outputFormat || format;
+    
+    // If we have generated animations, download them all as ZIP
     if (generatedAnimations.length > 0) {
       await downloadAllAnimationsAsZip();
       return;
     }
-    if (mediaType === 'image' && formatOverride === null) {
-      setShowDownloadModal(true);
-      return;
-    }
-    performSingleMediaDownload(compressedBlob, formatOverride || currentCompressedFormat, mediaType, getOutputFilename(formatOverride || currentCompressedFormat));
+    
+    // Otherwise, download the compressed file with current settings
+    const mediaType = isVideo ? 'video' : isAudio ? 'audio' : 'image';
+    const currentCompressedFormat = outputFormat || format;
+    performSingleMediaDownload(compressedBlob, currentCompressedFormat, mediaType, getOutputFilename(currentCompressedFormat));
   };
 
   const getOutputFilename = (targetFormat = null) => {
@@ -1828,7 +1826,6 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
 
       {showEditor && isImage && !isGif && <ImageEditor isOpen={showEditor} onClose={() => setShowEditor(false)} imageData={preview} onSave={handleSaveEdit} />}
       {showGifEditor && isGif && <GifEditor isOpen={showGifEditor} onClose={() => setShowGifEditor(false)} gifData={preview} onSave={handleSaveGifEdit} />}
-      {showDownloadModal && compressedBlob && <DownloadModal isOpen={showDownloadModal} onClose={() => setShowDownloadModal(false)} blob={compressedBlob} originalFilename={getOutputFilename()} format={outputFormat || format} generatedAnimations={generatedAnimations.length > 0 ? generatedAnimations : null} />}
       {showMetadataViewer && fileMetadata && (
         <Dialog open={showMetadataViewer} onOpenChange={setShowMetadataViewer}>
           <DialogContent className="sm:max-w-[425px]">
