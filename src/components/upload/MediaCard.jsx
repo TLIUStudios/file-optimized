@@ -1548,6 +1548,44 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
                 </div>
                 {enableUpscale && (
                   <>
+                    {originalImageDimensions.width > 0 && originalImageDimensions.height > 0 && (
+                      <div className="bg-slate-50 dark:bg-slate-900 rounded-lg p-3 space-y-2">
+                        <div className="flex items-center justify-between text-xs">
+                          <span className="text-slate-500 dark:text-slate-400">Current Resolution:</span>
+                          <span className="font-medium text-slate-900 dark:text-white">{originalImageDimensions.width} × {originalImageDimensions.height}</span>
+                        </div>
+                        {(upscaleMultiplier || maxWidth || maxHeight) && (
+                          <div className="flex items-center justify-between text-xs">
+                            <span className="text-slate-500 dark:text-slate-400">After Upscale:</span>
+                            <span className="font-medium text-emerald-600 dark:text-emerald-400">
+                              {upscaleMultiplier ? (
+                                `${Math.round(originalImageDimensions.width * (upscaleMultiplier / 100))} × ${Math.round(originalImageDimensions.height * (upscaleMultiplier / 100))}`
+                              ) : (
+                                (() => {
+                                  const aspectRatio = originalImageDimensions.width / originalImageDimensions.height;
+                                  let newWidth = maxWidth || originalImageDimensions.width;
+                                  let newHeight = maxHeight || originalImageDimensions.height;
+                                  if (maxWidth && maxHeight) {
+                                    const widthRatio = maxWidth / originalImageDimensions.width;
+                                    const heightRatio = maxHeight / originalImageDimensions.height;
+                                    const ratio = Math.max(widthRatio, heightRatio);
+                                    newWidth = Math.round(originalImageDimensions.width * ratio);
+                                    newHeight = Math.round(originalImageDimensions.height * ratio);
+                                  } else if (maxWidth) {
+                                    newWidth = maxWidth;
+                                    newHeight = Math.round(maxWidth / aspectRatio);
+                                  } else if (maxHeight) {
+                                    newHeight = maxHeight;
+                                    newWidth = Math.round(maxHeight * aspectRatio);
+                                  }
+                                  return `${newWidth} × ${newHeight}`;
+                                })()
+                              )}
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                    )}
                     <div>
                       <div className="flex items-center gap-2 mb-2">
                         <label className="text-xs font-medium text-slate-700 dark:text-slate-300">Upscale Multiplier</label>
