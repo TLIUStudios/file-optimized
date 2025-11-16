@@ -185,7 +185,7 @@ export default function UploadZone({ onFilesSelected, isDragActive, onDragStateC
           <div className="flex items-center justify-center gap-2 mt-3 text-xs text-slate-500 dark:text-slate-400">
             <AlertCircle className="w-3 h-3" />
             <p>
-              Max {maxFilesPerBatch} files • {formatFileSize(maxFileSize)} per file • All processing is local
+              {isPro ? 'Pro Plan' : 'Free Plan'}: Max {maxFilesPerBatch} files batch upload, {formatFileSize(maxFileSize)} per file, {isPro ? 'Priority' : 'Standard'} processing speeds
             </p>
           </div>
           {isPro && (
