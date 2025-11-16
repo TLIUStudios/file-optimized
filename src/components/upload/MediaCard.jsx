@@ -1,4 +1,3 @@
-
 import { useState, useEffect, lazy, useRef } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -351,21 +350,43 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
       const ffmpeg = ffmpegRef.current;
       if (!ffmpeg) throw new Error('FFmpeg not loaded');
       const inputData = new Uint8Array(await image.arrayBuffer());
-      const inputExt = image.name.split('.').pop();
+      const inputExt = image.name.split('.').pop() || 'mp4';
       await ffmpeg.writeFile(`input.${inputExt}`, inputData);
-      const args = ['-i', `input.${inputExt}`, '-c:v', 'libx264', '-preset', videoPreset, '-crf', String(Math.round((100 - quality) / 4))];
-      if (videoBitrate) args.push('-b:v', `${videoBitrate}k`);
-      if (frameRate) args.push('-r', String(frameRate));
-      if (videoResolution !== 'original') {
-        const resMap = { '1080p': '1920:-1', '720p': '1280:-1', '480p': '854:-1' };
-        args.push('-vf', `scale=${resMap[videoResolution]}`);
+      
+      // Build optimized FFmpeg command
+      const args = [
+        '-i', `input.${inputExt}`,
+        '-c:v', 'libx264',
+        '-preset', videoPreset || 'medium',
+        '-crf', String(Math.min(51, Math.max(0, Math.round((100 - quality) / 3.5)))),
+      ];
+      
+      if (videoBitrate && videoBitrate > 0) {
+        args.push('-b:v', `${videoBitrate}k`, '-maxrate', `${Math.round(videoBitrate * 1.5)}k`, '-bufsize', `${videoBitrate * 2}k`);
       }
-      args.push('-c:a', 'aac', '-b:a', `${audioBitrate}k`, 'output.mp4');
+      
+      if (frameRate && frameRate > 0) {
+        args.push('-r', String(Math.min(60, frameRate)));
+      }
+      
+      // Resolution scaling
+      if (videoResolution && videoResolution !== 'original') {
+        const resMap = { '1080p': '1920:-2', '720p': '1280:-2', '480p': '854:-2' };
+        if (resMap[videoResolution]) {
+          args.push('-vf', `scale=${resMap[videoResolution]}`);
+        }
+      }
+      
+      // Audio encoding
+      args.push('-c:a', 'aac', '-b:a', `${audioBitrate || 128}k`, '-movflags', '+faststart', 'output.mp4');
+      
       await ffmpeg.exec(args);
       const data = await ffmpeg.readFile('output.mp4');
       const blob = new Blob([data.buffer], { type: 'video/mp4' });
+      
       await ffmpeg.deleteFile(`input.${inputExt}`);
       await ffmpeg.deleteFile('output.mp4');
+      
       const compressedUrl = URL.createObjectURL(blob);
       setCompressedPreview(compressedUrl);
       setCompressedSize(blob.size);
@@ -396,22 +417,35 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
     try {
       const ffmpeg = ffmpegRef.current;
       if (!ffmpeg) throw new Error('FFmpeg not loaded');
-      const inputExt = image.name.split('.').pop();
+      const inputExt = image.name.split('.').pop() || 'mp3';
       await ffmpeg.writeFile(`input.${inputExt}`, new Uint8Array(await image.arrayBuffer()));
-      const outputExt = format;
+      const outputExt = format || 'mp3';
       const args = ['-i', `input.${inputExt}`];
-      if (format === 'mp3') {
-        args.push('-codec:a', 'libmp3lame', '-b:a', `${audioBitrate}k`, '-q:a', audioQuality === 'high' ? '0' : audioQuality === 'standard' ? '2' : '4');
-      } else if (format === 'wav') {
+      
+      if (outputExt === 'mp3') {
+        const bitrateVal = audioBitrate || 128;
+        const qualityMap = { high: 0, standard: 2, low: 4 };
+        args.push(
+          '-codec:a', 'libmp3lame',
+          '-b:a', `${bitrateVal}k`,
+          '-q:a', String(qualityMap[audioQuality] || 2)
+        );
+      } else if (outputExt === 'wav') {
         args.push('-codec:a', 'pcm_s16le', '-ar', '44100');
+      } else {
+        // Fallback for other formats
+        args.push('-codec:a', 'aac', '-b:a', `${audioBitrate || 128}k`);
       }
+      
       args.push(`output.${outputExt}`);
       await ffmpeg.exec(args);
       const data = await ffmpeg.readFile(`output.${outputExt}`);
-      const mimeType = format === 'mp3' ? 'audio/mpeg' : 'audio/wav';
+      const mimeType = outputExt === 'mp3' ? 'audio/mpeg' : outputExt === 'wav' ? 'audio/wav' : `audio/${outputExt}`;
       const blob = new Blob([data.buffer], { type: mimeType });
+      
       await ffmpeg.deleteFile(`input.${inputExt}`);
       await ffmpeg.deleteFile(`output.${outputExt}`);
+      
       const compressedUrl = URL.createObjectURL(blob);
       setCompressedPreview(compressedUrl);
       setCompressedSize(blob.size);
@@ -425,10 +459,10 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
         compressedUrl,
         originalSize: image.size,
         compressedSize: blob.size,
-        format,
-        filename: getOutputFilename(format),
+        format: outputExt,
+        filename: getOutputFilename(outputExt),
         mediaType: 'audio',
-        fileFormat: format
+        fileFormat: outputExt
       });
       const savings = ((1 - blob.size / image.size) * 100).toFixed(1);
       toast.success(`Audio compressed! Saved ${savings}%`);
@@ -692,6 +726,17 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
           width = Math.round(maxHeight * aspectRatio);
         }
       }
+    }
+
+    // Cap at 8K resolution
+    const maxRes = 7680;
+    if (width > maxRes) {
+      height = Math.round(height * (maxRes / width));
+      width = maxRes;
+    }
+    if (height > maxRes) {
+      width = Math.round(width * (maxRes / height));
+      height = maxRes;
     }
 
     canvas.width = width;
