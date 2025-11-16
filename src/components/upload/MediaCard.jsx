@@ -1617,13 +1617,27 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
                           </Badge>
                         )}
                       </div>
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center gap-2">
+                          <label className="text-xs font-medium text-slate-700 dark:text-slate-300">Standard Resolutions</label>
+                          <Tooltip>
+                            <TooltipTrigger asChild><Info className="w-3 h-3 text-slate-400 cursor-help" /></TooltipTrigger>
+                            <TooltipContent className="max-w-xs"><p className="text-xs">Enable to use exact standard resolutions (e.g., 3840x2160 for 4K 16:9). Disable to maintain your image's exact aspect ratio.</p></TooltipContent>
+                          </Tooltip>
+                        </div>
+                        <Switch 
+                          checked={useStandardResolutions} 
+                          onCheckedChange={setUseStandardResolutions}
+                          disabled={processing}
+                        />
+                      </div>
                       <div className="grid grid-cols-5 gap-2 mb-3">
                         {[
-                          { label: '480p', height: 480 },
-                          { label: '720p', height: 720 },
-                          { label: '1080p', height: 1080 },
-                          { label: '4K', height: 2160 },
-                          { label: '8K', height: 4320 }
+                          { label: '480p', height: 480, standardRes: { '16:9': [854, 480], '9:16': [480, 854], '4:3': [640, 480], '1:1': [480, 480] } },
+                          { label: '720p', height: 720, standardRes: { '16:9': [1280, 720], '9:16': [720, 1280], '4:3': [960, 720], '1:1': [720, 720] } },
+                          { label: '1080p', height: 1080, standardRes: { '16:9': [1920, 1080], '9:16': [1080, 1920], '4:3': [1440, 1080], '1:1': [1080, 1080] } },
+                          { label: '4K', height: 2160, standardRes: { '16:9': [3840, 2160], '9:16': [2160, 3840], '4:3': [2880, 2160], '1:1': [2160, 2160] } },
+                          { label: '8K', height: 4320, standardRes: { '16:9': [7680, 4320], '9:16': [4320, 7680], '4:3': [5760, 4320], '1:1': [4320, 4320] } }
                         ].map((preset) => (
                           <Button
                             key={preset.label}
@@ -1631,11 +1645,26 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
                             variant="outline"
                             onClick={() => {
                               if (originalImageDimensions.width > 0 && originalImageDimensions.height > 0) {
-                                const aspectRatio = originalImageDimensions.width / originalImageDimensions.height;
-                                const newHeight = preset.height;
-                                const newWidth = Math.round(newHeight * aspectRatio);
-                                setMaxWidth(newWidth);
-                                setMaxHeight(newHeight);
+                                if (useStandardResolutions) {
+                                  // Use standard resolutions based on detected aspect ratio
+                                  const aspectRatio = originalImageDimensions.width / originalImageDimensions.height;
+                                  let resolution;
+                                  if (Math.abs(aspectRatio - 1) < 0.1) resolution = preset.standardRes['1:1'];
+                                  else if (Math.abs(aspectRatio - 16/9) < 0.1) resolution = preset.standardRes['16:9'];
+                                  else if (Math.abs(aspectRatio - 9/16) < 0.1) resolution = preset.standardRes['9:16'];
+                                  else if (Math.abs(aspectRatio - 4/3) < 0.1) resolution = preset.standardRes['4:3'];
+                                  else resolution = preset.standardRes['16:9']; // Default to 16:9
+                                  
+                                  setMaxWidth(resolution[0]);
+                                  setMaxHeight(resolution[1]);
+                                } else {
+                                  // Maintain source aspect ratio
+                                  const aspectRatio = originalImageDimensions.width / originalImageDimensions.height;
+                                  const newHeight = preset.height;
+                                  const newWidth = Math.round(newHeight * aspectRatio);
+                                  setMaxWidth(newWidth);
+                                  setMaxHeight(newHeight);
+                                }
                                 setUpscaleMultiplier(null);
                               }
                             }}
