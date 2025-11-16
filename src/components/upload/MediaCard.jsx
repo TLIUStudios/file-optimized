@@ -728,34 +728,36 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
     let width = img.width;
     let height = img.height;
 
+    // Apply user-selected dimension settings
     if (enableUpscale && upscaleMultiplier) {
+      // Using multiplier percentage
       width = Math.round(img.width * (upscaleMultiplier / 100));
       height = Math.round(img.height * (upscaleMultiplier / 100));
-    } else if (maxWidth || maxHeight || enableUpscale) {
+    } else if ((maxWidth && maxHeight) && useStandardResolutions) {
+      // EXACT dimensions when Standard Resolutions is enabled
+      width = maxWidth;
+      height = maxHeight;
+    } else if (maxWidth && maxHeight) {
+      // Both dimensions set but maintaining aspect ratio
       const aspectRatio = width / height;
-      if (maxWidth && maxHeight) {
-        // If Standard Resolutions is enabled, use exact dimensions
-        if (useStandardResolutions) {
-          width = maxWidth;
-          height = maxHeight;
-        } else {
-          // Otherwise maintain aspect ratio
-          const widthRatio = maxWidth / img.width;
-          const heightRatio = maxHeight / img.height;
-          const ratio = enableUpscale ? Math.max(widthRatio, heightRatio) : Math.min(widthRatio, heightRatio);
-          width = Math.round(img.width * ratio);
-          height = Math.round(img.height * ratio);
-        }
-      } else if (maxWidth) {
-        if (enableUpscale || maxWidth < width) {
-          width = maxWidth;
-          height = Math.round(maxWidth / aspectRatio);
-        }
-      } else if (maxHeight) {
-        if (enableUpscale || maxHeight < height) {
-          height = maxHeight;
-          width = Math.round(maxHeight * aspectRatio);
-        }
+      const widthRatio = maxWidth / img.width;
+      const heightRatio = maxHeight / img.height;
+      const ratio = enableUpscale ? Math.max(widthRatio, heightRatio) : Math.min(widthRatio, heightRatio);
+      width = Math.round(img.width * ratio);
+      height = Math.round(img.height * ratio);
+    } else if (maxWidth) {
+      // Only width specified - maintain aspect ratio
+      const aspectRatio = width / height;
+      if (enableUpscale || maxWidth < width) {
+        width = maxWidth;
+        height = Math.round(maxWidth / aspectRatio);
+      }
+    } else if (maxHeight) {
+      // Only height specified - maintain aspect ratio
+      const aspectRatio = width / height;
+      if (enableUpscale || maxHeight < height) {
+        height = maxHeight;
+        width = Math.round(maxHeight * aspectRatio);
       }
     }
 
