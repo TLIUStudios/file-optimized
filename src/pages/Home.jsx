@@ -317,6 +317,9 @@ export default function Home() {
                   <div className="absolute top-1 left-[55%] w-1.5 h-1.5 bg-yellow-300 rounded-full animate-ping" style={{ animationDuration: '1.6s', animationDelay: '0.6s' }} />
                   <div className="absolute top-1.5 left-[75%] w-1 h-1 bg-yellow-200 rounded-full animate-ping" style={{ animationDuration: '1.7s', animationDelay: '0.2s' }} />
                   <div className="absolute top-1 left-[85%] w-1.5 h-1.5 bg-white rounded-full animate-ping" style={{ animationDuration: '1.9s', animationDelay: '0.8s' }} />
+                  <div className="absolute bottom-1 left-[20%] w-1 h-1 bg-yellow-300 rounded-full animate-ping" style={{ animationDuration: '1.4s', animationDelay: '0.4s' }} />
+                  <div className="absolute bottom-1.5 left-[45%] w-1.5 h-1.5 bg-white rounded-full animate-ping" style={{ animationDuration: '1.7s', animationDelay: '0.5s' }} />
+                  <div className="absolute bottom-1 left-[70%] w-1 h-1 bg-yellow-200 rounded-full animate-ping" style={{ animationDuration: '1.5s', animationDelay: '0.7s' }} />
                 </div>
                 <span className="relative z-10 flex items-center">
                   <Sparkles className="w-4 h-4 mr-2" />
