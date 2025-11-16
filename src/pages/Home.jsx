@@ -308,11 +308,20 @@ export default function Home() {
               <div className="absolute -inset-1 bg-gradient-to-r from-yellow-400 via-amber-500 to-orange-500 rounded-lg opacity-75 blur animate-pulse" style={{ animationDuration: '2s' }}></div>
               <Button
                 onClick={() => setShowProModal(true)}
-                className="relative bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-semibold shadow-lg"
+                className="relative bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-semibold shadow-lg overflow-hidden"
                 size="sm"
               >
-                <Sparkles className="w-4 h-4 mr-2" />
-                Upgrade to Pro
+                <div className="absolute inset-0">
+                  <div className="absolute top-1 left-[15%] w-1.5 h-1.5 bg-yellow-200 rounded-full animate-ping" style={{ animationDuration: '1.5s' }} />
+                  <div className="absolute top-1.5 left-[35%] w-1 h-1 bg-white rounded-full animate-ping" style={{ animationDuration: '1.8s', animationDelay: '0.3s' }} />
+                  <div className="absolute top-1 left-[55%] w-1.5 h-1.5 bg-yellow-300 rounded-full animate-ping" style={{ animationDuration: '1.6s', animationDelay: '0.6s' }} />
+                  <div className="absolute top-1.5 left-[75%] w-1 h-1 bg-yellow-200 rounded-full animate-ping" style={{ animationDuration: '1.7s', animationDelay: '0.2s' }} />
+                  <div className="absolute top-1 left-[85%] w-1.5 h-1.5 bg-white rounded-full animate-ping" style={{ animationDuration: '1.9s', animationDelay: '0.8s' }} />
+                </div>
+                <span className="relative z-10 flex items-center">
+                  <Sparkles className="w-4 h-4 mr-2" />
+                  Upgrade to Pro
+                </span>
               </Button>
             </div>
           )}
