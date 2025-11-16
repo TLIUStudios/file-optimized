@@ -1588,6 +1588,11 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
                                 `${Math.round(originalImageDimensions.width * (upscaleMultiplier / 100))} × ${Math.round(originalImageDimensions.height * (upscaleMultiplier / 100))}`
                               ) : (
                                 (() => {
+                                  // If Standard Resolutions is enabled and both dimensions are set, use exact values
+                                  if (useStandardResolutions && maxWidth && maxHeight) {
+                                    return `${maxWidth} × ${maxHeight}`;
+                                  }
+                                  
                                   const aspectRatio = originalImageDimensions.width / originalImageDimensions.height;
                                   let newWidth = maxWidth || originalImageDimensions.width;
                                   let newHeight = maxHeight || originalImageDimensions.height;
