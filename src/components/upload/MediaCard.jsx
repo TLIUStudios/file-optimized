@@ -1687,7 +1687,16 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
                       </div>
                       <div className="grid grid-cols-3 gap-2">
                         {[100, 150, 200, 300, 400, 500].map((multiplier) => (
-                          <Button key={multiplier} size="sm" variant={upscaleMultiplier === multiplier ? "default" : "outline"} onClick={() => { setUpscaleMultiplier(multiplier); setMaxWidth(null); setMaxHeight(null); }} disabled={processing} className={cn("text-xs h-9", upscaleMultiplier === multiplier && "bg-emerald-600 hover:bg-emerald-700")}>
+                          <Button key={multiplier} size="sm" variant={upscaleMultiplier === multiplier ? "default" : "outline"} onClick={() => { 
+                            if (upscaleMultiplier === multiplier) {
+                              // Deselect if clicking the same option
+                              setUpscaleMultiplier(null);
+                            } else {
+                              setUpscaleMultiplier(multiplier); 
+                              setMaxWidth(null); 
+                              setMaxHeight(null);
+                            }
+                          }} disabled={processing} className={cn("text-xs h-9", upscaleMultiplier === multiplier && "bg-emerald-600 hover:bg-emerald-700")}>
                             {multiplier}%
                           </Button>
                         ))}
@@ -1736,28 +1745,37 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
                             variant="outline"
                             onClick={() => {
                               if (originalImageDimensions.width > 0 && originalImageDimensions.height > 0) {
-                                setLastPresetSelected(preset);
+                                // Calculate what dimensions this preset would set
+                                let targetWidth, targetHeight;
                                 if (useStandardResolutions) {
-                                  // Use standard resolutions based on detected aspect ratio
                                   const aspectRatio = originalImageDimensions.width / originalImageDimensions.height;
                                   let resolution;
                                   if (Math.abs(aspectRatio - 1) < 0.1) resolution = preset.standardRes['1:1'];
                                   else if (Math.abs(aspectRatio - 16/9) < 0.1) resolution = preset.standardRes['16:9'];
                                   else if (Math.abs(aspectRatio - 9/16) < 0.1) resolution = preset.standardRes['9:16'];
                                   else if (Math.abs(aspectRatio - 4/3) < 0.1) resolution = preset.standardRes['4:3'];
-                                  else resolution = preset.standardRes['16:9']; // Default to 16:9
-                                  
-                                  setMaxWidth(resolution[0]);
-                                  setMaxHeight(resolution[1]);
+                                  else resolution = preset.standardRes['16:9'];
+                                  targetWidth = resolution[0];
+                                  targetHeight = resolution[1];
                                 } else {
-                                  // Maintain source aspect ratio
                                   const aspectRatio = originalImageDimensions.width / originalImageDimensions.height;
-                                  const newHeight = preset.height;
-                                  const newWidth = Math.round(newHeight * aspectRatio);
-                                  setMaxWidth(newWidth);
-                                  setMaxHeight(newHeight);
+                                  targetHeight = preset.height;
+                                  targetWidth = Math.round(targetHeight * aspectRatio);
                                 }
-                                setUpscaleMultiplier(null);
+                                
+                                // Check if this preset is already selected
+                                if (maxWidth === targetWidth && maxHeight === targetHeight) {
+                                  // Deselect - clear dimensions
+                                  setMaxWidth(null);
+                                  setMaxHeight(null);
+                                  setLastPresetSelected(null);
+                                } else {
+                                  // Select this preset
+                                  setLastPresetSelected(preset);
+                                  setMaxWidth(targetWidth);
+                                  setMaxHeight(targetHeight);
+                                  setUpscaleMultiplier(null);
+                                }
                               }
                             }}
                             disabled={processing}
