@@ -1,16 +1,15 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Check, Zap, Sparkles, Film, TrendingUp, Loader2, AlertCircle } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
+import { Check, Zap, Loader2, AlertCircle, X } from "lucide-react";
 
 export default function ProUpgradeModal({ isOpen, onClose, onUpgrade, processing = false, error = null }) {
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[500px] p-0 overflow-hidden bg-gradient-to-br from-slate-50 to-white dark:from-slate-950 dark:to-slate-900">
+      <DialogContent className="sm:max-w-[500px] p-0 overflow-hidden bg-gradient-to-br from-slate-50 to-white dark:from-slate-950 dark:to-slate-900" hideClose={true}>
         {/* Header with gradient */}
         <div className="relative bg-gradient-to-r from-amber-500 via-orange-500 to-amber-600 p-6 text-white overflow-hidden">
           <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZGVmcz48cGF0dGVybiBpZD0iZ3JpZCIgd2lkdGg9IjQwIiBoZWlnaHQ9IjQwIiBwYXR0ZXJuVW5pdHM9InVzZXJTcGFjZU9uVXNlIj48cGF0aCBkPSJNIDQwIDAgTCAwIDAgMCA0MCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSJ3aGl0ZSIgc3Ryb2tlLW9wYWNpdHk9IjAuMSIgc3Ryb2tlLXdpZHRoPSIxIi8+PC9wYXR0ZXJuPjwvZGVmcz48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSJ1cmwoI2dyaWQpIi8+PC9zdmc+')] opacity-30"></div>
-          <div className="relative flex items-center justify-between">
+          <div className="relative">
             <div>
               <DialogHeader>
                 <DialogTitle className="text-2xl font-bold text-white flex items-center gap-2">
@@ -20,9 +19,12 @@ export default function ProUpgradeModal({ isOpen, onClose, onUpgrade, processing
               </DialogHeader>
               <p className="text-amber-100 mt-1 text-sm">Unlock powerful features for professional workflows</p>
             </div>
-            <Badge className="bg-white/20 text-white border-white/30 text-xs px-3 py-1">
-              Special Offer
-            </Badge>
+            <button
+              onClick={onClose}
+              className="absolute top-0 right-0 w-8 h-8 flex items-center justify-center rounded-lg bg-red-600 hover:bg-red-700 transition-colors"
+            >
+              <X className="w-5 h-5 text-white" />
+            </button>
           </div>
         </div>
 
@@ -41,69 +43,52 @@ export default function ProUpgradeModal({ isOpen, onClose, onUpgrade, processing
             </div>
           )}
 
-          {/* Price */}
-          <div className="text-center py-4 bg-slate-100 dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800">
-            <p className="text-sm text-slate-600 dark:text-slate-400 mb-1">Starting at</p>
-            <div className="flex items-baseline justify-center gap-1">
-              <span className="text-4xl font-bold text-slate-900 dark:text-white">$10</span>
-              <span className="text-lg text-slate-600 dark:text-slate-400">/month</span>
+          {/* Comparison Grid */}
+          <div className="grid grid-cols-2 gap-3">
+            {/* Free Plan */}
+            <div className="p-4 rounded-lg border-2 border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-900">
+              <h3 className="text-base font-bold text-slate-900 dark:text-white mb-1 text-center">Free Plan</h3>
+              <p className="text-2xl font-bold text-center text-slate-600 dark:text-slate-400 mb-3">$0</p>
+              <div className="space-y-2">
+                <div className="flex items-center gap-2 text-xs text-slate-700 dark:text-slate-300">
+                  <Check className="w-3.5 h-3.5 text-slate-500 flex-shrink-0" />
+                  <span>50MB file limit</span>
+                </div>
+                <div className="flex items-center gap-2 text-xs text-slate-700 dark:text-slate-300">
+                  <Check className="w-3.5 h-3.5 text-slate-500 flex-shrink-0" />
+                  <span>9 files batch</span>
+                </div>
+                <div className="flex items-center gap-2 text-xs text-slate-700 dark:text-slate-300">
+                  <Check className="w-3.5 h-3.5 text-slate-500 flex-shrink-0" />
+                  <span>Standard speed</span>
+                </div>
+              </div>
             </div>
-            <p className="text-xs text-emerald-600 dark:text-emerald-400 mt-1 font-medium">Cancel anytime</p>
-          </div>
 
-          {/* Features */}
-          <div className="space-y-3">
-            <h3 className="font-semibold text-slate-900 dark:text-white text-sm flex items-center gap-2">
-              <Sparkles className="w-4 h-4 text-amber-500" />
-              Pro Features
-            </h3>
-            
-            <div className="space-y-2">
-              <div className="flex items-start gap-3 p-3 rounded-lg bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800">
-                <div className="mt-0.5">
-                  <div className="w-5 h-5 rounded-full bg-emerald-500 flex items-center justify-center">
-                    <Check className="w-3 h-3 text-white" />
-                  </div>
+            {/* Pro Plan */}
+            <div className="p-4 rounded-lg border-2 border-amber-500 dark:border-amber-600 bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-950/30 dark:to-orange-950/30 relative overflow-hidden">
+              <div className="absolute top-0 right-0 bg-amber-500 text-white text-[10px] px-2 py-0.5 rounded-bl-lg font-bold">BEST</div>
+              <h3 className="text-base font-bold text-slate-900 dark:text-white mb-1 text-center flex items-center justify-center gap-1">
+                <Zap className="w-4 h-4 text-amber-600" />
+                Pro Plan
+              </h3>
+              <p className="text-2xl font-bold text-center text-amber-600 dark:text-amber-500 mb-3">$10<span className="text-sm">/mo</span></p>
+              <div className="space-y-2">
+                <div className="flex items-center gap-2 text-xs text-slate-900 dark:text-white font-medium">
+                  <Check className="w-3.5 h-3.5 text-emerald-600 flex-shrink-0" />
+                  <span>500MB files</span>
                 </div>
-                <div>
-                  <p className="text-sm font-semibold text-slate-900 dark:text-white">500MB File Upload Limit</p>
-                  <p className="text-xs text-slate-600 dark:text-slate-400">10x larger files than Free (50MB)</p>
+                <div className="flex items-center gap-2 text-xs text-slate-900 dark:text-white font-medium">
+                  <Check className="w-3.5 h-3.5 text-emerald-600 flex-shrink-0" />
+                  <span>30 files batch</span>
                 </div>
-              </div>
-
-              <div className="flex items-start gap-3 p-3 rounded-lg bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800">
-                <div className="mt-0.5">
-                  <div className="w-5 h-5 rounded-full bg-blue-500 flex items-center justify-center">
-                    <TrendingUp className="w-3 h-3 text-white" />
-                  </div>
+                <div className="flex items-center gap-2 text-xs text-slate-900 dark:text-white font-medium">
+                  <Check className="w-3.5 h-3.5 text-emerald-600 flex-shrink-0" />
+                  <span>Priority speed</span>
                 </div>
-                <div>
-                  <p className="text-sm font-semibold text-slate-900 dark:text-white">Batch Processing: 30 Files</p>
-                  <p className="text-xs text-slate-600 dark:text-slate-400">Process 3x more files at once (vs 9 files)</p>
-                </div>
-              </div>
-
-              <div className="flex items-start gap-3 p-3 rounded-lg bg-purple-50 dark:bg-purple-950/30 border border-purple-200 dark:border-purple-800">
-                <div className="mt-0.5">
-                  <div className="w-5 h-5 rounded-full bg-purple-500 flex items-center justify-center">
-                    <Zap className="w-3 h-3 text-white" />
-                  </div>
-                </div>
-                <div>
-                  <p className="text-sm font-semibold text-slate-900 dark:text-white">Priority Processing</p>
-                  <p className="text-xs text-slate-600 dark:text-slate-400">Faster compression with priority queue</p>
-                </div>
-              </div>
-
-              <div className="flex items-start gap-3 p-3 rounded-lg bg-orange-50 dark:bg-orange-950/30 border border-orange-200 dark:border-orange-800">
-                <div className="mt-0.5">
-                  <div className="w-5 h-5 rounded-full bg-orange-500 flex items-center justify-center">
-                    <Film className="w-3 h-3 text-white" />
-                  </div>
-                </div>
-                <div>
-                  <p className="text-sm font-semibold text-slate-900 dark:text-white">Advanced Animation Effects</p>
-                  <p className="text-xs text-slate-600 dark:text-slate-400">Pan, rotate, slide, bounce, and more!</p>
+                <div className="flex items-center gap-2 text-xs text-slate-900 dark:text-white font-medium">
+                  <Check className="w-3.5 h-3.5 text-emerald-600 flex-shrink-0" />
+                  <span>Supports future projects</span>
                 </div>
               </div>
             </div>
@@ -111,25 +96,40 @@ export default function ProUpgradeModal({ isOpen, onClose, onUpgrade, processing
 
           {/* CTA */}
           <div className="space-y-3 pt-2">
-            <Button
-              onClick={onUpgrade}
-              disabled={processing}
-              className="w-full bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-semibold h-12 text-base shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {processing ? (
-                <>
-                  <Loader2 className="w-5 h-5 mr-2 animate-spin" />
-                  Creating checkout...
-                </>
-              ) : (
-                <>
-                  <Zap className="w-5 h-5 mr-2" />
-                  Upgrade to Pro Now
-                </>
-              )}
-            </Button>
+            <div className="relative">
+              <div className="absolute -inset-1 bg-gradient-to-r from-yellow-400 via-amber-500 to-orange-500 rounded-lg opacity-75 blur-lg animate-pulse" style={{ animationDuration: '2s' }}></div>
+              <Button
+                onClick={onUpgrade}
+                disabled={processing}
+                className="relative w-full bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-semibold h-12 text-base shadow-lg disabled:opacity-50 disabled:cursor-not-allowed overflow-hidden group"
+              >
+                <div className="absolute inset-0">
+                  <div className="absolute top-2 left-[15%] w-2 h-2 bg-yellow-200 rounded-full animate-ping" style={{ animationDuration: '1.5s' }} />
+                  <div className="absolute top-3 left-[35%] w-1.5 h-1.5 bg-white rounded-full animate-ping" style={{ animationDuration: '1.8s', animationDelay: '0.3s' }} />
+                  <div className="absolute top-2 left-[55%] w-2 h-2 bg-yellow-300 rounded-full animate-ping" style={{ animationDuration: '1.6s', animationDelay: '0.6s' }} />
+                  <div className="absolute top-3 left-[75%] w-1.5 h-1.5 bg-yellow-200 rounded-full animate-ping" style={{ animationDuration: '1.7s', animationDelay: '0.2s' }} />
+                  <div className="absolute top-2 left-[85%] w-2 h-2 bg-white rounded-full animate-ping" style={{ animationDuration: '1.9s', animationDelay: '0.8s' }} />
+                  <div className="absolute bottom-2 left-[20%] w-1.5 h-1.5 bg-yellow-300 rounded-full animate-ping" style={{ animationDuration: '1.4s', animationDelay: '0.4s' }} />
+                  <div className="absolute bottom-3 left-[45%] w-2 h-2 bg-white rounded-full animate-ping" style={{ animationDuration: '1.7s', animationDelay: '0.5s' }} />
+                  <div className="absolute bottom-2 left-[70%] w-1.5 h-1.5 bg-yellow-200 rounded-full animate-ping" style={{ animationDuration: '1.5s', animationDelay: '0.7s' }} />
+                </div>
+                <span className="relative z-10">
+                  {processing ? (
+                    <>
+                      <Loader2 className="w-5 h-5 mr-2 animate-spin inline-block" />
+                      Creating checkout...
+                    </>
+                  ) : (
+                    <>
+                      <Zap className="w-5 h-5 mr-2 inline-block" />
+                      Upgrade to Pro Now
+                    </>
+                  )}
+                </span>
+              </Button>
+            </div>
             <p className="text-center text-xs text-slate-500 dark:text-slate-400">
-              🔒 Secure payment via Stripe • Cancel anytime • 14-day money-back guarantee
+              🔒 Secure payment via Stripe • Payments are final • Cancel anytime
             </p>
           </div>
         </div>
