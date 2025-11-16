@@ -304,14 +304,17 @@ export default function Home() {
             </div>
           )}
           {!isPro && (
-            <Button
-              onClick={() => setShowProModal(true)}
-              className="bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-semibold shadow-lg"
-              size="sm"
-            >
-              <Sparkles className="w-4 h-4 mr-2" />
-              Upgrade to Pro
-            </Button>
+            <div className="relative">
+              <div className="absolute -inset-1 bg-gradient-to-r from-yellow-400 via-amber-500 to-orange-500 rounded-lg opacity-75 blur animate-pulse" style={{ animationDuration: '2s' }}></div>
+              <Button
+                onClick={() => setShowProModal(true)}
+                className="relative bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-semibold shadow-lg"
+                size="sm"
+              >
+                <Sparkles className="w-4 h-4 mr-2" />
+                Upgrade to Pro
+              </Button>
+            </div>
           )}
         </div>
 
