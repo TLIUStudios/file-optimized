@@ -21,7 +21,7 @@ export default function ProUpgradeModal({ isOpen, onClose, onUpgrade, processing
             </div>
             <button
               onClick={onClose}
-              className="absolute top-0 right-0 w-8 h-8 flex items-center justify-center rounded-lg bg-red-600 hover:bg-red-700 transition-colors"
+              className="absolute top-0 right-0 w-8 h-8 flex items-center justify-center rounded-lg bg-slate-800/80 hover:bg-red-600 transition-colors"
             >
               <X className="w-5 h-5 text-white" />
             </button>
