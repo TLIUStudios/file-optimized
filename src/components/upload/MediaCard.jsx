@@ -1603,6 +1603,49 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
                       </div>
                     </div>
                     <div className="pt-2 border-t border-slate-200 dark:border-slate-800">
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center gap-2">
+                          <label className="text-xs font-medium text-slate-700 dark:text-slate-300">Resolution Presets</label>
+                          <Tooltip>
+                            <TooltipTrigger asChild><Info className="w-3 h-3 text-slate-400 cursor-help" /></TooltipTrigger>
+                            <TooltipContent className="max-w-xs"><p className="text-xs">Quick resolution presets. Maintains your image's aspect ratio.</p></TooltipContent>
+                          </Tooltip>
+                        </div>
+                        {originalImageDimensions.width > 0 && originalImageDimensions.height > 0 && (
+                          <Badge variant="outline" className="text-xs">
+                            {getAspectRatio(originalImageDimensions.width, originalImageDimensions.height)}
+                          </Badge>
+                        )}
+                      </div>
+                      <div className="grid grid-cols-5 gap-2 mb-3">
+                        {[
+                          { label: '480p', height: 480 },
+                          { label: '720p', height: 720 },
+                          { label: '1080p', height: 1080 },
+                          { label: '4K', height: 2160 },
+                          { label: '8K', height: 4320 }
+                        ].map((preset) => (
+                          <Button
+                            key={preset.label}
+                            size="sm"
+                            variant="outline"
+                            onClick={() => {
+                              if (originalImageDimensions.width > 0 && originalImageDimensions.height > 0) {
+                                const aspectRatio = originalImageDimensions.width / originalImageDimensions.height;
+                                const newHeight = preset.height;
+                                const newWidth = Math.round(newHeight * aspectRatio);
+                                setMaxWidth(newWidth);
+                                setMaxHeight(newHeight);
+                                setUpscaleMultiplier(null);
+                              }
+                            }}
+                            disabled={processing}
+                            className="text-xs h-9"
+                          >
+                            {preset.label}
+                          </Button>
+                        ))}
+                      </div>
                       <div className="flex items-center gap-2 mb-2">
                         <label className="text-xs font-medium text-slate-700 dark:text-slate-300">Or Set Custom Dimensions</label>
                         <Tooltip>
