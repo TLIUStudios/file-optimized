@@ -49,6 +49,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
   const [upscaleMultiplier, setUpscaleMultiplier] = useState(null);
   const [originalImageDimensions, setOriginalImageDimensions] = useState({ width: 0, height: 0 });
   const [useStandardResolutions, setUseStandardResolutions] = useState(false);
+  const [lastPresetSelected, setLastPresetSelected] = useState(null);
   const [showGifEditor, setShowGifEditor] = useState(false);
   const [animationSettingsOpen, setAnimationSettingsOpen] = useState(false);
   const [enableAnimation, setEnableAnimation] = useState(false);
@@ -199,6 +200,30 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
       if (workerBlobUrl) URL.revokeObjectURL(workerBlobUrl);
     };
   }, [workerBlobUrl]);
+
+  // Re-apply last preset when Standard Resolutions toggle changes
+  useEffect(() => {
+    if (lastPresetSelected && originalImageDimensions.width > 0 && originalImageDimensions.height > 0) {
+      const preset = lastPresetSelected;
+      if (useStandardResolutions) {
+        const aspectRatio = originalImageDimensions.width / originalImageDimensions.height;
+        let resolution;
+        if (Math.abs(aspectRatio - 1) < 0.1) resolution = preset.standardRes['1:1'];
+        else if (Math.abs(aspectRatio - 16/9) < 0.1) resolution = preset.standardRes['16:9'];
+        else if (Math.abs(aspectRatio - 9/16) < 0.1) resolution = preset.standardRes['9:16'];
+        else if (Math.abs(aspectRatio - 4/3) < 0.1) resolution = preset.standardRes['4:3'];
+        else resolution = preset.standardRes['16:9'];
+        setMaxWidth(resolution[0]);
+        setMaxHeight(resolution[1]);
+      } else {
+        const aspectRatio = originalImageDimensions.width / originalImageDimensions.height;
+        const newHeight = preset.height;
+        const newWidth = Math.round(newHeight * aspectRatio);
+        setMaxWidth(newWidth);
+        setMaxHeight(newHeight);
+      }
+    }
+  }, [useStandardResolutions]);
 
   useEffect(() => {
     if (processing && processingStartTime) {
@@ -1646,6 +1671,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
                             variant="outline"
                             onClick={() => {
                               if (originalImageDimensions.width > 0 && originalImageDimensions.height > 0) {
+                                setLastPresetSelected(preset);
                                 if (useStandardResolutions) {
                                   // Use standard resolutions based on detected aspect ratio
                                   const aspectRatio = originalImageDimensions.width / originalImageDimensions.height;
