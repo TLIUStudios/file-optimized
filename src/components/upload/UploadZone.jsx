@@ -184,7 +184,7 @@ export default function UploadZone({ onFilesSelected, isDragActive, onDragStateC
           </div>
           <div className="mt-3 text-xs text-slate-500 dark:text-slate-400 space-y-1">
             <p>
-              <strong>Free Plan:</strong> • Max 9 files batch upload • 50MB per file • Standard processing speeds
+              <strong>Free Plan:</strong> • Max 9 files batch upload • 50MB per file • Standard processing speeds • Displays Ads
             </p>
             <p>
               <strong>Pro Plan:</strong> • Max 30 files batch upload • 500MB per file • Priority processing speeds • No Ads • Supports future TLIU Studios projects
