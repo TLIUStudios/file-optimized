@@ -544,6 +544,7 @@ export default function Profile() {
           onUpgrade={handleUpgrade}
           processing={processingCheckout}
           error={upgradeError}
+          userPlan={user?.plan || 'free'}
         />
       )}
 

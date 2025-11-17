@@ -574,7 +574,8 @@ export default function Home() {
         }}
         onUpgrade={handleUpgradeToPro}
         processing={processingCheckout}
-        error={upgradeError} />
+        error={upgradeError}
+        userPlan={userPlan} />
 
       }
 

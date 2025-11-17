@@ -2,7 +2,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Button } from "@/components/ui/button";
 import { Check, Zap, Loader2, AlertCircle, X } from "lucide-react";
 
-export default function ProUpgradeModal({ isOpen, onClose, onUpgrade, processing = false, error = null }) {
+export default function ProUpgradeModal({ isOpen, onClose, onUpgrade, processing = false, error = null, userPlan = 'free' }) {
+  const isPro = userPlan === 'pro';
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-[500px] p-0 overflow-hidden bg-gradient-to-br from-slate-50 to-white dark:from-slate-950 dark:to-slate-900 [&>button]:hidden">
