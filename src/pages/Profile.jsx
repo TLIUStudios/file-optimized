@@ -507,6 +507,23 @@ export default function Profile() {
               </div>
             </Card>
           </motion.div>
+
+          {/* Credits Card */}
+          <motion.div
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.3 }}
+          >
+            <Card className="p-6">
+              <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-4">Credits</h3>
+              <Button variant="outline" className="w-full justify-start" asChild>
+                <a href="https://www.tliu.co/" target="_blank" rel="noopener noreferrer">
+                  <ExternalLink className="w-4 h-4 mr-2" />
+                  Created by TLIU Studios
+                </a>
+              </Button>
+            </Card>
+          </motion.div>
         </div>
       </div>
 
