@@ -61,7 +61,7 @@ Deno.serve(async (req) => {
     });
 
     // Get proper origin for live app
-    let origin = 'https://imagecrush.base44.com'; // Default fallback
+    let origin = 'https://fileoptimized.com'; // Default fallback
     
     const referer = req.headers.get('referer');
     const originHeader = req.headers.get('origin');
