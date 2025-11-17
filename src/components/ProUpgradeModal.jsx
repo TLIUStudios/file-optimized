@@ -60,7 +60,11 @@ export default function ProUpgradeModal({ isOpen, onClose, onUpgrade, processing
                 </div>
                 <div className="flex items-center gap-2 text-xs text-slate-700 dark:text-slate-300">
                   <Check className="w-3.5 h-3.5 text-slate-500 flex-shrink-0" />
-                  <span>Standard speed</span>
+                  <span>Standard processing speed</span>
+                </div>
+                <div className="flex items-center gap-2 text-xs text-slate-700 dark:text-slate-300">
+                  <Check className="w-3.5 h-3.5 text-slate-500 flex-shrink-0" />
+                  <span>Displays Ads</span>
                 </div>
               </div>
             </div>
@@ -84,7 +88,7 @@ export default function ProUpgradeModal({ isOpen, onClose, onUpgrade, processing
                 </div>
                 <div className="flex items-center gap-2 text-xs text-slate-900 dark:text-white font-medium">
                   <Check className="w-3.5 h-3.5 text-emerald-600 flex-shrink-0" />
-                  <span>Priority speed</span>
+                  <span>Priority processing speed</span>
                 </div>
                 <div className="flex items-center gap-2 text-xs text-slate-900 dark:text-white font-medium">
                   <Check className="w-3.5 h-3.5 text-emerald-600 flex-shrink-0" />
