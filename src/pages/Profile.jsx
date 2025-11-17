@@ -544,15 +544,9 @@ export default function Profile() {
               <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-4">Need Help?</h3>
               <div className="space-y-2">
                 <Button variant="outline" className="w-full justify-start" asChild>
-                  <a href="mailto:support@imagecrush.com">
+                  <a href="https://support.tliu.co/" target="_blank" rel="noopener noreferrer">
                     <ExternalLink className="w-4 h-4 mr-2" />
                     Contact Support
-                  </a>
-                </Button>
-                <Button variant="outline" className="w-full justify-start" asChild>
-                  <a href="https://docs.imagecrush.com" target="_blank" rel="noopener noreferrer">
-                    <ExternalLink className="w-4 h-4 mr-2" />
-                    Documentation
                   </a>
                 </Button>
               </div>
