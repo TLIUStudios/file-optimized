@@ -3,7 +3,8 @@ import { Button } from "@/components/ui/button";
 import { Check, X, Shield, Zap, Crown, LogIn } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 
-export default function LoginPromptModal({ isOpen, onClose, onLogin, context = "general" }) {
+export default function LoginPromptModal({ isOpen, onClose, onLogin, context = "general", userPlan = "free" }) {
+  const isPro = userPlan === 'pro';
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-[650px] max-h-[90vh] overflow-y-auto p-0 bg-gradient-to-br from-slate-50 to-white dark:from-slate-950 dark:to-slate-900">
@@ -45,7 +46,12 @@ export default function LoginPromptModal({ isOpen, onClose, onLogin, context = "
             {/* Plan Comparison Grid */}
             <div className="grid grid-cols-2 gap-3">
               {/* Free Plan Card */}
-              <div className="p-4 rounded-lg bg-slate-50 dark:bg-slate-950/30 border-2 border-slate-300 dark:border-slate-700">
+              <div className="p-4 rounded-lg bg-slate-50 dark:bg-slate-950/30 border-2 border-slate-300 dark:border-slate-700 relative">
+                {!isPro && (
+                  <Badge className="absolute -top-2 left-1/2 -translate-x-1/2 bg-emerald-600 text-white">
+                    Current Plan
+                  </Badge>
+                )}
                 <div className="flex items-center gap-2 mb-2 justify-center">
                   <Shield className="w-4 h-4 text-slate-600 dark:text-slate-400" />
                   <p className="text-sm font-bold text-slate-900 dark:text-white">Free Plan</p>
@@ -73,7 +79,14 @@ export default function LoginPromptModal({ isOpen, onClose, onLogin, context = "
 
               {/* Pro Plan Card */}
               <div className="p-4 rounded-lg bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-950/30 dark:to-orange-950/30 border-2 border-amber-500 dark:border-amber-600 relative">
-                <div className="absolute top-0 right-0 bg-amber-500 text-white text-[10px] px-2 py-0.5 rounded-bl-lg font-bold">BEST</div>
+                {isPro && (
+                  <Badge className="absolute -top-2 left-1/2 -translate-x-1/2 bg-emerald-600 text-white">
+                    Current Plan
+                  </Badge>
+                )}
+                {!isPro && (
+                  <div className="absolute top-0 right-0 bg-amber-500 text-white text-[10px] px-2 py-0.5 rounded-bl-lg font-bold">BEST</div>
+                )}
                 <div className="flex items-center gap-1 mb-2 justify-center">
                   <Zap className="w-4 h-4 text-amber-600 dark:text-amber-400" />
                   <p className="text-sm font-bold text-slate-900 dark:text-white">Pro Plan</p>
