@@ -7,7 +7,7 @@ export default function LoginPromptModal({ isOpen, onClose, onLogin, context = "
   const isPro = userPlan === 'pro';
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[650px] max-h-[90vh] overflow-y-auto p-0 bg-gradient-to-br from-slate-50 to-white dark:from-slate-950 dark:to-slate-900">
+      <DialogContent className="sm:max-w-[650px] max-w-[95vw] max-h-[90vh] overflow-y-auto p-0 bg-gradient-to-br from-slate-50 to-white dark:from-slate-950 dark:to-slate-900">
         {/* Header with gradient */}
         <div className="relative bg-gradient-to-r from-emerald-500 via-teal-500 to-emerald-600 p-6 text-white overflow-hidden">
           <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZGVmcz48cGF0dGVybiBpZD0iZ3JpZCIgd2lkdGg9IjQwIiBoZWlnaHQ9IjQwIiBwYXR0ZXJuVW5pdHM9InVzZXJTcGFjZU9uVXNlIj48cGF0aCBkPSJNIDQwIDAgTCAwIDAgMCA0MCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSJ3aGl0ZSIgc3Ryb2tlLW9wYWNpdHk9IjAuMSIgc3Ryb2tlLXdpZHRoPSIxIi8+PC9wYXR0ZXJuPjwvZGVmcz48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSJ1cmwoI2dyaWQpIi8+PC9zdmc+')] opacity-30"></div>
@@ -44,11 +44,11 @@ export default function LoginPromptModal({ isOpen, onClose, onLogin, context = "
             </h3>
             
             {/* Plan Comparison Grid */}
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               {/* Free Plan Card */}
-              <div className="p-4 rounded-lg bg-slate-50 dark:bg-slate-950/30 border-2 border-slate-300 dark:border-slate-700 relative">
+              <div className="p-3 sm:p-4 rounded-lg bg-slate-50 dark:bg-slate-950/30 border-2 border-slate-300 dark:border-slate-700 relative">
                 {!isPro && (
-                  <Badge className="absolute -top-2 left-1/2 -translate-x-1/2 bg-emerald-600 text-white">
+                  <Badge className="absolute -top-2 left-1/2 -translate-x-1/2 bg-emerald-600 text-white text-[10px] sm:text-xs whitespace-nowrap">
                     Current Plan
                   </Badge>
                 )}
@@ -78,9 +78,9 @@ export default function LoginPromptModal({ isOpen, onClose, onLogin, context = "
               </div>
 
               {/* Pro Plan Card */}
-              <div className="p-4 rounded-lg bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-950/30 dark:to-orange-950/30 border-2 border-amber-500 dark:border-amber-600 relative">
+              <div className="p-3 sm:p-4 rounded-lg bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-950/30 dark:to-orange-950/30 border-2 border-amber-500 dark:border-amber-600 relative">
                 {isPro && (
-                  <Badge className="absolute -top-2 left-1/2 -translate-x-1/2 bg-emerald-600 text-white">
+                  <Badge className="absolute -top-2 left-1/2 -translate-x-1/2 bg-emerald-600 text-white text-[10px] sm:text-xs whitespace-nowrap">
                     Current Plan
                   </Badge>
                 )}

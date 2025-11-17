@@ -299,14 +299,14 @@ export default function Home() {
         animate={{ opacity: 1, y: 0 }}
         className="text-center mb-12">
 
-        <div className="flex items-center justify-center gap-3 mb-6">
-          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-emerald-100 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-400 text-sm font-medium">
-            <Shield className="w-4 h-4" />
-            100% Private & Secure
+        <div className="flex flex-wrap items-center justify-center gap-2 sm:gap-3 mb-6">
+          <div className="inline-flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-1.5 sm:py-2 rounded-full bg-emerald-100 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-400 text-xs sm:text-sm font-medium">
+            <Shield className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+            <span className="whitespace-nowrap">100% Private & Secure</span>
           </div>
           {isPro &&
-          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-amber-500 to-orange-500 text-white text-sm font-bold shadow-lg">
-              <Zap className="w-4 h-4" />
+          <div className="inline-flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-1.5 sm:py-2 rounded-full bg-gradient-to-r from-amber-500 to-orange-500 text-white text-xs sm:text-sm font-bold shadow-lg">
+              <Zap className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
               PRO
             </div>
           }
@@ -315,7 +315,7 @@ export default function Home() {
               <div className="absolute -inset-1 bg-gradient-to-r from-yellow-400 via-amber-500 to-orange-500 rounded-lg opacity-75 blur animate-pulse" style={{ animationDuration: '2s' }}></div>
               <Button
               onClick={() => setShowProModal(true)}
-              className="relative bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-semibold shadow-lg overflow-hidden"
+              className="relative bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-semibold shadow-lg overflow-hidden text-xs sm:text-sm"
               size="sm">
 
                 <div className="absolute inset-0">
@@ -328,8 +328,8 @@ export default function Home() {
                   <div className="absolute bottom-1.5 left-[45%] w-1.5 h-1.5 bg-white rounded-full animate-ping" style={{ animationDuration: '1.7s', animationDelay: '0.5s' }} />
                   <div className="absolute bottom-1 left-[70%] w-1 h-1 bg-yellow-200 rounded-full animate-ping" style={{ animationDuration: '1.5s', animationDelay: '0.7s' }} />
                 </div>
-                <span className="relative z-10 flex items-center">
-                  <Sparkles className="w-4 h-4 mr-2" />
+                <span className="relative z-10 flex items-center whitespace-nowrap">
+                  <Sparkles className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-1.5 sm:mr-2" />
                   Upgrade to Pro
                 </span>
               </Button>
@@ -337,11 +337,11 @@ export default function Home() {
           }
         </div>
 
-        <h1 className="text-4xl md:text-6xl font-bold text-slate-900 dark:text-white mb-4">
+        <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-slate-900 dark:text-white mb-4 px-4">
           Compress, Upscale, & Convert
-          <span className="block text-2xl md:text-3xl text-emerald-600 dark:text-emerald-400 mt-3">Images, Videos, and Audio</span>
+          <span className="block text-xl sm:text-2xl md:text-3xl text-emerald-600 dark:text-emerald-400 mt-2 sm:mt-3">Images, Videos, and Audio</span>
         </h1>
-        <p className="text-lg text-slate-600 dark:text-slate-400 max-w-2xl mx-auto">
+        <p className="text-base sm:text-lg text-slate-600 dark:text-slate-400 max-w-2xl mx-auto px-4">
           Fast, secure, and powerful media compression. Reduce file size by up to 90% 
           while maintaining quality. All processing happens in your browser.
         </p>
