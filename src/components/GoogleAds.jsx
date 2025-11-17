@@ -17,7 +17,7 @@ export default function GoogleAds({ adSlot, adFormat = "auto", fullWidthResponsi
       <ins
         className="adsbygoogle"
         style={{ display: 'block' }}
-        data-ad-client="ca-pub-XXXXXXXXXX" // Replace with your AdSense publisher ID
+        data-ad-client="ca-pub-9768118657510940" // Replace with your AdSense publisher ID
         data-ad-slot={adSlot}
         data-ad-format={adFormat}
         data-full-width-responsive={fullWidthResponsive}
