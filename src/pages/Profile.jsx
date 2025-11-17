@@ -283,38 +283,87 @@ export default function Profile() {
             </Card>
           </motion.div>
 
-          {/* Current Plan Card */}
+          {/* Plan Comparison Card */}
           <motion.div
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ delay: 0.2 }}
           >
-            <Card className={`p-6 ${isPro ? 'bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-950/30 dark:to-orange-950/30 border-amber-200 dark:border-amber-800' : ''}`}>
-              <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center gap-2">
-                  {isPro ? (
-                    <Crown className="w-6 h-6 text-amber-600 dark:text-amber-400" />
-                  ) : (
-                    <User className="w-6 h-6 text-slate-600 dark:text-slate-400" />
+            <Card className="p-6">
+              <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-4">Your Plan</h3>
+              
+              {/* Plan Comparison Grid */}
+              <div className="grid grid-cols-2 gap-4 mb-4">
+                {/* Free Plan */}
+                <div className={`p-4 rounded-lg border-2 ${!isPro ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-950/30' : 'border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-900'} relative`}>
+                  {!isPro && (
+                    <Badge className="absolute -top-2 left-1/2 -translate-x-1/2 bg-emerald-600 text-white">
+                      Current Plan
+                    </Badge>
                   )}
-                  <h3 className="text-lg font-semibold text-slate-900 dark:text-white">
-                    {isPro ? 'Pro Plan' : 'Free Plan'}
-                  </h3>
+                  <h4 className="text-base font-bold text-slate-900 dark:text-white mb-1 text-center">Free Plan</h4>
+                  <p className="text-2xl font-bold text-center text-slate-600 dark:text-slate-400 mb-3">$0</p>
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2 text-xs text-slate-700 dark:text-slate-300">
+                      <CheckCircle2 className="w-3.5 h-3.5 text-slate-500 flex-shrink-0" />
+                      <span>50MB file limit</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-xs text-slate-700 dark:text-slate-300">
+                      <CheckCircle2 className="w-3.5 h-3.5 text-slate-500 flex-shrink-0" />
+                      <span>9 files batch</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-xs text-slate-700 dark:text-slate-300">
+                      <CheckCircle2 className="w-3.5 h-3.5 text-slate-500 flex-shrink-0" />
+                      <span>Standard speed</span>
+                    </div>
+                  </div>
                 </div>
-                {isPro ? (
-                  <Badge className="bg-green-100 text-green-700 dark:bg-green-950 dark:text-green-400">
-                    <CheckCircle2 className="w-3 h-3 mr-1" />
-                    Active
-                  </Badge>
-                ) : (
-                  <Badge variant="outline">Free</Badge>
-                )}
+
+                {/* Pro Plan */}
+                <div className={`p-4 rounded-lg border-2 ${isPro ? 'border-amber-500 dark:border-amber-600 bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-950/30 dark:to-orange-950/30' : 'border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-900'} relative`}>
+                  {isPro && (
+                    <Badge className="absolute -top-2 left-1/2 -translate-x-1/2 bg-emerald-600 text-white">
+                      Current Plan
+                    </Badge>
+                  )}
+                  {!isPro && (
+                    <div className="absolute top-0 right-0 bg-amber-500 text-white text-[10px] px-2 py-0.5 rounded-bl-lg font-bold">BEST</div>
+                  )}
+                  <h4 className="text-base font-bold text-slate-900 dark:text-white mb-1 text-center flex items-center justify-center gap-1">
+                    <Zap className="w-4 h-4 text-amber-600" />
+                    Pro Plan
+                  </h4>
+                  <p className="text-2xl font-bold text-center text-amber-600 dark:text-amber-500 mb-3">$10<span className="text-sm">/mo</span></p>
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2 text-xs text-slate-900 dark:text-white font-medium">
+                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 flex-shrink-0" />
+                      <span>500MB files</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-xs text-slate-900 dark:text-white font-medium">
+                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 flex-shrink-0" />
+                      <span>30 files batch</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-xs text-slate-900 dark:text-white font-medium">
+                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 flex-shrink-0" />
+                      <span>Priority speed</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-xs text-slate-900 dark:text-white font-medium">
+                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 flex-shrink-0" />
+                      <span>No Ads</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-xs text-slate-900 dark:text-white font-medium">
+                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 flex-shrink-0" />
+                      <span>Supports future TLIU projects</span>
+                    </div>
+                  </div>
+                </div>
               </div>
 
-              {isPro ? (
-                <div className="space-y-3">
+              {/* Pro subscription details */}
+              {isPro && (
+                <div className="space-y-3 mb-4">
                   {planExpires && !isExpired && (
-                    <div className="bg-white/50 dark:bg-slate-900/50 rounded-lg p-3">
+                    <div className="bg-slate-100 dark:bg-slate-950 rounded-lg p-3">
                       <div className="flex items-center justify-between">
                         <span className="text-sm text-slate-600 dark:text-slate-400">Renews on</span>
                         <span className="text-sm font-semibold text-slate-900 dark:text-white">
@@ -336,67 +385,37 @@ export default function Profile() {
                       </p>
                     </div>
                   )}
-
-                  <div className="space-y-2">
-                    <div className="flex items-center gap-2 text-sm text-slate-700 dark:text-slate-300">
-                      <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-                      <span>500MB file upload limit</span>
-                    </div>
-                    <div className="flex items-center gap-2 text-sm text-slate-700 dark:text-slate-300">
-                      <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-                      <span>30 files batch processing</span>
-                    </div>
-                    <div className="flex items-center gap-2 text-sm text-slate-700 dark:text-slate-300">
-                      <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-                      <span>Advanced animation effects</span>
-                    </div>
-                    <div className="flex items-center gap-2 text-sm text-slate-700 dark:text-slate-300">
-                      <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-                      <span>Priority processing</span>
-                    </div>
-                  </div>
-
-                  <Button
-                    onClick={handleManageSubscription}
-                    disabled={processingPortal}
-                    className="w-full mt-4"
-                    variant="outline"
-                  >
-                    {processingPortal ? (
-                      <>
-                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                        Opening Portal...
-                      </>
-                    ) : (
-                      <>
-                        <Settings className="w-4 h-4 mr-2" />
-                        Manage Subscription
-                      </>
-                    )}
-                  </Button>
                 </div>
+              )}
+
+              {/* Action Button */}
+              {isPro ? (
+                <Button
+                  onClick={handleManageSubscription}
+                  disabled={processingPortal}
+                  className="w-full"
+                  variant="outline"
+                >
+                  {processingPortal ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      Opening Portal...
+                    </>
+                  ) : (
+                    <>
+                      <Settings className="w-4 h-4 mr-2" />
+                      Manage Subscription
+                    </>
+                  )}
+                </Button>
               ) : (
-                <div className="space-y-4">
-                  <div className="space-y-2">
-                    <div className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-400">
-                      <span>• 50MB file upload limit</span>
-                    </div>
-                    <div className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-400">
-                      <span>• 9 files batch processing</span>
-                    </div>
-                    <div className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-400">
-                      <span>• Basic animation effects</span>
-                    </div>
-                  </div>
-
-                  <Button
-                    onClick={() => setShowProModal(true)}
-                    className="w-full bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white"
-                  >
-                    <Sparkles className="w-4 h-4 mr-2" />
-                    Upgrade to Pro
-                  </Button>
-                </div>
+                <Button
+                  onClick={() => setShowProModal(true)}
+                  className="w-full bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white"
+                >
+                  <Sparkles className="w-4 h-4 mr-2" />
+                  Upgrade to Pro
+                </Button>
               )}
             </Card>
           </motion.div>
@@ -468,72 +487,8 @@ export default function Profile() {
           )}
         </div>
 
-        {/* Right Column - Benefits */}
+        {/* Right Column - Support */}
         <div className="space-y-6">
-          {!isPro && (
-            <motion.div
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.1 }}
-            >
-              <Card className="p-6 bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-950/30 dark:to-orange-950/30 border-amber-200 dark:border-amber-800">
-                <div className="text-center mb-4">
-                  <Crown className="w-12 h-12 text-amber-600 dark:text-amber-400 mx-auto mb-2" />
-                  <h3 className="text-lg font-bold text-slate-900 dark:text-white">Unlock Pro Features</h3>
-                  <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">
-                    Get more power for your media workflow
-                  </p>
-                </div>
-
-                <div className="space-y-3 mb-4">
-                  <div className="flex items-start gap-3 p-3 bg-white/50 dark:bg-slate-900/50 rounded-lg">
-                    <Shield className="w-5 h-5 text-emerald-600 mt-0.5 flex-shrink-0" />
-                    <div>
-                      <p className="text-sm font-medium text-slate-900 dark:text-white">500MB Files</p>
-                      <p className="text-xs text-slate-600 dark:text-slate-400">10x larger than free</p>
-                    </div>
-                  </div>
-
-                  <div className="flex items-start gap-3 p-3 bg-white/50 dark:bg-slate-900/50 rounded-lg">
-                    <TrendingUp className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" />
-                    <div>
-                      <p className="text-sm font-medium text-slate-900 dark:text-white">30 Files Batch</p>
-                      <p className="text-xs text-slate-600 dark:text-slate-400">3x more files at once</p>
-                    </div>
-                  </div>
-
-                  <div className="flex items-start gap-3 p-3 bg-white/50 dark:bg-slate-900/50 rounded-lg">
-                    <Film className="w-5 h-5 text-purple-600 mt-0.5 flex-shrink-0" />
-                    <div>
-                      <p className="text-sm font-medium text-slate-900 dark:text-white">Advanced Effects</p>
-                      <p className="text-xs text-slate-600 dark:text-slate-400">Pan, rotate, slide & more</p>
-                    </div>
-                  </div>
-
-                  <div className="flex items-start gap-3 p-3 bg-white/50 dark:bg-slate-900/50 rounded-lg">
-                    <Zap className="w-5 h-5 text-amber-600 mt-0.5 flex-shrink-0" />
-                    <div>
-                      <p className="text-sm font-medium text-slate-900 dark:text-white">Priority Queue</p>
-                      <p className="text-xs text-slate-600 dark:text-slate-400">Faster processing</p>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="text-center pt-4 border-t border-amber-200 dark:border-amber-800">
-                  <p className="text-2xl font-bold text-slate-900 dark:text-white mb-1">$10/month</p>
-                  <p className="text-xs text-slate-600 dark:text-slate-400 mb-3">Cancel anytime</p>
-                  <Button
-                    onClick={() => setShowProModal(true)}
-                    className="w-full bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white"
-                  >
-                    <Sparkles className="w-4 h-4 mr-2" />
-                    Upgrade Now
-                  </Button>
-                </div>
-              </Card>
-            </motion.div>
-          )}
-
           {/* Support Card */}
           <motion.div
             initial={{ opacity: 0, x: 20 }}
