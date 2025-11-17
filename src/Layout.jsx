@@ -85,7 +85,7 @@ export default function Layout({ children }) {
       {(!isAuthenticated || userPlan === 'free') && (
         <script
           async
-          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-XXXXXXXXXX"
+          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9768118657510940"
           crossOrigin="anonymous"
         />
       )}
