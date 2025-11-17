@@ -230,6 +230,11 @@ export default function Layout({ children }) {
       
       <footer className="border-t border-slate-200 dark:border-slate-800 mt-20">
         <div className="container mx-auto px-4 py-8 text-center space-y-4">
+          <img 
+            src="https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/69100dedd17537e37249237a/cd98bb516_image.png" 
+            alt="TLIU Studios Logo" 
+            className="w-16 h-16 mx-auto"
+          />
           <div className="w-32 h-px bg-gradient-to-r from-transparent via-slate-300 dark:via-slate-700 to-transparent mx-auto" />
           <p className="text-sm text-slate-500 dark:text-slate-400">
             © <a href="https://www.tliu.co/" target="_blank" rel="noopener noreferrer" className="hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors">TLIU Studios</a> 2025, All Rights Reserved.
