@@ -2,6 +2,7 @@ import { useCallback } from "react";
 import { Upload, Image as ImageIcon, AlertCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import AnimatedMediaIcon from "../AnimatedMediaIcon";
 
 // Security: Allowed file types (MIME types and extensions)
 const ALLOWED_TYPES = {
@@ -163,7 +164,7 @@ export default function UploadZone({ onFilesSelected, isDragActive, onDragStateC
           {isDragActive ? (
             <Upload className="w-10 h-10 text-white animate-bounce" />
           ) : (
-            <ImageIcon className="w-10 h-10 text-white" />
+            <AnimatedMediaIcon className="w-10 h-10 text-white" />
           )}
         </div>
         

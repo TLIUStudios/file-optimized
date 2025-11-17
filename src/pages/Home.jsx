@@ -10,6 +10,7 @@ import { cn } from "@/lib/utils";
 import { base44 } from "@/api/base44Client";
 import LoginPromptModal from "../components/LoginPromptModal";
 import ProUpgradeModal from "../components/ProUpgradeModal";
+import AnimatedMediaIcon from "../components/AnimatedMediaIcon";
 
 // Lazy load heavy components for better performance
 const MediaCard = lazy(() => import("../components/upload/MediaCard"));
@@ -363,7 +364,7 @@ export default function Home() {
 
           <div className="p-6 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm">
             <div className="w-12 h-12 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-xl flex items-center justify-center mb-4 mx-auto">
-              <ImageIcon className="w-6 h-6 text-white" />
+              <AnimatedMediaIcon className="w-6 h-6 text-white" />
             </div>
             <h3 className="font-semibold text-slate-900 dark:text-white mb-2">Multiple Formats</h3>
             <p className="text-sm text-slate-600 dark:text-slate-400">
