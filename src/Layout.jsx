@@ -85,7 +85,7 @@ export default function Layout({ children }) {
       {(!isAuthenticated || userPlan === 'free') &&
       <script
         async
-        src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-XXXXXXXXXX"
+        src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9768118657510940"
         crossOrigin="anonymous" />
 
       }
@@ -119,8 +119,8 @@ export default function Layout({ children }) {
               <ImageIcon className="w-6 h-6 text-white" />
             </div>
             <div>
-              <h1 className="text-xl font-bold text-slate-900 dark:text-white">File Optimized</h1>
-              <p className="text-xs text-slate-500 dark:text-slate-400">Compress & Convert</p>
+              <h1 className="text-xl font-bold text-slate-900 dark:text-white">ImageCrush</h1>
+              <p className="text-xs text-slate-500 dark:text-slate-400">Compress, Upscale, & Convert</p>
             </div>
           </Link>
           
