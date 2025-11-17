@@ -88,7 +88,7 @@ Deno.serve(async (req) => {
       allow_promotion_codes: true,
     };
 
-    console.log('Creating checkout session...');
+    console.log('Creating checkout session with params:', JSON.stringify(sessionParams, null, 2));
 
     // Create Checkout Session
     const session = await stripe.checkout.sessions.create(sessionParams);
@@ -101,12 +101,16 @@ Deno.serve(async (req) => {
     });
 
   } catch (error) {
-    console.error('❌ ERROR:', error.message);
-    console.error('Error type:', error.type);
+    console.error('❌ FULL ERROR:', error);
+    console.error('❌ ERROR MESSAGE:', error.message);
+    console.error('❌ ERROR TYPE:', error.type);
+    console.error('❌ ERROR CODE:', error.code);
+    console.error('❌ STACK:', error.stack);
     
     return Response.json({ 
       error: error.message || 'Failed to create checkout session',
-      errorType: error.type || 'unknown_error'
+      errorType: error.type || 'unknown_error',
+      errorCode: error.code || 'unknown'
     }, { status: 500 });
   }
 });
