@@ -553,6 +553,7 @@ export default function Profile() {
         onClose={() => setShowLoginPrompt(false)}
         onLogin={handleLoginFromPrompt}
         context="upgrade"
+        userPlan={user?.plan || 'free'}
       />
     </div>
   );
