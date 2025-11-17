@@ -11,16 +11,16 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
-  DropdownMenuTrigger } from
-"@/components/ui/dropdown-menu";
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import LoginPromptModal from "./components/LoginPromptModal";
 
 export default function Layout({ children }) {
   const [theme, setTheme] = useState(() => {
     if (typeof window !== 'undefined') {
-      return localStorage.getItem('theme') || 'light';
+      return localStorage.getItem('theme') || 'dark';
     }
-    return 'light';
+    return 'dark';
   });
   const [user, setUser] = useState(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -37,7 +37,7 @@ export default function Layout({ children }) {
       try {
         const isAuth = await base44.auth.isAuthenticated();
         setIsAuthenticated(isAuth);
-
+        
         if (isAuth) {
           const currentUser = await base44.auth.me();
           setUser(currentUser);
@@ -56,7 +56,7 @@ export default function Layout({ children }) {
   }, []);
 
   const toggleTheme = () => {
-    setTheme((prev) => prev === 'light' ? 'dark' : 'light');
+    setTheme(prev => prev === 'light' ? 'dark' : 'light');
   };
 
   const handleLoginClick = () => {
@@ -107,29 +107,29 @@ export default function Layout({ children }) {
               <ImageIcon className="w-6 h-6 text-white" />
             </div>
             <div>
-              <h1 className="text-xl font-bold text-slate-900 dark:text-white">File Optimized</h1>
+              <h1 className="text-xl font-bold text-slate-900 dark:text-white">ImageCrush</h1>
               <p className="text-xs text-slate-500 dark:text-slate-400">Compress & Convert</p>
             </div>
           </Link>
           
           <div className="flex items-center gap-3">
-            {!authLoading &&
-            <>
-                {isAuthenticated && user ?
-              <DropdownMenu>
+            {!authLoading && (
+              <>
+                {isAuthenticated && user ? (
+                  <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                       <Button variant="ghost" className="gap-2">
                         <User className="w-4 h-4" />
                         <span className="hidden sm:inline">{user.full_name || user.email}</span>
-                        {isPro ?
-                    <Badge className="bg-gradient-to-r from-amber-500 to-orange-500 text-white text-xs px-2 py-0.5 font-bold">
+                        {isPro ? (
+                          <Badge className="bg-gradient-to-r from-amber-500 to-orange-500 text-white text-xs px-2 py-0.5 font-bold">
                             PRO
-                          </Badge> :
-
-                    <Badge variant="outline" className="text-xs px-2 py-0.5">
+                          </Badge>
+                        ) : (
+                          <Badge variant="outline" className="text-xs px-2 py-0.5">
                             FREE
                           </Badge>
-                    }
+                        )}
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end" className="w-56">
@@ -141,15 +141,15 @@ export default function Layout({ children }) {
                           {user.email}
                         </p>
                         <div className="mt-1">
-                          {isPro ?
-                      <Badge className="bg-gradient-to-r from-amber-500 to-orange-500 text-white text-xs">
+                          {isPro ? (
+                            <Badge className="bg-gradient-to-r from-amber-500 to-orange-500 text-white text-xs">
                               PRO PLAN
-                            </Badge> :
-
-                      <Badge variant="outline" className="text-xs">
+                            </Badge>
+                          ) : (
+                            <Badge variant="outline" className="text-xs">
                               FREE PLAN
                             </Badge>
-                      }
+                          )}
                         </div>
                       </div>
                       <DropdownMenuSeparator />
@@ -165,30 +165,30 @@ export default function Layout({ children }) {
                         Log Out
                       </DropdownMenuItem>
                     </DropdownMenuContent>
-                  </DropdownMenu> :
-
-              <Button
-                onClick={handleLoginClick}
-                variant="ghost"
-                className="gap-2">
-
+                  </DropdownMenu>
+                ) : (
+                  <Button
+                    onClick={handleLoginClick}
+                    variant="ghost"
+                    className="gap-2"
+                  >
                     <LogIn className="w-4 h-4" />
                     <span className="hidden sm:inline">Sign In</span>
                   </Button>
-              }
+                )}
               </>
-            }
+            )}
             <Button
               variant="ghost"
               size="icon"
               onClick={toggleTheme}
-              className="rounded-full hover:bg-slate-100 dark:hover:bg-slate-800">
-
-              {theme === 'light' ?
-              <Moon className="w-5 h-5 text-slate-700 dark:text-slate-300" /> :
-
-              <Sun className="w-5 h-5 text-slate-300" />
-              }
+              className="rounded-full hover:bg-slate-100 dark:hover:bg-slate-800"
+            >
+              {theme === 'light' ? (
+                <Moon className="w-5 h-5 text-slate-700 dark:text-slate-300" />
+              ) : (
+                <Sun className="w-5 h-5 text-slate-300" />
+              )}
             </Button>
           </div>
         </div>
@@ -212,8 +212,8 @@ export default function Layout({ children }) {
         isOpen={showLoginPrompt}
         onClose={() => setShowLoginPrompt(false)}
         onLogin={handleLoginConfirm}
-        context="general" />
-
-    </div>);
-
+        context="general"
+      />
+    </div>
+  );
 }
