@@ -239,6 +239,7 @@ export default function Home() {
 
     } catch (error) {
       console.error('Upgrade failed:', error);
+      console.error('Error response data:', error.response?.data);
 
       // If it's an authentication error, show login prompt instead of error
       if (error.message?.includes('401') || error.message?.includes('Unauthorized')) {
@@ -249,7 +250,12 @@ export default function Home() {
         return;
       }
 
-      const errorMessage = error.message || 'Failed to start checkout';
+      // Show detailed error from backend
+      const errorData = error.response?.data;
+      const errorMessage = errorData?.errorDetails || errorData?.error || error.message || 'Failed to start checkout';
+      console.error('Detailed error:', errorMessage);
+      console.error('Stripe error:', errorData?.stripeError);
+
       setUpgradeError(errorMessage);
       toast.error(errorMessage, { duration: 8000 });
       setProcessingCheckout(false);
