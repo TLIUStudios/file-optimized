@@ -101,12 +101,15 @@ Deno.serve(async (req) => {
     });
 
   } catch (error) {
-    console.error('❌ ERROR:', error.message);
+    console.error('❌ ERROR:', error);
+    console.error('Error message:', error.message);
     console.error('Error type:', error.type);
+    console.error('Error stack:', error.stack);
     
     return Response.json({ 
       error: error.message || 'Failed to create checkout session',
-      errorType: error.type || 'unknown_error'
+      errorType: error.type || 'unknown_error',
+      details: error.stack
     }, { status: 500 });
   }
 });
