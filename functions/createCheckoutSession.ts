@@ -36,6 +36,11 @@ Deno.serve(async (req) => {
     const stripeSecretKey = Deno.env.get('STRIPE_SECRET_KEY');
     const stripePriceId = Deno.env.get('STRIPE_PRICE_ID');
 
+    console.log('🔑 Stripe Secret Key exists:', !!stripeSecretKey);
+    console.log('🔑 Stripe Secret Key length:', stripeSecretKey?.length || 0);
+    console.log('🔑 Stripe Secret Key prefix:', stripeSecretKey?.substring(0, 10));
+    console.log('💰 Stripe Price ID:', stripePriceId);
+
     if (!stripeSecretKey) {
       console.error('❌ STRIPE_SECRET_KEY not set');
       return Response.json({ 
