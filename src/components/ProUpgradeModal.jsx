@@ -1,5 +1,6 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { Check, Zap, Loader2, AlertCircle, X } from "lucide-react";
 
 export default function ProUpgradeModal({ isOpen, onClose, onUpgrade, processing = false, error = null, userPlan = 'free' }) {
@@ -47,7 +48,12 @@ export default function ProUpgradeModal({ isOpen, onClose, onUpgrade, processing
           {/* Comparison Grid */}
           <div className="grid grid-cols-2 gap-3">
             {/* Free Plan */}
-            <div className="p-4 rounded-lg border-2 border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-900">
+            <div className="p-4 rounded-lg border-2 border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 relative">
+              {!isPro && (
+                <Badge className="absolute -top-2 left-1/2 -translate-x-1/2 bg-emerald-600 text-white">
+                  Current Plan
+                </Badge>
+              )}
               <h3 className="text-base font-bold text-slate-900 dark:text-white mb-1 text-center">Free Plan</h3>
               <p className="text-2xl font-bold text-center text-slate-600 dark:text-slate-400 mb-3">$0</p>
               <div className="space-y-2">
@@ -72,7 +78,14 @@ export default function ProUpgradeModal({ isOpen, onClose, onUpgrade, processing
 
             {/* Pro Plan */}
             <div className="p-4 rounded-lg border-2 border-amber-500 dark:border-amber-600 bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-950/30 dark:to-orange-950/30 relative overflow-hidden">
-              <div className="absolute top-0 right-0 bg-amber-500 text-white text-[10px] px-2 py-0.5 rounded-bl-lg font-bold">BEST</div>
+              {isPro && (
+                <Badge className="absolute -top-2 left-1/2 -translate-x-1/2 bg-emerald-600 text-white">
+                  Current Plan
+                </Badge>
+              )}
+              {!isPro && (
+                <div className="absolute top-0 right-0 bg-amber-500 text-white text-[10px] px-2 py-0.5 rounded-bl-lg font-bold">BEST</div>
+              )}
               <h3 className="text-base font-bold text-slate-900 dark:text-white mb-1 text-center flex items-center justify-center gap-1">
                 <Zap className="w-4 h-4 text-amber-600" />
                 Pro Plan
