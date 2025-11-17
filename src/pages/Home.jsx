@@ -346,8 +346,8 @@ export default function Home() {
               <Zap className="w-6 h-6 text-white" />
             </div>
             <h3 className="font-semibold text-slate-900 dark:text-white mb-2">Lightning Fast</h3>
-            <p className="text-sm text-slate-600 dark:text-slate-400">
-              Client-side processing means instant results with little to no upload wait times
+            <p className="text-sm text-slate-600 dark:text-slate-400">Client-side processing means instant results with little to no upload wait times.
+
             </p>
           </div>
 
@@ -356,8 +356,8 @@ export default function Home() {
               <Shield className="w-6 h-6 text-white" />
             </div>
             <h3 className="font-semibold text-slate-900 dark:text-white mb-2">100% Private</h3>
-            <p className="text-sm text-slate-600 dark:text-slate-400">
-              Your files never leave your device. Everything happens locally
+            <p className="text-sm text-slate-600 dark:text-slate-400">Your files never leave your device. Everything happens locally.
+
             </p>
           </div>
 
