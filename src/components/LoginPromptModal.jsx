@@ -42,50 +42,63 @@ export default function LoginPromptModal({ isOpen, onClose, onLogin, context = "
               Why Sign In?
             </h3>
             
-            <div className="space-y-3">
+            {/* Plan Comparison Grid */}
+            <div className="grid grid-cols-2 gap-3">
               {/* Free Plan Card */}
-              <div className="p-4 rounded-lg bg-slate-50 dark:bg-slate-950/30 border border-slate-200 dark:border-slate-800">
-                <div className="flex items-center gap-2 mb-3">
-                  <Shield className="w-5 h-5 text-slate-600 dark:text-slate-400" />
+              <div className="p-4 rounded-lg bg-slate-50 dark:bg-slate-950/30 border-2 border-slate-300 dark:border-slate-700">
+                <div className="flex items-center gap-2 mb-2 justify-center">
+                  <Shield className="w-4 h-4 text-slate-600 dark:text-slate-400" />
                   <p className="text-sm font-bold text-slate-900 dark:text-white">Free Plan</p>
                 </div>
-                <div className="space-y-1.5 ml-7">
+                <p className="text-2xl font-bold text-slate-600 dark:text-slate-400 mb-3 text-center">$0</p>
+                <div className="space-y-1.5">
                   <div className="flex items-start gap-2">
-                    <Check className="w-4 h-4 text-slate-500 mt-0.5 flex-shrink-0" />
-                    <p className="text-xs text-slate-600 dark:text-slate-400">50MB per file limit</p>
+                    <Check className="w-3.5 h-3.5 text-slate-500 mt-0.5 flex-shrink-0" />
+                    <p className="text-xs text-slate-600 dark:text-slate-400">50MB file limit</p>
                   </div>
                   <div className="flex items-start gap-2">
-                    <Check className="w-4 h-4 text-slate-500 mt-0.5 flex-shrink-0" />
-                    <p className="text-xs text-slate-600 dark:text-slate-400">Max batch: 9 files at once</p>
+                    <Check className="w-3.5 h-3.5 text-slate-500 mt-0.5 flex-shrink-0" />
+                    <p className="text-xs text-slate-600 dark:text-slate-400">9 files batch</p>
                   </div>
                   <div className="flex items-start gap-2">
-                    <Check className="w-4 h-4 text-slate-500 mt-0.5 flex-shrink-0" />
+                    <Check className="w-3.5 h-3.5 text-slate-500 mt-0.5 flex-shrink-0" />
                     <p className="text-xs text-slate-600 dark:text-slate-400">Standard processing speed</p>
+                  </div>
+                  <div className="flex items-start gap-2">
+                    <Check className="w-3.5 h-3.5 text-slate-500 mt-0.5 flex-shrink-0" />
+                    <p className="text-xs text-slate-600 dark:text-slate-400">Displays Ads</p>
                   </div>
                 </div>
               </div>
 
               {/* Pro Plan Card */}
-              <div className="p-4 rounded-lg bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-950/30 dark:to-orange-950/30 border-2 border-amber-300 dark:border-amber-700">
-                <div className="flex items-center gap-2 mb-3">
-                  <Crown className="w-5 h-5 text-amber-600 dark:text-amber-400" />
-                  <div className="flex-1">
-                    <p className="text-sm font-bold text-slate-900 dark:text-white">Upgrade to Pro Plan</p>
-                    <p className="text-xs text-amber-700 dark:text-amber-400 font-medium">$10 USD per month</p>
-                  </div>
+              <div className="p-4 rounded-lg bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-950/30 dark:to-orange-950/30 border-2 border-amber-500 dark:border-amber-600 relative">
+                <div className="absolute top-0 right-0 bg-amber-500 text-white text-[10px] px-2 py-0.5 rounded-bl-lg font-bold">BEST</div>
+                <div className="flex items-center gap-1 mb-2 justify-center">
+                  <Zap className="w-4 h-4 text-amber-600 dark:text-amber-400" />
+                  <p className="text-sm font-bold text-slate-900 dark:text-white">Pro Plan</p>
                 </div>
-                <div className="space-y-1.5 ml-7">
+                <p className="text-2xl font-bold text-amber-600 dark:text-amber-500 mb-3 text-center">$10<span className="text-sm">/mo</span></p>
+                <div className="space-y-1.5">
                   <div className="flex items-start gap-2">
-                    <Check className="w-4 h-4 text-amber-600 dark:text-amber-400 mt-0.5 flex-shrink-0" />
-                    <p className="text-xs text-slate-700 dark:text-slate-300 font-medium">Unlock 500MB file limit</p>
+                    <Check className="w-3.5 h-3.5 text-emerald-600 mt-0.5 flex-shrink-0" />
+                    <p className="text-xs text-slate-900 dark:text-white font-medium">500MB files</p>
                   </div>
                   <div className="flex items-start gap-2">
-                    <Check className="w-4 h-4 text-amber-600 dark:text-amber-400 mt-0.5 flex-shrink-0" />
-                    <p className="text-xs text-slate-700 dark:text-slate-300 font-medium">Max batch: 30 files at once</p>
+                    <Check className="w-3.5 h-3.5 text-emerald-600 mt-0.5 flex-shrink-0" />
+                    <p className="text-xs text-slate-900 dark:text-white font-medium">30 files batch</p>
                   </div>
                   <div className="flex items-start gap-2">
-                    <Check className="w-4 h-4 text-amber-600 dark:text-amber-400 mt-0.5 flex-shrink-0" />
-                    <p className="text-xs text-slate-700 dark:text-slate-300 font-medium">Priority processing speed</p>
+                    <Check className="w-3.5 h-3.5 text-emerald-600 mt-0.5 flex-shrink-0" />
+                    <p className="text-xs text-slate-900 dark:text-white font-medium">Priority processing speed</p>
+                  </div>
+                  <div className="flex items-start gap-2">
+                    <Check className="w-3.5 h-3.5 text-emerald-600 mt-0.5 flex-shrink-0" />
+                    <p className="text-xs text-slate-900 dark:text-white font-medium">No Ads</p>
+                  </div>
+                  <div className="flex items-start gap-2">
+                    <Check className="w-3.5 h-3.5 text-emerald-600 mt-0.5 flex-shrink-0" />
+                    <p className="text-xs text-slate-900 dark:text-white font-medium">Supports future TLIU projects</p>
                   </div>
                 </div>
               </div>
