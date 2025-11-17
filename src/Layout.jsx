@@ -27,6 +27,7 @@ export default function Layout({ children }) {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [authLoading, setAuthLoading] = useState(true);
   const [showLoginPrompt, setShowLoginPrompt] = useState(false);
+  const [userPlan, setUserPlan] = useState('free');
 
   useEffect(() => {
     document.documentElement.classList.toggle('dark', theme === 'dark');
