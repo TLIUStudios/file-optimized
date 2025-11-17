@@ -120,7 +120,7 @@ export default function Layout({ children }) {
             </div>
             <div>
               <h1 className="text-xl font-bold text-slate-900 dark:text-white">File Optimized</h1>
-              <p className="text-xs text-slate-500 dark:text-slate-400">Compress & Convert</p>
+              <p className="text-xs text-slate-500 dark:text-slate-400">Compress, Upscale, & Convert</p>
             </div>
           </Link>
           
