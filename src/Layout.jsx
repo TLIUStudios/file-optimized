@@ -34,8 +34,16 @@ export default function Layout({ children }) {
     localStorage.setItem('theme', theme);
   }, [theme]);
 
-  // Load AdSense script for verification
+  // Add AdSense meta tag for verification
   useEffect(() => {
+    if (!document.querySelector('meta[name="google-adsense-account"]')) {
+      const meta = document.createElement('meta');
+      meta.name = 'google-adsense-account';
+      meta.content = 'ca-pub-9768118657510940';
+      document.head.appendChild(meta);
+    }
+    
+    // Also load AdSense script
     if (!document.querySelector('script[src*="adsbygoogle.js"]')) {
       const script = document.createElement('script');
       script.src = 'https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9768118657510940';
