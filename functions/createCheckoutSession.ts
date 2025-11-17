@@ -116,15 +116,14 @@ Deno.serve(async (req) => {
 
   } catch (error) {
     console.error('❌ FULL ERROR:', error);
-    console.error('❌ ERROR MESSAGE:', error.message);
-    console.error('❌ ERROR TYPE:', error.type);
-    console.error('❌ ERROR CODE:', error.code);
-    console.error('❌ STACK:', error.stack);
     
+    // Return detailed error info to frontend for debugging
     return Response.json({ 
       error: error.message || 'Failed to create checkout session',
       errorType: error.type || 'unknown_error',
-      errorCode: error.code || 'unknown'
+      errorCode: error.code || 'unknown',
+      errorDetails: error.raw?.message || error.toString(),
+      stripeError: error.raw || null
     }, { status: 500 });
   }
 });
