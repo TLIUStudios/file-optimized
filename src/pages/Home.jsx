@@ -583,7 +583,8 @@ export default function Home() {
         isOpen={showLoginPrompt}
         onClose={() => setShowLoginPrompt(false)}
         onLogin={handleLoginFromPrompt}
-        context="upgrade" />
+        context="upgrade"
+        userPlan={userPlan} />
 
     </div>);
 
