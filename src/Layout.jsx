@@ -43,8 +43,10 @@ export default function Layout({ children }) {
         if (isAuth) {
           const currentUser = await base44.auth.me();
           setUser(currentUser);
+          setUserPlan(currentUser?.plan || 'free');
         } else {
           setUser(null);
+          setUserPlan('free');
         }
       } catch (error) {
         console.log('Auth check:', error);
