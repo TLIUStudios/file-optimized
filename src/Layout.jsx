@@ -34,6 +34,22 @@ export default function Layout({ children }) {
     localStorage.setItem('theme', theme);
   }, [theme]);
 
+  // Load Google AdSense script
+  useEffect(() => {
+    const script = document.createElement('script');
+    script.src = 'https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9768118657510940';
+    script.async = true;
+    script.crossOrigin = 'anonymous';
+    document.head.appendChild(script);
+    
+    return () => {
+      // Cleanup on unmount
+      if (script.parentNode) {
+        script.parentNode.removeChild(script);
+      }
+    };
+  }, []);
+
   useEffect(() => {
     const loadUser = async () => {
       try {
@@ -81,14 +97,6 @@ export default function Layout({ children }) {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-950 dark:to-slate-900 transition-colors duration-300">
       <Toaster position="top-center" richColors />
-      {/* Google AdSense Script - Only load for free users */}
-      {(!isAuthenticated || userPlan === 'free') && (
-        <script
-          async
-          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9768118657510940"
-          crossOrigin="anonymous"
-        />
-      )}
       <style>{`
         :root {
           --primary: 142 76% 36%;
