@@ -347,7 +347,7 @@ export default function Home() {
             </div>
             <h3 className="font-semibold text-slate-900 dark:text-white mb-2">Lightning Fast</h3>
             <p className="text-sm text-slate-600 dark:text-slate-400">
-              Client-side processing means instant results with no upload wait times
+              Client-side processing means instant results with little to no upload wait times
             </p>
           </div>
 
