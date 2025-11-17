@@ -20,7 +20,8 @@ import {
   Film,
   CheckCircle2,
   AlertCircle,
-  X
+  X,
+  Star
 } from "lucide-react";
 import { toast } from "sonner";
 import { motion } from "framer-motion";
@@ -520,12 +521,26 @@ export default function Profile() {
           >
             <Card className="p-6">
               <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-4">Credits</h3>
-              <Button variant="outline" className="w-full justify-start" asChild>
-                <a href="https://www.tliu.co/" target="_blank" rel="noopener noreferrer">
-                  <ExternalLink className="w-4 h-4 mr-2" />
-                  Created by TLIU Studios
-                </a>
-              </Button>
+              <div className="space-y-2">
+                <Button variant="outline" className="w-full justify-start" asChild>
+                  <a href="https://www.tliu.co/" target="_blank" rel="noopener noreferrer">
+                    <ExternalLink className="w-4 h-4 mr-2" />
+                    Created by TLIU Studios
+                  </a>
+                </Button>
+                <Button variant="outline" className="w-full justify-start" asChild>
+                  <a href="https://www.google.com/maps/place//data=!4m3!3m2!1s0x65e4dd3088ab3acb:0x47b7719db967d156!12e1?source=g.page.m.kd._&laa=lu-desktop-review-solicitation" target="_blank" rel="noopener noreferrer">
+                    <Star className="w-4 h-4 mr-2" />
+                    Leave a Google Review
+                  </a>
+                </Button>
+                <Button variant="outline" className="w-full justify-start" asChild>
+                  <a href="https://www.facebook.com/profile.php?id=61577274854116&sk=reviews" target="_blank" rel="noopener noreferrer">
+                    <Star className="w-4 h-4 mr-2" />
+                    Leave a Facebook Review
+                  </a>
+                </Button>
+              </div>
             </Card>
           </motion.div>
         </div>
