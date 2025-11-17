@@ -88,7 +88,11 @@ export default function ProUpgradeModal({ isOpen, onClose, onUpgrade, processing
                 </div>
                 <div className="flex items-center gap-2 text-xs text-slate-900 dark:text-white font-medium">
                   <Check className="w-3.5 h-3.5 text-emerald-600 flex-shrink-0" />
-                  <span>Supports future projects</span>
+                  <span>No Ads</span>
+                </div>
+                <div className="flex items-center gap-2 text-xs text-slate-900 dark:text-white font-medium">
+                  <Check className="w-3.5 h-3.5 text-emerald-600 flex-shrink-0" />
+                  <span>Supports future TLIU projects</span>
                 </div>
               </div>
             </div>
