@@ -96,9 +96,18 @@ Deno.serve(async (req) => {
     console.log('Creating checkout session with params:', JSON.stringify(sessionParams, null, 2));
 
     // Create Checkout Session
-    const session = await stripe.checkout.sessions.create(sessionParams);
-
-    console.log('✅ Session created:', session.id);
+    let session;
+    try {
+      session = await stripe.checkout.sessions.create(sessionParams);
+      console.log('✅ Session created:', session.id);
+    } catch (stripeError) {
+      console.error('❌ STRIPE API ERROR:', stripeError);
+      console.error('❌ Stripe Error Type:', stripeError.type);
+      console.error('❌ Stripe Error Code:', stripeError.code);
+      console.error('❌ Stripe Error Message:', stripeError.message);
+      console.error('❌ Stripe Error Raw:', stripeError.raw);
+      throw stripeError;
+    }
 
     return Response.json({ 
       sessionId: session.id,
