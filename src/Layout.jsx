@@ -14,6 +14,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import LoginPromptModal from "./components/LoginPromptModal";
+import GoogleAds from "./components/GoogleAds";
 
 export default function Layout({ children }) {
   const [theme, setTheme] = useState(() => {
@@ -77,6 +78,14 @@ export default function Layout({ children }) {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-950 dark:to-slate-900 transition-colors duration-300">
       <Toaster position="top-center" richColors />
+      {/* Google AdSense Script - Only load for free users */}
+      {(!isAuthenticated || userPlan === 'free') && (
+        <script
+          async
+          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-XXXXXXXXXX"
+          crossOrigin="anonymous"
+        />
+      )}
       <style>{`
         :root {
           --primary: 142 76% 36%;
@@ -196,6 +205,13 @@ export default function Layout({ children }) {
       
       <main className="container mx-auto px-4 py-8">
         {children}
+        
+        {/* Show Google Ads only for Free users */}
+        {!authLoading && (!isAuthenticated || userPlan === 'free') && (
+          <div className="mt-12">
+            <GoogleAds adSlot="1234567890" />
+          </div>
+        )}
       </main>
       
       <footer className="border-t border-slate-200 dark:border-slate-800 mt-20">
