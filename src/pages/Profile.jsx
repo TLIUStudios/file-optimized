@@ -23,6 +23,7 @@ import {
   X,
   Star
 } from "lucide-react";
+import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { motion } from "framer-motion";
 import ProUpgradeModal from "../components/ProUpgradeModal";
@@ -36,6 +37,8 @@ export default function Profile() {
   const [showProModal, setShowProModal] = useState(false);
   const [upgradeError, setUpgradeError] = useState(null);
   const [showLoginPrompt, setShowLoginPrompt] = useState(false);
+  const [selectedTheme, setSelectedTheme] = useState('none');
+  const [savingTheme, setSavingTheme] = useState(false);
 
   // Load user data
   useEffect(() => {
@@ -43,6 +46,7 @@ export default function Profile() {
       try {
         const currentUser = await base44.auth.me();
         setUser(currentUser);
+        setSelectedTheme(currentUser?.theme || 'none');
       } catch (error) {
         console.error('Error loading user:', error);
         toast.error('Failed to load user data');
