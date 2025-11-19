@@ -497,7 +497,8 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
         format: outputExt,
         filename: getOutputFilename(outputExt),
         mediaType: 'audio',
-        fileFormat: outputExt
+        fileFormat: outputExt,
+        originalFileFormat: originalFormat
       });
       const savings = ((1 - blob.size / image.size) * 100).toFixed(1);
       toast.success(`Audio compressed! Saved ${savings}%`);
@@ -536,7 +537,8 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
         format: 'gif',
         filename: getOutputFilename('gif'),
         mediaType: 'image',
-        fileFormat: 'gif'
+        fileFormat: 'gif',
+        originalFileFormat: originalFormat
       });
       toast.success('Video converted to GIF!');
     } catch (error) {
@@ -608,7 +610,8 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
           format: 'gif',
           filename: getOutputFilename('gif'),
           mediaType: 'image',
-          fileFormat: 'gif'
+          fileFormat: 'gif',
+          originalFileFormat: originalFormat
         });
         toast.info('GIF has no frames to optimize');
         return;
@@ -696,7 +699,8 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
         format: 'gif',
         filename: getOutputFilename('gif'),
         mediaType: 'image',
-        fileFormat: 'gif'
+        fileFormat: 'gif',
+        originalFileFormat: originalFormat
       });
       const savings = ((1 - gifBlob.size / image.size) * 100).toFixed(1);
       if (gifBlob.size < image.size) toast.success(`✨ GIF optimized! ${processedFrames.length} frames • Saved ${savings}%`);
@@ -722,7 +726,8 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
           format: 'gif',
           filename: getOutputFilename('gif'),
           mediaType: 'image',
-          fileFormat: 'gif'
+          fileFormat: 'gif',
+          originalFileFormat: originalFormat
         });
         toast.warning('Using original GIF');
       } catch (fallbackError) {
@@ -847,7 +852,8 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
             format,
             filename: getOutputFilename(format),
             mediaType: 'image',
-            fileFormat: format
+            fileFormat: format,
+            originalFileFormat: originalFormat
           });
           toast.info(`PNG already optimized - 0% savings`);
           return;
@@ -869,7 +875,8 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
           format,
           filename: getOutputFilename(format),
           mediaType: 'image',
-          fileFormat: format
+          fileFormat: format,
+          originalFileFormat: originalFormat
         });
         const savings = ((1 - compressedFile.size / image.size) * 100).toFixed(1);
         toast.success(`PNG compressed! Saved ${savings}%`);
@@ -913,7 +920,8 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
         format,
         filename: getOutputFilename(format),
         mediaType: 'image',
-        fileFormat: format
+        fileFormat: format,
+        originalFileFormat: originalFormat
       });
       toast.info(`File already optimized as ${format.toUpperCase()} - 0% savings`);
       return;
@@ -934,7 +942,8 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
       format,
       filename: getOutputFilename(format),
       mediaType: 'image',
-      fileFormat: format
+      fileFormat: format,
+      originalFileFormat: originalFormat
     });
   };
 
@@ -1089,6 +1098,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
         filename: getOutputFilename('gif'),
         mediaType: 'image',
         fileFormat: 'gif',
+        originalFileFormat: originalFormat,
         animations: [animationData]
       });
       toast.dismiss('anim-gen');
@@ -1109,6 +1119,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
     return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
   };
   const originalExt = image.name.split('.').pop().toUpperCase();
+  const originalFormat = image.name.split('.').pop().toLowerCase();
   const displayFormat = outputFormat || format;
   const displayCompressedExt = displayFormat.toUpperCase();
   let availableFormats = [];
@@ -1273,7 +1284,8 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
         compressedSize,
         fileName: getOutputFilename(),
         mediaType: isVideo ? 'video' : isAudio ? 'audio' : 'image',
-        fileFormat: outputFormat || format
+        fileFormat: outputFormat || format,
+        originalFileFormat: originalFormat
       });
     }
   };
@@ -1358,7 +1370,8 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
           format: newFormat,
           filename: getOutputFilename(newFormat),
           mediaType: 'image',
-          fileFormat: newFormat
+          fileFormat: newFormat,
+          originalFileFormat: originalFormat
         });
         toast.info(`Converted to ${newFormat.toUpperCase()} - using original file (0% change)`);
         setProcessing(false);
@@ -1380,7 +1393,8 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
         format: newFormat,
         filename: getOutputFilename(newFormat),
         mediaType: 'image',
-        fileFormat: newFormat
+        fileFormat: newFormat,
+        originalFileFormat: originalFormat
       });
       const savings = ((1 - blob.size / originalSize) * 100).toFixed(1);
       if (blob.size < originalSize) toast.success(`Converted to ${newFormat.toUpperCase()} (${savings}% savings)`);

@@ -80,6 +80,7 @@ export default function ImageComparisonModal({
   fileName,
   mediaType = 'image',
   fileFormat = 'webp',
+  originalFileFormat = null,
   generatedAnimations = null // Add this prop for animation variations
 }) {
   const [sliderPosition, setSliderPosition] = useState(50);
@@ -113,7 +114,7 @@ export default function ImageComparisonModal({
   }, [fileName]);
 
   // Extract file extensions
-  const originalExt = fileName.split('.').pop().toUpperCase();
+  const originalExt = originalFileFormat ? originalFileFormat.toUpperCase() : fileName.split('.').pop().toUpperCase();
   const compressedExt = fileFormat.toUpperCase();
 
   // Define available formats based on media type and file format
