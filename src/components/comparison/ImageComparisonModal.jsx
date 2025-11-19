@@ -524,6 +524,15 @@ export default function ImageComparisonModal({
       return;
     }
     
+    // If clicking the current format, just show the actual compressed size
+    if (format === fileFormat) {
+      setSelectedFormat(format);
+      setPreviewFormat(format);
+      setPreviewSize(compressedSize);
+      setConvertedBlob(null);
+      return;
+    }
+    
     setIsConverting(true);
     setSelectedFormat(format);
     
