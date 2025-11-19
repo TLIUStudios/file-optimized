@@ -507,6 +507,105 @@ export default function Profile() {
               </Card>
             </motion.div>
           )}
+
+          {/* Theme Effects Section */}
+          <motion.div
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.4 }}
+          >
+            <Card className="p-6">
+              <div className="flex items-center justify-between mb-6">
+                <div>
+                  <h3 className="text-lg font-semibold text-slate-900 dark:text-white">Visual Theme</h3>
+                  <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">Add fun holiday effects to your interface</p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                <button
+                  onClick={() => handleThemeChange('none')}
+                  disabled={savingTheme}
+                  className={cn(
+                    "p-4 rounded-lg border-2 transition-all text-left",
+                    selectedTheme === 'none'
+                      ? "border-emerald-500 bg-emerald-50 dark:bg-emerald-950/30"
+                      : "border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600"
+                  )}
+                >
+                  <div className="text-2xl mb-2">✨</div>
+                  <div className="font-semibold text-sm text-slate-900 dark:text-white">None</div>
+                  <div className="text-xs text-slate-500 dark:text-slate-400">Default</div>
+                </button>
+
+                <button
+                  onClick={() => handleThemeChange('snow')}
+                  disabled={savingTheme}
+                  className={cn(
+                    "p-4 rounded-lg border-2 transition-all text-left",
+                    selectedTheme === 'snow'
+                      ? "border-emerald-500 bg-emerald-50 dark:bg-emerald-950/30"
+                      : "border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600"
+                  )}
+                >
+                  <div className="text-2xl mb-2">❄️</div>
+                  <div className="font-semibold text-sm text-slate-900 dark:text-white">Snow</div>
+                  <div className="text-xs text-slate-500 dark:text-slate-400">Winter</div>
+                </button>
+
+                <button
+                  onClick={() => handleThemeChange('fireworks')}
+                  disabled={savingTheme}
+                  className={cn(
+                    "p-4 rounded-lg border-2 transition-all text-left",
+                    selectedTheme === 'fireworks'
+                      ? "border-emerald-500 bg-emerald-50 dark:bg-emerald-950/30"
+                      : "border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600"
+                  )}
+                >
+                  <div className="text-2xl mb-2">🎆</div>
+                  <div className="font-semibold text-sm text-slate-900 dark:text-white">Fireworks</div>
+                  <div className="text-xs text-slate-500 dark:text-slate-400">New Year</div>
+                </button>
+
+                <button
+                  onClick={() => handleThemeChange('halloween')}
+                  disabled={savingTheme}
+                  className={cn(
+                    "p-4 rounded-lg border-2 transition-all text-left",
+                    selectedTheme === 'halloween'
+                      ? "border-emerald-500 bg-emerald-50 dark:bg-emerald-950/30"
+                      : "border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600"
+                  )}
+                >
+                  <div className="text-2xl mb-2">🎃</div>
+                  <div className="font-semibold text-sm text-slate-900 dark:text-white">Halloween</div>
+                  <div className="text-xs text-slate-500 dark:text-slate-400">Spooky</div>
+                </button>
+
+                <button
+                  onClick={() => handleThemeChange('hearts')}
+                  disabled={savingTheme}
+                  className={cn(
+                    "p-4 rounded-lg border-2 transition-all text-left",
+                    selectedTheme === 'hearts'
+                      ? "border-emerald-500 bg-emerald-50 dark:bg-emerald-950/30"
+                      : "border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600"
+                  )}
+                >
+                  <div className="text-2xl mb-2">💕</div>
+                  <div className="font-semibold text-sm text-slate-900 dark:text-white">Hearts</div>
+                  <div className="text-xs text-slate-500 dark:text-slate-400">Valentine's</div>
+                </button>
+              </div>
+
+              {savingTheme && (
+                <div className="mt-4 text-center text-sm text-slate-500 dark:text-slate-400">
+                  Saving theme...
+                </div>
+              )}
+            </Card>
+          </motion.div>
         </div>
 
         {/* Right Column - Support */}
