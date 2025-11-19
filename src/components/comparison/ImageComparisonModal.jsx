@@ -131,6 +131,8 @@ export default function ImageComparisonModal({
   const [previewSize, setPreviewSize] = useState(compressedSize);
   const [isConverting, setIsConverting] = useState(false);
   const [convertedBlob, setConvertedBlob] = useState(null);
+  const [allFormatSizes, setAllFormatSizes] = useState({});
+  const [loadingFormatSizes, setLoadingFormatSizes] = useState(true);
 
   // Load image dimensions
   useEffect(() => {
