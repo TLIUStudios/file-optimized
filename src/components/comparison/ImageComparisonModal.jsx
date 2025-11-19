@@ -909,7 +909,7 @@ export default function ImageComparisonModal({
                       Compressed
                     </Badge>
                     <Badge className="bg-emerald-600 text-white text-xs px-2 py-0.5 font-bold w-fit">
-                      {compressedExt}
+                      {previewFormat.toUpperCase()}
                     </Badge>
                   </div>
                 </div>
