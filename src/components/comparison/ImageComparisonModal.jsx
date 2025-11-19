@@ -1193,32 +1193,81 @@ export default function ImageComparisonModal({
                 <div className="bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg p-4">
                   <p className="text-slate-500 dark:text-slate-400 text-[10px] font-semibold uppercase tracking-wider mb-1">Original Size</p>
                   <p className="text-slate-900 dark:text-white text-2xl font-bold">{formatFileSize(originalSize)}</p>
+                  <p className="text-slate-500 dark:text-slate-400 text-xs mt-2">Format: {fileFormat.toUpperCase()}</p>
                 </div>
 
-                <div className={cn(
-                  "rounded-lg p-4",
-                  sizeIncreased
-                    ? "bg-gradient-to-br from-red-600 to-red-700"
-                    : "bg-gradient-to-br from-emerald-600 to-emerald-700"
-                )}>
-                  <p className={cn(
-                    "text-[10px] font-semibold uppercase tracking-wider mb-1",
-                    sizeIncreased ? "text-red-100" : "text-emerald-100"
+                {!isAnimationVariations && mediaType === 'image' && (
+                  <div className="bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg p-4">
+                    <p className="text-slate-500 dark:text-slate-400 text-[10px] font-semibold uppercase tracking-wider mb-3">Available Formats</p>
+                    {loadingFormatSizes ? (
+                      <div className="flex items-center justify-center py-4">
+                        <RefreshCw className="w-5 h-5 animate-spin text-slate-400" />
+                      </div>
+                    ) : (
+                      <div className="grid grid-cols-2 gap-2">
+                        {allowedFormats.map((format) => {
+                          const size = allFormatSizes[format] || previewSize;
+                          const isSelected = selectedFormat === format;
+                          const isBigger = size > originalSize;
+                          const percentChange = (((size - originalSize) / originalSize) * 100).toFixed(1);
+                          
+                          return (
+                            <button
+                              key={format}
+                              onClick={() => convertToFormat(format)}
+                              disabled={isConverting}
+                              className={`p-3 rounded-lg border text-left transition-all ${
+                                isSelected
+                                  ? isBigger
+                                    ? 'bg-red-500/10 border-red-500/50'
+                                    : 'bg-emerald-500/10 border-emerald-500/50'
+                                  : 'bg-white dark:bg-slate-900 border-slate-300 dark:border-slate-700 hover:border-slate-400 dark:hover:border-slate-600'
+                              }`}
+                            >
+                              <div className="flex items-center justify-between mb-1">
+                                <span className="text-xs font-bold text-slate-900 dark:text-white uppercase">{format}</span>
+                                {isSelected && <Check className="w-3 h-3 text-emerald-600" />}
+                              </div>
+                              <div className="text-sm font-semibold text-slate-900 dark:text-white">{formatFileSize(size)}</div>
+                              <div className={`text-xs mt-1 ${
+                                isBigger ? 'text-red-600 dark:text-red-400' : 'text-emerald-600 dark:text-emerald-400'
+                              }`}>
+                                {isBigger ? '+' : ''}{percentChange}%
+                              </div>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                )}
+                
+                {(isAnimationVariations || mediaType !== 'image') && (
+                  <div className={cn(
+                    "rounded-lg p-4",
+                    sizeIncreased
+                      ? "bg-gradient-to-br from-red-600 to-red-700"
+                      : "bg-gradient-to-br from-emerald-600 to-emerald-700"
                   )}>
-                    {isAnimationVariations ? 'Total Generated Size' : 'Compressed Size'}
-                  </p>
-                  <p className="text-white text-2xl font-bold mb-2">{formatFileSize(compressedSize)}</p>
-                  {!isAnimationVariations && (
-                    <Badge className={cn(
-                      "text-xs px-2 py-0.5 font-bold",
-                      sizeIncreased 
-                        ? "bg-white/20 text-white"
-                        : "bg-white/20 text-white"
+                    <p className={cn(
+                      "text-[10px] font-semibold uppercase tracking-wider mb-1",
+                      sizeIncreased ? "text-red-100" : "text-emerald-100"
                     )}>
-                      {sizeIncreased ? `+${Math.abs(parseFloat(savingsPercent))}% larger` : `${savingsPercent}% smaller`}
-                    </Badge>
-                  )}
-                </div>
+                      {isAnimationVariations ? 'Total Generated Size' : 'Compressed Size'}
+                    </p>
+                    <p className="text-white text-2xl font-bold mb-2">{formatFileSize(compressedSize)}</p>
+                    {!isAnimationVariations && (
+                      <Badge className={cn(
+                        "text-xs px-2 py-0.5 font-bold",
+                        sizeIncreased 
+                          ? "bg-white/20 text-white"
+                          : "bg-white/20 text-white"
+                      )}>
+                        {sizeIncreased ? `+${Math.abs(parseFloat(savingsPercent))}% larger` : `${savingsPercent}% smaller`}
+                      </Badge>
+                    )}
+                  </div>
+                )}
 
                 {isAnimationVariations ? (
                   <div className="bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
@@ -1242,7 +1291,7 @@ export default function ImageComparisonModal({
                         ? "text-red-500 dark:text-red-400" 
                         : "text-slate-500 dark:text-slate-400"
                     )}>
-                      {sizeIncreased ? 'Size Increase' : 'Space Saved'}
+                      {sizeIncreased ? 'Size Increase' : 'Space Saved'} {mediaType === 'image' && `(${selectedFormat.toUpperCase()})`}
                     </p>
                     <p className={cn(
                       "text-xl font-bold",
@@ -1331,11 +1380,11 @@ export default function ImageComparisonModal({
               {!isAnimationVariations && (
                 <>
                   <div className="h-px bg-slate-200 dark:bg-slate-800" />
-                  {/* AI Generated Section */}
+                  {/* SEO Generation Section */}
                   {mediaType === 'image' && (
                   <div className="space-y-3">
                     <div className="flex items-center justify-between">
-                      <h3 className="text-slate-900 dark:text-white font-semibold text-xs uppercase tracking-wider">AI Generated</h3>
+                      <h3 className="text-slate-900 dark:text-white font-semibold text-xs uppercase tracking-wider">SEO Generation</h3>
                       {hasAnyMetadata && !isGenerating && (
                         <Button
                           variant="ghost"
