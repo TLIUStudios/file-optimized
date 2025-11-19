@@ -68,6 +68,8 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
   const isVideo = image.type.startsWith('video/');
   const isAudio = image.type.startsWith('audio/');
   const isGif = image.type === 'image/gif';
+  const originalExt = image.name.split('.').pop().toUpperCase();
+  const originalFormat = image.name.split('.').pop().toLowerCase();
   const [gifFrameCount, setGifFrameCount] = useState(0);
   const [gifSettings, setGifSettings] = useState({ width: 0, height: 0, frames: [] });
   const [videoBitrate, setVideoBitrate] = useState(1000);
@@ -1120,8 +1122,6 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
     if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
     return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
   };
-  const originalExt = image.name.split('.').pop().toUpperCase();
-  const originalFormat = image.name.split('.').pop().toLowerCase();
   const displayFormat = outputFormat || format;
   const displayCompressedExt = displayFormat.toUpperCase();
   let availableFormats = [];
