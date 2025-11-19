@@ -371,10 +371,8 @@ export default function ImageComparisonModal({
   
   // New: Convert and preview format
   const convertToFormat = async (format) => {
-    if (format === fileFormat) {
-      setPreviewFormat(fileFormat);
-      setPreviewSize(compressedSize);
-      setSelectedFormat(format);
+    if (format === selectedFormat && previewFormat === format) {
+      // Already on this format, no need to convert
       return;
     }
     
@@ -400,19 +398,48 @@ export default function ImageComparisonModal({
         ctx.drawImage(img, 0, 0);
         
         const mimeType = format === 'jpg' ? 'image/jpeg' : `image/${format}`;
-        const quality = format === 'jpg' ? 0.92 : 0.95;
+        const quality = format === 'jpg' ? 0.92 : format === 'png' ? 1.0 : 0.95;
         
-        const blob = await new Promise((resolve) => {
-          canvas.toBlob(resolve, mimeType, quality);
+        const blob = await new Promise((resolve, reject) => {
+          canvas.toBlob((b) => {
+            if (b) {
+              resolve(b);
+            } else {
+              reject(new Error(`Failed to create ${format} blob`));
+            }
+          }, mimeType, quality);
         });
         
-        setPreviewSize(blob.size);
+        if (!blob) {
+          throw new Error('Failed to create blob');
+        }
+        
+        console.log(`📊 ${format.toUpperCase()}: ${(blob.size / 1024).toFixed(1)}KB`);
+        
+        // Force state update by using functional setState
+        setPreviewSize(prevSize => {
+          console.log(`Size update: ${(prevSize / 1024).toFixed(1)}KB → ${(blob.size / 1024).toFixed(1)}KB`);
+          return blob.size;
+        });
         setPreviewFormat(format);
-        toast.success(`Preview updated to ${format.toUpperCase()}`);
+        
+        const sizeDiff = blob.size - originalSize;
+        const percentChange = ((sizeDiff / originalSize) * 100).toFixed(1);
+        
+        if (blob.size > originalSize) {
+          toast.info(`${format.toUpperCase()}: ${formatFileSize(blob.size)} (+${percentChange}% larger)`);
+        } else {
+          toast.success(`${format.toUpperCase()}: ${formatFileSize(blob.size)} (${Math.abs(percentChange)}% smaller)`);
+        }
+      } else {
+        // For video/audio, just update the format selection
+        setPreviewFormat(format);
       }
     } catch (error) {
-      console.error('Conversion error:', error);
-      toast.error('Failed to convert format');
+      console.error('❌ Conversion error:', error);
+      toast.error(`Failed to convert to ${format.toUpperCase()}: ${error.message}`);
+      // Revert to previous format on error
+      setSelectedFormat(previewFormat);
     } finally {
       setIsConverting(false);
     }
@@ -449,17 +476,23 @@ export default function ImageComparisonModal({
       ];
 
       for (const f of imageFormatsForZip) {
-        const blob = await new Promise((resolve) => {
-          // Check if browser supports the format before trying to create blob
-          if (canvas.toDataURL(f.mime).startsWith(`data:${f.mime}`)) {
-            canvas.toBlob(resolve, f.mime, 0.95);
-          } else {
-            console.warn(`Browser does not support converting to ${f.ext}. Skipping.`);
-            resolve(null); // Resolve with null if not supported
+        try {
+          const blob = await new Promise((resolve, reject) => {
+            canvas.toBlob((b) => {
+              if (b) {
+                resolve(b);
+              } else {
+                reject(new Error(`Failed to create ${f.ext} blob`));
+              }
+            }, f.mime, 0.95);
+          });
+          
+          if (blob && blob.size > 0) {
+            zip.file(`${baseName}.${f.ext}`, blob);
+            console.log(`✓ Added ${f.ext} to ZIP (${(blob.size / 1024).toFixed(1)}KB)`);
           }
-        });
-        if (blob) {
-          zip.file(`${baseName}.${f.ext}`, blob);
+        } catch (error) {
+          console.warn(`Could not add ${f.ext} to ZIP:`, error.message);
         }
       }
 
