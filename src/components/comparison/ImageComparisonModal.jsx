@@ -164,6 +164,9 @@ export default function ImageComparisonModal({
       const sizes = {};
 
       try {
+        // Use the actual compressed size for the current format
+        sizes[fileFormat] = compressedSize;
+
         const img = new Image();
         img.src = compressedImage;
         await new Promise((resolve, reject) => {
@@ -179,8 +182,11 @@ export default function ImageComparisonModal({
         ctx.imageSmoothingQuality = 'high';
         ctx.drawImage(img, 0, 0);
 
-        // Calculate for each standard format
+        // Calculate for each standard format (except the current one)
         for (const format of ['jpg', 'png', 'webp']) {
+          // Skip if this is the current format - we already have the real size
+          if (format === fileFormat) continue;
+          
           try {
             const mimeType = format === 'jpg' ? 'image/jpeg' : `image/${format}`;
             const quality = format === 'jpg' ? 0.92 : format === 'png' ? 1.0 : 0.95;
