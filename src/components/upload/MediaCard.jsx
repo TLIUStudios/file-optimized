@@ -438,7 +438,8 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
         format: 'mp4',
         filename: getOutputFilename('mp4'),
         mediaType: 'video',
-        fileFormat: 'mp4'
+        fileFormat: 'mp4',
+        originalFileFormat: originalFormat
       });
       const savings = ((1 - blob.size / image.size) * 100).toFixed(1);
       toast.success(`Video compressed! Saved ${savings}%`);
@@ -575,7 +576,8 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
         format: 'mp4',
         filename: getOutputFilename('mp4'),
         mediaType: 'video',
-        fileFormat: 'mp4'
+        fileFormat: 'mp4',
+        originalFileFormat: originalFormat
       });
       toast.success('GIF converted to MP4!');
     } catch (error) {
