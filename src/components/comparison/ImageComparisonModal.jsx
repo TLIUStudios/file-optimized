@@ -1281,7 +1281,7 @@ export default function ImageComparisonModal({
                 <div className="bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg p-4">
                   <p className="text-slate-500 dark:text-slate-400 text-[10px] font-semibold uppercase tracking-wider mb-1">Original Size</p>
                   <p className="text-slate-900 dark:text-white text-2xl font-bold">{formatFileSize(originalSize)}</p>
-                  <p className="text-slate-500 dark:text-slate-400 text-xs mt-2">Format: {fileFormat.toUpperCase()}</p>
+                  <p className="text-slate-500 dark:text-slate-400 text-xs mt-2">Format: {originalExt}</p>
                 </div>
 
                 {!isAnimationVariations && mediaType === 'image' && (
