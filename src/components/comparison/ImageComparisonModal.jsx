@@ -311,6 +311,55 @@ export default function ImageComparisonModal({
     try {
       toast.info(`Preparing download as ${format.toUpperCase()}...`);
       if (mediaTypeOverride === 'image') {
+        // Special handling for AVIF using browser-image-compression
+        if (format === 'avif') {
+          try {
+            // Load browser-image-compression library
+            if (!window.imageCompression) {
+              await new Promise((resolve, reject) => {
+                const script = document.createElement('script');
+                script.src = 'https://cdn.jsdelivr.net/npm/browser-image-compression@2.0.2/dist/browser-image-compression.js';
+                script.onload = () => {
+                  setTimeout(() => {
+                    if (window.imageCompression) resolve();
+                    else reject(new Error('Library not loaded'));
+                  }, 100);
+                };
+                script.onerror = () => reject(new Error('Failed to load library'));
+                document.head.appendChild(script);
+              });
+            }
+            
+            // Convert mediaUrl to blob
+            const response = await fetch(mediaUrl);
+            const sourceBlob = await response.blob();
+            
+            // Compress to AVIF
+            const options = {
+              maxSizeMB: 50,
+              fileType: 'image/avif',
+              useWebWorker: true,
+              initialQuality: 0.92
+            };
+            
+            const avifBlob = await window.imageCompression(sourceBlob, options);
+            
+            const url = URL.createObjectURL(avifBlob);
+            const link = document.createElement('a');
+            link.href = url;
+            const baseName = editableFilename.split('.')[0];
+            link.download = `${baseName}.avif`;
+            link.click();
+            URL.revokeObjectURL(url);
+            toast.success(`Downloaded as AVIF!`);
+            return;
+          } catch (avifError) {
+            console.error('AVIF conversion failed:', avifError);
+            throw new Error('AVIF format not supported by your browser. Try updating Chrome or use a different browser.');
+          }
+        }
+        
+        // Standard canvas conversion for other formats
         const img = new Image();
         img.src = mediaUrl;
 
@@ -331,16 +380,14 @@ export default function ImageComparisonModal({
 
         const mimeType = format === 'jpg' ? 'image/jpeg' : `image/${format}`;
 
-        // Check if browser supports the requested format
-        if (!canvas.toDataURL(mimeType).startsWith(`data:${mimeType}`)) {
-          throw new Error(`Browser does not support converting to ${format.toUpperCase()}.`);
-        }
-
         // Use higher quality for downloads (0.92 for JPEG, native for others)
         const quality = format === 'jpg' ? 0.92 : 0.95;
         
         const blob = await new Promise((resolve, reject) => {
-          canvas.toBlob(resolve, mimeType, quality);
+          canvas.toBlob((b) => {
+            if (b) resolve(b);
+            else reject(new Error(`Browser cannot encode ${format.toUpperCase()}`));
+          }, mimeType, quality);
         });
 
         if (!blob) {
@@ -381,6 +428,62 @@ export default function ImageComparisonModal({
     
     try {
       if (mediaType === 'image' && !isAnimationVariations) {
+        // Special handling for AVIF using browser-image-compression
+        if (format === 'avif') {
+          try {
+            // Load browser-image-compression library
+            if (!window.imageCompression) {
+              await new Promise((resolve, reject) => {
+                const script = document.createElement('script');
+                script.src = 'https://cdn.jsdelivr.net/npm/browser-image-compression@2.0.2/dist/browser-image-compression.js';
+                script.onload = () => {
+                  setTimeout(() => {
+                    if (window.imageCompression) resolve();
+                    else reject(new Error('Library not loaded'));
+                  }, 100);
+                };
+                script.onerror = () => reject(new Error('Failed to load library'));
+                document.head.appendChild(script);
+              });
+            }
+            
+            // Convert compressedImage to blob
+            const response = await fetch(compressedImage);
+            const sourceBlob = await response.blob();
+            
+            // Compress to AVIF
+            const options = {
+              maxSizeMB: 50,
+              fileType: 'image/avif',
+              useWebWorker: true,
+              initialQuality: 0.92
+            };
+            
+            const avifBlob = await window.imageCompression(sourceBlob, options);
+            
+            console.log(`📊 AVIF: ${(avifBlob.size / 1024).toFixed(1)}KB`);
+            
+            setPreviewSize(avifBlob.size);
+            setPreviewFormat(format);
+            
+            const sizeDiff = avifBlob.size - originalSize;
+            const percentChange = ((sizeDiff / originalSize) * 100).toFixed(1);
+            
+            if (avifBlob.size > originalSize) {
+              toast.info(`AVIF: ${formatFileSize(avifBlob.size)} (+${percentChange}% larger)`);
+            } else {
+              toast.success(`AVIF: ${formatFileSize(avifBlob.size)} (${Math.abs(percentChange)}% smaller)`);
+            }
+            
+            setIsConverting(false);
+            return;
+          } catch (avifError) {
+            console.error('AVIF conversion failed:', avifError);
+            throw new Error('AVIF format not supported by your browser');
+          }
+        }
+        
+        // Standard canvas conversion for other formats
         const img = new Image();
         img.src = compressedImage;
         
@@ -405,7 +508,7 @@ export default function ImageComparisonModal({
             if (b) {
               resolve(b);
             } else {
-              reject(new Error(`Failed to create ${format} blob`));
+              reject(new Error(`Browser cannot encode ${format.toUpperCase()}`));
             }
           }, mimeType, quality);
         });
@@ -437,7 +540,7 @@ export default function ImageComparisonModal({
       }
     } catch (error) {
       console.error('❌ Conversion error:', error);
-      toast.error(`Failed to convert to ${format.toUpperCase()}: ${error.message}`);
+      toast.error(`${error.message || 'Failed to convert to ' + format.toUpperCase()}`);
       // Revert to previous format on error
       setSelectedFormat(previewFormat);
     } finally {
@@ -477,19 +580,62 @@ export default function ImageComparisonModal({
 
       for (const f of imageFormatsForZip) {
         try {
-          const blob = await new Promise((resolve, reject) => {
-            canvas.toBlob((b) => {
-              if (b) {
-                resolve(b);
-              } else {
-                reject(new Error(`Failed to create ${f.ext} blob`));
+          let blob;
+          
+          // Special handling for AVIF using browser-image-compression
+          if (f.ext === 'avif') {
+            try {
+              // Load browser-image-compression library if not loaded
+              if (!window.imageCompression) {
+                await new Promise((resolve, reject) => {
+                  const script = document.createElement('script');
+                  script.src = 'https://cdn.jsdelivr.net/npm/browser-image-compression@2.0.2/dist/browser-image-compression.js';
+                  script.onload = () => {
+                    setTimeout(() => {
+                      if (window.imageCompression) resolve();
+                      else reject(new Error('Library not loaded'));
+                    }, 100);
+                  };
+                  script.onerror = () => reject(new Error('Failed to load library'));
+                  document.head.appendChild(script);
+                });
               }
-            }, f.mime, 0.95);
-          });
+              
+              // Convert canvas to blob first
+              const tempBlob = await new Promise((resolve) => {
+                canvas.toBlob(resolve, 'image/png');
+              });
+              
+              // Compress to AVIF
+              const options = {
+                maxSizeMB: 50,
+                fileType: 'image/avif',
+                useWebWorker: true,
+                initialQuality: 0.92
+              };
+              
+              blob = await window.imageCompression(tempBlob, options);
+              console.log(`✓ Added ${f.ext} to ZIP (${(blob.size / 1024).toFixed(1)}KB)`);
+            } catch (avifError) {
+              console.warn(`AVIF not supported, skipping:`, avifError.message);
+              continue; // Skip AVIF if not supported
+            }
+          } else {
+            // Standard canvas conversion for other formats
+            blob = await new Promise((resolve, reject) => {
+              canvas.toBlob((b) => {
+                if (b) {
+                  resolve(b);
+                } else {
+                  reject(new Error(`Failed to create ${f.ext} blob`));
+                }
+              }, f.mime, 0.95);
+            });
+            console.log(`✓ Added ${f.ext} to ZIP (${(blob.size / 1024).toFixed(1)}KB)`);
+          }
           
           if (blob && blob.size > 0) {
             zip.file(`${baseName}.${f.ext}`, blob);
-            console.log(`✓ Added ${f.ext} to ZIP (${(blob.size / 1024).toFixed(1)}KB)`);
           }
         } catch (error) {
           console.warn(`Could not add ${f.ext} to ZIP:`, error.message);
