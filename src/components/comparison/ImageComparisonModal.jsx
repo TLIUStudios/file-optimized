@@ -1,4 +1,3 @@
-
 import { useState, useRef, useEffect } from "react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { X, MoveHorizontal, ZoomIn, ZoomOut, Maximize2, Copy, RefreshCw, Download as DownloadIcon, Check } from "lucide-react"; // Renamed Download to DownloadIcon, added Check
@@ -117,12 +116,20 @@ export default function ImageComparisonModal({
   const originalExt = fileName.split('.').pop().toUpperCase();
   const compressedExt = fileFormat.toUpperCase();
 
-  // Define available formats based on media type
-  const availableFormats = mediaType === 'video'
-    ? ['mp4']
+  // Define available formats based on media type and file format
+  const availableFormats = mediaType === 'video' 
+    ? (fileFormat === 'gif' ? ['mp4', 'gif'] : ['mp4', 'gif'])
     : mediaType === 'audio'
     ? ['mp3', 'wav']
+    : fileFormat === 'gif'
+    ? ['gif', 'mp4']
     : ['jpg', 'png', 'webp', 'avif'];
+  
+  // Track selected format for conversion and preview
+  const [selectedFormat, setSelectedFormat] = useState(fileFormat);
+  const [previewFormat, setPreviewFormat] = useState(fileFormat);
+  const [previewSize, setPreviewSize] = useState(compressedSize);
+  const [isConverting, setIsConverting] = useState(false);
 
   // Load image dimensions
   useEffect(() => {
@@ -299,7 +306,7 @@ export default function ImageComparisonModal({
     toast.success(`${label} copied!`);
   };
 
-  // Helper function for downloading a single media file (image, video, or audio)
+  // Enhanced helper function for downloading with better compression
   const performSingleMediaDownload = async (mediaUrl, format, mediaTypeOverride = mediaType) => {
     try {
       toast.info(`Preparing download as ${format.toUpperCase()}...`);
@@ -316,6 +323,10 @@ export default function ImageComparisonModal({
         canvas.width = img.width;
         canvas.height = img.height;
         const ctx = canvas.getContext('2d');
+        
+        // Enable high quality rendering
+        ctx.imageSmoothingEnabled = true;
+        ctx.imageSmoothingQuality = 'high';
         ctx.drawImage(img, 0, 0);
 
         const mimeType = format === 'jpg' ? 'image/jpeg' : `image/${format}`;
@@ -325,8 +336,11 @@ export default function ImageComparisonModal({
           throw new Error(`Browser does not support converting to ${format.toUpperCase()}.`);
         }
 
+        // Use higher quality for downloads (0.92 for JPEG, native for others)
+        const quality = format === 'jpg' ? 0.92 : 0.95;
+        
         const blob = await new Promise((resolve, reject) => {
-          canvas.toBlob(resolve, mimeType, 0.95);
+          canvas.toBlob(resolve, mimeType, quality);
         });
 
         if (!blob) {
@@ -336,22 +350,71 @@ export default function ImageComparisonModal({
         const url = URL.createObjectURL(blob);
         const link = document.createElement('a');
         link.href = url;
-        const baseName = editableFilename.split('.')[0]; // Use editableFilename for download name
+        const baseName = editableFilename.split('.')[0];
         link.download = `${baseName}.${format}`;
         link.click();
         URL.revokeObjectURL(url);
         toast.success(`Downloaded as ${format.toUpperCase()}!`);
-      } else { // video or audio direct download
+      } else {
         const link = document.createElement('a');
         link.href = mediaUrl;
-        const baseName = editableFilename.split('.')[0]; // Use editableFilename for download name
-        link.download = `${baseName}.${format || fileFormat}`; // Use provided format or default compressed format
+        const baseName = editableFilename.split('.')[0];
+        link.download = `${baseName}.${format || fileFormat}`;
         link.click();
         toast.success(`${mediaTypeOverride.charAt(0).toUpperCase() + mediaTypeOverride.slice(1)} downloaded!`);
       }
     } catch (error) {
       console.error('Error downloading format:', error);
       toast.error(`Failed to download as ${format.toUpperCase()}: ` + error.message);
+    }
+  };
+  
+  // New: Convert and preview format
+  const convertToFormat = async (format) => {
+    if (format === fileFormat) {
+      setPreviewFormat(fileFormat);
+      setPreviewSize(compressedSize);
+      setSelectedFormat(format);
+      return;
+    }
+    
+    setIsConverting(true);
+    setSelectedFormat(format);
+    
+    try {
+      if (mediaType === 'image' && !isAnimationVariations) {
+        const img = new Image();
+        img.src = compressedImage;
+        
+        await new Promise((resolve, reject) => {
+          img.onload = resolve;
+          img.onerror = () => reject(new Error('Failed to load image'));
+        });
+        
+        const canvas = document.createElement('canvas');
+        canvas.width = img.width;
+        canvas.height = img.height;
+        const ctx = canvas.getContext('2d');
+        ctx.imageSmoothingEnabled = true;
+        ctx.imageSmoothingQuality = 'high';
+        ctx.drawImage(img, 0, 0);
+        
+        const mimeType = format === 'jpg' ? 'image/jpeg' : `image/${format}`;
+        const quality = format === 'jpg' ? 0.92 : 0.95;
+        
+        const blob = await new Promise((resolve) => {
+          canvas.toBlob(resolve, mimeType, quality);
+        });
+        
+        setPreviewSize(blob.size);
+        setPreviewFormat(format);
+        toast.success(`Preview updated to ${format.toUpperCase()}`);
+      }
+    } catch (error) {
+      console.error('Conversion error:', error);
+      toast.error('Failed to convert format');
+    } finally {
+      setIsConverting(false);
     }
   };
 
@@ -441,32 +504,14 @@ export default function ImageComparisonModal({
     }
   };
 
-  const downloadMedia = async (format = null) => {
-    if (isAnimationVariations) { // Changed to use `isAnimationVariations` state
+  const downloadMedia = async () => {
+    if (isAnimationVariations) {
       await downloadAllAnimationsAsZip();
       return;
     }
 
-    if (mediaType === 'image' && !format) {
-      // For images, if no specific format is selected, open the options modal
-      setShowDownloadModalForImage(true);
-      return;
-    }
-
-    if (mediaType === 'video' && !format) {
-      // For video, if "Download" is clicked without specific format, download the default MP4.
-      performSingleMediaDownload(compressedImage, 'mp4', 'video');
-      return;
-    }
-
-    if (mediaType === 'audio' && !format) {
-      // For audio, if "Download" is clicked without specific format, download the compressed one.
-      performSingleMediaDownload(compressedImage, fileFormat, 'audio');
-      return;
-    }
-
-    // For any media type, if a specific format is provided
-    performSingleMediaDownload(compressedImage, format);
+    // Download the currently selected format
+    performSingleMediaDownload(compressedImage, selectedFormat, mediaType);
   };
 
 
@@ -595,11 +640,13 @@ export default function ImageComparisonModal({
     return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
   };
 
-  const savingsPercent = originalSize ? ((1 - compressedSize / originalSize) * 100).toFixed(1) : '0';
-  const savingsAmount = originalSize - compressedSize;
+  // Use preview size for calculations when format is selected
+  const displaySize = previewSize;
+  const savingsPercent = originalSize ? ((1 - displaySize / originalSize) * 100).toFixed(1) : '0';
+  const savingsAmount = originalSize - displaySize;
   
   // Check if file got larger
-  const sizeIncreased = compressedSize > originalSize;
+  const sizeIncreased = displaySize > originalSize;
 
   const hasAnyMetadata = aiTitle || aiDescription || aiCategory || aiMood || aiAltText || aiTags;
 
@@ -649,26 +696,54 @@ export default function ImageComparisonModal({
           </div>
 
           <div className="flex items-center gap-2">
-            <div className="flex items-center gap-1 bg-white dark:bg-slate-800 rounded-md border border-slate-200 dark:border-slate-700 p-1">
+            {/* Format Selector Buttons */}
+            {!isAnimationVariations && (
+              <div className="flex items-center gap-1 bg-white dark:bg-slate-800 rounded-md border border-slate-200 dark:border-slate-700 p-1">
+                {availableFormats.map((fmt) => (
+                  <Button
+                    key={fmt}
+                    onClick={() => convertToFormat(fmt)}
+                    variant={selectedFormat === fmt ? "default" : "ghost"}
+                    size="sm"
+                    disabled={isConverting}
+                    className={cn(
+                      "h-8 px-3 text-xs transition-all",
+                      selectedFormat === fmt 
+                        ? "bg-emerald-600 hover:bg-emerald-700 text-white" 
+                        : "hover:bg-slate-100 dark:hover:bg-slate-700"
+                    )}
+                  >
+                    {isConverting && selectedFormat === fmt ? (
+                      <RefreshCw className="w-3 h-3 animate-spin" />
+                    ) : (
+                      fmt.toUpperCase()
+                    )}
+                  </Button>
+                ))}
+              </div>
+            )}
+            
+            {/* Download Button */}
+            <Button
+              onClick={() => downloadMedia()}
+              className="bg-emerald-600 hover:bg-emerald-700 text-white h-8 px-4 text-xs font-semibold"
+            >
+              <DownloadIcon className="w-3.5 h-3.5 mr-1.5" />
+              Download
+            </Button>
+            
+            {/* Download All Formats as ZIP */}
+            {mediaType === 'image' && !isAnimationVariations && (
               <Button
-                onClick={() => downloadMedia()} // This now triggers the modal for images
-                className="bg-emerald-600 hover:bg-emerald-700 text-white h-8 px-3 text-xs"
+                onClick={downloadAllImageFormatsAsZip}
+                variant="outline"
+                className="h-8 px-3 text-xs"
               >
                 <DownloadIcon className="w-3 h-3 mr-1" />
-                Download {isAnimationVariations ? 'All' : ''}
+                .ZIP
               </Button>
-              {!isAnimationVariations && availableFormats.map((fmt) => (
-                <Button
-                  key={fmt}
-                  onClick={() => downloadMedia(fmt)}
-                  variant="ghost"
-                  size="sm"
-                  className="h-8 px-2 text-xs hover:bg-slate-100 dark:hover:bg-slate-700"
-                >
-                  {fmt.toUpperCase()}
-                </Button>
-              ))}
-            </div>
+            )}
+            
             <Button
               variant="ghost"
               size="icon"
@@ -865,7 +940,7 @@ export default function ImageComparisonModal({
                       Compressed
                     </Badge>
                     <Badge className="bg-emerald-600 text-white text-xs px-2 py-0.5 font-bold w-fit">
-                      {compressedExt}
+                      {previewFormat.toUpperCase()}
                     </Badge>
                   </div>
                 </div>
@@ -996,7 +1071,7 @@ export default function ImageComparisonModal({
                   <div className="space-y-2">
                     <div className="flex items-center justify-between py-2 px-3 bg-slate-50 dark:bg-slate-950 rounded-lg border border-slate-200 dark:border-slate-800">
                       <span className="text-slate-600 dark:text-slate-400 text-xs font-medium">Compression Ratio</span>
-                      <span className="text-slate-900 dark:text-white font-bold text-sm">{(compressedSize / originalSize).toFixed(3)}:1</span>
+                      <span className="text-slate-900 dark:text-white font-bold text-sm">{(displaySize / originalSize).toFixed(3)}:1</span>
                     </div>
 
                     <div className="flex items-center justify-between py-2 px-3 bg-slate-50 dark:bg-slate-950 rounded-lg border border-slate-200 dark:border-slate-800">
