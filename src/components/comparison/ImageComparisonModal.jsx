@@ -1293,7 +1293,7 @@ export default function ImageComparisonModal({
                       </div>
                     ) : (
                       <div className="grid grid-cols-2 gap-2">
-                        {allowedFormats.map((format) => {
+                        {availableFormats.map((format) => {
                           const size = allFormatSizes[format] || previewSize;
                           const isSelected = selectedFormat === format;
                           const isBigger = size > originalSize;
