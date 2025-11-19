@@ -130,6 +130,7 @@ export default function ImageComparisonModal({
   const [previewFormat, setPreviewFormat] = useState(fileFormat);
   const [previewSize, setPreviewSize] = useState(compressedSize);
   const [isConverting, setIsConverting] = useState(false);
+  const [convertedBlob, setConvertedBlob] = useState(null);
 
   // Load image dimensions
   useEffect(() => {
@@ -418,8 +419,8 @@ export default function ImageComparisonModal({
   
   // New: Convert and preview format
   const convertToFormat = async (format) => {
-    if (format === selectedFormat && previewFormat === format) {
-      // Already on this format, no need to convert
+    if (format === selectedFormat && previewFormat === format && convertedBlob) {
+      // Already on this format with blob cached
       return;
     }
     
@@ -463,6 +464,8 @@ export default function ImageComparisonModal({
             
             console.log(`📊 AVIF: ${(avifBlob.size / 1024).toFixed(1)}KB`);
             
+            // Store the converted blob
+            setConvertedBlob(avifBlob);
             setPreviewSize(avifBlob.size);
             setPreviewFormat(format);
             
@@ -517,13 +520,11 @@ export default function ImageComparisonModal({
           throw new Error('Failed to create blob');
         }
         
-        console.log(`📊 ${format.toUpperCase()}: ${(blob.size / 1024).toFixed(1)}KB`);
+        console.log(`📊 ${format.toUpperCase()}: ${(blob.size / 1024).toFixed(1)}KB (was ${(previewSize / 1024).toFixed(1)}KB)`);
         
-        // Force state update by using functional setState
-        setPreviewSize(prevSize => {
-          console.log(`Size update: ${(prevSize / 1024).toFixed(1)}KB → ${(blob.size / 1024).toFixed(1)}KB`);
-          return blob.size;
-        });
+        // Store the converted blob and update size
+        setConvertedBlob(blob);
+        setPreviewSize(blob.size);
         setPreviewFormat(format);
         
         const sizeDiff = blob.size - originalSize;
@@ -689,8 +690,20 @@ export default function ImageComparisonModal({
       return;
     }
 
-    // Download the currently selected format
-    performSingleMediaDownload(compressedImage, selectedFormat, mediaType);
+    // If we have a converted blob, download that directly
+    if (convertedBlob) {
+      const url = URL.createObjectURL(convertedBlob);
+      const link = document.createElement('a');
+      link.href = url;
+      const baseName = editableFilename.split('.')[0];
+      link.download = `${baseName}.${selectedFormat}`;
+      link.click();
+      URL.revokeObjectURL(url);
+      toast.success(`Downloaded as ${selectedFormat.toUpperCase()}!`);
+    } else {
+      // Otherwise use the original compressed image
+      performSingleMediaDownload(compressedImage, selectedFormat, mediaType);
+    }
   };
 
 
