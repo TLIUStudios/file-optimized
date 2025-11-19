@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, lazy, Suspense } from "react";
 import { Moon, Sun, Image as ImageIcon, User, LogIn, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Toaster } from "sonner";
@@ -16,6 +16,11 @@ import {
 import LoginPromptModal from "./components/LoginPromptModal";
 import GoogleAds from "./components/GoogleAds";
 
+const SnowEffect = lazy(() => import("./components/themes/SnowEffect"));
+const FireworksEffect = lazy(() => import("./components/themes/FireworksEffect"));
+const HalloweenEffect = lazy(() => import("./components/themes/HalloweenEffect"));
+const HeartsEffect = lazy(() => import("./components/themes/HeartsEffect"));
+
 export default function Layout({ children }) {
   const [theme, setTheme] = useState(() => {
     if (typeof window !== 'undefined') {
@@ -28,6 +33,7 @@ export default function Layout({ children }) {
   const [authLoading, setAuthLoading] = useState(true);
   const [showLoginPrompt, setShowLoginPrompt] = useState(false);
   const [userPlan, setUserPlan] = useState('free');
+  const [userTheme, setUserTheme] = useState('none');
 
   useEffect(() => {
     document.documentElement.classList.toggle('dark', theme === 'dark');
@@ -63,9 +69,11 @@ export default function Layout({ children }) {
           const currentUser = await base44.auth.me();
           setUser(currentUser);
           setUserPlan(currentUser?.plan || 'free');
+          setUserTheme(currentUser?.theme || 'none');
         } else {
           setUser(null);
           setUserPlan('free');
+          setUserTheme('none');
         }
       } catch (error) {
         console.log('Auth check:', error);
@@ -100,6 +108,28 @@ export default function Layout({ children }) {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-950 dark:to-slate-900 transition-colors duration-300">
       <Toaster position="top-center" richColors />
+      
+      {/* Theme Effects */}
+      {userTheme === 'snow' && (
+        <Suspense fallback={null}>
+          <SnowEffect />
+        </Suspense>
+      )}
+      {userTheme === 'fireworks' && (
+        <Suspense fallback={null}>
+          <FireworksEffect />
+        </Suspense>
+      )}
+      {userTheme === 'halloween' && (
+        <Suspense fallback={null}>
+          <HalloweenEffect />
+        </Suspense>
+      )}
+      {userTheme === 'hearts' && (
+        <Suspense fallback={null}>
+          <HeartsEffect />
+        </Suspense>
+      )}
       <style>{`
         :root {
           --primary: 142 76% 36%;

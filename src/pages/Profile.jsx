@@ -204,6 +204,19 @@ export default function Profile() {
     await base44.auth.logout();
   };
 
+  const handleThemeChange = async (theme) => {
+    setSavingTheme(true);
+    try {
+      await base44.auth.updateMe({ theme });
+      setSelectedTheme(theme);
+      toast.success('Theme updated! Refresh to see effects.');
+    } catch (error) {
+      toast.error('Failed to update theme');
+    } finally {
+      setSavingTheme(false);
+    }
+  };
+
   const handleLoginFromPrompt = () => {
     setShowLoginPrompt(false);
     base44.auth.redirectToLogin(window.location.href);

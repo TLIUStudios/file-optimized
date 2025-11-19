@@ -524,24 +524,6 @@ export default function ImageComparisonModal({
       return;
     }
     
-    // If clicking the current format, just show the actual compressed size
-    if (format === fileFormat) {
-      setSelectedFormat(format);
-      setPreviewFormat(format);
-      setPreviewSize(compressedSize);
-      setConvertedBlob(null);
-      
-      const sizeDiff = compressedSize - originalSize;
-      const percentChange = ((sizeDiff / originalSize) * 100).toFixed(1);
-      
-      if (compressedSize > originalSize) {
-        toast.info(`${format.toUpperCase()}: ${formatFileSize(compressedSize)} (+${percentChange}% larger)`);
-      } else {
-        toast.success(`${format.toUpperCase()}: ${formatFileSize(compressedSize)} (${Math.abs(percentChange)}% smaller)`);
-      }
-      return;
-    }
-    
     setIsConverting(true);
     setSelectedFormat(format);
     
