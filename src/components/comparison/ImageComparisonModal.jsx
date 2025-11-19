@@ -134,6 +134,9 @@ export default function ImageComparisonModal({
   const [allFormatSizes, setAllFormatSizes] = useState({});
   const [loadingFormatSizes, setLoadingFormatSizes] = useState(true);
 
+  // Check if we're displaying animated variations
+  const isAnimationVariations = generatedAnimations && generatedAnimations.length > 0;
+
   // Load image dimensions
   useEffect(() => {
     if (originalImage && mediaType === 'image') {
@@ -147,6 +150,94 @@ export default function ImageComparisonModal({
       setImageDimensions({ width: 0, height: 0 });
     }
   }, [originalImage, mediaType]);
+
+  // Calculate sizes for all formats
+  useEffect(() => {
+    const calculateAllFormatSizes = async () => {
+      if (mediaType !== 'image' || isAnimationVariations) {
+        setLoadingFormatSizes(false);
+        return;
+      }
+
+      setLoadingFormatSizes(true);
+      const sizes = {};
+
+      try {
+        const img = new Image();
+        img.src = compressedImage;
+        await new Promise((resolve, reject) => {
+          img.onload = resolve;
+          img.onerror = reject;
+        });
+
+        const canvas = document.createElement('canvas');
+        canvas.width = img.width;
+        canvas.height = img.height;
+        const ctx = canvas.getContext('2d');
+        ctx.imageSmoothingEnabled = true;
+        ctx.imageSmoothingQuality = 'high';
+        ctx.drawImage(img, 0, 0);
+
+        // Calculate for each standard format
+        for (const format of ['jpg', 'png', 'webp']) {
+          try {
+            const mimeType = format === 'jpg' ? 'image/jpeg' : `image/${format}`;
+            const quality = format === 'jpg' ? 0.92 : format === 'png' ? 1.0 : 0.95;
+            
+            const blob = await new Promise((resolve) => {
+              canvas.toBlob(resolve, mimeType, quality);
+            });
+            
+            if (blob) {
+              sizes[format] = blob.size;
+            }
+          } catch (err) {
+            console.warn(`Failed to calculate ${format} size:`, err);
+          }
+        }
+
+        // Calculate AVIF separately
+        try {
+          if (!window.imageCompression) {
+            await new Promise((resolve, reject) => {
+              const script = document.createElement('script');
+              script.src = 'https://cdn.jsdelivr.net/npm/browser-image-compression@2.0.2/dist/browser-image-compression.js';
+              script.onload = () => {
+                setTimeout(() => {
+                  if (window.imageCompression) resolve();
+                  else reject(new Error('Library not loaded'));
+                }, 100);
+              };
+              script.onerror = reject;
+              document.head.appendChild(script);
+            });
+          }
+
+          const response = await fetch(compressedImage);
+          const sourceBlob = await response.blob();
+          
+          const avifBlob = await window.imageCompression(sourceBlob, {
+            maxSizeMB: 50,
+            fileType: 'image/avif',
+            useWebWorker: true,
+            initialQuality: 0.92
+          });
+          
+          sizes.avif = avifBlob.size;
+        } catch (err) {
+          console.warn('AVIF not supported:', err);
+        }
+
+        setAllFormatSizes(sizes);
+      } catch (error) {
+        console.error('Error calculating format sizes:', error);
+      } finally {
+        setLoadingFormatSizes(false);
+      }
+    };
+
+    calculateAllFormatSizes();
+  }, [compressedImage, mediaType, isAnimationVariations]);
 
   const generateMetadata = async () => {
     console.log('🚀 Starting AI metadata generation...');
@@ -843,9 +934,6 @@ export default function ImageComparisonModal({
   const sizeIncreased = displaySize > originalSize;
 
   const hasAnyMetadata = aiTitle || aiDescription || aiCategory || aiMood || aiAltText || aiTags;
-
-  // Check if we're displaying animated variations
-  const isAnimationVariations = generatedAnimations && generatedAnimations.length > 0;
 
 
   if (!isOpen) return null;
