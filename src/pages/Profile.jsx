@@ -210,12 +210,14 @@ export default function Profile() {
 
   const handleThemeChange = async (theme) => {
     setSavingTheme(true);
+    setSelectedTheme(theme);
     try {
       await base44.auth.updateMe({ theme });
-      setSelectedTheme(theme);
-      toast.success('Theme updated! Refresh to see effects.');
+      setUser(prev => ({ ...prev, theme }));
+      toast.success('Theme updated!');
     } catch (error) {
       toast.error('Failed to update theme');
+      setSelectedTheme(user?.theme || 'none');
     } finally {
       setSavingTheme(false);
     }
