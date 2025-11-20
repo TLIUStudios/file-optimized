@@ -1,84 +1,87 @@
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState } from "react";
 
 export default function AutumnEffect() {
   const [leaves, setLeaves] = useState([]);
-  const [mousePos, setMousePos] = useState({ x: -1000, y: -1000 });
-  const mouseTimeoutRef = useRef(null);
+  const [mouseX, setMouseX] = useState(50);
+  const [mouseY, setMouseY] = useState(50);
 
   useEffect(() => {
-    const leafElements = Array.from({ length: 25 }, (_, i) => ({
+    // Create leaves
+    const initial = Array.from({ length: 20 }, (_, i) => ({
       id: i,
-      left: Math.random() * 100,
-      animationDuration: 10 + Math.random() * 12,
-      opacity: 0.7 + Math.random() * 0.3,
-      size: 18 + Math.random() * 14,
-      delay: Math.random() * 6,
-      leaf: ['🍂', '🍁', '🍃'][Math.floor(Math.random() * 3)],
+      x: Math.random() * 100,
+      y: Math.random() * -50,
+      rotation: Math.random() * 360,
+      type: ['🍂', '🍁', '🍃'][Math.floor(Math.random() * 3)],
+      size: 18 + Math.random() * 12,
+      speedY: 0.6 + Math.random() * 0.5,
+      driftSpeed: (Math.random() - 0.5) * 0.4,
     }));
-    setLeaves(leafElements);
+    setLeaves(initial);
 
-    const handleMouseMove = (e) => {
-      setMousePos({ x: e.clientX, y: e.clientY });
-      clearTimeout(mouseTimeoutRef.current);
-      mouseTimeoutRef.current = setTimeout(() => {
-        setMousePos({ x: -1000, y: -1000 });
-      }, 120);
+    // Mouse tracking
+    const handleMouse = (e) => {
+      setMouseX((e.clientX / window.innerWidth) * 100);
+      setMouseY((e.clientY / window.innerHeight) * 100);
     };
 
-    window.addEventListener('mousemove', handleMouseMove);
-    return () => {
-      window.removeEventListener('mousemove', handleMouseMove);
-      clearTimeout(mouseTimeoutRef.current);
-    };
+    window.addEventListener('mousemove', handleMouse);
+    return () => window.removeEventListener('mousemove', handleMouse);
   }, []);
 
-  return (
-    <div className="fixed inset-0 pointer-events-none z-50 overflow-hidden">
-      {leaves.map((leaf) => {
-        const leafX = (leaf.left / 100) * window.innerWidth;
-        const leafY = 0;
-        const dx = mousePos.x - leafX;
-        const dy = mousePos.y - leafY;
-        const distance = Math.sqrt(dx * dx + dy * dy);
-        const blowRadius = 160;
-        const blowForce = distance < blowRadius ? (1 - distance / blowRadius) * 100 : 0;
-        const angle = Math.atan2(dy, dx);
-        const offsetX = blowForce > 0 ? Math.cos(angle) * blowForce : 0;
-        const offsetY = blowForce > 0 ? Math.sin(angle) * blowForce * 0.5 : 0;
+  // Animate leaves
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setLeaves(prev => prev.map(leaf => {
+        let newX = leaf.x + leaf.driftSpeed;
+        let newY = leaf.y + leaf.speedY;
+        
+        // Wind effect from mouse movement
+        const dx = leaf.x - mouseX;
+        const dy = leaf.y - mouseY;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        
+        if (dist < 20) {
+          const force = (20 - dist) / 20;
+          newX += (dx / dist) * force * 1.5;
+          newY += (dy / dist) * force * 0.8;
+        }
 
-        return (
-          <div
-            key={leaf.id}
-            className="absolute animate-leaf-fall transition-transform duration-400 ease-out"
-            style={{
-              left: `${leaf.left}%`,
-              top: "-40px",
-              fontSize: `${leaf.size}px`,
-              opacity: leaf.opacity,
-              animationDuration: `${leaf.animationDuration}s`,
-              animationDelay: `${leaf.delay}s`,
-              filter: 'drop-shadow(0 0 6px rgba(139, 69, 19, 0.5)) drop-shadow(0 4px 8px rgba(0, 0, 0, 0.35))',
-              transform: `translate(${offsetX}px, ${offsetY}px)`,
-            }}
-          >
-            {leaf.leaf}
-          </div>
-        );
-      })}
-      <style jsx>{`
-        @keyframes leaf-fall {
-          0% { transform: translateY(0) translateX(0) rotateZ(0deg) rotateX(0deg); }
-          20% { transform: translateY(20vh) translateX(-55px) rotateZ(144deg) rotateX(180deg); }
-          40% { transform: translateY(40vh) translateX(45px) rotateZ(288deg) rotateX(360deg); }
-          60% { transform: translateY(60vh) translateX(-40px) rotateZ(432deg) rotateX(540deg); }
-          80% { transform: translateY(80vh) translateX(50px) rotateZ(576deg) rotateX(720deg); }
-          100% { transform: translateY(100vh) translateX(-25px) rotateZ(720deg) rotateX(900deg); }
+        let newRotation = leaf.rotation + 3;
+
+        // Reset when off screen
+        if (newY > 110 || newX < -5 || newX > 105) {
+          return {
+            ...leaf,
+            x: Math.random() * 100,
+            y: Math.random() * -30,
+            rotation: Math.random() * 360,
+          };
         }
-        .animate-leaf-fall {
-          animation: leaf-fall ease-in-out infinite;
-          transform-style: preserve-3d;
-        }
-      `}</style>
+
+        return { ...leaf, x: newX, y: newY, rotation: newRotation };
+      }));
+    }, 50);
+    return () => clearInterval(interval);
+  }, [mouseX, mouseY]);
+
+  return (
+    <div className="fixed inset-0 pointer-events-none z-50">
+      {leaves.map(leaf => (
+        <div
+          key={leaf.id}
+          className="absolute transition-all duration-100"
+          style={{
+            left: `${leaf.x}%`,
+            top: `${leaf.y}%`,
+            fontSize: `${leaf.size}px`,
+            transform: `rotate(${leaf.rotation}deg)`,
+            filter: 'drop-shadow(0 3px 5px rgba(139,69,19,0.3))',
+          }}
+        >
+          {leaf.type}
+        </div>
+      ))}
     </div>
   );
 }

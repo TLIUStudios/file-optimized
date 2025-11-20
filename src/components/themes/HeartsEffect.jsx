@@ -4,95 +4,85 @@ export default function HeartsEffect() {
   const [hearts, setHearts] = useState([]);
 
   useEffect(() => {
-    const autoHeartInterval = setInterval(() => {
-      createHeart(Math.random() * 100, false);
-    }, 2000);
-
     const handleClick = (e) => {
       const x = (e.clientX / window.innerWidth) * 100;
-      createHeart(x, true);
+      const colors = ['#ff69b4', '#ff1493', '#ffc0cb', '#ff6b9d'];
+      
+      // Create burst of hearts
+      for (let i = 0; i < 5; i++) {
+        const id = Date.now() + Math.random() + i;
+        const heart = {
+          id,
+          x: x + (Math.random() - 0.5) * 10,
+          y: 100,
+          color: colors[Math.floor(Math.random() * colors.length)],
+          size: 1.5 + Math.random() * 1,
+          speedX: (Math.random() - 0.5) * 2,
+          speedY: -3 - Math.random() * 2,
+        };
+        setHearts(prev => [...prev, heart]);
+        setTimeout(() => setHearts(prev => prev.filter(h => h.id !== id)), 4000);
+      }
     };
 
-    window.addEventListener('click', handleClick);
+    // Auto hearts
+    const interval = setInterval(() => {
+      const id = Date.now() + Math.random();
+      const colors = ['#ff69b4', '#ff1493', '#ffc0cb', '#ff6b9d'];
+      const heart = {
+        id,
+        x: Math.random() * 100,
+        y: 105,
+        color: colors[Math.floor(Math.random() * colors.length)],
+        size: 1.2 + Math.random() * 0.8,
+        speedX: (Math.random() - 0.5) * 0.5,
+        speedY: -1.5 - Math.random(),
+      };
+      setHearts(prev => [...prev, heart]);
+      setTimeout(() => setHearts(prev => prev.filter(h => h.id !== id)), 8000);
+    }, 1500);
 
+    window.addEventListener('click', handleClick);
     return () => {
-      clearInterval(autoHeartInterval);
+      clearInterval(interval);
       window.removeEventListener('click', handleClick);
     };
   }, []);
 
-  const createHeart = (leftPos, isClick) => {
-    const colors = ['#ff69b4', '#ff1493', '#ff6b9d', '#ff4d6d', '#ff85a2', '#ffc0cb'];
-    const id = Date.now() + Math.random();
-    
-    const heart = {
-      id,
-      left: leftPos,
-      animationDuration: isClick ? 6 : 10 + Math.random() * 8,
-      opacity: isClick ? 0.9 : 0.6 + Math.random() * 0.4,
-      size: isClick ? 1.8 + Math.random() * 1 : 1.3 + Math.random() * 1,
-      delay: 0,
-      rotation: Math.random() * 360,
-      color: colors[Math.floor(Math.random() * colors.length)],
-      isClick,
-    };
-
-    setHearts(prev => [...prev, heart]);
-    setTimeout(() => {
-      setHearts(prev => prev.filter(h => h.id !== id));
-    }, heart.animationDuration * 1000);
-  };
+  // Animate hearts
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setHearts(prev => prev.map(heart => ({
+        ...heart,
+        x: heart.x + heart.speedX * 0.1,
+        y: heart.y + heart.speedY * 0.1,
+      })));
+    }, 30);
+    return () => clearInterval(interval);
+  }, []);
 
   return (
-    <>
-      <div className="fixed inset-0 pointer-events-none z-50 overflow-hidden">
-        {hearts.map((heart) => (
-          <div
-            key={heart.id}
-            className={heart.isClick ? "absolute animate-float-hearts-click" : "absolute animate-float-hearts"}
-            style={{
-              left: `${heart.left}%`,
-              bottom: "-40px",
-              fontSize: `${heart.size}rem`,
-              opacity: heart.opacity,
-              animationDuration: `${heart.animationDuration}s`,
-              animationDelay: `${heart.delay}s`,
-              filter: `drop-shadow(0 0 12px ${heart.color}) drop-shadow(0 6px 10px rgba(0, 0, 0, 0.25))`,
-              color: heart.color,
-            }}
-          >
-            💕
-          </div>
-        ))}
-      </div>
-
-      <div className="fixed bottom-4 left-4 pointer-events-auto z-50">
-        <div className="bg-black/50 backdrop-blur-sm text-white px-3 py-1.5 rounded-lg text-xs">
-          Click to spread love! 💕
+    <div className="fixed inset-0 pointer-events-none z-50">
+      {hearts.map(heart => (
+        <div
+          key={heart.id}
+          className="absolute transition-all duration-100"
+          style={{
+            left: `${heart.x}%`,
+            top: `${heart.y}%`,
+            fontSize: `${heart.size}rem`,
+            color: heart.color,
+            filter: `drop-shadow(0 0 8px ${heart.color})`,
+            opacity: Math.max(0, Math.min(1, (110 - heart.y) / 20)),
+          }}
+        >
+          💕
         </div>
-      </div>
+      ))}
 
-      <style jsx>{`
-        @keyframes float-hearts {
-          0% { transform: translateY(0) translateX(0) rotate(0deg) scale(0.7); opacity: 0; }
-          12% { opacity: 1; }
-          25% { transform: translateY(-25vh) translateX(40px) rotate(90deg) scale(1.1); }
-          50% { transform: translateY(-50vh) translateX(-30px) rotate(180deg) scale(1); }
-          75% { transform: translateY(-75vh) translateX(45px) rotate(270deg) scale(1.05); }
-          88% { opacity: 1; }
-          100% { transform: translateY(-100vh) translateX(-25px) rotate(360deg) scale(0.8); opacity: 0; }
-        }
-        @keyframes float-hearts-click {
-          0% { transform: translateY(0) scale(0); opacity: 0; }
-          15% { transform: translateY(-15vh) scale(1.3); opacity: 1; }
-          30% { transform: translateY(-30vh) translateX(30px) rotate(60deg) scale(1.1); }
-          60% { transform: translateY(-60vh) translateX(-25px) rotate(180deg) scale(1); }
-          85% { opacity: 1; }
-          100% { transform: translateY(-100vh) translateX(20px) rotate(360deg) scale(0.6); opacity: 0; }
-        }
-        .animate-float-hearts { animation: float-hearts ease-in-out infinite; }
-        .animate-float-hearts-click { animation: float-hearts-click ease-out forwards; }
-      `}</style>
-    </>
+      <div className="fixed bottom-6 left-6 bg-black/60 text-white px-3 py-2 rounded-lg text-xs backdrop-blur pointer-events-none">
+        Click to spread love! 💕
+      </div>
+    </div>
   );
 }

@@ -1,82 +1,80 @@
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState } from "react";
 
 export default function SakuraEffect() {
   const [petals, setPetals] = useState([]);
-  const [mousePos, setMousePos] = useState({ x: -1000, y: -1000 });
-  const mouseTimeoutRef = useRef(null);
+  const [mouseX, setMouseX] = useState(50);
 
   useEffect(() => {
-    const petalElements = Array.from({ length: 30 }, (_, i) => ({
+    // Create petals
+    const initial = Array.from({ length: 25 }, (_, i) => ({
       id: i,
-      left: Math.random() * 100,
-      animationDuration: 12 + Math.random() * 12,
-      opacity: 0.6 + Math.random() * 0.4,
-      size: 14 + Math.random() * 12,
-      delay: Math.random() * 8,
+      x: Math.random() * 100,
+      y: Math.random() * -50,
+      rotation: Math.random() * 360,
+      size: 14 + Math.random() * 10,
+      speedY: 0.8 + Math.random() * 0.6,
+      driftSpeed: (Math.random() - 0.5) * 0.3,
     }));
-    setPetals(petalElements);
+    setPetals(initial);
 
-    const handleMouseMove = (e) => {
-      setMousePos({ x: e.clientX, y: e.clientY });
-      clearTimeout(mouseTimeoutRef.current);
-      mouseTimeoutRef.current = setTimeout(() => {
-        setMousePos({ x: -1000, y: -1000 });
-      }, 150);
+    // Mouse tracking
+    const handleMouse = (e) => {
+      setMouseX((e.clientX / window.innerWidth) * 100);
     };
 
-    window.addEventListener('mousemove', handleMouseMove);
-    return () => {
-      window.removeEventListener('mousemove', handleMouseMove);
-      clearTimeout(mouseTimeoutRef.current);
-    };
+    window.addEventListener('mousemove', handleMouse);
+    return () => window.removeEventListener('mousemove', handleMouse);
   }, []);
 
-  return (
-    <div className="fixed inset-0 pointer-events-none z-50 overflow-hidden">
-      {petals.map((petal) => {
-        const petalX = (petal.left / 100) * window.innerWidth;
-        const petalY = 0;
-        const dx = mousePos.x - petalX;
-        const dy = mousePos.y - petalY;
-        const distance = Math.sqrt(dx * dx + dy * dy);
-        const swayRadius = 180;
-        const swayForce = distance < swayRadius ? (1 - distance / swayRadius) * 120 : 0;
-        const angle = Math.atan2(dy, dx);
-        const offsetX = swayForce > 0 ? Math.cos(angle) * swayForce : 0;
-        const offsetY = swayForce > 0 ? Math.sin(angle) * swayForce * 0.3 : 0;
+  // Animate petals
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setPetals(prev => prev.map(petal => {
+        let newX = petal.x + petal.driftSpeed;
+        
+        // Wind effect from mouse
+        const distToMouse = Math.abs(petal.x - mouseX);
+        if (distToMouse < 15) {
+          const direction = petal.x > mouseX ? 1 : -1;
+          newX += direction * (15 - distToMouse) * 0.15;
+        }
 
-        return (
-          <div
-            key={petal.id}
-            className="absolute animate-sakura-fall transition-transform duration-500 ease-out"
-            style={{
-              left: `${petal.left}%`,
-              top: "-30px",
-              fontSize: `${petal.size}px`,
-              opacity: petal.opacity,
-              animationDuration: `${petal.animationDuration}s`,
-              animationDelay: `${petal.delay}s`,
-              filter: 'drop-shadow(0 0 8px rgba(255, 192, 203, 0.7)) drop-shadow(0 3px 6px rgba(0, 0, 0, 0.25))',
-              transform: `translate(${offsetX}px, ${offsetY}px)`,
-            }}
-          >
-            🌸
-          </div>
-        );
-      })}
-      <style jsx>{`
-        @keyframes sakura-fall {
-          0% { transform: translateY(0) translateX(0) rotateZ(0deg) rotateY(0deg); }
-          25% { transform: translateY(25vh) translateX(70px) rotateZ(90deg) rotateY(180deg); }
-          50% { transform: translateY(50vh) translateX(-50px) rotateZ(180deg) rotateY(360deg); }
-          75% { transform: translateY(75vh) translateX(60px) rotateZ(270deg) rotateY(540deg); }
-          100% { transform: translateY(100vh) translateX(-35px) rotateZ(360deg) rotateY(720deg); }
+        let newY = petal.y + petal.speedY;
+        let newRotation = petal.rotation + 2;
+
+        // Reset when off screen
+        if (newY > 110) {
+          return {
+            ...petal,
+            x: Math.random() * 100,
+            y: Math.random() * -30,
+            rotation: Math.random() * 360,
+          };
         }
-        .animate-sakura-fall {
-          animation: sakura-fall ease-in-out infinite;
-          transform-style: preserve-3d;
-        }
-      `}</style>
+
+        return { ...petal, x: newX, y: newY, rotation: newRotation };
+      }));
+    }, 50);
+    return () => clearInterval(interval);
+  }, [mouseX]);
+
+  return (
+    <div className="fixed inset-0 pointer-events-none z-50">
+      {petals.map(petal => (
+        <div
+          key={petal.id}
+          className="absolute transition-all duration-100"
+          style={{
+            left: `${petal.x}%`,
+            top: `${petal.y}%`,
+            fontSize: `${petal.size}px`,
+            transform: `rotate(${petal.rotation}deg)`,
+            filter: 'drop-shadow(0 2px 4px rgba(255,192,203,0.4))',
+          }}
+        >
+          🌸
+        </div>
+      ))}
     </div>
   );
 }
