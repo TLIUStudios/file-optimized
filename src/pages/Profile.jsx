@@ -630,6 +630,36 @@ export default function Profile() {
                   <div className="font-semibold text-sm text-slate-900 dark:text-white">Autumn</div>
                   <div className="text-xs text-slate-500 dark:text-slate-400">Fall</div>
                 </button>
+
+                <button
+                  onClick={() => handleThemeChange('confetti')}
+                  disabled={savingTheme}
+                  className={cn(
+                    "p-4 rounded-lg border-2 transition-all text-left",
+                    selectedTheme === 'confetti'
+                      ? "border-emerald-500 bg-emerald-50 dark:bg-emerald-950/30"
+                      : "border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600"
+                  )}
+                >
+                  <div className="text-2xl mb-2">🎉</div>
+                  <div className="font-semibold text-sm text-slate-900 dark:text-white">Confetti</div>
+                  <div className="text-xs text-slate-500 dark:text-slate-400">Party</div>
+                </button>
+
+                <button
+                  onClick={() => handleThemeChange('bubbles')}
+                  disabled={savingTheme}
+                  className={cn(
+                    "p-4 rounded-lg border-2 transition-all text-left",
+                    selectedTheme === 'bubbles'
+                      ? "border-emerald-500 bg-emerald-50 dark:bg-emerald-950/30"
+                      : "border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600"
+                  )}
+                >
+                  <div className="text-2xl mb-2">🫧</div>
+                  <div className="font-semibold text-sm text-slate-900 dark:text-white">Bubbles</div>
+                  <div className="text-xs text-slate-500 dark:text-slate-400">Playful</div>
+                </button>
               </div>
 
               {savingTheme && (

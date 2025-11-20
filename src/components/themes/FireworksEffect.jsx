@@ -10,19 +10,19 @@ export default function FireworksEffect() {
         id,
         left: 20 + Math.random() * 60,
         bottom: 30 + Math.random() * 50,
-        color: ['#ff0844', '#ffb199', '#ffd23f', '#00d9ff', '#b337ff', '#00ff88'][Math.floor(Math.random() * 6)],
-        particleCount: 20 + Math.floor(Math.random() * 15),
-        size: 0.8 + Math.random() * 0.4,
+        color: ['#ff0844', '#ffb199', '#ffd23f', '#00d9ff', '#b337ff', '#00ff88', '#ff3d9e', '#4dffdf'][Math.floor(Math.random() * 8)],
+        particleCount: 30 + Math.floor(Math.random() * 25),
+        size: 1 + Math.random() * 0.5,
       };
       
       setFireworks(prev => [...prev, firework]);
       
       setTimeout(() => {
         setFireworks(prev => prev.filter(f => f.id !== id));
-      }, 2500);
+      }, 3000);
     };
 
-    const interval = setInterval(createFirework, 800);
+    const interval = setInterval(createFirework, 600);
     return () => clearInterval(interval);
   }, []);
 
@@ -37,27 +37,32 @@ export default function FireworksEffect() {
             bottom: `${fw.bottom}%`,
           }}
         >
-          {/* Launch trail */}
+          {/* Launch trail with glow */}
           <div 
-            className="absolute w-1 h-12 bg-gradient-to-t from-yellow-300 to-transparent animate-launch"
+            className="absolute w-2 h-16 animate-launch"
             style={{
-              left: '0',
-              bottom: '-50px',
+              left: '-4px',
+              bottom: '-60px',
+              background: `linear-gradient(to top, ${fw.color}, transparent)`,
+              boxShadow: `0 0 20px ${fw.color}, 0 0 40px ${fw.color}`,
+              filter: 'blur(2px)',
             }}
           />
           
-          {/* Explosion particles */}
+          {/* Explosion particles with 3D effect */}
           {Array.from({ length: fw.particleCount }).map((_, i) => {
             const angle = (360 / fw.particleCount) * i;
             return (
               <div
                 key={i}
-                className="absolute w-1 h-1 rounded-full animate-explode"
+                className="absolute rounded-full animate-explode"
                 style={{
-                  backgroundColor: fw.color,
-                  boxShadow: `0 0 4px ${fw.color}, 0 0 8px ${fw.color}`,
+                  width: '6px',
+                  height: '6px',
+                  background: `radial-gradient(circle, ${fw.color}, transparent)`,
+                  boxShadow: `0 0 10px ${fw.color}, 0 0 20px ${fw.color}, inset 0 0 5px white`,
                   transform: `rotate(${angle}deg)`,
-                  animationDelay: '0s',
+                  animationDelay: '0.1s',
                   '--angle': `${angle}deg`,
                   '--size': fw.size,
                 }}
@@ -65,14 +70,16 @@ export default function FireworksEffect() {
             );
           })}
           
-          {/* Center bright flash */}
+          {/* Center bright flash with glow */}
           <div
-            className="absolute w-3 h-3 rounded-full animate-flash"
+            className="absolute rounded-full animate-flash"
             style={{
-              backgroundColor: fw.color,
-              boxShadow: `0 0 20px ${fw.color}, 0 0 40px ${fw.color}`,
-              left: '-6px',
-              top: '-6px',
+              width: '20px',
+              height: '20px',
+              background: `radial-gradient(circle, white, ${fw.color})`,
+              boxShadow: `0 0 40px ${fw.color}, 0 0 80px ${fw.color}, 0 0 120px ${fw.color}`,
+              left: '-10px',
+              top: '-10px',
             }}
           />
         </div>
@@ -80,11 +87,14 @@ export default function FireworksEffect() {
       <style jsx>{`
         @keyframes launch {
           0% {
-            transform: translateY(50px);
+            transform: translateY(60px) scaleY(0);
+            opacity: 0;
+          }
+          50% {
             opacity: 1;
           }
           100% {
-            transform: translateY(0);
+            transform: translateY(0) scaleY(1);
             opacity: 0;
           }
         }
@@ -94,7 +104,7 @@ export default function FireworksEffect() {
             opacity: 1;
           }
           100% {
-            transform: translateX(calc(120px * var(--size))) translateY(calc(-120px * var(--size))) scale(0) rotate(var(--angle));
+            transform: translateX(calc(150px * var(--size))) translateY(calc(-150px * var(--size))) scale(0) rotate(var(--angle));
             opacity: 0;
           }
         }
@@ -103,23 +113,23 @@ export default function FireworksEffect() {
             transform: scale(0);
             opacity: 1;
           }
-          20% {
-            transform: scale(2);
+          30% {
+            transform: scale(3);
             opacity: 1;
           }
           100% {
-            transform: scale(0.5);
+            transform: scale(1);
             opacity: 0;
           }
         }
         .animate-launch {
-          animation: launch 0.6s ease-out forwards;
+          animation: launch 0.8s ease-out forwards;
         }
         .animate-explode {
-          animation: explode 1.8s ease-out forwards;
+          animation: explode 2s ease-out forwards;
         }
         .animate-flash {
-          animation: flash 0.8s ease-out forwards;
+          animation: flash 1s ease-out forwards;
         }
       `}</style>
     </div>
