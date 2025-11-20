@@ -4,117 +4,70 @@ export default function HalloweenEffect() {
   const [bats, setBats] = useState([]);
   const [spiders, setSpiders] = useState([]);
   const [ghosts, setGhosts] = useState([]);
-  const [fog, setFog] = useState([]);
+  const [mousePos, setMousePos] = useState({ x: -1000, y: -1000 });
 
   useEffect(() => {
-    // Bats with varied flight patterns
-    const batElements = Array.from({ length: 18 }, (_, i) => ({
+    const batElements = Array.from({ length: 8 }, (_, i) => ({
       id: `bat-${i}`,
-      top: 10 + Math.random() * 70,
-      animationDuration: 5 + Math.random() * 7,
-      delay: Math.random() * 10,
-      size: 1.3 + Math.random() * 0.9,
-      path: i % 4,
+      top: 15 + Math.random() * 60,
+      animationDuration: 7 + Math.random() * 6,
+      delay: Math.random() * 8,
+      size: 1.5 + Math.random() * 0.8,
+      path: i % 3,
     }));
     setBats(batElements);
 
-    // Spiders descending
-    const spiderElements = Array.from({ length: 12 }, (_, i) => ({
+    const spiderElements = Array.from({ length: 6 }, (_, i) => ({
       id: `spider-${i}`,
-      left: 5 + (i * 8) + Math.random() * 6,
-      animationDuration: 14 + Math.random() * 12,
-      delay: Math.random() * 8,
-      size: 1.1 + Math.random() * 0.7,
-      swingAmount: 15 + Math.random() * 25,
+      left: 10 + (i * 15) + Math.random() * 8,
+      animationDuration: 16 + Math.random() * 10,
+      delay: Math.random() * 6,
+      size: 1.2 + Math.random() * 0.6,
     }));
     setSpiders(spiderElements);
 
-    // Floating ghosts
-    const ghostElements = Array.from({ length: 6 }, (_, i) => ({
+    const ghostElements = Array.from({ length: 4 }, (_, i) => ({
       id: `ghost-${i}`,
-      left: 15 + i * 15 + Math.random() * 10,
-      animationDuration: 12 + Math.random() * 8,
-      delay: Math.random() * 6,
-      size: 2 + Math.random() * 1,
+      left: 20 + i * 20 + Math.random() * 10,
+      animationDuration: 14 + Math.random() * 8,
+      delay: Math.random() * 5,
+      size: 2.2 + Math.random() * 1,
     }));
     setGhosts(ghostElements);
 
-    // Creeping fog
-    const fogElements = Array.from({ length: 8 }, (_, i) => ({
-      id: `fog-${i}`,
-      left: i * 15 - 10,
-      animationDuration: 20 + Math.random() * 15,
-      delay: Math.random() * 10,
-      opacity: 0.15 + Math.random() * 0.2,
-    }));
-    setFog(fogElements);
+    const handleMouseMove = (e) => {
+      setMousePos({ x: e.clientX, y: e.clientY });
+    };
+
+    window.addEventListener('mousemove', handleMouseMove);
+    return () => window.removeEventListener('mousemove', handleMouseMove);
   }, []);
 
   return (
     <>
-      {/* Eerie fog at bottom */}
-      <div className="fixed bottom-0 inset-x-0 pointer-events-none z-50 h-48 overflow-hidden">
-        {fog.map((f) => (
-          <div
-            key={f.id}
-            className="absolute animate-fog-drift"
-            style={{
-              left: `${f.left}%`,
-              bottom: '-20px',
-              width: '400px',
-              height: '150px',
-              background: 'radial-gradient(ellipse at center, rgba(138, 43, 226, 0.3), rgba(75, 0, 130, 0.2), transparent)',
-              filter: 'blur(30px)',
-              opacity: f.opacity,
-              animationDuration: `${f.animationDuration}s`,
-              animationDelay: `${f.delay}s`,
-            }}
-          />
-        ))}
-      </div>
-
-      {/* Spooky web structure at top */}
-      <div className="fixed inset-x-0 top-0 pointer-events-none z-50 h-48">
+      <div className="fixed inset-x-0 top-0 pointer-events-none z-50 h-40">
         <svg width="100%" height="100%" className="absolute inset-0">
           <defs>
             <filter id="webGlow">
-              <feGaussianBlur stdDeviation="1.5" result="coloredBlur"/>
+              <feGaussianBlur stdDeviation="2" result="coloredBlur"/>
               <feMerge>
                 <feMergeNode in="coloredBlur"/>
                 <feMergeNode in="SourceGraphic"/>
               </feMerge>
             </filter>
-            <radialGradient id="webGrad">
-              <stop offset="0%" style={{ stopColor: 'rgba(220, 220, 220, 0.9)' }} />
-              <stop offset="100%" style={{ stopColor: 'rgba(180, 180, 180, 0.6)' }} />
-            </radialGradient>
           </defs>
-          {Array.from({ length: 12 }).map((_, i) => (
+          {Array.from({ length: 8 }).map((_, i) => (
             <g key={i} filter="url(#webGlow)">
-              {/* Anchor point */}
-              <circle cx={`${7 + i * 8.5}%`} cy="20" r="4" fill="url(#webGrad)" />
-              {/* Web strands */}
-              {Array.from({ length: 9 }).map((_, j) => (
+              <circle cx={`${10 + i * 12}%`} cy="25" r="5" fill="rgba(220, 220, 220, 0.85)" />
+              {Array.from({ length: 7 }).map((_, j) => (
                 <line
                   key={j}
-                  x1={`${7 + i * 8.5}%`}
-                  y1="20"
-                  x2={`${7 + i * 8.5 + (j - 4) * 5}%`}
-                  y2="100"
-                  stroke="rgba(210, 210, 210, 0.7)"
-                  strokeWidth="1.8"
-                />
-              ))}
-              {/* Radial web */}
-              {[40, 60, 80].map((radius, idx) => (
-                <circle
-                  key={idx}
-                  cx={`${7 + i * 8.5}%`}
-                  cy="20"
-                  r={radius}
-                  fill="none"
-                  stroke="rgba(200, 200, 200, 0.5)"
-                  strokeWidth="1.5"
+                  x1={`${10 + i * 12}%`}
+                  y1="25"
+                  x2={`${10 + i * 12 + (j - 3) * 6}%`}
+                  y2="120"
+                  stroke="rgba(210, 210, 210, 0.65)"
+                  strokeWidth="2"
                 />
               ))}
             </g>
@@ -122,68 +75,62 @@ export default function HalloweenEffect() {
         </svg>
       </div>
 
-      {/* Flying bats with shadows */}
       <div className="fixed inset-0 pointer-events-none z-50 overflow-hidden">
-        {bats.map((bat) => (
-          <div
-            key={bat.id}
-            className={`absolute ${
-              bat.path === 0 ? 'animate-bat-straight' : 
-              bat.path === 1 ? 'animate-bat-wave' : 
-              bat.path === 2 ? 'animate-bat-swoop' :
-              'animate-bat-circle'
-            }`}
-            style={{
-              top: `${bat.top}%`,
-              right: "-80px",
-              fontSize: `${1.6 + bat.size}rem`,
-              animationDuration: `${bat.animationDuration}s`,
-              animationDelay: `${bat.delay}s`,
-              filter: 'drop-shadow(0 6px 12px rgba(0, 0, 0, 0.7)) drop-shadow(0 0 8px rgba(138, 43, 226, 0.4))',
-            }}
-          >
-            🦇
-          </div>
-        ))}
+        {bats.map((bat) => {
+          const batX = window.innerWidth + 80;
+          const batY = (bat.top / 100) * window.innerHeight;
+          const dx = mousePos.x - batX;
+          const dy = mousePos.y - batY;
+          const distance = Math.sqrt(dx * dx + dy * dy);
+          const avoidRadius = 200;
+          const avoidForce = distance < avoidRadius ? (1 - distance / avoidRadius) * 60 : 0;
+
+          return (
+            <div
+              key={bat.id}
+              className={`absolute ${bat.path === 0 ? 'animate-bat-straight' : bat.path === 1 ? 'animate-bat-wave' : 'animate-bat-swoop'} transition-transform duration-300`}
+              style={{
+                top: `${bat.top}%`,
+                right: "-80px",
+                fontSize: `${1.8 + bat.size}rem`,
+                animationDuration: `${bat.animationDuration}s`,
+                animationDelay: `${bat.delay}s`,
+                filter: 'drop-shadow(0 6px 14px rgba(0, 0, 0, 0.8)) drop-shadow(0 0 10px rgba(138, 43, 226, 0.5))',
+                transform: `translateY(${avoidForce * -1}px)`,
+              }}
+            >
+              🦇
+            </div>
+          );
+        })}
       </div>
 
-      {/* Descending spiders with swinging motion */}
       <div className="fixed inset-0 pointer-events-none z-50 overflow-hidden">
         {spiders.map((spider) => (
           <div
             key={spider.id}
             className="absolute"
-            style={{
-              left: `${spider.left}%`,
-              top: "0",
-            }}
+            style={{ left: `${spider.left}%`, top: "0" }}
           >
-            {/* Silk thread with shimmer */}
             <div
               className="absolute animate-thread-descend"
               style={{
                 width: '2px',
                 height: "100vh",
                 left: "50%",
-                background: 'linear-gradient(to bottom, rgba(230, 230, 230, 0.7), rgba(200, 200, 200, 0.5), transparent 90%)',
-                boxShadow: `
-                  0 0 6px rgba(255, 255, 255, 0.6),
-                  inset 0 0 3px rgba(255, 255, 255, 0.9),
-                  2px 0 4px rgba(138, 43, 226, 0.3)
-                `,
+                background: 'linear-gradient(to bottom, rgba(230, 230, 230, 0.75), rgba(200, 200, 200, 0.5), transparent 92%)',
+                boxShadow: '0 0 8px rgba(255, 255, 255, 0.7), inset 0 0 4px rgba(255, 255, 255, 0.95)',
                 animationDuration: `${spider.animationDuration}s`,
                 animationDelay: `${spider.delay}s`,
               }}
             />
-            {/* Spider with swinging */}
             <div
               className="absolute animate-spider-swing"
               style={{
-                fontSize: `${1.3 + spider.size * 0.9}rem`,
+                fontSize: `${1.4 + spider.size * 0.9}rem`,
                 animationDuration: `${spider.animationDuration}s`,
                 animationDelay: `${spider.delay}s`,
-                filter: 'drop-shadow(0 4px 8px rgba(0, 0, 0, 0.7)) drop-shadow(0 0 6px rgba(138, 43, 226, 0.4))',
-                '--swing': `${spider.swingAmount}px`,
+                filter: 'drop-shadow(0 5px 10px rgba(0, 0, 0, 0.75)) drop-shadow(0 0 8px rgba(138, 43, 226, 0.5))',
               }}
             >
               🕷️
@@ -192,85 +139,81 @@ export default function HalloweenEffect() {
         ))}
       </div>
 
-      {/* Floating ghosts */}
       <div className="fixed inset-0 pointer-events-none z-50 overflow-hidden">
-        {ghosts.map((ghost) => (
-          <div
-            key={ghost.id}
-            className="absolute animate-ghost-float"
-            style={{
-              left: `${ghost.left}%`,
-              top: '20%',
-              fontSize: `${ghost.size}rem`,
-              animationDuration: `${ghost.animationDuration}s`,
-              animationDelay: `${ghost.delay}s`,
-              filter: 'drop-shadow(0 0 12px rgba(255, 255, 255, 0.6)) drop-shadow(0 0 24px rgba(138, 43, 226, 0.5))',
-              opacity: 0.85,
-            }}
-          >
-            👻
-          </div>
-        ))}
+        {ghosts.map((ghost) => {
+          const ghostX = (ghost.left / 100) * window.innerWidth;
+          const ghostY = window.innerHeight * 0.3;
+          const dx = mousePos.x - ghostX;
+          const dy = mousePos.y - ghostY;
+          const distance = Math.sqrt(dx * dx + dy * dy);
+          const followRadius = 250;
+          const followForce = distance < followRadius ? (1 - distance / followRadius) * 40 : 0;
+          const angle = Math.atan2(dy, dx);
+          const offsetX = followForce > 0 ? Math.cos(angle) * followForce : 0;
+          const offsetY = followForce > 0 ? Math.sin(angle) * followForce : 0;
+
+          return (
+            <div
+              key={ghost.id}
+              className="absolute animate-ghost-float transition-transform duration-500"
+              style={{
+                left: `${ghost.left}%`,
+                top: '25%',
+                fontSize: `${ghost.size}rem`,
+                animationDuration: `${ghost.animationDuration}s`,
+                animationDelay: `${ghost.delay}s`,
+                filter: 'drop-shadow(0 0 15px rgba(255, 255, 255, 0.7)) drop-shadow(0 0 30px rgba(138, 43, 226, 0.6))',
+                opacity: 0.9,
+                transform: `translate(${offsetX}px, ${offsetY}px)`,
+              }}
+            >
+              👻
+            </div>
+          );
+        })}
       </div>
 
       <style jsx>{`
         @keyframes bat-straight {
-          from { transform: translateX(0) scaleX(1); }
-          50% { transform: translateX(-50vw) scaleX(-1.1); }
-          to { transform: translateX(-110vw) scaleX(1); }
+          from { transform: translateX(0); }
+          to { transform: translateX(-110vw); }
         }
         @keyframes bat-wave {
-          0% { transform: translate(0, 0) rotate(0deg); }
-          25% { transform: translate(-25vw, -50px) rotate(-12deg); }
-          50% { transform: translate(-50vw, 0) rotate(0deg); }
-          75% { transform: translate(-75vw, 50px) rotate(12deg); }
-          100% { transform: translate(-110vw, 0) rotate(0deg); }
+          0% { transform: translate(0, 0); }
+          25% { transform: translate(-27.5vw, -40px); }
+          50% { transform: translate(-55vw, 0); }
+          75% { transform: translate(-82.5vw, 40px); }
+          100% { transform: translate(-110vw, 0); }
         }
         @keyframes bat-swoop {
-          0% { transform: translate(0, 0) rotate(0deg); }
-          30% { transform: translate(-30vw, 100px) rotate(20deg); }
-          70% { transform: translate(-70vw, -50px) rotate(-20deg); }
-          100% { transform: translate(-110vw, 0) rotate(0deg); }
-        }
-        @keyframes bat-circle {
-          0% { transform: translate(0, 0) rotate(0deg) scale(1); }
-          25% { transform: translate(-25vw, -80px) rotate(-30deg) scale(1.2); }
-          50% { transform: translate(-50vw, 0) rotate(0deg) scale(1); }
-          75% { transform: translate(-75vw, 80px) rotate(30deg) scale(0.9); }
-          100% { transform: translate(-110vw, 0) rotate(0deg) scale(1); }
+          0% { transform: translate(0, 0); }
+          40% { transform: translate(-40vw, 80px); }
+          80% { transform: translate(-80vw, -30px); }
+          100% { transform: translate(-110vw, 0); }
         }
         @keyframes spider-swing {
-          0% { transform: translateY(-40px) translateX(0) rotate(0deg) scale(0.7); opacity: 0; }
-          5% { opacity: 1; }
-          50% { transform: translateY(50vh) translateX(var(--swing)) rotate(720deg) scale(1); }
+          0% { transform: translateY(-50px) rotate(0deg) scale(0.8); opacity: 0; }
+          8% { opacity: 1; }
           95% { opacity: 1; }
-          100% { transform: translateY(105vh) translateX(calc(var(--swing) * -0.5)) rotate(1440deg) scale(1.3); opacity: 0; }
+          100% { transform: translateY(105vh) rotate(1800deg) scale(1.2); opacity: 0; }
         }
         @keyframes thread-descend {
           0% { opacity: 0; transform: scaleY(0); transform-origin: top; }
-          8% { opacity: 1; }
+          10% { opacity: 1; }
           95% { transform: scaleY(1); opacity: 1; }
           100% { opacity: 0; }
         }
         @keyframes ghost-float {
-          0%, 100% { transform: translate(0, 0) scale(1); opacity: 0.7; }
-          25% { transform: translate(-40px, -30px) scale(1.1); opacity: 0.9; }
-          50% { transform: translate(20px, -50px) scale(0.95); opacity: 0.85; }
-          75% { transform: translate(-30px, -20px) scale(1.05); opacity: 0.8; }
-        }
-        @keyframes fog-drift {
-          0% { transform: translateX(0) scale(1); }
-          50% { transform: translateX(100px) scale(1.2); }
-          100% { transform: translateX(200px) scale(1); }
+          0%, 100% { transform: translate(0, 0); }
+          33% { transform: translate(-30px, -25px); }
+          66% { transform: translate(20px, -40px); }
         }
         .animate-bat-straight { animation: bat-straight linear infinite; }
         .animate-bat-wave { animation: bat-wave ease-in-out infinite; }
         .animate-bat-swoop { animation: bat-swoop ease-in-out infinite; }
-        .animate-bat-circle { animation: bat-circle ease-in-out infinite; }
         .animate-spider-swing { animation: spider-swing linear infinite; }
         .animate-thread-descend { animation: thread-descend linear infinite; }
         .animate-ghost-float { animation: ghost-float ease-in-out infinite; }
-        .animate-fog-drift { animation: fog-drift linear infinite; }
       `}</style>
     </>
   );
