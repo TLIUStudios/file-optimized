@@ -20,6 +20,8 @@ const SnowEffect = lazy(() => import("./components/themes/SnowEffect"));
 const FireworksEffect = lazy(() => import("./components/themes/FireworksEffect"));
 const HalloweenEffect = lazy(() => import("./components/themes/HalloweenEffect"));
 const HeartsEffect = lazy(() => import("./components/themes/HeartsEffect"));
+const SakuraEffect = lazy(() => import("./components/themes/SakuraEffect"));
+const AutumnEffect = lazy(() => import("./components/themes/AutumnEffect"));
 
 export default function Layout({ children }) {
   const [theme, setTheme] = useState(() => {
@@ -128,6 +130,16 @@ export default function Layout({ children }) {
       {userTheme === 'hearts' && (
         <Suspense fallback={null}>
           <HeartsEffect />
+        </Suspense>
+      )}
+      {userTheme === 'sakura' && (
+        <Suspense fallback={null}>
+          <SakuraEffect />
+        </Suspense>
+      )}
+      {userTheme === 'autumn' && (
+        <Suspense fallback={null}>
+          <AutumnEffect />
         </Suspense>
       )}
       <style>{`
