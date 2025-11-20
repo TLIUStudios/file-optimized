@@ -214,6 +214,7 @@ export default function Profile() {
     try {
       await base44.auth.updateMe({ theme });
       setUser(prev => ({ ...prev, theme }));
+      window.dispatchEvent(new CustomEvent('themeChanged', { detail: { theme } }));
       toast.success('Theme updated!');
     } catch (error) {
       toast.error('Failed to update theme');

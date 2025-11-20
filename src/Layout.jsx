@@ -86,6 +86,13 @@ export default function Layout({ children }) {
       }
     };
     loadUser();
+
+    const handleThemeChange = (event) => {
+      setUserTheme(event.detail.theme);
+    };
+
+    window.addEventListener('themeChanged', handleThemeChange);
+    return () => window.removeEventListener('themeChanged', handleThemeChange);
   }, []);
 
   const toggleTheme = () => {
