@@ -9,50 +9,73 @@ export default function HeartsEffect() {
 
     const handleClick = (e) => {
       const x = (e.clientX / window.innerWidth) * 100;
-      const colors = ['#ff69b4', '#ff1493', '#ffc0cb', '#ff6b9d'];
+      const colors = [
+        { main: '#ff1493', glow: 'rgba(255,20,147,0.6)' },
+        { main: '#ff69b4', glow: 'rgba(255,105,180,0.6)' },
+        { main: '#ffc0cb', glow: 'rgba(255,192,203,0.6)' },
+        { main: '#ff6b9d', glow: 'rgba(255,107,157,0.6)' }
+      ];
       
-      for (let i = 0; i < 3; i++) {
+      for (let i = 0; i < 5; i++) {
         const id = Date.now() + Math.random() + i;
+        const color = colors[Math.floor(Math.random() * colors.length)];
         heartsRef.current.push({
-          id, x: x + (Math.random() - 0.5) * 6, y: 100,
-          color: colors[Math.floor(Math.random() * colors.length)],
-          size: 1.2 + Math.random() * 0.7,
-          vx: (Math.random() - 0.5) * 1.2,
-          vy: -2.2 - Math.random() * 1.2,
+          id, 
+          x: x + (Math.random() - 0.5) * 10, 
+          y: 100,
+          color,
+          size: 1.5 + Math.random() * 1,
+          vx: (Math.random() - 0.5) * 1.8,
+          vy: -3 - Math.random() * 2,
+          rotation: (Math.random() - 0.5) * 40,
+          rv: (Math.random() - 0.5) * 3,
         });
         setTimeout(() => {
           const idx = heartsRef.current.findIndex(h => h.id === id);
           if (idx !== -1) heartsRef.current.splice(idx, 1);
-        }, 3200);
+        }, 3000);
       }
     };
 
     const autoInterval = setInterval(() => {
       const id = Date.now() + Math.random();
-      const colors = ['#ff69b4', '#ff1493', '#ffc0cb', '#ff6b9d'];
+      const colors = [
+        { main: '#ff1493', glow: 'rgba(255,20,147,0.6)' },
+        { main: '#ff69b4', glow: 'rgba(255,105,180,0.6)' },
+        { main: '#ffc0cb', glow: 'rgba(255,192,203,0.6)' },
+        { main: '#ff6b9d', glow: 'rgba(255,107,157,0.6)' }
+      ];
+      const color = colors[Math.floor(Math.random() * colors.length)];
       heartsRef.current.push({
-        id, x: Math.random() * 100, y: 105,
-        color: colors[Math.floor(Math.random() * colors.length)],
-        size: 1 + Math.random() * 0.6,
-        vx: (Math.random() - 0.5) * 0.35,
-        vy: -1.1 - Math.random() * 0.7,
+        id, 
+        x: Math.random() * 100, 
+        y: 105,
+        color,
+        size: 1.2 + Math.random() * 0.8,
+        vx: (Math.random() - 0.5) * 0.5,
+        vy: -1.5 - Math.random() * 1,
+        rotation: (Math.random() - 0.5) * 30,
+        rv: (Math.random() - 0.5) * 2,
       });
       setTimeout(() => {
         const idx = heartsRef.current.findIndex(h => h.id === id);
         if (idx !== -1) heartsRef.current.splice(idx, 1);
-      }, 6500);
-    }, 2000);
+      }, 6000);
+    }, 1200);
 
     const render = () => {
       heartsRef.current.forEach(heart => {
-        heart.x += heart.vx * 0.07;
-        heart.y += heart.vy * 0.07;
+        heart.x += heart.vx * 0.08;
+        heart.y += heart.vy * 0.08;
+        heart.rotation += heart.rv;
+        heart.vx += (Math.random() - 0.5) * 0.02;
       });
 
       if (containerRef.current) {
-        containerRef.current.innerHTML = heartsRef.current.map(h =>
-          `<div class="absolute" style="transform:translate3d(${h.x}vw,${h.y}vh,0);font-size:${h.size}rem;color:${h.color};filter:drop-shadow(0 0 6px ${h.color});opacity:${Math.max(0, Math.min(1, (110 - h.y) / 16))};will-change:transform;contain:layout style paint">💕</div>`
-        ).join('');
+        containerRef.current.innerHTML = heartsRef.current.map(h => {
+          const opacity = Math.max(0, Math.min(1, (110 - h.y) / 18));
+          return `<div class="absolute" style="transform:translate3d(${h.x}vw,${h.y}vh,0) rotate(${h.rotation}deg);font-size:${h.size}rem;filter:drop-shadow(0 0 ${h.size * 8}px ${h.color.glow}) drop-shadow(0 0 ${h.size * 4}px ${h.color.glow});opacity:${opacity};will-change:transform;contain:layout style paint"><span style="color:${h.color.main}">💕</span></div>`;
+        }).join('');
       }
 
       frameId = requestAnimationFrame(render);

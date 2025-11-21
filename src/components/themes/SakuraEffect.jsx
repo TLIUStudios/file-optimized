@@ -6,41 +6,48 @@ export default function SakuraEffect() {
   const mouseXRef = useRef(50);
 
   useEffect(() => {
-    petalsRef.current = Array.from({ length: 20 }, (_, i) => ({
+    petalsRef.current = Array.from({ length: 25 }, (_, i) => ({
       id: i,
       x: Math.random() * 100,
       y: Math.random() * -50,
       rotation: Math.random() * 360,
-      size: 14 + Math.random() * 8,
-      vy: 0.65 + Math.random() * 0.45,
+      size: 16 + Math.random() * 10,
+      vy: 0.5 + Math.random() * 0.4,
       vx: (Math.random() - 0.5) * 0.2,
+      wobble: (Math.random() - 0.5) * 0.15,
+      phase: Math.random() * Math.PI * 2,
+      opacity: 0.7 + Math.random() * 0.3,
     }));
 
     let frameId;
 
     const render = () => {
       petalsRef.current.forEach(petal => {
-        petal.x += petal.vx;
+        petal.x += petal.vx + Math.sin(petal.phase) * petal.wobble;
         petal.y += petal.vy;
-        petal.rotation += 1.5;
+        petal.rotation += 2;
+        petal.phase += 0.05;
         
         const distToMouse = Math.abs(petal.x - mouseXRef.current);
-        if (distToMouse < 10) {
+        if (distToMouse < 12) {
           const direction = petal.x > mouseXRef.current ? 1 : -1;
-          petal.x += direction * (10 - distToMouse) * 0.1;
+          petal.x += direction * (12 - distToMouse) * 0.15;
+          petal.rotation += direction * 5;
         }
 
         if (petal.y > 110) {
           petal.x = Math.random() * 100;
           petal.y = Math.random() * -30;
           petal.rotation = Math.random() * 360;
+          petal.phase = Math.random() * Math.PI * 2;
         }
       });
 
       if (containerRef.current) {
-        containerRef.current.innerHTML = petalsRef.current.map(p =>
-          `<div class="absolute" style="transform:translate3d(${p.x}vw,${p.y}vh,0) rotate(${p.rotation}deg);font-size:${p.size}px;filter:drop-shadow(0 2px 3px rgba(255,192,203,0.4));will-change:transform;contain:layout style paint">🌸</div>`
-        ).join('');
+        containerRef.current.innerHTML = petalsRef.current.map(p => {
+          const scale = 1 + Math.sin(p.phase * 2) * 0.1;
+          return `<div class="absolute" style="transform:translate3d(${p.x}vw,${p.y}vh,0) rotate(${p.rotation}deg) scale(${scale});font-size:${p.size}px;filter:drop-shadow(0 3px 6px rgba(255,182,193,0.5)) drop-shadow(0 0 10px rgba(255,192,203,0.3));opacity:${p.opacity};will-change:transform;contain:layout style paint">🌸</div>`;
+        }).join('');
       }
 
       frameId = requestAnimationFrame(render);
