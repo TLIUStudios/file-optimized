@@ -87,63 +87,9 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
   const mediaIcon = isVideo ? Video : isAudio ? Music : isGif ? Film : isImage ? ImageIcon : null;
   const MediaIcon = mediaIcon;
 
-  useEffect(() => {
-    if ((isVideo || isAudio || (isGif && format === 'mp4')) && !ffmpegLoaded && !ffmpegLoading && !ffmpegLoadError) {
-      loadFFmpeg();
-    }
-  }, [isVideo, isAudio, isGif, format, ffmpegLoaded, ffmpegLoading, ffmpegLoadError]);
+  // No FFmpeg loading needed - using browser native APIs
 
-  const loadFFmpeg = async () => {
-    if (ffmpegLoading || ffmpegLoaded) return;
-    setFfmpegLoading(true);
-    let toastId = null;
-    try {
-      toastId = toast.loading('Loading video/audio processor...', { duration: Infinity });
-      
-      // Check for SharedArrayBuffer support
-      if (typeof SharedArrayBuffer === 'undefined') {
-        throw new Error('SharedArrayBuffer not supported. Video/audio processing requires secure context.');
-      }
-      
-      const { FFmpeg } = await import('https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@0.12.10/dist/esm/index.js');
-      const { toBlobURL } = await import('https://cdn.jsdelivr.net/npm/@ffmpeg/util@0.12.1/dist/esm/index.js');
-      
-      const ffmpeg = new FFmpeg();
-      ffmpeg.on('log', ({ message }) => console.log('FFmpeg:', message));
-      ffmpeg.on('progress', ({ progress }) => {
-        if (progress > 0 && progress < 1) console.log(`FFmpeg Progress: ${(progress * 100).toFixed(1)}%`);
-      });
-      
-      const baseURL = 'https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.6/dist/esm';
-      const coreURL = await toBlobURL(`${baseURL}/ffmpeg-core.js`, 'text/javascript');
-      const wasmURL = await toBlobURL(`${baseURL}/ffmpeg-core.wasm`, 'application/wasm');
-      
-      await ffmpeg.load({
-        coreURL,
-        wasmURL,
-      });
-      
-      ffmpegRef.current = ffmpeg;
-      setFfmpegLoaded(true);
-      setFfmpegLoading(false);
-      setFfmpegLoadError(null);
-      if (toastId) toast.dismiss(toastId);
-      toast.success('Audio/video processor ready!');
-    } catch (error) {
-      console.error('❌ FFmpeg load error:', error);
-      setFfmpegLoading(false);
-      setFfmpegLoadError(error.message);
-      if (toastId) toast.dismiss(toastId);
-      
-      if (error.message.includes('SharedArrayBuffer')) {
-        toast.error('Video/audio processing unavailable: Browser security requirements not met. Try a different browser.', { duration: 10000 });
-      } else {
-        toast.error(`Video/audio processor failed: ${error.message}`, { duration: 8000 });
-      }
-      
-      setTimeout(() => setFfmpegLoadError(null), 15000);
-    }
-  };
+  // No longer needed - using browser native APIs
 
   useEffect(() => {
     const reader = new FileReader();
@@ -403,52 +349,100 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
 
   const processVideo = async () => {
     try {
-      const ffmpeg = ffmpegRef.current;
-      if (!ffmpeg) throw new Error('FFmpeg not loaded');
-      const inputData = new Uint8Array(await image.arrayBuffer());
-      const inputExt = image.name.split('.').pop() || 'mp4';
-      await ffmpeg.writeFile(`input.${inputExt}`, inputData);
+      toast.info('Processing video...');
       
-      // Build optimized FFmpeg command
-      const args = [
-        '-i', `input.${inputExt}`,
-        '-c:v', 'libx264',
-        '-preset', videoPreset || 'medium',
-        '-crf', String(Math.min(51, Math.max(0, Math.round((100 - quality) / 3.5)))),
-      ];
+      // Create video element
+      const video = document.createElement('video');
+      video.src = preview;
+      video.muted = true;
       
-      if (videoBitrate && videoBitrate > 0) {
-        args.push('-b:v', `${videoBitrate}k`, '-maxrate', `${Math.round(videoBitrate * 1.5)}k`, '-bufsize', `${videoBitrate * 2}k`);
-      }
+      await new Promise((resolve, reject) => {
+        video.onloadedmetadata = resolve;
+        video.onerror = reject;
+      });
       
-      if (frameRate && frameRate > 0) {
-        args.push('-r', String(Math.min(60, frameRate)));
-      }
+      // Determine target resolution
+      let targetWidth = video.videoWidth;
+      let targetHeight = video.videoHeight;
       
-      // Resolution scaling
-      if (videoResolution && videoResolution !== 'original') {
-        const resMap = { '1080p': '1920:-2', '720p': '1280:-2', '480p': '854:-2' };
-        if (resMap[videoResolution]) {
-          args.push('-vf', `scale=${resMap[videoResolution]}`);
+      if (videoResolution !== 'original') {
+        const resMap = { '480p': 854, '720p': 1280, '1080p': 1920 };
+        const targetWidthFromRes = resMap[videoResolution];
+        if (targetWidthFromRes && targetWidth > targetWidthFromRes) {
+          targetHeight = Math.round((targetWidthFromRes / targetWidth) * targetHeight);
+          targetWidth = targetWidthFromRes;
         }
       }
       
-      // Audio encoding
-      args.push('-c:a', 'aac', '-b:a', `${audioBitrate || 128}k`, '-movflags', '+faststart', 'output.mp4');
+      // Create canvas for video frames
+      const canvas = document.createElement('canvas');
+      canvas.width = targetWidth;
+      canvas.height = targetHeight;
+      const ctx = canvas.getContext('2d');
       
-      await ffmpeg.exec(args);
-      const data = await ffmpeg.readFile('output.mp4');
-      const blob = new Blob([data.buffer], { type: 'video/mp4' });
+      // Use MediaRecorder for compression
+      const stream = canvas.captureStream(frameRate || 30);
       
-      await ffmpeg.deleteFile(`input.${inputExt}`);
-      await ffmpeg.deleteFile('output.mp4');
+      // Add audio track if available
+      const audioContext = new AudioContext();
+      const source = audioContext.createMediaElementSource(video);
+      const dest = audioContext.createMediaStreamDestination();
+      source.connect(dest);
+      source.connect(audioContext.destination);
       
+      if (dest.stream.getAudioTracks().length > 0) {
+        stream.addTrack(dest.stream.getAudioTracks()[0]);
+      }
+      
+      const options = {
+        mimeType: 'video/webm;codecs=vp9',
+        videoBitsPerSecond: (videoBitrate || 1000) * 1000,
+        audioBitsPerSecond: (audioBitrate || 128) * 1000,
+      };
+      
+      // Fallback if VP9 not supported
+      if (!MediaRecorder.isTypeSupported(options.mimeType)) {
+        options.mimeType = 'video/webm';
+      }
+      
+      const recorder = new MediaRecorder(stream, options);
+      const chunks = [];
+      
+      recorder.ondataavailable = (e) => {
+        if (e.data.size > 0) chunks.push(e.data);
+      };
+      
+      const recordingPromise = new Promise((resolve, reject) => {
+        recorder.onstop = () => resolve();
+        recorder.onerror = reject;
+      });
+      
+      // Start recording
+      recorder.start();
+      video.play();
+      
+      // Draw video frames
+      const drawFrame = () => {
+        if (!video.ended) {
+          ctx.drawImage(video, 0, 0, targetWidth, targetHeight);
+          requestAnimationFrame(drawFrame);
+        } else {
+          recorder.stop();
+        }
+      };
+      
+      drawFrame();
+      await recordingPromise;
+      
+      const blob = new Blob(chunks, { type: 'video/webm' });
       const compressedUrl = URL.createObjectURL(blob);
+      
       setCompressedPreview(compressedUrl);
       setCompressedSize(blob.size);
       setCompressedBlob(blob);
       setProcessed(true);
-      setOutputFormat('mp4');
+      setOutputFormat('webm');
+      
       onProcessed({
         id: image.name,
         originalFile: image,
@@ -456,14 +450,17 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
         compressedUrl,
         originalSize: image.size,
         compressedSize: blob.size,
-        format: 'mp4',
-        filename: getOutputFilename('mp4'),
+        format: 'webm',
+        filename: getOutputFilename('webm'),
         mediaType: 'video',
-        fileFormat: 'mp4',
+        fileFormat: 'webm',
         originalFileFormat: originalFormat
       });
+      
       const savings = ((1 - blob.size / image.size) * 100).toFixed(1);
       toast.success(`Video compressed! Saved ${savings}%`);
+      
+      audioContext.close();
     } catch (error) {
       console.error('Video processing failed:', error);
       throw error;
@@ -472,43 +469,78 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
 
   const processAudio = async () => {
     try {
-      const ffmpeg = ffmpegRef.current;
-      if (!ffmpeg) throw new Error('FFmpeg not loaded');
-      const inputExt = image.name.split('.').pop() || 'mp3';
-      await ffmpeg.writeFile(`input.${inputExt}`, new Uint8Array(await image.arrayBuffer()));
-      const outputExt = format || 'mp3';
-      const args = ['-i', `input.${inputExt}`];
+      toast.info('Processing audio...');
       
-      if (outputExt === 'mp3') {
-        const bitrateVal = audioBitrate || 128;
-        const qualityMap = { high: 0, standard: 2, low: 4 };
-        args.push(
-          '-codec:a', 'libmp3lame',
-          '-b:a', `${bitrateVal}k`,
-          '-q:a', String(qualityMap[audioQuality] || 2)
+      // Decode audio
+      const audioContext = new AudioContext();
+      const arrayBuffer = await image.arrayBuffer();
+      const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
+      
+      // Target sample rate and bitrate
+      const targetSampleRate = 44100;
+      const targetBitrate = audioBitrate || 128;
+      
+      // Resample if needed
+      let processedBuffer = audioBuffer;
+      if (audioBuffer.sampleRate !== targetSampleRate) {
+        const offlineContext = new OfflineAudioContext(
+          audioBuffer.numberOfChannels,
+          audioBuffer.duration * targetSampleRate,
+          targetSampleRate
         );
-      } else if (outputExt === 'wav') {
-        args.push('-codec:a', 'pcm_s16le', '-ar', '44100');
-      } else {
-        // Fallback for other formats
-        args.push('-codec:a', 'aac', '-b:a', `${audioBitrate || 128}k`);
+        const source = offlineContext.createBufferSource();
+        source.buffer = audioBuffer;
+        source.connect(offlineContext.destination);
+        source.start();
+        processedBuffer = await offlineContext.startRendering();
       }
       
-      args.push(`output.${outputExt}`);
-      await ffmpeg.exec(args);
-      const data = await ffmpeg.readFile(`output.${outputExt}`);
-      const mimeType = outputExt === 'mp3' ? 'audio/mpeg' : outputExt === 'wav' ? 'audio/wav' : `audio/${outputExt}`;
-      const blob = new Blob([data.buffer], { type: mimeType });
+      // Convert to WAV format
+      const numberOfChannels = processedBuffer.numberOfChannels;
+      const length = processedBuffer.length * numberOfChannels * 2;
+      const buffer = new ArrayBuffer(44 + length);
+      const view = new DataView(buffer);
       
-      await ffmpeg.deleteFile(`input.${inputExt}`);
-      await ffmpeg.deleteFile(`output.${outputExt}`);
+      // WAV header
+      const writeString = (offset, string) => {
+        for (let i = 0; i < string.length; i++) {
+          view.setUint8(offset + i, string.charCodeAt(i));
+        }
+      };
       
+      writeString(0, 'RIFF');
+      view.setUint32(4, 36 + length, true);
+      writeString(8, 'WAVE');
+      writeString(12, 'fmt ');
+      view.setUint32(16, 16, true);
+      view.setUint16(20, 1, true);
+      view.setUint16(22, numberOfChannels, true);
+      view.setUint32(24, targetSampleRate, true);
+      view.setUint32(28, targetSampleRate * numberOfChannels * 2, true);
+      view.setUint16(32, numberOfChannels * 2, true);
+      view.setUint16(34, 16, true);
+      writeString(36, 'data');
+      view.setUint32(40, length, true);
+      
+      // Write audio data
+      let offset = 44;
+      for (let i = 0; i < processedBuffer.length; i++) {
+        for (let channel = 0; channel < numberOfChannels; channel++) {
+          const sample = Math.max(-1, Math.min(1, processedBuffer.getChannelData(channel)[i]));
+          view.setInt16(offset, sample < 0 ? sample * 0x8000 : sample * 0x7FFF, true);
+          offset += 2;
+        }
+      }
+      
+      const blob = new Blob([buffer], { type: 'audio/wav' });
       const compressedUrl = URL.createObjectURL(blob);
+      
       setCompressedPreview(compressedUrl);
       setCompressedSize(blob.size);
       setCompressedBlob(blob);
       setProcessed(true);
-      setOutputFormat(format);
+      setOutputFormat('wav');
+      
       onProcessed({
         id: image.name,
         originalFile: image,
@@ -516,14 +548,21 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
         compressedUrl,
         originalSize: image.size,
         compressedSize: blob.size,
-        format: outputExt,
-        filename: getOutputFilename(outputExt),
+        format: 'wav',
+        filename: getOutputFilename('wav'),
         mediaType: 'audio',
-        fileFormat: outputExt,
+        fileFormat: 'wav',
         originalFileFormat: originalFormat
       });
+      
       const savings = ((1 - blob.size / image.size) * 100).toFixed(1);
-      toast.success(`Audio compressed! Saved ${savings}%`);
+      if (blob.size < image.size) {
+        toast.success(`Audio processed! Saved ${savings}%`);
+      } else {
+        toast.success('Audio converted to WAV format');
+      }
+      
+      audioContext.close();
     } catch (error) {
       console.error('Audio processing failed:', error);
       throw error;
@@ -1145,9 +1184,9 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
   const displayCompressedExt = displayFormat.toUpperCase();
   let availableFormats = [];
   if (isImage && !isGif) availableFormats = enableAnimation ? ['gif'] : ['jpg', 'png', 'webp', 'avif'];
-  else if (isGif) availableFormats = ffmpegLoaded ? ['gif', 'mp4'] : ['gif'];
-  else if (isVideo) availableFormats = ffmpegLoaded ? ['mp4', 'gif'] : ['mp4'];
-  else if (isAudio) availableFormats = ['mp3', 'wav'];
+  else if (isGif) availableFormats = ['gif'];
+  else if (isVideo) availableFormats = ['webm'];
+  else if (isAudio) availableFormats = ['wav'];
 
   const performSingleMediaDownload = async (blobToDownload, targetFormat, mediaType, filename) => {
     if (!blobToDownload) {
@@ -1350,11 +1389,8 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
       toast.error('Cannot convert format while animation is enabled.');
       return;
     }
-    if (isVideo || isAudio || (isGif && newFormat === 'mp4')) {
-      if (!ffmpegLoaded) {
-        toast.error('Video/audio processor still loading. Please wait...');
-        return;
-      }
+    // Video/audio conversion handled by native APIs
+    if (isVideo || isAudio) {
       setFormat(newFormat);
       await processMedia();
       return;
@@ -1562,7 +1598,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
               </div>
               <div className={cn("grid gap-2", availableFormats.length === 1 ? "grid-cols-1" : availableFormats.length === 2 ? "grid-cols-2" : "grid-cols-4")}>
                 {availableFormats.map((fmt) => (
-                  <Button key={fmt} size="sm" variant={displayFormat === fmt ? "default" : "outline"} onClick={() => convertFormat(fmt)} disabled={displayFormat === fmt || processing || (ffmpegLoading && (isVideo || isAudio || (isGif && fmt === 'mp4')))} className={cn("relative text-xs h-9", format === fmt && "bg-emerald-600 hover:bg-emerald-700")}>
+                  <Button key={fmt} size="sm" variant={displayFormat === fmt ? "default" : "outline"} onClick={() => convertFormat(fmt)} disabled={displayFormat === fmt || processing} className={cn("relative text-xs h-9", format === fmt && "bg-emerald-600 hover:bg-emerald-700")}>
                     {fmt.toUpperCase()}
                     {displayFormat === fmt && processing && <Loader2 className="ml-1 h-3 w-3 animate-spin" />}
                   </Button>
@@ -1582,7 +1618,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
               </div>
               <div className={cn("grid gap-2", availableFormats.length === 1 ? "grid-cols-1" : availableFormats.length === 2 ? "grid-cols-2" : "grid-cols-4")}>
                 {availableFormats.map((fmt) => (
-                  <Button key={fmt} size="sm" variant={format === fmt ? "default" : "outline"} onClick={() => setFormat(fmt)} disabled={processing || (ffmpegLoading && (isVideo || isAudio || (isGif && fmt === 'mp4')))} className={cn("relative text-xs h-9", format === fmt && "bg-emerald-600 hover:bg-emerald-700")}>
+                  <Button key={fmt} size="sm" variant={format === fmt ? "default" : "outline"} onClick={() => setFormat(fmt)} disabled={processing} className={cn("relative text-xs h-9", format === fmt && "bg-emerald-600 hover:bg-emerald-700")}>
                     {fmt.toUpperCase()}
                   </Button>
                 ))}
@@ -1912,7 +1948,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
 
           <div className="flex gap-2">
             {!processed ? (
-              <Button onClick={processMedia} disabled={processing || (isVideo && !ffmpegLoaded) || (isAudio && !ffmpegLoaded) || (isGif && format === 'mp4' && !ffmpegLoaded) || (((isGif && format === 'gif') || (isImage && !isGif && enableAnimation)) && !gifJsLoaded)} className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white relative overflow-hidden">
+              <Button onClick={processMedia} disabled={processing || (((isGif && format === 'gif') || (isImage && !isGif && enableAnimation)) && !gifJsLoaded)} className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white relative overflow-hidden">
                 {processing && <div className="absolute inset-0 bg-emerald-500 transition-all duration-300 ease-linear" style={{ width: `${processingProgress}%`, left: 0 }} />}
                 <span className="relative z-10 flex items-center justify-center">
                   {processing ? (<><Loader2 className="w-4 h-4 mr-2 animate-spin" />Optimizing... {Math.round(processingProgress)}%</>) : (<>{MediaIcon && <MediaIcon className="w-4 h-4 mr-2" />}{enableAnimation ? 'Create Animation' : 'Optimize Asset'}</>)}
@@ -1927,7 +1963,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
                     "flex-1",
                     settingsChanged && "bg-red-600 hover:bg-red-700 text-white animate-pulse"
                   )} 
-                  disabled={processing || (isVideo && !ffmpegLoaded) || (isAudio && !ffmpegLoaded) || (isGif && format === 'mp4' && !ffmpegLoaded) || (((isGif && format === 'gif') || (isImage && !isGif && enableAnimation)) && !gifJsLoaded)}
+                  disabled={processing || (((isGif && format === 'gif') || (isImage && !isGif && enableAnimation)) && !gifJsLoaded)}
                 >
                   <RefreshCcw className={cn("w-4 h-4 mr-2", settingsChanged && "animate-spin")} />
                   Reprocess
