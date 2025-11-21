@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Scissors, Type, Sun, Contrast, Droplet, X, Play, Pause, Undo, Redo } from "lucide-react";
+import { Scissors, Type, Sun, Contrast, Droplet, X, Play, Pause, Undo, Redo, Subtitles, Wand2 } from "lucide-react";
 import { toast } from "sonner";
 
 export default function VideoEditor({ isOpen, onClose, videoData, onSave }) {
@@ -22,6 +22,10 @@ export default function VideoEditor({ isOpen, onClose, videoData, onSave }) {
   const [saturation, setSaturation] = useState(100);
   const [blur, setBlur] = useState(0);
   const [processing, setProcessing] = useState(false);
+  const [captions, setCaptions] = useState([]);
+  const [captionStyle, setCaptionStyle] = useState("modern");
+  const [showCaptions, setShowCaptions] = useState(false);
+  const [generatingCaptions, setGeneratingCaptions] = useState(false);
 
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
@@ -79,6 +83,160 @@ export default function VideoEditor({ isOpen, onClose, videoData, onSave }) {
     };
   }, [videoData, isOpen]);
 
+  const generateCaptions = async () => {
+    if (!videoRef.current) return;
+    
+    setGeneratingCaptions(true);
+    toast.info("Generating captions from audio...", { id: "gen-captions" });
+    
+    try {
+      const video = videoRef.current;
+      const audioContext = new AudioContext();
+      
+      // Extract audio from video
+      const response = await fetch(videoData);
+      const arrayBuffer = await response.arrayBuffer();
+      const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
+      
+      // Use Web Speech API for transcription
+      if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
+        throw new Error("Speech recognition not supported in this browser. Try Chrome.");
+      }
+      
+      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+      const recognition = new SpeechRecognition();
+      recognition.continuous = true;
+      recognition.interimResults = true;
+      recognition.lang = 'en-US';
+      
+      // Create a MediaStream from the video element
+      const stream = video.captureStream ? video.captureStream() : video.mozCaptureStream();
+      const audioTrack = stream.getAudioTracks()[0];
+      
+      if (!audioTrack) {
+        throw new Error("No audio track found in video");
+      }
+      
+      const mediaStream = new MediaStream([audioTrack]);
+      const mediaRecorder = new MediaRecorder(mediaStream);
+      const audioChunks = [];
+      
+      mediaRecorder.ondataavailable = (event) => {
+        audioChunks.push(event.data);
+      };
+      
+      const captionResults = [];
+      
+      recognition.onresult = (event) => {
+        const results = event.results;
+        for (let i = event.resultIndex; i < results.length; i++) {
+          const result = results[i];
+          if (result.isFinal) {
+            captionResults.push({
+              text: result[0].transcript,
+              startTime: video.currentTime,
+              endTime: video.currentTime + 2, // Approximate duration
+            });
+          }
+        }
+      };
+      
+      recognition.onerror = (event) => {
+        console.error("Speech recognition error:", event.error);
+      };
+      
+      // Start recognition and play video
+      video.currentTime = trimStart;
+      recognition.start();
+      video.play();
+      
+      // Wait for video to finish
+      await new Promise((resolve) => {
+        video.onended = () => {
+          recognition.stop();
+          resolve();
+        };
+      });
+      
+      if (captionResults.length === 0) {
+        throw new Error("No speech detected in video");
+      }
+      
+      setCaptions(captionResults);
+      setShowCaptions(true);
+      toast.success(`Generated ${captionResults.length} captions!`);
+      
+    } catch (error) {
+      console.error("Caption generation error:", error);
+      toast.error("Failed to generate captions: " + error.message);
+    } finally {
+      setGeneratingCaptions(false);
+      toast.dismiss("gen-captions");
+    }
+  };
+
+  const captionTemplates = {
+    modern: {
+      fontFamily: 'Inter, system-ui, sans-serif',
+      fontSize: 42,
+      fontWeight: 'bold',
+      color: '#ffffff',
+      backgroundColor: 'rgba(0, 0, 0, 0.8)',
+      padding: 12,
+      borderRadius: 8,
+      textTransform: 'uppercase',
+      letterSpacing: 1,
+    },
+    minimal: {
+      fontFamily: 'Arial, sans-serif',
+      fontSize: 36,
+      fontWeight: 'normal',
+      color: '#ffffff',
+      backgroundColor: 'transparent',
+      padding: 8,
+      borderRadius: 0,
+      textTransform: 'none',
+      letterSpacing: 0,
+      textShadow: '3px 3px 6px rgba(0, 0, 0, 0.9)',
+    },
+    bold: {
+      fontFamily: 'Impact, sans-serif',
+      fontSize: 48,
+      fontWeight: 'bold',
+      color: '#ffff00',
+      backgroundColor: 'rgba(0, 0, 0, 0.9)',
+      padding: 16,
+      borderRadius: 12,
+      textTransform: 'uppercase',
+      letterSpacing: 2,
+      border: '3px solid #ffffff',
+    },
+    elegant: {
+      fontFamily: 'Georgia, serif',
+      fontSize: 38,
+      fontWeight: 'normal',
+      color: '#f0f0f0',
+      backgroundColor: 'rgba(20, 20, 20, 0.85)',
+      padding: 14,
+      borderRadius: 6,
+      textTransform: 'capitalize',
+      letterSpacing: 0.5,
+      fontStyle: 'italic',
+    },
+    neon: {
+      fontFamily: 'system-ui, sans-serif',
+      fontSize: 44,
+      fontWeight: 'bold',
+      color: '#00ffff',
+      backgroundColor: 'rgba(0, 0, 0, 0.7)',
+      padding: 12,
+      borderRadius: 10,
+      textTransform: 'uppercase',
+      letterSpacing: 1.5,
+      textShadow: '0 0 10px #00ffff, 0 0 20px #00ffff, 0 0 30px #00ffff',
+    },
+  };
+
   const saveToHistory = () => {
     const newState = {
       trimStart,
@@ -90,7 +248,10 @@ export default function VideoEditor({ isOpen, onClose, videoData, onSave }) {
       brightness,
       contrast,
       saturation,
-      blur
+      blur,
+      captions: [...captions],
+      captionStyle,
+      showCaptions,
     };
 
     const newHistory = history.slice(0, historyIndex + 1);
@@ -135,6 +296,9 @@ export default function VideoEditor({ isOpen, onClose, videoData, onSave }) {
       setContrast(state.contrast);
       setSaturation(state.saturation);
       setBlur(state.blur);
+      setCaptions(state.captions || []);
+      setCaptionStyle(state.captionStyle || "modern");
+      setShowCaptions(state.showCaptions || false);
       setHistoryIndex(newIndex);
       
       toast.success('Redo applied');
@@ -232,6 +396,66 @@ export default function VideoEditor({ isOpen, onClose, videoData, onSave }) {
         // Apply filters
         ctx.filter = `brightness(${brightness}%) contrast(${contrast}%) saturate(${saturation}%) blur(${blur}px)`;
         ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+        // Add captions
+        if (showCaptions && captions.length > 0) {
+          ctx.filter = 'none';
+          const currentCaption = captions.find(cap => time >= cap.startTime && time <= cap.endTime);
+          if (currentCaption) {
+            const style = captionTemplates[captionStyle];
+            ctx.font = `${style.fontWeight} ${style.fontSize}px ${style.fontFamily}`;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            
+            const x = canvas.width / 2;
+            const y = canvas.height * 0.85;
+            const text = style.textTransform === 'uppercase' ? currentCaption.text.toUpperCase() : 
+                         style.textTransform === 'capitalize' ? currentCaption.text.charAt(0).toUpperCase() + currentCaption.text.slice(1) :
+                         currentCaption.text;
+            
+            // Measure text
+            const metrics = ctx.measureText(text);
+            const textWidth = metrics.width;
+            const textHeight = style.fontSize;
+            
+            // Draw background
+            if (style.backgroundColor !== 'transparent') {
+              ctx.fillStyle = style.backgroundColor;
+              ctx.beginPath();
+              ctx.roundRect(
+                x - textWidth / 2 - style.padding,
+                y - textHeight / 2 - style.padding,
+                textWidth + style.padding * 2,
+                textHeight + style.padding * 2,
+                style.borderRadius
+              );
+              ctx.fill();
+              
+              if (style.border) {
+                ctx.strokeStyle = style.border.split(' ')[2];
+                ctx.lineWidth = parseInt(style.border.split(' ')[0]);
+                ctx.stroke();
+              }
+            }
+            
+            // Draw text
+            if (style.textShadow) {
+              ctx.shadowColor = 'rgba(0, 0, 0, 0.9)';
+              ctx.shadowBlur = 6;
+              ctx.shadowOffsetX = 3;
+              ctx.shadowOffsetY = 3;
+            }
+            
+            ctx.fillStyle = style.color;
+            ctx.fillText(text, x, y);
+            
+            // Reset shadow
+            ctx.shadowColor = 'transparent';
+            ctx.shadowBlur = 0;
+            ctx.shadowOffsetX = 0;
+            ctx.shadowOffsetY = 0;
+          }
+        }
 
         // Add text overlay
         if (textOverlay) {
@@ -368,6 +592,37 @@ export default function VideoEditor({ isOpen, onClose, videoData, onSave }) {
                   {isPlaying ? <Pause className="w-8 h-8" /> : <Play className="w-8 h-8 ml-1" />}
                 </Button>
                 
+                {/* Caption Preview */}
+                {showCaptions && captions.length > 0 && (() => {
+                  const currentCaption = captions.find(cap => currentTime >= cap.startTime && currentTime <= cap.endTime);
+                  if (!currentCaption) return null;
+                  const style = captionTemplates[captionStyle];
+                  const displayText = style.textTransform === 'uppercase' ? currentCaption.text.toUpperCase() : 
+                                      style.textTransform === 'capitalize' ? currentCaption.text.charAt(0).toUpperCase() + currentCaption.text.slice(1) :
+                                      currentCaption.text;
+                  return (
+                    <div
+                      className="absolute bottom-[15%] left-1/2 -translate-x-1/2 pointer-events-none text-center max-w-[80%]"
+                      style={{
+                        fontFamily: style.fontFamily,
+                        fontSize: `${style.fontSize * 0.5}px`,
+                        fontWeight: style.fontWeight,
+                        color: style.color,
+                        backgroundColor: style.backgroundColor,
+                        padding: `${style.padding * 0.5}px`,
+                        borderRadius: `${style.borderRadius}px`,
+                        textTransform: style.textTransform,
+                        letterSpacing: `${style.letterSpacing}px`,
+                        textShadow: style.textShadow,
+                        border: style.border,
+                        fontStyle: style.fontStyle,
+                      }}
+                    >
+                      {displayText}
+                    </div>
+                  );
+                })()}
+                
                 {/* Text Overlay Preview */}
                 {textOverlay && (
                   <div
@@ -408,10 +663,14 @@ export default function VideoEditor({ isOpen, onClose, videoData, onSave }) {
           {/* Controls Sidebar */}
           <div className="w-full lg:w-80 border-l border-slate-200 dark:border-slate-800 overflow-y-auto">
             <Tabs defaultValue="trim" className="w-full">
-              <TabsList className="w-full grid grid-cols-3">
+              <TabsList className="w-full grid grid-cols-4">
                 <TabsTrigger value="trim">Trim</TabsTrigger>
                 <TabsTrigger value="adjust">Adjust</TabsTrigger>
                 <TabsTrigger value="text">Text</TabsTrigger>
+                <TabsTrigger value="captions">
+                  <Subtitles className="w-3 h-3 mr-1" />
+                  Captions
+                </TabsTrigger>
               </TabsList>
 
               <div className="p-4 space-y-4">
@@ -594,6 +853,129 @@ export default function VideoEditor({ isOpen, onClose, videoData, onSave }) {
                       max={100}
                       className="w-full"
                     />
+                  </div>
+                </TabsContent>
+
+                <TabsContent value="captions" className="space-y-4 mt-0">
+                  <div className="space-y-3">
+                    <Button
+                      onClick={generateCaptions}
+                      disabled={generatingCaptions}
+                      className="w-full bg-emerald-600 hover:bg-emerald-700 text-white"
+                    >
+                      {generatingCaptions ? (
+                        <>Processing Audio...</>
+                      ) : (
+                        <>
+                          <Wand2 className="w-4 h-4 mr-2" />
+                          Generate Auto Captions
+                        </>
+                      )}
+                    </Button>
+                    
+                    {captions.length > 0 && (
+                      <>
+                        <div className="flex items-center justify-between">
+                          <label className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                            Show Captions
+                          </label>
+                          <input
+                            type="checkbox"
+                            checked={showCaptions}
+                            onChange={(e) => {
+                              setShowCaptions(e.target.checked);
+                              saveToHistory();
+                            }}
+                            className="w-4 h-4 rounded border-slate-300 dark:border-slate-700"
+                          />
+                        </div>
+
+                        <div className="space-y-2">
+                          <label className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                            Caption Style
+                          </label>
+                          <div className="grid grid-cols-2 gap-2">
+                            {Object.keys(captionTemplates).map((styleName) => (
+                              <Button
+                                key={styleName}
+                                variant={captionStyle === styleName ? "default" : "outline"}
+                                size="sm"
+                                onClick={() => {
+                                  setCaptionStyle(styleName);
+                                  saveToHistory();
+                                }}
+                                className="capitalize"
+                              >
+                                {styleName}
+                              </Button>
+                            ))}
+                          </div>
+                        </div>
+
+                        <div className="p-3 bg-emerald-50 dark:bg-emerald-950/20 rounded-lg border border-emerald-200 dark:border-emerald-800">
+                          <p className="text-xs text-emerald-700 dark:text-emerald-400">
+                            {captions.length} caption{captions.length !== 1 ? 's' : ''} generated
+                          </p>
+                        </div>
+
+                        <div className="space-y-2 max-h-40 overflow-y-auto">
+                          <label className="text-xs font-medium text-slate-600 dark:text-slate-400">
+                            Edit Captions
+                          </label>
+                          {captions.map((caption, index) => (
+                            <div key={index} className="space-y-1">
+                              <Input
+                                value={caption.text}
+                                onChange={(e) => {
+                                  const newCaptions = [...captions];
+                                  newCaptions[index].text = e.target.value;
+                                  setCaptions(newCaptions);
+                                }}
+                                onBlur={saveToHistory}
+                                className="text-xs"
+                                placeholder="Caption text..."
+                              />
+                              <div className="flex gap-2">
+                                <Input
+                                  type="number"
+                                  value={caption.startTime.toFixed(1)}
+                                  onChange={(e) => {
+                                    const newCaptions = [...captions];
+                                    newCaptions[index].startTime = parseFloat(e.target.value);
+                                    setCaptions(newCaptions);
+                                  }}
+                                  onBlur={saveToHistory}
+                                  step={0.1}
+                                  className="text-xs"
+                                  placeholder="Start"
+                                />
+                                <Input
+                                  type="number"
+                                  value={caption.endTime.toFixed(1)}
+                                  onChange={(e) => {
+                                    const newCaptions = [...captions];
+                                    newCaptions[index].endTime = parseFloat(e.target.value);
+                                    setCaptions(newCaptions);
+                                  }}
+                                  onBlur={saveToHistory}
+                                  step={0.1}
+                                  className="text-xs"
+                                  placeholder="End"
+                                />
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </>
+                    )}
+
+                    {captions.length === 0 && (
+                      <div className="p-4 bg-slate-100 dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-800">
+                        <p className="text-xs text-slate-600 dark:text-slate-400 text-center">
+                          Click "Generate Auto Captions" to automatically transcribe the video audio and add stylized captions.
+                        </p>
+                      </div>
+                    )}
                   </div>
                 </TabsContent>
 
