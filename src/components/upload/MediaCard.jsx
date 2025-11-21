@@ -66,12 +66,12 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
   const [isEditingFilename, setIsEditingFilename] = useState(false);
   const [showMetadataViewer, setShowMetadataViewer] = useState(false);
   const [fileMetadata, setFileMetadata] = useState(null);
-  const isImage = image.type.startsWith('image/');
-  const isVideo = image.type.startsWith('video/');
-  const isAudio = image.type.startsWith('audio/');
-  const isGif = image.type === 'image/gif';
-  const originalExt = image.name.split('.').pop().toUpperCase();
-  const originalFormat = image.name.split('.').pop().toLowerCase();
+  const isImage = image?.type?.startsWith('image/') || false;
+  const isVideo = image?.type?.startsWith('video/') || false;
+  const isAudio = image?.type?.startsWith('audio/') || false;
+  const isGif = image?.type === 'image/gif';
+  const originalExt = image?.name?.split('.').pop()?.toUpperCase() || 'FILE';
+  const originalFormat = image?.name?.split('.').pop()?.toLowerCase() || 'unknown';
   const [gifFrameCount, setGifFrameCount] = useState(0);
   const [gifSettings, setGifSettings] = useState({ width: 0, height: 0, frames: [] });
   const [videoBitrate, setVideoBitrate] = useState(1000);
