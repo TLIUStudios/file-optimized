@@ -1,89 +1,59 @@
 import { useEffect, useRef } from "react";
 
 export default function HeartsEffect() {
-  const canvasRef = useRef(null);
+  const containerRef = useRef(null);
   const heartsRef = useRef([]);
 
   useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    
-    const ctx = canvas.getContext('2d', { alpha: true });
-    canvas.width = window.innerWidth;
-    canvas.height = window.innerHeight;
-
-    const colors = ['#ff1493', '#ff69b4', '#ffc0cb', '#ff6b9d'];
+    let frameId;
 
     const createHeart = (x, y, burst = false) => {
-      const count = burst ? 6 : 1;
+      const count = burst ? 5 : 1;
       for (let i = 0; i < count; i++) {
         heartsRef.current.push({
           x, y,
-          vx: burst ? (Math.random() - 0.5) * 4 : (Math.random() - 0.5) * 0.8,
-          vy: burst ? -4 - Math.random() * 3 : -2 - Math.random() * 1.5,
-          size: burst ? 30 + Math.random() * 20 : 25 + Math.random() * 15,
-          rotation: (Math.random() - 0.5) * 60,
-          rotationSpeed: (Math.random() - 0.5) * 5,
-          color: colors[Math.floor(Math.random() * colors.length)],
+          vx: burst ? (Math.random() - 0.5) * 3 : (Math.random() - 0.5) * 0.5,
+          vy: burst ? -3 - Math.random() * 2 : -1.5 - Math.random(),
+          rotation: Math.random() * 360,
+          rotationSpeed: (Math.random() - 0.5) * 4,
           life: 1,
-          decay: burst ? 0.015 : 0.008,
         });
       }
     };
 
-    const animate = () => {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-      heartsRef.current = heartsRef.current.filter(heart => {
-        heart.x += heart.vx;
-        heart.y += heart.vy;
-        heart.vx *= 0.99;
-        heart.vy += 0.03;
-        heart.rotation += heart.rotationSpeed;
-        heart.life -= heart.decay;
-
-        if (heart.life > 0) {
-          ctx.save();
-          ctx.translate(heart.x, heart.y);
-          ctx.rotate((heart.rotation * Math.PI) / 180);
-          ctx.globalAlpha = heart.life;
-          ctx.font = `${heart.size}px serif`;
-          ctx.shadowBlur = 20;
-          ctx.shadowColor = heart.color;
-          ctx.fillStyle = heart.color;
-          ctx.fillText('💕', -heart.size / 2, heart.size / 2);
-          ctx.restore();
-          return true;
-        }
-        return false;
+    const render = () => {
+      heartsRef.current = heartsRef.current.filter(h => {
+        h.x += h.vx;
+        h.y += h.vy;
+        h.vy += 0.03;
+        h.rotation += h.rotationSpeed;
+        h.life -= 0.01;
+        return h.life > 0;
       });
 
-      requestAnimationFrame(animate);
+      if (containerRef.current) {
+        containerRef.current.innerHTML = heartsRef.current.map(h =>
+          `<div style="position:absolute;left:${h.x}px;top:${h.y}px;transform:rotate(${h.rotation}deg);font-size:26px;opacity:${h.life};filter:drop-shadow(0 0 8px #ff1493)">💕</div>`
+        ).join('');
+      }
+
+      frameId = requestAnimationFrame(render);
     };
 
-    const handleClick = (e) => {
-      createHeart(e.clientX, e.clientY, true);
-    };
-
+    const handleClick = (e) => createHeart(e.clientX, e.clientY, true);
     const autoHeart = setInterval(() => {
-      createHeart(Math.random() * canvas.width, canvas.height + 20);
-    }, 1000);
-
-    const handleResize = () => {
-      canvas.width = window.innerWidth;
-      canvas.height = window.innerHeight;
-    };
+      createHeart(Math.random() * window.innerWidth, window.innerHeight + 20);
+    }, 1200);
 
     window.addEventListener('click', handleClick);
-    window.addEventListener('resize', handleResize);
-    animate();
+    frameId = requestAnimationFrame(render);
 
     return () => {
       clearInterval(autoHeart);
       window.removeEventListener('click', handleClick);
-      window.removeEventListener('resize', handleResize);
+      cancelAnimationFrame(frameId);
     };
   }, []);
 
-  return <canvas ref={canvasRef} className="fixed inset-0 pointer-events-none z-50" />;
+  return <div ref={containerRef} className="fixed inset-0 pointer-events-none z-50" />;
 }
