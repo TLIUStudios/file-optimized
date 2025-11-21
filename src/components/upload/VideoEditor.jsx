@@ -31,33 +31,52 @@ export default function VideoEditor({ isOpen, onClose, videoData, onSave }) {
   const [historyIndex, setHistoryIndex] = useState(-1);
 
   useEffect(() => {
-    if (videoRef.current && videoData) {
-      videoRef.current.src = videoData;
-      videoRef.current.load(); // Explicitly load the video
-      videoRef.current.onloadedmetadata = () => {
-        setDuration(videoRef.current.duration);
-        setTrimEnd(videoRef.current.duration);
-        
-        // Initialize history
-        const initialState = {
-          trimStart: 0,
-          trimEnd: videoRef.current.duration,
-          textOverlay: "",
-          textPosition: { x: 50, y: 50 },
-          textColor: "#ffffff",
-          textSize: 32,
-          brightness: 100,
-          contrast: 100,
-          saturation: 100,
-          blur: 0
-        };
-        setHistory([initialState]);
-        setHistoryIndex(0);
+    if (!videoRef.current || !videoData || !isOpen) return;
+    
+    const video = videoRef.current;
+    
+    video.src = videoData;
+    video.load();
+    
+    const handleMetadataLoaded = () => {
+      console.log('Video loaded:', video.duration, 'seconds');
+      setDuration(video.duration);
+      setTrimEnd(video.duration);
+      
+      const initialState = {
+        trimStart: 0,
+        trimEnd: video.duration,
+        textOverlay: "",
+        textPosition: { x: 50, y: 50 },
+        textColor: "#ffffff",
+        textSize: 32,
+        brightness: 100,
+        contrast: 100,
+        saturation: 100,
+        blur: 0
       };
-      videoRef.current.ontimeupdate = () => {
-        setCurrentTime(videoRef.current.currentTime);
-      };
-    }
+      setHistory([initialState]);
+      setHistoryIndex(0);
+    };
+    
+    const handleTimeUpdate = () => {
+      setCurrentTime(video.currentTime);
+    };
+    
+    const handleError = (e) => {
+      console.error('Video load error:', e);
+      toast.error('Failed to load video');
+    };
+    
+    video.addEventListener('loadedmetadata', handleMetadataLoaded);
+    video.addEventListener('timeupdate', handleTimeUpdate);
+    video.addEventListener('error', handleError);
+    
+    return () => {
+      video.removeEventListener('loadedmetadata', handleMetadataLoaded);
+      video.removeEventListener('timeupdate', handleTimeUpdate);
+      video.removeEventListener('error', handleError);
+    };
   }, [videoData, isOpen]);
 
   const saveToHistory = () => {
@@ -329,13 +348,17 @@ export default function VideoEditor({ isOpen, onClose, videoData, onSave }) {
                   ref={videoRef}
                   className="max-w-full max-h-[70vh] rounded bg-black"
                   onEnded={() => setIsPlaying(false)}
-                  preload="metadata"
+                  preload="auto"
                   playsInline
+                  crossOrigin="anonymous"
                   style={{
                     filter: `brightness(${brightness}%) contrast(${contrast}%) saturate(${saturation}%) blur(${blur}px)`,
                     imageRendering: 'high-quality'
                   }}
-                />
+                >
+                  <source src={videoData} type="video/mp4" />
+                  Your browser does not support the video tag.
+                </video>
                 <Button
                   variant="ghost"
                   size="icon"
