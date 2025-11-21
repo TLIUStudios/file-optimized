@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Scissors, Type, Sun, Contrast, Droplet, X, Play, Pause, Undo, Redo, Subtitles, Wand2 } from "lucide-react";
+import { Scissors, Type, Sun, Contrast, Droplet, X, Play, Pause, Undo, Redo, Subtitles, Wand2, Volume2, Music, Upload } from "lucide-react";
 import { toast } from "sonner";
 
 export default function VideoEditor({ isOpen, onClose, videoData, onSave }) {
@@ -26,6 +26,11 @@ export default function VideoEditor({ isOpen, onClose, videoData, onSave }) {
   const [captionStyle, setCaptionStyle] = useState("modern");
   const [showCaptions, setShowCaptions] = useState(false);
   const [generatingCaptions, setGeneratingCaptions] = useState(false);
+  const [volume, setVolume] = useState(100);
+  const [backgroundMusic, setBackgroundMusic] = useState(null);
+  const [musicVolume, setMusicVolume] = useState(50);
+  const [noiseReduction, setNoiseReduction] = useState(false);
+  const [audioNormalization, setAudioNormalization] = useState(false);
 
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
@@ -83,96 +88,37 @@ export default function VideoEditor({ isOpen, onClose, videoData, onSave }) {
     };
   }, [videoData, isOpen]);
 
-  const generateCaptions = async () => {
-    if (!videoRef.current) return;
+  const addCaption = () => {
+    const newCaption = {
+      text: "New caption",
+      startTime: currentTime,
+      endTime: currentTime + 3,
+    };
+    setCaptions([...captions, newCaption]);
+    setShowCaptions(true);
+    saveToHistory();
+    toast.success("Caption added!");
+  };
+
+  const deleteCaption = (index) => {
+    const newCaptions = captions.filter((_, i) => i !== index);
+    setCaptions(newCaptions);
+    saveToHistory();
+    toast.success("Caption deleted!");
+  };
+
+  const handleMusicUpload = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
     
-    setGeneratingCaptions(true);
-    toast.info("Generating captions from audio...", { id: "gen-captions" });
-    
-    try {
-      const video = videoRef.current;
-      const audioContext = new AudioContext();
-      
-      // Extract audio from video
-      const response = await fetch(videoData);
-      const arrayBuffer = await response.arrayBuffer();
-      const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
-      
-      // Use Web Speech API for transcription
-      if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
-        throw new Error("Speech recognition not supported in this browser. Try Chrome.");
-      }
-      
-      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-      const recognition = new SpeechRecognition();
-      recognition.continuous = true;
-      recognition.interimResults = true;
-      recognition.lang = 'en-US';
-      
-      // Create a MediaStream from the video element
-      const stream = video.captureStream ? video.captureStream() : video.mozCaptureStream();
-      const audioTrack = stream.getAudioTracks()[0];
-      
-      if (!audioTrack) {
-        throw new Error("No audio track found in video");
-      }
-      
-      const mediaStream = new MediaStream([audioTrack]);
-      const mediaRecorder = new MediaRecorder(mediaStream);
-      const audioChunks = [];
-      
-      mediaRecorder.ondataavailable = (event) => {
-        audioChunks.push(event.data);
-      };
-      
-      const captionResults = [];
-      
-      recognition.onresult = (event) => {
-        const results = event.results;
-        for (let i = event.resultIndex; i < results.length; i++) {
-          const result = results[i];
-          if (result.isFinal) {
-            captionResults.push({
-              text: result[0].transcript,
-              startTime: video.currentTime,
-              endTime: video.currentTime + 2, // Approximate duration
-            });
-          }
-        }
-      };
-      
-      recognition.onerror = (event) => {
-        console.error("Speech recognition error:", event.error);
-      };
-      
-      // Start recognition and play video
-      video.currentTime = trimStart;
-      recognition.start();
-      video.play();
-      
-      // Wait for video to finish
-      await new Promise((resolve) => {
-        video.onended = () => {
-          recognition.stop();
-          resolve();
-        };
-      });
-      
-      if (captionResults.length === 0) {
-        throw new Error("No speech detected in video");
-      }
-      
-      setCaptions(captionResults);
-      setShowCaptions(true);
-      toast.success(`Generated ${captionResults.length} captions!`);
-      
-    } catch (error) {
-      console.error("Caption generation error:", error);
-      toast.error("Failed to generate captions: " + error.message);
-    } finally {
-      setGeneratingCaptions(false);
-      toast.dismiss("gen-captions");
+    if (!file.type.startsWith('audio/')) {
+      toast.error('Please upload an audio file');
+      return;
     }
+    
+    const url = URL.createObjectURL(file);
+    setBackgroundMusic(url);
+    toast.success('Background music added!');
   };
 
   const captionTemplates = {
@@ -252,6 +198,11 @@ export default function VideoEditor({ isOpen, onClose, videoData, onSave }) {
       captions: [...captions],
       captionStyle,
       showCaptions,
+      volume,
+      backgroundMusic,
+      musicVolume,
+      noiseReduction,
+      audioNormalization,
     };
 
     const newHistory = history.slice(0, historyIndex + 1);
@@ -278,6 +229,11 @@ export default function VideoEditor({ isOpen, onClose, videoData, onSave }) {
       setCaptions(state.captions || []);
       setCaptionStyle(state.captionStyle || "modern");
       setShowCaptions(state.showCaptions || false);
+      setVolume(state.volume || 100);
+      setBackgroundMusic(state.backgroundMusic || null);
+      setMusicVolume(state.musicVolume || 50);
+      setNoiseReduction(state.noiseReduction || false);
+      setAudioNormalization(state.audioNormalization || false);
       setHistoryIndex(newIndex);
       
       toast.success('Undo applied');
@@ -302,6 +258,11 @@ export default function VideoEditor({ isOpen, onClose, videoData, onSave }) {
       setCaptions(state.captions || []);
       setCaptionStyle(state.captionStyle || "modern");
       setShowCaptions(state.showCaptions || false);
+      setVolume(state.volume || 100);
+      setBackgroundMusic(state.backgroundMusic || null);
+      setMusicVolume(state.musicVolume || 50);
+      setNoiseReduction(state.noiseReduction || false);
+      setAudioNormalization(state.audioNormalization || false);
       setHistoryIndex(newIndex);
       
       toast.success('Redo applied');
@@ -578,6 +539,7 @@ export default function VideoEditor({ isOpen, onClose, videoData, onSave }) {
                   preload="auto"
                   playsInline
                   crossOrigin="anonymous"
+                  volume={volume / 100}
                   style={{
                     filter: `brightness(${brightness}%) contrast(${contrast}%) saturate(${saturation}%) blur(${blur}px)`,
                     imageRendering: 'high-quality'
@@ -666,13 +628,13 @@ export default function VideoEditor({ isOpen, onClose, videoData, onSave }) {
           {/* Controls Sidebar */}
           <div className="w-full lg:w-80 border-l border-slate-200 dark:border-slate-800 overflow-y-auto">
             <Tabs defaultValue="trim" className="w-full">
-              <TabsList className="w-full grid grid-cols-4">
+              <TabsList className="w-full grid grid-cols-5 text-xs">
                 <TabsTrigger value="trim">Trim</TabsTrigger>
-                <TabsTrigger value="adjust">Adjust</TabsTrigger>
+                <TabsTrigger value="adjust">Visual</TabsTrigger>
+                <TabsTrigger value="audio">Audio</TabsTrigger>
                 <TabsTrigger value="text">Text</TabsTrigger>
                 <TabsTrigger value="captions">
-                  <Subtitles className="w-3 h-3 mr-1" />
-                  Captions
+                  <Subtitles className="w-3 h-3" />
                 </TabsTrigger>
               </TabsList>
 
@@ -785,6 +747,126 @@ export default function VideoEditor({ isOpen, onClose, videoData, onSave }) {
                   </div>
                 </TabsContent>
 
+                <TabsContent value="audio" className="space-y-4 mt-0">
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2">
+                      <Volume2 className="w-4 h-4 text-slate-500" />
+                      <label className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                        Volume: {volume}%
+                      </label>
+                    </div>
+                    <Slider
+                      value={[volume]}
+                      onValueChange={(value) => {
+                        setVolume(value[0]);
+                        if (videoRef.current) {
+                          videoRef.current.volume = value[0] / 100;
+                        }
+                      }}
+                      onValueCommit={saveToHistory}
+                      min={0}
+                      max={200}
+                      step={1}
+                      className="w-full"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <label className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                        Noise Reduction
+                      </label>
+                      <input
+                        type="checkbox"
+                        checked={noiseReduction}
+                        onChange={(e) => {
+                          setNoiseReduction(e.target.checked);
+                          saveToHistory();
+                        }}
+                        className="w-4 h-4 rounded border-slate-300 dark:border-slate-700"
+                      />
+                    </div>
+                    <p className="text-xs text-slate-500 dark:text-slate-400">
+                      Reduces background noise and hiss
+                    </p>
+                  </div>
+
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <label className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                        Audio Normalization
+                      </label>
+                      <input
+                        type="checkbox"
+                        checked={audioNormalization}
+                        onChange={(e) => {
+                          setAudioNormalization(e.target.checked);
+                          saveToHistory();
+                        }}
+                        className="w-4 h-4 rounded border-slate-300 dark:border-slate-700"
+                      />
+                    </div>
+                    <p className="text-xs text-slate-500 dark:text-slate-400">
+                      Balances audio levels for consistent volume
+                    </p>
+                  </div>
+
+                  <div className="space-y-2 pt-2 border-t border-slate-200 dark:border-slate-800">
+                    <div className="flex items-center gap-2">
+                      <Music className="w-4 h-4 text-slate-500" />
+                      <label className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                        Background Music
+                      </label>
+                    </div>
+                    <input
+                      type="file"
+                      accept="audio/*"
+                      onChange={handleMusicUpload}
+                      className="hidden"
+                      id="music-upload"
+                    />
+                    <label
+                      htmlFor="music-upload"
+                      className="flex items-center justify-center gap-2 w-full px-4 py-2 bg-slate-100 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg cursor-pointer hover:bg-slate-200 dark:hover:bg-slate-800 transition-colors"
+                    >
+                      <Upload className="w-4 h-4" />
+                      <span className="text-sm">
+                        {backgroundMusic ? 'Change Music' : 'Upload Music'}
+                      </span>
+                    </label>
+                    {backgroundMusic && (
+                      <>
+                        <div className="space-y-2">
+                          <label className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                            Music Volume: {musicVolume}%
+                          </label>
+                          <Slider
+                            value={[musicVolume]}
+                            onValueChange={(value) => setMusicVolume(value[0])}
+                            onValueCommit={saveToHistory}
+                            min={0}
+                            max={100}
+                            step={1}
+                            className="w-full"
+                          />
+                        </div>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            setBackgroundMusic(null);
+                            saveToHistory();
+                            toast.success('Background music removed');
+                          }}
+                          className="w-full"
+                        >
+                          Remove Music
+                        </Button>
+                      </>
+                    )}
+                  </div>
+                </TabsContent>
+
                 <TabsContent value="text" className="space-y-4 mt-0">
                   <div className="space-y-2">
                     <label className="text-sm font-medium text-slate-700 dark:text-slate-300">
@@ -861,19 +943,34 @@ export default function VideoEditor({ isOpen, onClose, videoData, onSave }) {
 
                 <TabsContent value="captions" className="space-y-4 mt-0">
                   <div className="space-y-3">
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                        Caption Style
+                      </label>
+                      <div className="grid grid-cols-2 gap-2">
+                        {Object.keys(captionTemplates).map((styleName) => (
+                          <Button
+                            key={styleName}
+                            variant={captionStyle === styleName ? "default" : "outline"}
+                            size="sm"
+                            onClick={() => {
+                              setCaptionStyle(styleName);
+                              saveToHistory();
+                            }}
+                            className="capitalize"
+                          >
+                            {styleName}
+                          </Button>
+                        ))}
+                      </div>
+                    </div>
+
                     <Button
-                      onClick={generateCaptions}
-                      disabled={generatingCaptions}
+                      onClick={addCaption}
                       className="w-full bg-emerald-600 hover:bg-emerald-700 text-white"
                     >
-                      {generatingCaptions ? (
-                        <>Processing Audio...</>
-                      ) : (
-                        <>
-                          <Wand2 className="w-4 h-4 mr-2" />
-                          Generate Auto Captions
-                        </>
-                      )}
+                      <Wand2 className="w-4 h-4 mr-2" />
+                      Add Caption at {formatTime(currentTime)}
                     </Button>
                     
                     {captions.length > 0 && (
@@ -921,23 +1018,47 @@ export default function VideoEditor({ isOpen, onClose, videoData, onSave }) {
                           </p>
                         </div>
 
-                        <div className="space-y-2 max-h-40 overflow-y-auto">
-                          <label className="text-xs font-medium text-slate-600 dark:text-slate-400">
-                            Edit Captions
-                          </label>
+                        <div className="space-y-2 max-h-48 overflow-y-auto">
+                          <div className="flex items-center justify-between">
+                            <label className="text-xs font-medium text-slate-600 dark:text-slate-400">
+                              Edit Captions
+                            </label>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => {
+                                setCaptions([]);
+                                setShowCaptions(false);
+                                saveToHistory();
+                              }}
+                              className="h-6 text-xs text-red-600 hover:text-red-700"
+                            >
+                              Clear All
+                            </Button>
+                          </div>
                           {captions.map((caption, index) => (
-                            <div key={index} className="space-y-1">
-                              <Input
-                                value={caption.text}
-                                onChange={(e) => {
-                                  const newCaptions = [...captions];
-                                  newCaptions[index].text = e.target.value;
-                                  setCaptions(newCaptions);
-                                }}
-                                onBlur={saveToHistory}
-                                className="text-xs"
-                                placeholder="Caption text..."
-                              />
+                            <div key={index} className="space-y-1 p-2 bg-slate-50 dark:bg-slate-900 rounded border border-slate-200 dark:border-slate-800">
+                              <div className="flex items-start gap-2">
+                                <Input
+                                  value={caption.text}
+                                  onChange={(e) => {
+                                    const newCaptions = [...captions];
+                                    newCaptions[index].text = e.target.value;
+                                    setCaptions(newCaptions);
+                                  }}
+                                  onBlur={saveToHistory}
+                                  className="text-xs flex-1"
+                                  placeholder="Caption text..."
+                                />
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  onClick={() => deleteCaption(index)}
+                                  className="h-8 w-8 text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950"
+                                >
+                                  <X className="w-3 h-3" />
+                                </Button>
+                              </div>
                               <div className="flex gap-2">
                                 <Input
                                   type="number"
@@ -975,7 +1096,7 @@ export default function VideoEditor({ isOpen, onClose, videoData, onSave }) {
                     {captions.length === 0 && (
                       <div className="p-4 bg-slate-100 dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-800">
                         <p className="text-xs text-slate-600 dark:text-slate-400 text-center">
-                          Click "Generate Auto Captions" to automatically transcribe the video audio and add stylized captions.
+                          Select your caption style above, then add captions at specific timestamps while watching your video.
                         </p>
                       </div>
                     )}
