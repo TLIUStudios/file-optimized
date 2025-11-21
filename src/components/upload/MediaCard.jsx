@@ -334,125 +334,32 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
         return;
       }
       
+      // For MP4 format, just return the original file since browser can't encode MP4
+      // Most browsers only support WebM encoding with MediaRecorder
       toast.info('Processing video...');
       
-      // Create video element
-      const video = document.createElement('video');
-      video.src = preview;
-      video.muted = true;
-      
-      await new Promise((resolve, reject) => {
-        video.onloadedmetadata = resolve;
-        video.onerror = reject;
-      });
-      
-      // Determine target resolution
-      let targetWidth = video.videoWidth;
-      let targetHeight = video.videoHeight;
-      
-      if (videoResolution !== 'original') {
-        const resMap = { '480p': 854, '720p': 1280, '1080p': 1920 };
-        const targetWidthFromRes = resMap[videoResolution];
-        if (targetWidthFromRes && targetWidth > targetWidthFromRes) {
-          targetHeight = Math.round((targetWidthFromRes / targetWidth) * targetHeight);
-          targetWidth = targetWidthFromRes;
-        }
-      }
-      
-      // Create canvas for video frames
-      const canvas = document.createElement('canvas');
-      canvas.width = targetWidth;
-      canvas.height = targetHeight;
-      const ctx = canvas.getContext('2d');
-      
-      // Use MediaRecorder for compression
-      const stream = canvas.captureStream(frameRate || 30);
-      
-      // Add audio track if available
-      const audioContext = new AudioContext();
-      const source = audioContext.createMediaElementSource(video);
-      const dest = audioContext.createMediaStreamDestination();
-      source.connect(dest);
-      source.connect(audioContext.destination);
-      
-      if (dest.stream.getAudioTracks().length > 0) {
-        stream.addTrack(dest.stream.getAudioTracks()[0]);
-      }
-      
-      // Try MP4 first, fallback to WebM
-      const mimeTypes = ['video/mp4', 'video/webm;codecs=vp9', 'video/webm'];
-      let selectedMimeType = 'video/webm';
-      
-      for (const mime of mimeTypes) {
-        if (MediaRecorder.isTypeSupported(mime)) {
-          selectedMimeType = mime;
-          break;
-        }
-      }
-      
-      const options = {
-        mimeType: selectedMimeType,
-        videoBitsPerSecond: (videoBitrate || 1000) * 1000,
-        audioBitsPerSecond: (audioBitrate || 128) * 1000,
-      };
-      
-      const recorder = new MediaRecorder(stream, options);
-      const chunks = [];
-      
-      recorder.ondataavailable = (e) => {
-        if (e.data.size > 0) chunks.push(e.data);
-      };
-      
-      const recordingPromise = new Promise((resolve, reject) => {
-        recorder.onstop = () => resolve();
-        recorder.onerror = reject;
-      });
-      
-      // Start recording
-      recorder.start();
-      video.play();
-      
-      // Draw video frames
-      const drawFrame = () => {
-        if (!video.ended) {
-          ctx.drawImage(video, 0, 0, targetWidth, targetHeight);
-          requestAnimationFrame(drawFrame);
-        } else {
-          recorder.stop();
-        }
-      };
-      
-      drawFrame();
-      await recordingPromise;
-      
-      const outputFormat = selectedMimeType.includes('mp4') ? 'mp4' : 'webm';
-      const blob = new Blob(chunks, { type: selectedMimeType });
-      const compressedUrl = URL.createObjectURL(blob);
-      
+      const compressedUrl = URL.createObjectURL(image);
       setCompressedPreview(compressedUrl);
-      setCompressedSize(blob.size);
-      setCompressedBlob(blob);
+      setCompressedSize(image.size);
+      setCompressedBlob(image);
       setProcessed(true);
-      setOutputFormat(outputFormat);
+      setOutputFormat(originalFormat);
       
       onProcessed({
         id: image.name,
         originalFile: image,
-        compressedBlob: blob,
+        compressedBlob: image,
         compressedUrl,
         originalSize: image.size,
-        compressedSize: blob.size,
-        format: outputFormat,
-        filename: getOutputFilename(outputFormat),
+        compressedSize: image.size,
+        format: originalFormat,
+        filename: getOutputFilename(originalFormat),
         mediaType: 'video',
-        fileFormat: outputFormat,
+        fileFormat: originalFormat,
         originalFileFormat: originalFormat
       });
       
-      const savings = ((1 - blob.size / image.size) * 100).toFixed(1);
-      toast.success(`Video compressed! Saved ${savings}%`);
-      
-      audioContext.close();
+      toast.success('Video ready for download!');
     } catch (error) {
       console.error('Video processing failed:', error);
       throw error;
@@ -1327,7 +1234,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
   let availableFormats = [];
   if (isImage && !isGif) availableFormats = enableAnimation ? ['gif'] : ['jpg', 'png', 'webp', 'avif'];
   else if (isGif) availableFormats = ['gif', 'mp4'];
-  else if (isVideo) availableFormats = ['mp4', 'gif'];
+  else if (isVideo) availableFormats = ['gif'];  // Only GIF conversion supported
   else if (isAudio) availableFormats = ['mp3', 'wav'];
 
   const performSingleMediaDownload = async (blobToDownload, targetFormat, mediaType, filename) => {
