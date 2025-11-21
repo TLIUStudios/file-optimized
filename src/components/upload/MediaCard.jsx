@@ -365,6 +365,20 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
       targetWidth = Math.floor(targetWidth / 2) * 2;
       targetHeight = Math.floor(targetHeight / 2) * 2;
       
+      // Determine appropriate AVC codec level based on resolution
+      const pixelCount = targetWidth * targetHeight;
+      let codecString;
+      
+      if (pixelCount <= 921600) { // Up to 1280x720 (HD)
+        codecString = 'avc1.42E01F'; // Level 3.1
+      } else if (pixelCount <= 2097152) { // Up to 2048x1024
+        codecString = 'avc1.640028'; // High Profile, Level 4.0
+      } else if (pixelCount <= 8847360) { // Up to 4096x2160 (4K)
+        codecString = 'avc1.640033'; // High Profile, Level 5.1
+      } else {
+        codecString = 'avc1.640034'; // High Profile, Level 5.2 (8K)
+      }
+      
       const canvas = document.createElement('canvas');
       canvas.width = targetWidth;
       canvas.height = targetHeight;
@@ -399,7 +413,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
       }
       
       videoEncoder.configure({
-        codec: 'avc1.42E01F',
+        codec: codecString,
         width: targetWidth,
         height: targetHeight,
         bitrate: (videoBitrate || 1000) * 1000,
@@ -769,6 +783,20 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
       let width = Math.floor(frames[0].dims.width / 2) * 2;
       let height = Math.floor(frames[0].dims.height / 2) * 2;
       
+      // Determine appropriate AVC codec level based on resolution
+      const pixelCount = width * height;
+      let codecString;
+      
+      if (pixelCount <= 921600) { // Up to 1280x720 (HD)
+        codecString = 'avc1.42E01F'; // Level 3.1
+      } else if (pixelCount <= 2097152) { // Up to 2048x1024
+        codecString = 'avc1.640028'; // High Profile, Level 4.0
+      } else if (pixelCount <= 8847360) { // Up to 4096x2160 (4K)
+        codecString = 'avc1.640033'; // High Profile, Level 5.1
+      } else {
+        codecString = 'avc1.640034'; // High Profile, Level 5.2 (8K)
+      }
+      
       const canvas = document.createElement('canvas');
       canvas.width = width;
       canvas.height = height;
@@ -804,7 +832,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
       }
       
       videoEncoder.configure({
-        codec: 'avc1.42E01F',
+        codec: codecString,
         width,
         height,
         bitrate: 1_000_000,
