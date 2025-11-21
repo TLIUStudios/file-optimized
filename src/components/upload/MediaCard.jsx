@@ -112,7 +112,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
     };
     reader.readAsDataURL(image);
     if (isGif) setFormat('gif');
-    else if (isVideo) setFormat('mp4');
+    else if (isVideo) setFormat('webm');
     else if (isAudio) setFormat('mp3');
     else if (isImage) setFormat('jpg');
   }, [image, isGif, isVideo, isAudio, isImage]);
@@ -472,51 +472,101 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
         processedBuffer = await offlineContext.startRendering();
       }
       
-      // Convert to WAV format
-      const numberOfChannels = processedBuffer.numberOfChannels;
-      const length = processedBuffer.length * numberOfChannels * 2;
-      const buffer = new ArrayBuffer(44 + length);
-      const view = new DataView(buffer);
+      let blob, mimeType, outputExt;
       
-      // WAV header
-      const writeString = (offset, string) => {
-        for (let i = 0; i < string.length; i++) {
-          view.setUint8(offset + i, string.charCodeAt(i));
+      if (format === 'mp3') {
+        // Load lamejs for MP3 encoding
+        if (!window.lamejs) {
+          await new Promise((resolve, reject) => {
+            const script = document.createElement('script');
+            script.src = 'https://cdn.jsdelivr.net/npm/lamejs@1.2.1/lame.min.js';
+            script.onload = resolve;
+            script.onerror = () => reject(new Error('Failed to load MP3 encoder'));
+            document.head.appendChild(script);
+          });
         }
-      };
-      
-      writeString(0, 'RIFF');
-      view.setUint32(4, 36 + length, true);
-      writeString(8, 'WAVE');
-      writeString(12, 'fmt ');
-      view.setUint32(16, 16, true);
-      view.setUint16(20, 1, true);
-      view.setUint16(22, numberOfChannels, true);
-      view.setUint32(24, targetSampleRate, true);
-      view.setUint32(28, targetSampleRate * numberOfChannels * 2, true);
-      view.setUint16(32, numberOfChannels * 2, true);
-      view.setUint16(34, 16, true);
-      writeString(36, 'data');
-      view.setUint32(40, length, true);
-      
-      // Write audio data
-      let offset = 44;
-      for (let i = 0; i < processedBuffer.length; i++) {
-        for (let channel = 0; channel < numberOfChannels; channel++) {
-          const sample = Math.max(-1, Math.min(1, processedBuffer.getChannelData(channel)[i]));
-          view.setInt16(offset, sample < 0 ? sample * 0x8000 : sample * 0x7FFF, true);
-          offset += 2;
+        
+        const mp3encoder = new window.lamejs.Mp3Encoder(processedBuffer.numberOfChannels, targetSampleRate, targetBitrate);
+        const mp3Data = [];
+        const sampleBlockSize = 1152;
+        
+        // Convert audio buffer to the format lamejs expects
+        const left = processedBuffer.getChannelData(0);
+        const right = processedBuffer.numberOfChannels > 1 ? processedBuffer.getChannelData(1) : null;
+        
+        // Convert float samples to int16
+        const leftInt16 = new Int16Array(left.length);
+        const rightInt16 = right ? new Int16Array(right.length) : null;
+        
+        for (let i = 0; i < left.length; i++) {
+          leftInt16[i] = left[i] * 0x7FFF;
+          if (right) rightInt16[i] = right[i] * 0x7FFF;
         }
+        
+        // Encode in blocks
+        for (let i = 0; i < leftInt16.length; i += sampleBlockSize) {
+          const leftChunk = leftInt16.subarray(i, i + sampleBlockSize);
+          const rightChunk = rightInt16 ? rightInt16.subarray(i, i + sampleBlockSize) : null;
+          const mp3buf = mp3encoder.encodeBuffer(leftChunk, rightChunk);
+          if (mp3buf.length > 0) mp3Data.push(mp3buf);
+        }
+        
+        const mp3buf = mp3encoder.flush();
+        if (mp3buf.length > 0) mp3Data.push(mp3buf);
+        
+        blob = new Blob(mp3Data, { type: 'audio/mpeg' });
+        mimeType = 'audio/mpeg';
+        outputExt = 'mp3';
+      } else {
+        // Convert to WAV format
+        const numberOfChannels = processedBuffer.numberOfChannels;
+        const length = processedBuffer.length * numberOfChannels * 2;
+        const buffer = new ArrayBuffer(44 + length);
+        const view = new DataView(buffer);
+        
+        // WAV header
+        const writeString = (offset, string) => {
+          for (let i = 0; i < string.length; i++) {
+            view.setUint8(offset + i, string.charCodeAt(i));
+          }
+        };
+        
+        writeString(0, 'RIFF');
+        view.setUint32(4, 36 + length, true);
+        writeString(8, 'WAVE');
+        writeString(12, 'fmt ');
+        view.setUint32(16, 16, true);
+        view.setUint16(20, 1, true);
+        view.setUint16(22, numberOfChannels, true);
+        view.setUint32(24, targetSampleRate, true);
+        view.setUint32(28, targetSampleRate * numberOfChannels * 2, true);
+        view.setUint16(32, numberOfChannels * 2, true);
+        view.setUint16(34, 16, true);
+        writeString(36, 'data');
+        view.setUint32(40, length, true);
+        
+        // Write audio data
+        let offset = 44;
+        for (let i = 0; i < processedBuffer.length; i++) {
+          for (let channel = 0; channel < numberOfChannels; channel++) {
+            const sample = Math.max(-1, Math.min(1, processedBuffer.getChannelData(channel)[i]));
+            view.setInt16(offset, sample < 0 ? sample * 0x8000 : sample * 0x7FFF, true);
+            offset += 2;
+          }
+        }
+        
+        blob = new Blob([buffer], { type: 'audio/wav' });
+        mimeType = 'audio/wav';
+        outputExt = 'wav';
       }
       
-      const blob = new Blob([buffer], { type: 'audio/wav' });
       const compressedUrl = URL.createObjectURL(blob);
       
       setCompressedPreview(compressedUrl);
       setCompressedSize(blob.size);
       setCompressedBlob(blob);
       setProcessed(true);
-      setOutputFormat('wav');
+      setOutputFormat(outputExt);
       
       onProcessed({
         id: image.name,
@@ -525,18 +575,18 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
         compressedUrl,
         originalSize: image.size,
         compressedSize: blob.size,
-        format: 'wav',
-        filename: getOutputFilename('wav'),
+        format: outputExt,
+        filename: getOutputFilename(outputExt),
         mediaType: 'audio',
-        fileFormat: 'wav',
+        fileFormat: outputExt,
         originalFileFormat: originalFormat
       });
       
       const savings = ((1 - blob.size / image.size) * 100).toFixed(1);
       if (blob.size < image.size) {
-        toast.success(`Audio processed! Saved ${savings}%`);
+        toast.success(`Audio ${outputExt.toUpperCase()} processed! Saved ${savings}%`);
       } else {
-        toast.success('Audio converted to WAV format');
+        toast.success(`Audio converted to ${outputExt.toUpperCase()} format`);
       }
       
       audioContext.close();
@@ -1163,7 +1213,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
   if (isImage && !isGif) availableFormats = enableAnimation ? ['gif'] : ['jpg', 'png', 'webp', 'avif'];
   else if (isGif) availableFormats = ['gif'];
   else if (isVideo) availableFormats = ['webm'];
-  else if (isAudio) availableFormats = ['wav'];
+  else if (isAudio) availableFormats = ['mp3', 'wav'];
 
   const performSingleMediaDownload = async (blobToDownload, targetFormat, mediaType, filename) => {
     if (!blobToDownload) {
