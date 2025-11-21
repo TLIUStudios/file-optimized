@@ -99,17 +99,30 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
     let toastId = null;
     try {
       toastId = toast.loading('Loading video/audio processor...', { duration: Infinity });
-      const { FFmpeg } = await import('https://unpkg.com/@ffmpeg/ffmpeg@0.12.10/dist/esm/index.js');
+      
+      // Check for SharedArrayBuffer support
+      if (typeof SharedArrayBuffer === 'undefined') {
+        throw new Error('SharedArrayBuffer not supported. Video/audio processing requires secure context.');
+      }
+      
+      const { FFmpeg } = await import('https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@0.12.10/dist/esm/index.js');
+      const { toBlobURL } = await import('https://cdn.jsdelivr.net/npm/@ffmpeg/util@0.12.1/dist/esm/index.js');
+      
       const ffmpeg = new FFmpeg();
       ffmpeg.on('log', ({ message }) => console.log('FFmpeg:', message));
       ffmpeg.on('progress', ({ progress }) => {
         if (progress > 0 && progress < 1) console.log(`FFmpeg Progress: ${(progress * 100).toFixed(1)}%`);
       });
-      const baseURL = 'https://unpkg.com/@ffmpeg/core@0.12.6/dist/esm';
+      
+      const baseURL = 'https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.6/dist/esm';
+      const coreURL = await toBlobURL(`${baseURL}/ffmpeg-core.js`, 'text/javascript');
+      const wasmURL = await toBlobURL(`${baseURL}/ffmpeg-core.wasm`, 'application/wasm');
+      
       await ffmpeg.load({
-        coreURL: `${baseURL}/ffmpeg-core.js`,
-        wasmURL: `${baseURL}/ffmpeg-core.wasm`,
+        coreURL,
+        wasmURL,
       });
+      
       ffmpegRef.current = ffmpeg;
       setFfmpegLoaded(true);
       setFfmpegLoading(false);
@@ -121,8 +134,14 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
       setFfmpegLoading(false);
       setFfmpegLoadError(error.message);
       if (toastId) toast.dismiss(toastId);
-      toast.error('Audio/video processor failed to load.', { duration: 8000 });
-      setTimeout(() => setFfmpegLoadError(null), 10000);
+      
+      if (error.message.includes('SharedArrayBuffer')) {
+        toast.error('Video/audio processing unavailable: Browser security requirements not met. Try a different browser.', { duration: 10000 });
+      } else {
+        toast.error(`Video/audio processor failed: ${error.message}`, { duration: 8000 });
+      }
+      
+      setTimeout(() => setFfmpegLoadError(null), 15000);
     }
   };
 
