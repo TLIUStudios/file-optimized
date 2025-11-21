@@ -22,6 +22,7 @@ import { base44 } from "@/api/base44Client";
 // Lazy load the editor
 const ImageEditor = lazy(() => import("./ImageEditor"));
 const GifEditor = lazy(() => import("./GifEditor"));
+const VideoEditor = lazy(() => import("./VideoEditor"));
 
 export default function MediaCard({ image, onRemove, onProcessed, onCompare, autoProcess, isPro }) {
   const [processing, setProcessing] = useState(false);
@@ -40,6 +41,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
   const [stripMetadata, setStripMetadata] = useState(true);
   const [noiseReduction, setNoiseReduction] = useState(false);
   const [showEditor, setShowEditor] = useState(false);
+  const [showVideoEditor, setShowVideoEditor] = useState(false);
   const [outputFormat, setOutputFormat] = useState(null);
   const [compressedBlob, setCompressedBlob] = useState(null);
   const [enableUpscale, setEnableUpscale] = useState(false);
@@ -1699,6 +1701,20 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
   };
 
   const handleEditImage = () => setShowEditor(true);
+  
+  const handleEditVideo = () => setShowVideoEditor(true);
+  
+  const handleSaveVideoEdit = (newBlob) => {
+    const newUrl = URL.createObjectURL(newBlob);
+    setPreview(newUrl);
+    setOriginalSize(newBlob.size);
+    setProcessed(false);
+    setCompressedPreview(null);
+    setCompressedSize(0);
+    setError(null);
+    setShowVideoEditor(false);
+    toast.success("Video edited successfully. Re-process to apply compression.");
+  };
 
   const handleSaveEdit = (newImageUrl, newBlob) => {
     setPreview(newImageUrl);
@@ -1817,7 +1833,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
   return (
     <Card className="overflow-hidden bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 shadow-lg hover:shadow-xl transition-shadow">
       <div className="relative">
-        <div className="grid grid-cols-2 gap-2 p-4 bg-slate-50 dark:bg-slate-950">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 p-3 sm:p-4 bg-slate-50 dark:bg-slate-950">
           {preview && (
             <div className="relative aspect-square rounded-lg overflow-hidden bg-slate-200 dark:bg-slate-800 cursor-pointer group" onClick={(isImage || isGif) && processed ? handleCompare : undefined}>
               {isGif && gifFrameCount > 0 && (
@@ -1826,7 +1842,14 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
                   {gifFrameCount} frames
                 </Badge>
               )}
-              {isImage ? <LazyImage src={preview} alt="Original" className="w-full h-full object-cover transition-transform group-hover:scale-105" /> : isVideo ? <video src={preview} controls loop className="w-full h-full object-cover" /> : isAudio ? (
+              {isImage ? <LazyImage src={preview} alt="Original" className="w-full h-full object-cover transition-transform group-hover:scale-105" /> : isVideo ? (
+                <>
+                  <video src={preview} controls loop className="w-full h-full object-cover" />
+                  <Button variant="ghost" size="icon" onClick={(e) => { e.stopPropagation(); handleEditVideo(); }} className="absolute top-2 right-2 bg-white/80 hover:bg-white dark:bg-slate-800/80 dark:hover:bg-slate-800 h-7 w-7 rounded-lg">
+                    <Edit2 className="w-3 h-3" />
+                  </Button>
+                </>
+              ) : isAudio ? (
                 <div className="w-full h-full flex flex-col items-center justify-center p-4">
                   <Music className="w-16 h-16 text-slate-400 mb-2" />
                   <audio src={preview} controls className="w-full" />
@@ -1869,12 +1892,12 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
             </div>
           )}
         </div>
-        <Button variant="ghost" size="icon" onClick={onRemove} className="absolute top-0 right-2 bg-slate-900/90 dark:bg-slate-900/90 hover:bg-red-600 dark:hover:bg-red-600 text-white rounded-lg transition-colors z-20 shadow-lg">
-          <X className="w-4 h-4" />
+        <Button variant="ghost" size="icon" onClick={onRemove} className="absolute top-1 right-1 sm:top-0 sm:right-2 bg-slate-900/90 dark:bg-slate-900/90 hover:bg-red-600 dark:hover:bg-red-600 text-white rounded-lg transition-colors z-20 shadow-lg h-8 w-8 sm:h-10 sm:w-10">
+          <X className="w-3 h-3 sm:w-4 sm:h-4" />
         </Button>
       </div>
 
-      <div className="p-4 space-y-4">
+      <div className="p-3 sm:p-4 space-y-3 sm:space-y-4">
         <TooltipProvider>
           <div>
             {isEditingFilename ? (
@@ -1924,8 +1947,8 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
             </div>
           </div>
 
-          <Button variant="outline" size="sm" onClick={extractMetadata} className="w-full justify-center mt-3 text-xs">
-            <Info className="w-3 h-3 mr-1" /> View Metadata
+          <Button variant="outline" size="sm" onClick={extractMetadata} className="w-full justify-center mt-2 sm:mt-3 text-xs">
+            <Info className="w-3 h-3 mr-1" /> <span className="hidden sm:inline">View Metadata</span><span className="sm:hidden">Metadata</span>
           </Button>
 
           {error && (
@@ -1944,9 +1967,9 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
                   <TooltipContent className="max-w-xs"><p className="text-xs">Change to a different format after compression</p></TooltipContent>
                 </Tooltip>
               </div>
-              <div className={cn("grid gap-2", availableFormats.length === 1 ? "grid-cols-1" : availableFormats.length === 2 ? "grid-cols-2" : "grid-cols-4")}>
+              <div className={cn("grid gap-2", availableFormats.length === 1 ? "grid-cols-1" : availableFormats.length === 2 ? "grid-cols-2" : "grid-cols-2 sm:grid-cols-4")}>
                 {availableFormats.map((fmt) => (
-                  <Button key={fmt} size="sm" variant={displayFormat === fmt ? "default" : "outline"} onClick={() => convertFormat(fmt)} disabled={displayFormat === fmt || processing} className={cn("relative text-xs h-9", format === fmt && "bg-emerald-600 hover:bg-emerald-700")}>
+                  <Button key={fmt} size="sm" variant={displayFormat === fmt ? "default" : "outline"} onClick={() => convertFormat(fmt)} disabled={displayFormat === fmt || processing} className={cn("relative text-xs h-8 sm:h-9", format === fmt && "bg-emerald-600 hover:bg-emerald-700")}>
                     {fmt.toUpperCase()}
                     {displayFormat === fmt && processing && <Loader2 className="ml-1 h-3 w-3 animate-spin" />}
                   </Button>
@@ -1964,9 +1987,9 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
                   <TooltipContent className="max-w-xs"><p className="text-xs">Choose output format before compression</p></TooltipContent>
                 </Tooltip>
               </div>
-              <div className={cn("grid gap-2", availableFormats.length === 1 ? "grid-cols-1" : availableFormats.length === 2 ? "grid-cols-2" : "grid-cols-4")}>
+              <div className={cn("grid gap-2", availableFormats.length === 1 ? "grid-cols-1" : availableFormats.length === 2 ? "grid-cols-2" : "grid-cols-2 sm:grid-cols-4")}>
                 {availableFormats.map((fmt) => (
-                  <Button key={fmt} size="sm" variant={format === fmt ? "default" : "outline"} onClick={() => setFormat(fmt)} disabled={processing} className={cn("relative text-xs h-9", format === fmt && "bg-emerald-600 hover:bg-emerald-700")}>
+                  <Button key={fmt} size="sm" variant={format === fmt ? "default" : "outline"} onClick={() => setFormat(fmt)} disabled={processing} className={cn("relative text-xs h-8 sm:h-9", format === fmt && "bg-emerald-600 hover:bg-emerald-700")}>
                     {fmt.toUpperCase()}
                   </Button>
                 ))}
@@ -2296,12 +2319,12 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
             </Collapsible>
           )}
 
-          <div className="flex gap-2">
+          <div className="flex flex-col sm:flex-row gap-2">
             {!processed ? (
-              <Button onClick={processMedia} disabled={processing || (((isGif && format === 'gif') || (isImage && !isGif && enableAnimation)) && !gifJsLoaded)} className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white relative overflow-hidden">
+              <Button onClick={processMedia} disabled={processing || (((isGif && format === 'gif') || (isImage && !isGif && enableAnimation)) && !gifJsLoaded)} className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white relative overflow-hidden text-sm">
                 {processing && <div className="absolute inset-0 bg-emerald-500 transition-all duration-300 ease-linear" style={{ width: `${processingProgress}%`, left: 0 }} />}
                 <span className="relative z-10 flex items-center justify-center">
-                  {processing ? (<><Loader2 className="w-4 h-4 mr-2 animate-spin" />Optimizing... {Math.round(processingProgress)}%</>) : (<>{MediaIcon && <MediaIcon className="w-4 h-4 mr-2" />}{enableAnimation ? 'Create Animation' : 'Optimize Asset'}</>)}
+                  {processing ? (<><Loader2 className="w-4 h-4 mr-2 animate-spin" /><span className="hidden sm:inline">Optimizing... {Math.round(processingProgress)}%</span><span className="sm:hidden">{Math.round(processingProgress)}%</span></>) : (<>{MediaIcon && <MediaIcon className="w-4 h-4 mr-2" />}<span className="hidden sm:inline">{enableAnimation ? 'Create Animation' : 'Optimize Asset'}</span><span className="sm:hidden">Optimize</span></>)}
                 </span>
               </Button>
             ) : (
@@ -2310,16 +2333,16 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
                   onClick={processMedia} 
                   variant={settingsChanged ? "default" : "outline"} 
                   className={cn(
-                    "flex-1",
+                    "flex-1 text-sm",
                     settingsChanged && "bg-red-600 hover:bg-red-700 text-white animate-pulse"
                   )} 
                   disabled={processing || (((isGif && format === 'gif') || (isImage && !isGif && enableAnimation)) && !gifJsLoaded)}
                 >
                   <RefreshCcw className={cn("w-4 h-4 mr-2", settingsChanged && "animate-spin")} />
-                  Reprocess
+                  <span className="hidden sm:inline">Reprocess</span>
                 </Button>
-                <Button onClick={() => downloadMedia()} className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white" disabled={processing}>
-                  <Download className="w-4 h-4 mr-2" />Download
+                <Button onClick={() => downloadMedia()} className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white text-sm" disabled={processing}>
+                  <Download className="w-4 h-4 mr-2" /><span className="hidden sm:inline">Download</span>
                 </Button>
               </>
             )}
@@ -2336,6 +2359,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
 
       {showEditor && isImage && !isGif && <ImageEditor isOpen={showEditor} onClose={() => setShowEditor(false)} imageData={preview} onSave={handleSaveEdit} />}
       {showGifEditor && isGif && <GifEditor isOpen={showGifEditor} onClose={() => setShowGifEditor(false)} gifData={preview} onSave={handleSaveGifEdit} />}
+      {showVideoEditor && isVideo && <VideoEditor isOpen={showVideoEditor} onClose={() => setShowVideoEditor(false)} videoData={preview} onSave={handleSaveVideoEdit} />}
       {showMetadataViewer && fileMetadata && (
         <Dialog open={showMetadataViewer} onOpenChange={setShowMetadataViewer}>
           <DialogContent className="sm:max-w-[425px]">

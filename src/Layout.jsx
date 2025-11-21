@@ -117,7 +117,7 @@ export default function Layout({ children }) {
   const isPro = user?.plan === 'pro';
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-950 dark:to-slate-900 transition-colors duration-300">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-950 dark:to-slate-900 transition-colors duration-300 pb-safe">
       <Toaster position="top-center" richColors />
       
       {/* Theme Effects */}
@@ -184,33 +184,33 @@ export default function Layout({ children }) {
         }
       `}</style>
       
-      <header className="sticky top-0 z-50 w-full border-b border-slate-200/50 dark:border-slate-800/50 bg-white/80 dark:bg-slate-950/80 backdrop-blur-lg">
-        <div className="container mx-auto px-4 h-16 flex items-center justify-between">
-          <Link to={createPageUrl('Home')} className="flex items-center gap-2 sm:gap-3 hover:opacity-80 transition-opacity min-w-0">
-            <div className="w-9 h-9 sm:w-10 sm:h-10 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-xl flex items-center justify-center shadow-lg flex-shrink-0">
-              <ImageIcon className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
+      <header className="sticky top-0 z-50 w-full border-b border-slate-200/50 dark:border-slate-800/50 bg-white/80 dark:bg-slate-950/80 backdrop-blur-lg safe-top">
+        <div className="container mx-auto px-3 sm:px-4 h-14 sm:h-16 flex items-center justify-between">
+          <Link to={createPageUrl('Home')} className="flex items-center gap-2 hover:opacity-80 transition-opacity min-w-0">
+            <div className="w-8 h-8 sm:w-9 sm:h-9 md:w-10 md:h-10 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-xl flex items-center justify-center shadow-lg flex-shrink-0">
+              <ImageIcon className="w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6 text-white" />
             </div>
-            <div className="min-w-0">
-              <h1 className="text-base sm:text-xl font-bold text-slate-900 dark:text-white truncate">File Optimized</h1>
-              <p className="text-[10px] sm:text-xs text-slate-500 dark:text-slate-400 truncate">Compress, Upscale, & Convert</p>
+            <div className="min-w-0 hidden xs:block">
+              <h1 className="text-sm sm:text-base md:text-xl font-bold text-slate-900 dark:text-white truncate">File Optimized</h1>
+              <p className="text-[9px] sm:text-[10px] md:text-xs text-slate-500 dark:text-slate-400 truncate hidden sm:block">Compress, Upscale, & Convert</p>
             </div>
           </Link>
           
-          <div className="flex items-center gap-2 sm:gap-3">
+          <div className="flex items-center gap-1.5 sm:gap-2 md:gap-3">
             {!authLoading && (
               <>
                 {isAuthenticated && user ? (
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" className="gap-2">
+                      <Button variant="ghost" className="gap-1.5 sm:gap-2 h-9 sm:h-10 px-2 sm:px-3">
                         <User className="w-4 h-4" />
-                        <span className="hidden sm:inline">{user.full_name || user.email}</span>
+                        <span className="hidden md:inline text-sm">{user.full_name || user.email}</span>
                         {isPro ? (
-                          <Badge className="bg-gradient-to-r from-amber-500 to-orange-500 text-white text-xs px-2 py-0.5 font-bold">
+                          <Badge className="bg-gradient-to-r from-amber-500 to-orange-500 text-white text-[10px] sm:text-xs px-1.5 sm:px-2 py-0.5 font-bold">
                             PRO
                           </Badge>
                         ) : (
-                          <Badge variant="outline" className="text-xs px-2 py-0.5">
+                          <Badge variant="outline" className="text-[10px] sm:text-xs px-1.5 sm:px-2 py-0.5">
                             FREE
                           </Badge>
                         )}
@@ -254,31 +254,31 @@ export default function Layout({ children }) {
                   <Button
                     onClick={handleLoginClick}
                     variant="ghost"
-                    className="gap-2"
+                    className="gap-1.5 sm:gap-2 h-9 sm:h-10 px-2 sm:px-3 text-sm"
                   >
                     <LogIn className="w-4 h-4" />
                     <span className="hidden sm:inline">Sign In</span>
                   </Button>
                 )}
-              </>
-            )}
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={toggleTheme}
-              className="rounded-full hover:bg-slate-100 dark:hover:bg-slate-800"
-            >
-              {theme === 'light' ? (
-                <Moon className="w-5 h-5 text-slate-700 dark:text-slate-300" />
-              ) : (
-                <Sun className="w-5 h-5 text-slate-300" />
-              )}
-            </Button>
-          </div>
+                </>
+                )}
+                <Button
+                variant="ghost"
+                size="icon"
+                onClick={toggleTheme}
+                className="rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 h-9 w-9 sm:h-10 sm:w-10"
+                >
+                {theme === 'light' ? (
+                <Moon className="w-4 h-4 sm:w-5 sm:h-5 text-slate-700 dark:text-slate-300" />
+                ) : (
+                <Sun className="w-4 h-4 sm:w-5 sm:h-5 text-slate-300" />
+                )}
+                </Button>
+                </div>
         </div>
       </header>
       
-      <main className="container mx-auto px-4 py-8">
+      <main className="container mx-auto px-3 sm:px-4 py-4 sm:py-6 md:py-8">
         {children}
         
         {/* Show Google Ads only for Free users */}
@@ -289,16 +289,16 @@ export default function Layout({ children }) {
         )}
       </main>
       
-      <footer className="border-t border-slate-200 dark:border-slate-800 mt-20">
-        <div className="container mx-auto px-4 py-8 text-center space-y-4">
+      <footer className="border-t border-slate-200 dark:border-slate-800 mt-12 sm:mt-16 md:mt-20">
+        <div className="container mx-auto px-3 sm:px-4 py-6 sm:py-8 text-center space-y-3 sm:space-y-4">
           <img 
             src="https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/69100dedd17537e37249237a/cd98bb516_image.png" 
             alt="TLIU Studios Logo" 
-            className="w-16 h-16 mx-auto"
+            className="w-12 h-12 sm:w-16 sm:h-16 mx-auto"
           />
-          
+
           {/* Social Media Icons */}
-          <div className="flex items-center justify-center gap-5">
+          <div className="flex items-center justify-center gap-3 sm:gap-4 md:gap-5 flex-wrap">
             <a href="https://discord.gg/gRJesCUYz9" target="_blank" rel="noopener noreferrer" className="w-5 h-5 flex items-center justify-center text-slate-500 dark:text-slate-500 hover:text-[#5865F2] dark:hover:text-[#5865F2] transition-colors" style={{ transform: 'translateZ(0)' }}>
               <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg" style={{ display: 'block' }}>
                 <path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515a.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0a12.64 12.64 0 0 0-.617-1.25a.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 0 0 .031.057a19.9 19.9 0 0 0 5.993 3.03a.078.078 0 0 0 .084-.028a14.09 14.09 0 0 0 1.226-1.994a.076.076 0 0 0-.041-.106a13.107 13.107 0 0 1-1.872-.892a.077.077 0 0 1-.008-.128a10.2 10.2 0 0 0 .372-.292a.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127a12.299 12.299 0 0 1-1.873.892a.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028a19.839 19.839 0 0 0 6.002-3.03a.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.03zM8.02 15.33c-1.183 0-2.157-1.085-2.157-2.419c0-1.333.956-2.419 2.157-2.419c1.21 0 2.176 1.096 2.157 2.42c0 1.333-.956 2.418-2.157 2.418zm7.975 0c-1.183 0-2.157-1.085-2.157-2.419c0-1.333.955-2.419 2.157-2.419c1.21 0 2.176 1.096 2.157 2.42c0 1.333-.946 2.418-2.157 2.418z"/>
@@ -345,8 +345,8 @@ export default function Layout({ children }) {
             </a>
           </div>
           
-          <div className="w-32 h-px bg-gradient-to-r from-transparent via-slate-300 dark:via-slate-700 to-transparent mx-auto" />
-          <p className="text-sm text-slate-500 dark:text-slate-400">
+          <div className="w-24 sm:w-32 h-px bg-gradient-to-r from-transparent via-slate-300 dark:via-slate-700 to-transparent mx-auto" />
+          <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400">
             © <a href="https://www.tliu.co/" target="_blank" rel="noopener noreferrer" className="hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors">TLIU Studios</a> 2025, All Rights Reserved.
           </p>
         </div>
