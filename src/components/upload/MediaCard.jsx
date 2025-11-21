@@ -334,34 +334,134 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
         return;
       }
       
-      // For MP4 format, just return the original file since browser can't encode MP4
-      // Most browsers only support WebM encoding with MediaRecorder
-      toast.info('Processing video...');
+      toast.info('Processing video to MP4...');
       
-      const compressedUrl = URL.createObjectURL(image);
+      // Load video
+      const video = document.createElement('video');
+      video.src = preview;
+      video.muted = true;
+      video.crossOrigin = 'anonymous';
+      
+      await new Promise((resolve, reject) => {
+        video.onloadedmetadata = resolve;
+        video.onerror = () => reject(new Error('Failed to load video'));
+        setTimeout(() => reject(new Error('Video loading timeout')), 10000);
+      });
+      
+      // Determine target resolution
+      let targetWidth = video.videoWidth;
+      let targetHeight = video.videoHeight;
+      
+      if (videoResolution !== 'original') {
+        const resMap = { '480p': 854, '720p': 1280, '1080p': 1920 };
+        const targetWidthFromRes = resMap[videoResolution];
+        if (targetWidthFromRes && targetWidth > targetWidthFromRes) {
+          targetHeight = Math.round((targetWidthFromRes / targetWidth) * targetHeight);
+          targetWidth = targetWidthFromRes;
+        }
+      }
+      
+      // Ensure dimensions are even (required for H.264)
+      targetWidth = Math.floor(targetWidth / 2) * 2;
+      targetHeight = Math.floor(targetHeight / 2) * 2;
+      
+      const canvas = document.createElement('canvas');
+      canvas.width = targetWidth;
+      canvas.height = targetHeight;
+      const ctx = canvas.getContext('2d', { alpha: false, desynchronized: true });
+      
+      // Import mp4-muxer
+      const { Muxer, ArrayBufferTarget } = await import('https://cdn.jsdelivr.net/npm/mp4-muxer@5.1.3/+esm');
+      
+      const target = new ArrayBufferTarget();
+      const muxer = new Muxer({
+        target,
+        video: {
+          codec: 'avc',
+          width: targetWidth,
+          height: targetHeight,
+          frameRate: frameRate || 30,
+        },
+        fastStart: 'in-memory',
+      });
+      
+      // Setup video encoder
+      const videoEncoder = new VideoEncoder({
+        output: (chunk, meta) => muxer.addVideoChunk(chunk, meta),
+        error: (e) => console.error('Encoder error:', e),
+      });
+      
+      videoEncoder.configure({
+        codec: 'avc1.42E01F',
+        width: targetWidth,
+        height: targetHeight,
+        bitrate: (videoBitrate || 1000) * 1000,
+        framerate: frameRate || 30,
+      });
+      
+      const duration = video.duration;
+      const fps = frameRate || 30;
+      const frameInterval = 1 / fps;
+      let frameCount = 0;
+      
+      // Process frames
+      for (let time = 0; time < duration; time += frameInterval) {
+        video.currentTime = time;
+        
+        await new Promise((resolve) => {
+          video.onseeked = resolve;
+          setTimeout(resolve, 100); // Timeout fallback
+        });
+        
+        ctx.drawImage(video, 0, 0, targetWidth, targetHeight);
+        
+        const frame = new VideoFrame(canvas, {
+          timestamp: frameCount * (1_000_000 / fps),
+        });
+        
+        videoEncoder.encode(frame, { keyFrame: frameCount % 30 === 0 });
+        frame.close();
+        frameCount++;
+        
+        // Limit total frames for very long videos
+        if (frameCount >= fps * 60) break; // Max 60 seconds
+      }
+      
+      await videoEncoder.flush();
+      videoEncoder.close();
+      muxer.finalize();
+      
+      const mp4Buffer = target.buffer;
+      const blob = new Blob([mp4Buffer], { type: 'video/mp4' });
+      const compressedUrl = URL.createObjectURL(blob);
+      
       setCompressedPreview(compressedUrl);
-      setCompressedSize(image.size);
-      setCompressedBlob(image);
+      setCompressedSize(blob.size);
+      setCompressedBlob(blob);
       setProcessed(true);
-      setOutputFormat(originalFormat);
+      setOutputFormat('mp4');
       
       onProcessed({
         id: image.name,
         originalFile: image,
-        compressedBlob: image,
+        compressedBlob: blob,
         compressedUrl,
         originalSize: image.size,
-        compressedSize: image.size,
-        format: originalFormat,
-        filename: getOutputFilename(originalFormat),
+        compressedSize: blob.size,
+        format: 'mp4',
+        filename: getOutputFilename('mp4'),
         mediaType: 'video',
-        fileFormat: originalFormat,
+        fileFormat: 'mp4',
         originalFileFormat: originalFormat
       });
       
-      toast.success('Video ready for download!');
+      const savings = image.size > blob.size ? ((1 - blob.size / image.size) * 100).toFixed(1) : 0;
+      toast.success(`Video processed to MP4! ${savings > 0 ? `Saved ${savings}%` : ''}`);
+      
     } catch (error) {
       console.error('Video processing failed:', error);
+      toast.error(`Video processing failed: ${error.message || 'Unknown error'}`);
+      setProcessing(false);
       throw error;
     }
   };
@@ -625,54 +725,86 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
       const gif = parseGIF(arrayBuffer);
       const frames = decompressFrames(gif, true);
       
-      const canvas = document.createElement('canvas');
-      canvas.width = frames[0].dims.width;
-      canvas.height = frames[0].dims.height;
-      const ctx = canvas.getContext('2d');
-      
-      const stream = canvas.captureStream(30);
-      const mimeTypes = ['video/mp4', 'video/webm'];
-      let selectedMimeType = 'video/webm';
-      
-      for (const mime of mimeTypes) {
-        if (MediaRecorder.isTypeSupported(mime)) {
-          selectedMimeType = mime;
-          break;
-        }
+      if (!frames || frames.length === 0) {
+        throw new Error('Failed to parse GIF frames');
       }
       
-      const recorder = new MediaRecorder(stream, { mimeType: selectedMimeType });
-      const chunks = [];
+      // Ensure dimensions are even
+      let width = Math.floor(frames[0].dims.width / 2) * 2;
+      let height = Math.floor(frames[0].dims.height / 2) * 2;
       
-      recorder.ondataavailable = (e) => {
-        if (e.data.size > 0) chunks.push(e.data);
-      };
+      const canvas = document.createElement('canvas');
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext('2d', { alpha: false });
       
-      const recordingPromise = new Promise((resolve) => {
-        recorder.onstop = resolve;
+      // Import mp4-muxer
+      const { Muxer, ArrayBufferTarget } = await import('https://cdn.jsdelivr.net/npm/mp4-muxer@5.1.3/+esm');
+      
+      const target = new ArrayBufferTarget();
+      const fps = 10; // Standard GIF playback rate
+      
+      const muxer = new Muxer({
+        target,
+        video: {
+          codec: 'avc',
+          width,
+          height,
+          frameRate: fps,
+        },
+        fastStart: 'in-memory',
       });
       
-      recorder.start();
+      const videoEncoder = new VideoEncoder({
+        output: (chunk, meta) => muxer.addVideoChunk(chunk, meta),
+        error: (e) => console.error('Encoder error:', e),
+      });
       
-      // Draw frames
-      for (const frame of frames) {
-        const imageData = new ImageData(new Uint8ClampedArray(frame.patch), frame.dims.width, frame.dims.height);
+      videoEncoder.configure({
+        codec: 'avc1.42E01F',
+        width,
+        height,
+        bitrate: 1_000_000,
+        framerate: fps,
+      });
+      
+      // Encode frames
+      let timestamp = 0;
+      for (let i = 0; i < frames.length; i++) {
+        const frame = frames[i];
+        
+        // Create image data from frame
+        const imageData = ctx.createImageData(frame.dims.width, frame.dims.height);
+        imageData.data.set(frame.patch);
+        
+        // Clear canvas and draw frame
+        ctx.fillStyle = '#000000';
+        ctx.fillRect(0, 0, width, height);
         ctx.putImageData(imageData, frame.dims.left || 0, frame.dims.top || 0);
-        await new Promise(resolve => setTimeout(resolve, frame.delay || 100));
+        
+        const videoFrame = new VideoFrame(canvas, {
+          timestamp: timestamp,
+        });
+        
+        videoEncoder.encode(videoFrame, { keyFrame: i % 30 === 0 });
+        videoFrame.close();
+        
+        timestamp += (frame.delay || 100) * 1000; // Convert ms to microseconds
       }
       
-      recorder.stop();
-      await recordingPromise;
+      await videoEncoder.flush();
+      videoEncoder.close();
+      muxer.finalize();
       
-      const outputFormat = selectedMimeType.includes('mp4') ? 'mp4' : 'webm';
-      const blob = new Blob(chunks, { type: selectedMimeType });
+      const mp4Buffer = target.buffer;
+      const blob = new Blob([mp4Buffer], { type: 'video/mp4' });
       const compressedUrl = URL.createObjectURL(blob);
       
       setCompressedPreview(compressedUrl);
       setCompressedSize(blob.size);
       setCompressedBlob(blob);
       setProcessed(true);
-      setOutputFormat(outputFormat);
+      setOutputFormat('mp4');
       
       onProcessed({
         id: image.name,
@@ -681,16 +813,18 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
         compressedUrl,
         originalSize: image.size,
         compressedSize: blob.size,
-        format: outputFormat,
-        filename: getOutputFilename(outputFormat),
+        format: 'mp4',
+        filename: getOutputFilename('mp4'),
         mediaType: 'video',
-        fileFormat: outputFormat,
+        fileFormat: 'mp4',
         originalFileFormat: originalFormat
       });
       
-      toast.success(`GIF converted to ${outputFormat.toUpperCase()}!`);
+      toast.success('GIF converted to MP4!');
     } catch (error) {
       console.error('GIF to MP4 conversion failed:', error);
+      toast.error(`GIF conversion failed: ${error.message || 'Unknown error'}`);
+      setProcessing(false);
       throw error;
     }
   };
@@ -1234,7 +1368,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
   let availableFormats = [];
   if (isImage && !isGif) availableFormats = enableAnimation ? ['gif'] : ['jpg', 'png', 'webp', 'avif'];
   else if (isGif) availableFormats = ['gif', 'mp4'];
-  else if (isVideo) availableFormats = ['gif'];  // Only GIF conversion supported
+  else if (isVideo) availableFormats = ['mp4', 'gif'];
   else if (isAudio) availableFormats = ['mp3', 'wav'];
 
   const performSingleMediaDownload = async (blobToDownload, targetFormat, mediaType, filename) => {
