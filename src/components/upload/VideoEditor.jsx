@@ -33,6 +33,7 @@ export default function VideoEditor({ isOpen, onClose, videoData, onSave }) {
   useEffect(() => {
     if (videoRef.current && videoData) {
       videoRef.current.src = videoData;
+      videoRef.current.load(); // Explicitly load the video
       videoRef.current.onloadedmetadata = () => {
         setDuration(videoRef.current.duration);
         setTrimEnd(videoRef.current.duration);
@@ -57,7 +58,7 @@ export default function VideoEditor({ isOpen, onClose, videoData, onSave }) {
         setCurrentTime(videoRef.current.currentTime);
       };
     }
-  }, [videoData]);
+  }, [videoData, isOpen]);
 
   const saveToHistory = () => {
     const newState = {
@@ -328,6 +329,8 @@ export default function VideoEditor({ isOpen, onClose, videoData, onSave }) {
                   ref={videoRef}
                   className="max-w-full max-h-[70vh] rounded bg-black"
                   onEnded={() => setIsPlaying(false)}
+                  preload="metadata"
+                  playsInline
                   style={{
                     filter: `brightness(${brightness}%) contrast(${contrast}%) saturate(${saturation}%) blur(${blur}px)`,
                     imageRendering: 'high-quality'
