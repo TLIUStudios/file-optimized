@@ -55,6 +55,7 @@ export default function VideoEditor({ isOpen, onClose, videoData, onSave }) {
       setDuration(video.duration);
       setTrimEnd(video.duration);
       
+      // Save initial state immediately (no debounce)
       const initialState = {
         trimStart: 0,
         trimEnd: video.duration,
@@ -65,7 +66,15 @@ export default function VideoEditor({ isOpen, onClose, videoData, onSave }) {
         brightness: 100,
         contrast: 100,
         saturation: 100,
-        blur: 0
+        blur: 0,
+        captions: [],
+        captionStyle: "modern",
+        showCaptions: false,
+        volume: 100,
+        backgroundMusic: null,
+        musicVolume: 50,
+        noiseReduction: false,
+        audioNormalization: false,
       };
       setHistory([initialState]);
       setHistoryIndex(0);
@@ -117,7 +126,11 @@ export default function VideoEditor({ isOpen, onClose, videoData, onSave }) {
     try {
       const response = await fetch(videoData);
       const videoBlob = await response.blob();
-      const file = new File([videoBlob], 'video.mp4', { type: 'video/mp4' });
+      
+      // Use the actual blob type from the video
+      const file = new File([videoBlob], 'video.mp4', { 
+        type: videoBlob.type || 'video/mp4' 
+      });
       
       setTranscriptionProgress(10);
       const { file_url } = await base44.integrations.Core.UploadFile({ file });
