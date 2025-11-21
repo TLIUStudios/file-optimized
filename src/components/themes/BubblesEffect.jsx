@@ -1,75 +1,126 @@
 import { useEffect, useRef } from "react";
 
 export default function BubblesEffect() {
-  const containerRef = useRef(null);
+  const canvasRef = useRef(null);
   const bubblesRef = useRef([]);
 
   useEffect(() => {
-    let frameId;
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    
+    const ctx = canvas.getContext('2d', { alpha: true });
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
 
     const createBubble = (x, y) => {
-      const id = Date.now() + Math.random();
       bubblesRef.current.push({
-        id, x, y,
-        size: 28 + Math.random() * 32,
-        vy: 0.6 + Math.random() * 0.4,
-        wobble: (Math.random() - 0.5) * 0.2,
-        phase: Math.random() * Math.PI * 2,
+        x, y,
+        size: 35 + Math.random() * 45,
+        vy: 1 + Math.random() * 0.8,
+        wobble: (Math.random() - 0.5) * 0.5,
+        wobblePhase: Math.random() * Math.PI * 2,
+        popped: false,
       });
-      setTimeout(() => {
-        const idx = bubblesRef.current.findIndex(b => b.id === id);
-        if (idx !== -1) bubblesRef.current.splice(idx, 1);
-      }, 6500);
+    };
+
+    const drawBubble = (bubble) => {
+      const { x, y, size } = bubble;
+
+      // Main bubble
+      const gradient = ctx.createRadialGradient(x - size * 0.2, y - size * 0.2, 0, x, y, size / 2);
+      gradient.addColorStop(0, 'rgba(255, 255, 255, 0.9)');
+      gradient.addColorStop(0.3, 'rgba(173, 216, 230, 0.6)');
+      gradient.addColorStop(0.7, 'rgba(135, 206, 250, 0.8)');
+      gradient.addColorStop(1, 'rgba(100, 180, 255, 0.3)');
+
+      ctx.beginPath();
+      ctx.arc(x, y, size / 2, 0, Math.PI * 2);
+      ctx.fillStyle = gradient;
+      ctx.fill();
+
+      // Outer ring
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.6)';
+      ctx.lineWidth = 2;
+      ctx.stroke();
+
+      // Shine highlights
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.95)';
+      ctx.beginPath();
+      ctx.arc(x - size * 0.25, y - size * 0.25, size * 0.15, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
+      ctx.beginPath();
+      ctx.arc(x + size * 0.15, y + size * 0.2, size * 0.08, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Shadow
+      ctx.shadowBlur = 20;
+      ctx.shadowColor = 'rgba(135, 206, 250, 0.4)';
+    };
+
+    const animate = () => {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      bubblesRef.current = bubblesRef.current.filter(bubble => {
+        if (bubble.popped) return false;
+
+        bubble.y -= bubble.vy;
+        bubble.x += Math.sin(bubble.wobblePhase) * bubble.wobble;
+        bubble.wobblePhase += 0.05;
+
+        if (bubble.y < -bubble.size) return false;
+
+        drawBubble(bubble);
+        return true;
+      });
+
+      ctx.shadowBlur = 0;
+      requestAnimationFrame(animate);
     };
 
     const handleClick = (e) => {
-      const target = e.target.closest('[data-bubble-id]');
-      if (target) {
-        const id = parseFloat(target.dataset.bubbleId);
-        const idx = bubblesRef.current.findIndex(b => b.id === id);
-        if (idx !== -1) bubblesRef.current.splice(idx, 1);
-        e.stopPropagation();
-      } else {
-        const x = (e.clientX / window.innerWidth) * 100;
-        const y = 100 - (e.clientY / window.innerHeight) * 100;
-        createBubble(x, y);
-      }
-    };
+      const rect = canvas.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const y = e.clientY - rect.top;
 
-    const autoInterval = setInterval(() => {
-      createBubble(Math.random() * 100, -5);
-    }, 2200);
-
-    const render = () => {
-      bubblesRef.current.forEach(bubble => {
-        bubble.y += bubble.vy;
-        bubble.x += Math.sin(bubble.phase) * bubble.wobble;
-        bubble.phase += 0.035;
+      let popped = false;
+      bubblesRef.current = bubblesRef.current.filter(bubble => {
+        const dx = bubble.x - x;
+        const dy = bubble.y - y;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        
+        if (dist < bubble.size / 2) {
+          popped = true;
+          return false;
+        }
+        return true;
       });
 
-      if (containerRef.current) {
-        containerRef.current.innerHTML = bubblesRef.current.map(b => `
-          <div class="absolute cursor-pointer hover:scale-105 transition-transform duration-150" data-bubble-id="${b.id}" style="transform:translate3d(${b.x}vw,${-b.y}vh,0);width:${b.size}px;height:${b.size}px;will-change:transform;contain:layout style paint;pointer-events:auto">
-            <div class="w-full h-full rounded-full" style="background:radial-gradient(circle at 30% 30%,rgba(255,255,255,0.9),rgba(173,216,230,0.5) 50%,rgba(135,206,250,0.7));box-shadow:inset 0 0 ${b.size * 0.3}px rgba(255,255,255,0.8),inset ${b.size * 0.15}px ${b.size * 0.15}px ${b.size * 0.2}px rgba(255,255,255,0.6),0 0 ${b.size * 0.4}px rgba(135,206,250,0.6);border:2px solid rgba(255,255,255,0.5)">
-              <div class="absolute rounded-full" style="top:20%;left:25%;width:30%;height:30%;background:radial-gradient(circle,rgba(255,255,255,0.95),transparent 70%)"></div>
-              <div class="absolute rounded-full" style="bottom:25%;right:30%;width:20%;height:20%;background:radial-gradient(circle,rgba(255,255,255,0.7),transparent 65%)"></div>
-            </div>
-          </div>
-        `).join('');
+      if (!popped) {
+        createBubble(x, canvas.height + 50);
       }
-
-      frameId = requestAnimationFrame(render);
     };
 
-    window.addEventListener('click', handleClick);
-    frameId = requestAnimationFrame(render);
+    const autoBubble = setInterval(() => {
+      createBubble(Math.random() * canvas.width, canvas.height + 50);
+    }, 1800);
+
+    const handleResize = () => {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+    };
+
+    canvas.addEventListener('click', handleClick);
+    window.addEventListener('resize', handleResize);
+    animate();
 
     return () => {
-      clearInterval(autoInterval);
-      window.removeEventListener('click', handleClick);
-      cancelAnimationFrame(frameId);
+      clearInterval(autoBubble);
+      canvas.removeEventListener('click', handleClick);
+      window.removeEventListener('resize', handleResize);
     };
   }, []);
 
-  return <div ref={containerRef} className="fixed inset-0 pointer-events-none z-50" style={{ contain: 'layout style paint' }} />;
+  return <canvas ref={canvasRef} className="fixed inset-0 pointer-events-auto z-50 cursor-pointer" />;
 }

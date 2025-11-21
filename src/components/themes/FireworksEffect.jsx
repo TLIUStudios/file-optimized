@@ -1,96 +1,98 @@
 import { useEffect, useRef } from "react";
 
 export default function FireworksEffect() {
-  const containerRef = useRef(null);
-  const fireworksRef = useRef([]);
+  const canvasRef = useRef(null);
+  const particlesRef = useRef([]);
+  const trailsRef = useRef([]);
 
   useEffect(() => {
-    let frameId;
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    
+    const ctx = canvas.getContext('2d', { alpha: true });
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
 
-    const launchFirework = (x, y) => {
+    const createFirework = (x, y) => {
       const colors = [
-        ['#ff0844', '#ff5c8d'],
-        ['#ffd700', '#ffed4e'],
-        ['#00d9ff', '#5ce1ff'],
-        ['#b337ff', '#d280ff'],
-        ['#00ff88', '#5dffb0'],
-        ['#ff3d9e', '#ff7bc4']
+        ['#ff0844', '#ff5c8d', '#ffffff'],
+        ['#ffd700', '#ffed4e', '#ffffff'],
+        ['#00d9ff', '#5ce1ff', '#ffffff'],
+        ['#b337ff', '#d280ff', '#ffffff'],
+        ['#00ff88', '#5dffb0', '#ffffff'],
       ];
-      const colorPair = colors[Math.floor(Math.random() * colors.length)];
-      const id = Date.now() + Math.random();
+      const colorSet = colors[Math.floor(Math.random() * colors.length)];
       
-      const particles = Array.from({ length: 45 }, (_, i) => ({
-        angle: (360 / 45) * i + (Math.random() - 0.5) * 10,
-        distance: 0,
-        speed: 2 + Math.random() * 0.8,
-        size: 2 + Math.random() * 2,
-      }));
-
-      fireworksRef.current.push({ id, x, y, colors: colorPair, particles, time: 0 });
-
-      setTimeout(() => {
-        const idx = fireworksRef.current.findIndex(fw => fw.id === id);
-        if (idx !== -1) fireworksRef.current.splice(idx, 1);
-      }, 1800);
+      for (let i = 0; i < 60; i++) {
+        const angle = (Math.PI * 2 * i) / 60;
+        const speed = 2 + Math.random() * 3;
+        particlesRef.current.push({
+          x, y,
+          vx: Math.cos(angle) * speed,
+          vy: Math.sin(angle) * speed,
+          life: 1,
+          decay: 0.015 + Math.random() * 0.01,
+          color: colorSet[Math.floor(Math.random() * colorSet.length)],
+          size: 2 + Math.random() * 2,
+        });
+      }
     };
 
-    const render = () => {
-      fireworksRef.current.forEach(fw => {
-        if (fw.time < 28) {
-          fw.particles.forEach(p => {
-            p.distance += p.speed;
-            p.speed *= 0.98;
-          });
-          fw.time++;
+    const animate = () => {
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.1)';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      particlesRef.current = particlesRef.current.filter(p => {
+        p.x += p.vx;
+        p.y += p.vy;
+        p.vy += 0.05;
+        p.vx *= 0.99;
+        p.life -= p.decay;
+
+        if (p.life > 0) {
+          ctx.globalAlpha = p.life;
+          ctx.fillStyle = p.color;
+          ctx.shadowBlur = 15;
+          ctx.shadowColor = p.color;
+          ctx.beginPath();
+          ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+          ctx.fill();
+          return true;
         }
+        return false;
       });
 
-      if (containerRef.current) {
-        containerRef.current.innerHTML = fireworksRef.current.map(fw => {
-          const particlesHTML = fw.particles.map((p, i) => {
-            const rad = (p.angle * Math.PI) / 180;
-            const x = Math.cos(rad) * p.distance;
-            const y = Math.sin(rad) * p.distance;
-            const opacity = Math.max(0, 1 - p.distance / 90);
-            const color = i % 3 === 0 ? fw.colors[1] : fw.colors[0];
-            
-            return `<div class="absolute rounded-full" style="transform:translate3d(${x}px,${-y}px,0);background:${color};width:${p.size}px;height:${p.size}px;box-shadow:0 0 ${p.size * 4}px ${color};opacity:${opacity};will-change:transform;contain:layout style paint"></div>`;
-          }).join('');
-
-          const trailHTML = fw.time < 6 ? 
-            `<div class="absolute w-1.5 rounded-full" style="left:-3px;bottom:-60px;height:60px;background:linear-gradient(to top,${fw.colors[0]},transparent);box-shadow:0 0 20px ${fw.colors[0]};opacity:${1 - fw.time / 6}"></div>` 
-            : '';
-
-          const flashHTML = fw.time < 10 ? 
-            `<div class="absolute rounded-full" style="left:-20px;top:-20px;width:40px;height:40px;background:radial-gradient(circle,white,${fw.colors[0]},transparent);box-shadow:0 0 60px ${fw.colors[0]};opacity:${1 - fw.time / 10};transform:scale(${1 + fw.time / 5});will-change:transform"></div>` 
-            : '';
-
-          return `<div class="absolute" style="left:${fw.x}%;bottom:${fw.y}%;contain:layout style paint">${trailHTML}${particlesHTML}${flashHTML}</div>`;
-        }).join('');
-      }
-
-      frameId = requestAnimationFrame(render);
+      ctx.globalAlpha = 1;
+      ctx.shadowBlur = 0;
+      requestAnimationFrame(animate);
     };
 
     const handleClick = (e) => {
-      const x = (e.clientX / window.innerWidth) * 100;
-      const y = 100 - (e.clientY / window.innerHeight) * 100;
-      launchFirework(x, y);
+      createFirework(e.clientX, e.clientY);
     };
 
-    const interval = setInterval(() => {
-      launchFirework(25 + Math.random() * 50, 45 + Math.random() * 35);
-    }, 2000);
+    const autoFirework = setInterval(() => {
+      createFirework(
+        window.innerWidth * (0.3 + Math.random() * 0.4),
+        window.innerHeight * (0.3 + Math.random() * 0.3)
+      );
+    }, 1800);
 
-    window.addEventListener('click', handleClick, { passive: true });
-    frameId = requestAnimationFrame(render);
+    const handleResize = () => {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+    };
+
+    window.addEventListener('click', handleClick);
+    window.addEventListener('resize', handleResize);
+    animate();
 
     return () => {
-      clearInterval(interval);
+      clearInterval(autoFirework);
       window.removeEventListener('click', handleClick);
-      cancelAnimationFrame(frameId);
+      window.removeEventListener('resize', handleResize);
     };
   }, []);
 
-  return <div ref={containerRef} className="fixed inset-0 pointer-events-none z-50" style={{ contain: 'layout style paint' }} />;
+  return <canvas ref={canvasRef} className="fixed inset-0 pointer-events-none z-50" />;
 }

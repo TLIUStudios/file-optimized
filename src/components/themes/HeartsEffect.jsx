@@ -1,95 +1,89 @@
 import { useEffect, useRef } from "react";
 
 export default function HeartsEffect() {
-  const containerRef = useRef(null);
+  const canvasRef = useRef(null);
   const heartsRef = useRef([]);
 
   useEffect(() => {
-    let frameId;
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    
+    const ctx = canvas.getContext('2d', { alpha: true });
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+
+    const colors = ['#ff1493', '#ff69b4', '#ffc0cb', '#ff6b9d'];
+
+    const createHeart = (x, y, burst = false) => {
+      const count = burst ? 6 : 1;
+      for (let i = 0; i < count; i++) {
+        heartsRef.current.push({
+          x, y,
+          vx: burst ? (Math.random() - 0.5) * 4 : (Math.random() - 0.5) * 0.8,
+          vy: burst ? -4 - Math.random() * 3 : -2 - Math.random() * 1.5,
+          size: burst ? 30 + Math.random() * 20 : 25 + Math.random() * 15,
+          rotation: (Math.random() - 0.5) * 60,
+          rotationSpeed: (Math.random() - 0.5) * 5,
+          color: colors[Math.floor(Math.random() * colors.length)],
+          life: 1,
+          decay: burst ? 0.015 : 0.008,
+        });
+      }
+    };
+
+    const animate = () => {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      heartsRef.current = heartsRef.current.filter(heart => {
+        heart.x += heart.vx;
+        heart.y += heart.vy;
+        heart.vx *= 0.99;
+        heart.vy += 0.03;
+        heart.rotation += heart.rotationSpeed;
+        heart.life -= heart.decay;
+
+        if (heart.life > 0) {
+          ctx.save();
+          ctx.translate(heart.x, heart.y);
+          ctx.rotate((heart.rotation * Math.PI) / 180);
+          ctx.globalAlpha = heart.life;
+          ctx.font = `${heart.size}px serif`;
+          ctx.shadowBlur = 20;
+          ctx.shadowColor = heart.color;
+          ctx.fillStyle = heart.color;
+          ctx.fillText('💕', -heart.size / 2, heart.size / 2);
+          ctx.restore();
+          return true;
+        }
+        return false;
+      });
+
+      requestAnimationFrame(animate);
+    };
 
     const handleClick = (e) => {
-      const x = (e.clientX / window.innerWidth) * 100;
-      const colors = [
-        { main: '#ff1493', glow: 'rgba(255,20,147,0.6)' },
-        { main: '#ff69b4', glow: 'rgba(255,105,180,0.6)' },
-        { main: '#ffc0cb', glow: 'rgba(255,192,203,0.6)' },
-        { main: '#ff6b9d', glow: 'rgba(255,107,157,0.6)' }
-      ];
-      
-      for (let i = 0; i < 5; i++) {
-        const id = Date.now() + Math.random() + i;
-        const color = colors[Math.floor(Math.random() * colors.length)];
-        heartsRef.current.push({
-          id, 
-          x: x + (Math.random() - 0.5) * 10, 
-          y: 100,
-          color,
-          size: 1.5 + Math.random() * 1,
-          vx: (Math.random() - 0.5) * 1.8,
-          vy: -3 - Math.random() * 2,
-          rotation: (Math.random() - 0.5) * 40,
-          rv: (Math.random() - 0.5) * 3,
-        });
-        setTimeout(() => {
-          const idx = heartsRef.current.findIndex(h => h.id === id);
-          if (idx !== -1) heartsRef.current.splice(idx, 1);
-        }, 3000);
-      }
+      createHeart(e.clientX, e.clientY, true);
     };
 
-    const autoInterval = setInterval(() => {
-      const id = Date.now() + Math.random();
-      const colors = [
-        { main: '#ff1493', glow: 'rgba(255,20,147,0.6)' },
-        { main: '#ff69b4', glow: 'rgba(255,105,180,0.6)' },
-        { main: '#ffc0cb', glow: 'rgba(255,192,203,0.6)' },
-        { main: '#ff6b9d', glow: 'rgba(255,107,157,0.6)' }
-      ];
-      const color = colors[Math.floor(Math.random() * colors.length)];
-      heartsRef.current.push({
-        id, 
-        x: Math.random() * 100, 
-        y: 105,
-        color,
-        size: 1.2 + Math.random() * 0.8,
-        vx: (Math.random() - 0.5) * 0.5,
-        vy: -1.5 - Math.random() * 1,
-        rotation: (Math.random() - 0.5) * 30,
-        rv: (Math.random() - 0.5) * 2,
-      });
-      setTimeout(() => {
-        const idx = heartsRef.current.findIndex(h => h.id === id);
-        if (idx !== -1) heartsRef.current.splice(idx, 1);
-      }, 6000);
-    }, 1200);
+    const autoHeart = setInterval(() => {
+      createHeart(Math.random() * canvas.width, canvas.height + 20);
+    }, 1000);
 
-    const render = () => {
-      heartsRef.current.forEach(heart => {
-        heart.x += heart.vx * 0.08;
-        heart.y += heart.vy * 0.08;
-        heart.rotation += heart.rv;
-        heart.vx += (Math.random() - 0.5) * 0.02;
-      });
-
-      if (containerRef.current) {
-        containerRef.current.innerHTML = heartsRef.current.map(h => {
-          const opacity = Math.max(0, Math.min(1, (110 - h.y) / 18));
-          return `<div class="absolute" style="transform:translate3d(${h.x}vw,${h.y}vh,0) rotate(${h.rotation}deg);font-size:${h.size}rem;filter:drop-shadow(0 0 ${h.size * 8}px ${h.color.glow}) drop-shadow(0 0 ${h.size * 4}px ${h.color.glow});opacity:${opacity};will-change:transform;contain:layout style paint"><span style="color:${h.color.main}">💕</span></div>`;
-        }).join('');
-      }
-
-      frameId = requestAnimationFrame(render);
+    const handleResize = () => {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
     };
 
-    window.addEventListener('click', handleClick, { passive: true });
-    frameId = requestAnimationFrame(render);
+    window.addEventListener('click', handleClick);
+    window.addEventListener('resize', handleResize);
+    animate();
 
     return () => {
-      clearInterval(autoInterval);
+      clearInterval(autoHeart);
       window.removeEventListener('click', handleClick);
-      cancelAnimationFrame(frameId);
+      window.removeEventListener('resize', handleResize);
     };
   }, []);
 
-  return <div ref={containerRef} className="fixed inset-0 pointer-events-none z-50" style={{ contain: 'layout style paint' }} />;
+  return <canvas ref={canvasRef} className="fixed inset-0 pointer-events-none z-50" />;
 }

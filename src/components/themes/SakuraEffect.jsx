@@ -1,70 +1,92 @@
 import { useEffect, useRef } from "react";
 
 export default function SakuraEffect() {
-  const containerRef = useRef(null);
+  const canvasRef = useRef(null);
   const petalsRef = useRef([]);
-  const mouseXRef = useRef(50);
 
   useEffect(() => {
-    petalsRef.current = Array.from({ length: 25 }, (_, i) => ({
-      id: i,
-      x: Math.random() * 100,
-      y: Math.random() * -50,
-      rotation: Math.random() * 360,
-      size: 16 + Math.random() * 10,
-      vy: 0.5 + Math.random() * 0.4,
-      vx: (Math.random() - 0.5) * 0.2,
-      wobble: (Math.random() - 0.5) * 0.15,
-      phase: Math.random() * Math.PI * 2,
-      opacity: 0.7 + Math.random() * 0.3,
-    }));
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    
+    const ctx = canvas.getContext('2d', { alpha: true });
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
 
-    let frameId;
+    for (let i = 0; i < 30; i++) {
+      petalsRef.current.push({
+        x: Math.random() * canvas.width,
+        y: Math.random() * canvas.height - canvas.height,
+        size: 18 + Math.random() * 14,
+        vx: (Math.random() - 0.5) * 0.5,
+        vy: 0.8 + Math.random() * 0.7,
+        rotation: Math.random() * 360,
+        rotationSpeed: (Math.random() - 0.5) * 4,
+        wobble: Math.random() * Math.PI * 2,
+        wobbleSpeed: 0.02 + Math.random() * 0.03,
+        opacity: 0.6 + Math.random() * 0.4,
+      });
+    }
 
-    const render = () => {
+    let mouseX = canvas.width / 2;
+
+    const animate = () => {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
       petalsRef.current.forEach(petal => {
-        petal.x += petal.vx + Math.sin(petal.phase) * petal.wobble;
+        petal.x += petal.vx + Math.sin(petal.wobble) * 0.5;
         petal.y += petal.vy;
-        petal.rotation += 2;
-        petal.phase += 0.05;
-        
-        const distToMouse = Math.abs(petal.x - mouseXRef.current);
-        if (distToMouse < 12) {
-          const direction = petal.x > mouseXRef.current ? 1 : -1;
-          petal.x += direction * (12 - distToMouse) * 0.15;
-          petal.rotation += direction * 5;
+        petal.rotation += petal.rotationSpeed;
+        petal.wobble += petal.wobbleSpeed;
+
+        const distToMouse = Math.abs(petal.x - mouseX);
+        if (distToMouse < 150) {
+          const force = (150 - distToMouse) / 150;
+          const direction = petal.x > mouseX ? 1 : -1;
+          petal.x += direction * force * 3;
+          petal.rotationSpeed += direction * force * 2;
         }
 
-        if (petal.y > 110) {
-          petal.x = Math.random() * 100;
-          petal.y = Math.random() * -30;
+        if (petal.y > canvas.height + 50) {
+          petal.y = -50;
+          petal.x = Math.random() * canvas.width;
           petal.rotation = Math.random() * 360;
-          petal.phase = Math.random() * Math.PI * 2;
         }
+
+        if (petal.x < -50) petal.x = canvas.width + 50;
+        if (petal.x > canvas.width + 50) petal.x = -50;
+
+        ctx.save();
+        ctx.translate(petal.x, petal.y);
+        ctx.rotate((petal.rotation * Math.PI) / 180);
+        ctx.globalAlpha = petal.opacity;
+        ctx.font = `${petal.size}px serif`;
+        ctx.shadowBlur = 12;
+        ctx.shadowColor = 'rgba(255, 182, 193, 0.6)';
+        ctx.fillText('🌸', -petal.size / 2, petal.size / 2);
+        ctx.restore();
       });
 
-      if (containerRef.current) {
-        containerRef.current.innerHTML = petalsRef.current.map(p => {
-          const scale = 1 + Math.sin(p.phase * 2) * 0.1;
-          return `<div class="absolute" style="transform:translate3d(${p.x}vw,${p.y}vh,0) rotate(${p.rotation}deg) scale(${scale});font-size:${p.size}px;filter:drop-shadow(0 3px 6px rgba(255,182,193,0.5)) drop-shadow(0 0 10px rgba(255,192,203,0.3));opacity:${p.opacity};will-change:transform;contain:layout style paint">🌸</div>`;
-        }).join('');
-      }
-
-      frameId = requestAnimationFrame(render);
+      requestAnimationFrame(animate);
     };
 
     const handleMouse = (e) => {
-      mouseXRef.current = (e.clientX / window.innerWidth) * 100;
+      mouseX = e.clientX;
     };
 
-    window.addEventListener('mousemove', handleMouse, { passive: true });
-    frameId = requestAnimationFrame(render);
+    const handleResize = () => {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+    };
+
+    window.addEventListener('mousemove', handleMouse);
+    window.addEventListener('resize', handleResize);
+    animate();
 
     return () => {
       window.removeEventListener('mousemove', handleMouse);
-      cancelAnimationFrame(frameId);
+      window.removeEventListener('resize', handleResize);
     };
   }, []);
 
-  return <div ref={containerRef} className="fixed inset-0 pointer-events-none z-50" style={{ contain: 'layout style paint' }} />;
+  return <canvas ref={canvasRef} className="fixed inset-0 pointer-events-none z-50" />;
 }
