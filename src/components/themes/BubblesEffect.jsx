@@ -80,26 +80,7 @@ export default function BubblesEffect() {
     };
 
     const handleClick = (e) => {
-      const rect = canvas.getBoundingClientRect();
-      const x = e.clientX - rect.left;
-      const y = e.clientY - rect.top;
-
-      let popped = false;
-      bubblesRef.current = bubblesRef.current.filter(bubble => {
-        const dx = bubble.x - x;
-        const dy = bubble.y - y;
-        const dist = Math.sqrt(dx * dx + dy * dy);
-        
-        if (dist < bubble.size / 2) {
-          popped = true;
-          return false;
-        }
-        return true;
-      });
-
-      if (!popped) {
-        createBubble(x, canvas.height + 50);
-      }
+      createBubble(e.clientX, canvas.height + 50);
     };
 
     const autoBubble = setInterval(() => {
@@ -111,16 +92,16 @@ export default function BubblesEffect() {
       canvas.height = window.innerHeight;
     };
 
-    canvas.addEventListener('click', handleClick);
+    window.addEventListener('click', handleClick, { passive: true });
     window.addEventListener('resize', handleResize);
     animate();
 
     return () => {
       clearInterval(autoBubble);
-      canvas.removeEventListener('click', handleClick);
+      window.removeEventListener('click', handleClick);
       window.removeEventListener('resize', handleResize);
     };
   }, []);
 
-  return <canvas ref={canvasRef} className="fixed inset-0 pointer-events-auto z-50 cursor-pointer" />;
+  return <canvas ref={canvasRef} className="fixed inset-0 pointer-events-none z-50" />;
 }
