@@ -70,13 +70,18 @@ export default function SnowEffect() {
             const pileId = Date.now() + Math.random();
             groundRef.current.push({ id: pileId, x: flake.x, size: flake.size * 4, opacity: 1 });
             setTimeout(() => {
-              const idx = groundRef.current.findIndex(p => p.id === pileId);
-              if (idx !== -1) {
+              const pile = groundRef.current.find(p => p.id === pileId);
+              if (pile) {
                 const interval = setInterval(() => {
-                  groundRef.current[idx].opacity -= 0.02;
-                  if (groundRef.current[idx].opacity <= 0) {
+                  const currentPile = groundRef.current.find(p => p.id === pileId);
+                  if (currentPile) {
+                    currentPile.opacity -= 0.02;
+                    if (currentPile.opacity <= 0) {
+                      clearInterval(interval);
+                      groundRef.current = groundRef.current.filter(p => p.id !== pileId);
+                    }
+                  } else {
                     clearInterval(interval);
-                    groundRef.current.splice(idx, 1);
                   }
                 }, 100);
               }
