@@ -396,9 +396,10 @@ export default function VideoEditor({ isOpen, onClose, videoData, onSave }) {
                 <Slider
                   value={[currentTime]}
                   onValueChange={handleTimeChange}
-                  max={duration}
+                  max={duration || 1}
                   step={0.1}
                   className="w-full"
+                  disabled={!duration || duration === 0}
                 />
               </div>
             </div>
