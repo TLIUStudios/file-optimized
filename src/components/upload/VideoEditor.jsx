@@ -769,8 +769,10 @@ Transcribe now:`,
                     </div>
                     <Slider
                       value={[brightness]}
-                      onValueChange={(value) => setBrightness(value[0])}
-                      onValueCommit={saveToHistory}
+                      onValueChange={(value) => {
+                        setBrightness(value[0]);
+                        saveToHistory();
+                      }}
                       min={0}
                       max={200}
                       step={1}
@@ -787,8 +789,10 @@ Transcribe now:`,
                     </div>
                     <Slider
                       value={[contrast]}
-                      onValueChange={(value) => setContrast(value[0])}
-                      onValueCommit={saveToHistory}
+                      onValueChange={(value) => {
+                        setContrast(value[0]);
+                        saveToHistory();
+                      }}
                       min={0}
                       max={200}
                       step={1}
@@ -805,8 +809,10 @@ Transcribe now:`,
                     </div>
                     <Slider
                       value={[saturation]}
-                      onValueChange={(value) => setSaturation(value[0])}
-                      onValueCommit={saveToHistory}
+                      onValueChange={(value) => {
+                        setSaturation(value[0]);
+                        saveToHistory();
+                      }}
                       min={0}
                       max={200}
                       step={1}
@@ -820,8 +826,10 @@ Transcribe now:`,
                     </label>
                     <Slider
                       value={[blur]}
-                      onValueChange={(value) => setBlur(value[0])}
-                      onValueCommit={saveToHistory}
+                      onValueChange={(value) => {
+                        setBlur(value[0]);
+                        saveToHistory();
+                      }}
                       min={0}
                       max={20}
                       step={0.5}
@@ -925,8 +933,10 @@ Transcribe now:`,
                           </label>
                           <Slider
                             value={[musicVolume]}
-                            onValueChange={(value) => setMusicVolume(value[0])}
-                            onValueCommit={saveToHistory}
+                            onValueChange={(value) => {
+                              setMusicVolume(value[0]);
+                              saveToHistory();
+                            }}
                             min={0}
                             max={100}
                             step={1}
