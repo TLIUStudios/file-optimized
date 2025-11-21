@@ -112,7 +112,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
     };
     reader.readAsDataURL(image);
     if (isGif) setFormat('gif');
-    else if (isVideo) setFormat('webm');
+    else if (isVideo) setFormat('mp4');
     else if (isAudio) setFormat('mp3');
     else if (isImage) setFormat('jpg');
   }, [image, isGif, isVideo, isAudio, isImage]);
@@ -308,7 +308,10 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
       if (isImage && !isGif && enableAnimation) await processImageToAnimation();
       else if (isVideo) await processVideo();
       else if (isAudio) await processAudio();
-      else if (isGif) await processGif();
+      else if (isGif) {
+        if (format === 'mp4') await convertGifToMp4();
+        else await processGif();
+      }
       else if (isImage) await processStaticImage();
     } catch (error) {
       console.error('Error processing media:', error);
@@ -326,6 +329,11 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
 
   const processVideo = async () => {
     try {
+      if (format === 'gif') {
+        await convertVideoToGif();
+        return;
+      }
+      
       toast.info('Processing video...');
       
       // Create video element
@@ -371,16 +379,22 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
         stream.addTrack(dest.stream.getAudioTracks()[0]);
       }
       
+      // Try MP4 first, fallback to WebM
+      const mimeTypes = ['video/mp4', 'video/webm;codecs=vp9', 'video/webm'];
+      let selectedMimeType = 'video/webm';
+      
+      for (const mime of mimeTypes) {
+        if (MediaRecorder.isTypeSupported(mime)) {
+          selectedMimeType = mime;
+          break;
+        }
+      }
+      
       const options = {
-        mimeType: 'video/webm;codecs=vp9',
+        mimeType: selectedMimeType,
         videoBitsPerSecond: (videoBitrate || 1000) * 1000,
         audioBitsPerSecond: (audioBitrate || 128) * 1000,
       };
-      
-      // Fallback if VP9 not supported
-      if (!MediaRecorder.isTypeSupported(options.mimeType)) {
-        options.mimeType = 'video/webm';
-      }
       
       const recorder = new MediaRecorder(stream, options);
       const chunks = [];
@@ -411,14 +425,15 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
       drawFrame();
       await recordingPromise;
       
-      const blob = new Blob(chunks, { type: 'video/webm' });
+      const outputFormat = selectedMimeType.includes('mp4') ? 'mp4' : 'webm';
+      const blob = new Blob(chunks, { type: selectedMimeType });
       const compressedUrl = URL.createObjectURL(blob);
       
       setCompressedPreview(compressedUrl);
       setCompressedSize(blob.size);
       setCompressedBlob(blob);
       setProcessed(true);
-      setOutputFormat('webm');
+      setOutputFormat(outputFormat);
       
       onProcessed({
         id: image.name,
@@ -427,10 +442,10 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
         compressedUrl,
         originalSize: image.size,
         compressedSize: blob.size,
-        format: 'webm',
-        filename: getOutputFilename('webm'),
+        format: outputFormat,
+        filename: getOutputFilename(outputFormat),
         mediaType: 'video',
-        fileFormat: 'webm',
+        fileFormat: outputFormat,
         originalFileFormat: originalFormat
       });
       
@@ -598,36 +613,93 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
 
   const convertVideoToGif = async () => {
     try {
-      const ffmpeg = ffmpegRef.current;
-      if (!ffmpeg) throw new Error('FFmpeg not loaded');
-      const inputExt = image.name.split('.').pop();
-      await ffmpeg.writeFile(`input.${inputExt}`, new Uint8Array(await image.arrayBuffer()));
-      const fps = Math.max(5, Math.round(frameRate / 2));
-      const scale = maxWidth || 480;
-      await ffmpeg.exec(['-i', `input.${inputExt}`, '-vf', `fps=${fps},scale=${scale}:-1:flags=lanczos,split[s0][s1];[s0]palettegen[p];[s1][p]paletteuse`, '-loop', '0', 'output.gif']);
-      const data = await ffmpeg.readFile('output.gif');
-      const blob = new Blob([data.buffer], { type: 'image/gif' });
-      await ffmpeg.deleteFile(`input.${inputExt}`);
-      await ffmpeg.deleteFile('output.gif');
-      const compressedUrl = URL.createObjectURL(blob);
+      if (!gifJsLoaded || !window.GIF || !workerBlobUrl) {
+        toast.error('GIF processor loading...');
+        return;
+      }
+      
+      toast.info('Converting video to GIF...');
+      
+      const video = document.createElement('video');
+      video.src = preview;
+      video.muted = true;
+      
+      await new Promise((resolve, reject) => {
+        video.onloadedmetadata = resolve;
+        video.onerror = reject;
+      });
+      
+      const targetWidth = maxWidth || Math.min(480, video.videoWidth);
+      const targetHeight = Math.round((targetWidth / video.videoWidth) * video.videoHeight);
+      const fps = Math.max(5, Math.round((frameRate || 30) / 3));
+      const duration = video.duration;
+      const frameInterval = 1 / fps;
+      
+      const canvas = document.createElement('canvas');
+      canvas.width = targetWidth;
+      canvas.height = targetHeight;
+      const ctx = canvas.getContext('2d');
+      
+      const frames = [];
+      
+      for (let time = 0; time < duration; time += frameInterval) {
+        video.currentTime = time;
+        await new Promise(resolve => {
+          video.onseeked = resolve;
+        });
+        
+        ctx.drawImage(video, 0, 0, targetWidth, targetHeight);
+        const frameCanvas = document.createElement('canvas');
+        frameCanvas.width = targetWidth;
+        frameCanvas.height = targetHeight;
+        const frameCtx = frameCanvas.getContext('2d');
+        frameCtx.drawImage(canvas, 0, 0);
+        frames.push(frameCanvas);
+        
+        if (frames.length >= 100) break; // Limit frames
+      }
+      
+      const GIF = window.GIF;
+      const gif = new GIF({
+        workers: 4,
+        quality: 10,
+        width: targetWidth,
+        height: targetHeight,
+        workerScript: workerBlobUrl,
+        repeat: 0,
+      });
+      
+      for (const frame of frames) {
+        gif.addFrame(frame, { delay: Math.round(frameInterval * 1000), copy: true });
+      }
+      
+      const gifBlob = await new Promise((resolve, reject) => {
+        gif.on('finished', resolve);
+        gif.on('error', reject);
+        gif.render();
+      });
+      
+      const compressedUrl = URL.createObjectURL(gifBlob);
       setCompressedPreview(compressedUrl);
-      setCompressedSize(blob.size);
-      setCompressedBlob(blob);
+      setCompressedSize(gifBlob.size);
+      setCompressedBlob(gifBlob);
       setProcessed(true);
       setOutputFormat('gif');
+      
       onProcessed({
         id: image.name,
         originalFile: image,
-        compressedBlob: blob,
+        compressedBlob: gifBlob,
         compressedUrl,
         originalSize: image.size,
-        compressedSize: blob.size,
+        compressedSize: gifBlob.size,
         format: 'gif',
         filename: getOutputFilename('gif'),
         mediaType: 'image',
         fileFormat: 'gif',
         originalFileFormat: originalFormat
       });
+      
       toast.success('Video converted to GIF!');
     } catch (error) {
       console.error('Video to GIF conversion failed:', error);
@@ -637,22 +709,64 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
 
   const convertGifToMp4 = async () => {
     try {
-      const ffmpeg = ffmpegRef.current;
-      if (!ffmpeg) throw new Error('FFmpeg not loaded');
+      toast.info('Converting GIF to MP4...');
+      
+      // Parse GIF frames
       const response = await fetch(preview);
-      const gifBlob = await response.blob();
-      await ffmpeg.writeFile('input.gif', new Uint8Array(await gifBlob.arrayBuffer()));
-      await ffmpeg.exec(['-i', 'input.gif', '-movflags', 'faststart', '-pix_fmt', 'yuv420p', '-vf', 'scale=trunc(iw/2)*2:trunc(ih/2)*2', 'output.mp4']);
-      const data = await ffmpeg.readFile('output.mp4');
-      const blob = new Blob([data.buffer], { type: 'video/mp4' });
-      await ffmpeg.deleteFile('input.gif');
-      await ffmpeg.deleteFile('output.mp4');
+      const arrayBuffer = await response.arrayBuffer();
+      const { parseGIF, decompressFrames } = await import('https://cdn.jsdelivr.net/npm/gifuct-js@2.1.2/+esm');
+      const gif = parseGIF(arrayBuffer);
+      const frames = decompressFrames(gif, true);
+      
+      const canvas = document.createElement('canvas');
+      canvas.width = frames[0].dims.width;
+      canvas.height = frames[0].dims.height;
+      const ctx = canvas.getContext('2d');
+      
+      const stream = canvas.captureStream(30);
+      const mimeTypes = ['video/mp4', 'video/webm'];
+      let selectedMimeType = 'video/webm';
+      
+      for (const mime of mimeTypes) {
+        if (MediaRecorder.isTypeSupported(mime)) {
+          selectedMimeType = mime;
+          break;
+        }
+      }
+      
+      const recorder = new MediaRecorder(stream, { mimeType: selectedMimeType });
+      const chunks = [];
+      
+      recorder.ondataavailable = (e) => {
+        if (e.data.size > 0) chunks.push(e.data);
+      };
+      
+      const recordingPromise = new Promise((resolve) => {
+        recorder.onstop = resolve;
+      });
+      
+      recorder.start();
+      
+      // Draw frames
+      for (const frame of frames) {
+        const imageData = new ImageData(new Uint8ClampedArray(frame.patch), frame.dims.width, frame.dims.height);
+        ctx.putImageData(imageData, frame.dims.left || 0, frame.dims.top || 0);
+        await new Promise(resolve => setTimeout(resolve, frame.delay || 100));
+      }
+      
+      recorder.stop();
+      await recordingPromise;
+      
+      const outputFormat = selectedMimeType.includes('mp4') ? 'mp4' : 'webm';
+      const blob = new Blob(chunks, { type: selectedMimeType });
       const compressedUrl = URL.createObjectURL(blob);
+      
       setCompressedPreview(compressedUrl);
       setCompressedSize(blob.size);
       setCompressedBlob(blob);
       setProcessed(true);
-      setOutputFormat('mp4');
+      setOutputFormat(outputFormat);
+      
       onProcessed({
         id: image.name,
         originalFile: image,
@@ -660,13 +774,14 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
         compressedUrl,
         originalSize: image.size,
         compressedSize: blob.size,
-        format: 'mp4',
-        filename: getOutputFilename('mp4'),
+        format: outputFormat,
+        filename: getOutputFilename(outputFormat),
         mediaType: 'video',
-        fileFormat: 'mp4',
+        fileFormat: outputFormat,
         originalFileFormat: originalFormat
       });
-      toast.success('GIF converted to MP4!');
+      
+      toast.success(`GIF converted to ${outputFormat.toUpperCase()}!`);
     } catch (error) {
       console.error('GIF to MP4 conversion failed:', error);
       throw error;
@@ -1211,8 +1326,8 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
   const displayCompressedExt = displayFormat.toUpperCase();
   let availableFormats = [];
   if (isImage && !isGif) availableFormats = enableAnimation ? ['gif'] : ['jpg', 'png', 'webp', 'avif'];
-  else if (isGif) availableFormats = ['gif'];
-  else if (isVideo) availableFormats = ['webm'];
+  else if (isGif) availableFormats = ['gif', 'mp4'];
+  else if (isVideo) availableFormats = ['mp4', 'gif'];
   else if (isAudio) availableFormats = ['mp3', 'wav'];
 
   const performSingleMediaDownload = async (blobToDownload, targetFormat, mediaType, filename) => {
@@ -1653,15 +1768,16 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
             </div>
           )}
 
-          <Collapsible open={settingsOpen} onOpenChange={setSettingsOpen}>
-            <CollapsibleTrigger asChild>
-              <Button variant="outline" className="w-full justify-between" size="sm">
-                <span className="flex items-center gap-2"><Settings2 className="w-4 h-4" />Compression Settings</span>
-                <ChevronDown className={cn("w-4 h-4 transition-transform duration-200", settingsOpen && "rotate-180")} />
-              </Button>
-            </CollapsibleTrigger>
-            <CollapsibleContent className="space-y-4 mt-4">
-              {!(isAudio || isVideo || enableAnimation || (isGif && format === 'gif')) && (
+          {isImage && !isGif && !enableAnimation && (
+            <Collapsible open={settingsOpen} onOpenChange={setSettingsOpen}>
+              <CollapsibleTrigger asChild>
+                <Button variant="outline" className="w-full justify-between" size="sm">
+                  <span className="flex items-center gap-2"><Settings2 className="w-4 h-4" />Compression Settings</span>
+                  <ChevronDown className={cn("w-4 h-4 transition-transform duration-200", settingsOpen && "rotate-180")} />
+                </Button>
+              </CollapsibleTrigger>
+              <CollapsibleContent className="space-y-4 mt-4">
+                {!(isAudio || isVideo || enableAnimation || (isGif && format === 'gif')) && (
                 <>
                   <div>
                     <div className="flex items-center gap-2 mb-2">
@@ -1706,10 +1822,11 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
                       </div>
                     </div>
                   )}
-                </>
-              )}
-            </CollapsibleContent>
-          </Collapsible>
+                  </>
+                )}
+              </CollapsibleContent>
+            </Collapsible>
+          )}
 
           {isImage && !isGif && (
             <Collapsible open={upscaleSettingsOpen} onOpenChange={setUpscaleSettingsOpen}>
