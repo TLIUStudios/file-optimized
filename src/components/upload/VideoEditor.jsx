@@ -32,6 +32,7 @@ export default function VideoEditor({ isOpen, onClose, videoData, onSave }) {
   const [musicVolume, setMusicVolume] = useState(50);
   const [noiseReduction, setNoiseReduction] = useState(false);
   const [audioNormalization, setAudioNormalization] = useState(false);
+  const [transcriptionProgress, setTranscriptionProgress] = useState(null);
 
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
@@ -39,6 +40,7 @@ export default function VideoEditor({ isOpen, onClose, videoData, onSave }) {
   // History management
   const [history, setHistory] = useState([]);
   const [historyIndex, setHistoryIndex] = useState(-1);
+  const historyTimeoutRef = useRef(null);
 
   useEffect(() => {
     if (!videoRef.current || !videoData || !isOpen) return;
@@ -110,43 +112,38 @@ export default function VideoEditor({ isOpen, onClose, videoData, onSave }) {
 
   const generateCaptions = async () => {
     setGeneratingCaptions(true);
-    toast.info("Analyzing video audio...", { id: "gen-captions", duration: Infinity });
+    setTranscriptionProgress(0);
     
     try {
       const response = await fetch(videoData);
       const videoBlob = await response.blob();
       const file = new File([videoBlob], 'video.mp4', { type: 'video/mp4' });
       
-      toast.info("Uploading to AI...", { id: "gen-captions", duration: Infinity });
+      setTranscriptionProgress(10);
       const { file_url } = await base44.integrations.Core.UploadFile({ file });
       
-      toast.info("Transcribing speech (this may take 30-60 seconds)...", { id: "gen-captions", duration: Infinity });
+      setTranscriptionProgress(30);
+      
+      // Simulate progress during AI processing
+      const progressInterval = setInterval(() => {
+        setTranscriptionProgress(prev => Math.min(prev + 5, 90));
+      }, 2000);
       
       const result = await base44.integrations.Core.InvokeLLM({
-        prompt: `You are an expert video transcription AI. Watch this video carefully and transcribe every word spoken.
+        prompt: `Transcribe this video's spoken audio into captions with timestamps.
 
-YOUR TASK:
-1. Listen to ALL audio in the video
-2. Write down EXACTLY what is said
-3. Break into short captions (4-8 words each) 
-4. Provide accurate timestamps
-
-OUTPUT FORMAT (JSON):
+Output format (JSON only, no markdown):
 {
   "captions": [
-    {"text": "Hey everyone welcome back", "startTime": 0, "endTime": 2},
-    {"text": "to my channel today", "startTime": 2, "endTime": 4}
+    {"text": "words spoken here", "startTime": 0, "endTime": 2.5}
   ]
 }
 
-RULES:
-- Transcribe EVERY word spoken
-- Keep captions short for readability
-- Use natural speaking pace (~2-3 words/second)
+Rules:
+- Short captions (4-8 words each)
+- Natural speaking pace (~2.5 words/second)
 - Start from 0 seconds
-- If NO speech: return empty array
-
-Transcribe now:`,
+- Empty array if no speech`,
         file_urls: [file_url],
         response_json_schema: {
           type: "object",
@@ -166,11 +163,14 @@ Transcribe now:`,
         }
       });
       
-      console.log("AI Result:", result);
+      clearInterval(progressInterval);
+      setTranscriptionProgress(100);
+      
+      console.log("Transcription result:", result);
       
       if (!result?.captions || result.captions.length === 0) {
-        toast.dismiss("gen-captions");
-        toast.error("No speech detected in video. Try adding captions manually.");
+        toast.error("No speech detected in video");
+        setTranscriptionProgress(null);
         return;
       }
       
@@ -178,13 +178,13 @@ Transcribe now:`,
       setShowCaptions(true);
       saveToHistory();
       
-      toast.dismiss("gen-captions");
-      toast.success(`✨ Generated ${result.captions.length} captions!`);
+      toast.success(`Generated ${result.captions.length} captions!`);
+      setTimeout(() => setTranscriptionProgress(null), 1000);
       
     } catch (error) {
       console.error("Transcription error:", error);
-      toast.dismiss("gen-captions");
-      toast.error("Transcription failed. Add captions manually instead.");
+      toast.error(`Transcription failed: ${error.message || 'Unknown error'}`);
+      setTranscriptionProgress(null);
     } finally {
       setGeneratingCaptions(false);
     }
@@ -267,31 +267,39 @@ Transcribe now:`,
   };
 
   const saveToHistory = () => {
-    const newState = {
-      trimStart,
-      trimEnd,
-      textOverlay,
-      textPosition: { ...textPosition },
-      textColor,
-      textSize,
-      brightness,
-      contrast,
-      saturation,
-      blur,
-      captions: [...captions],
-      captionStyle,
-      showCaptions,
-      volume,
-      backgroundMusic,
-      musicVolume,
-      noiseReduction,
-      audioNormalization,
-    };
+    // Clear any pending timeout
+    if (historyTimeoutRef.current) {
+      clearTimeout(historyTimeoutRef.current);
+    }
 
-    const newHistory = history.slice(0, historyIndex + 1);
-    newHistory.push(newState);
-    setHistory(newHistory);
-    setHistoryIndex(newHistory.length - 1);
+    // Debounce history saves to prevent excessive entries during slider dragging
+    historyTimeoutRef.current = setTimeout(() => {
+      const newState = {
+        trimStart,
+        trimEnd,
+        textOverlay,
+        textPosition: { ...textPosition },
+        textColor,
+        textSize,
+        brightness,
+        contrast,
+        saturation,
+        blur,
+        captions: [...captions],
+        captionStyle,
+        showCaptions,
+        volume,
+        backgroundMusic,
+        musicVolume,
+        noiseReduction,
+        audioNormalization,
+      };
+
+      const newHistory = history.slice(0, historyIndex + 1);
+      newHistory.push(newState);
+      setHistory(newHistory);
+      setHistoryIndex(newHistory.length - 1);
+    }, 300);
   };
 
   const undo = () => {
@@ -731,10 +739,8 @@ Transcribe now:`,
                     </div>
                     <Slider
                       value={[trimStart]}
-                      onValueChange={(v) => {
-                        setTrimStart(Math.min(v[0], trimEnd - 0.1));
-                        saveToHistory();
-                      }}
+                      onValueChange={(v) => setTrimStart(Math.min(v[0], trimEnd - 0.1))}
+                      onValueCommit={saveToHistory}
                       max={duration}
                       step={0.1}
                       className="w-full"
@@ -746,10 +752,8 @@ Transcribe now:`,
                     </label>
                     <Slider
                       value={[trimEnd]}
-                      onValueChange={(v) => {
-                        setTrimEnd(Math.max(v[0], trimStart + 0.1));
-                        saveToHistory();
-                      }}
+                      onValueChange={(v) => setTrimEnd(Math.max(v[0], trimStart + 0.1))}
+                      onValueCommit={saveToHistory}
                       max={duration}
                       step={0.1}
                       className="w-full"
@@ -772,10 +776,8 @@ Transcribe now:`,
                     </div>
                     <Slider
                       value={[brightness]}
-                      onValueChange={(value) => {
-                        setBrightness(value[0]);
-                        saveToHistory();
-                      }}
+                      onValueChange={(value) => setBrightness(value[0])}
+                      onValueCommit={saveToHistory}
                       min={0}
                       max={200}
                       step={1}
@@ -792,10 +794,8 @@ Transcribe now:`,
                     </div>
                     <Slider
                       value={[contrast]}
-                      onValueChange={(value) => {
-                        setContrast(value[0]);
-                        saveToHistory();
-                      }}
+                      onValueChange={(value) => setContrast(value[0])}
+                      onValueCommit={saveToHistory}
                       min={0}
                       max={200}
                       step={1}
@@ -812,10 +812,8 @@ Transcribe now:`,
                     </div>
                     <Slider
                       value={[saturation]}
-                      onValueChange={(value) => {
-                        setSaturation(value[0]);
-                        saveToHistory();
-                      }}
+                      onValueChange={(value) => setSaturation(value[0])}
+                      onValueCommit={saveToHistory}
                       min={0}
                       max={200}
                       step={1}
@@ -829,10 +827,8 @@ Transcribe now:`,
                     </label>
                     <Slider
                       value={[blur]}
-                      onValueChange={(value) => {
-                        setBlur(value[0]);
-                        saveToHistory();
-                      }}
+                      onValueChange={(value) => setBlur(value[0])}
+                      onValueCommit={saveToHistory}
                       min={0}
                       max={20}
                       step={0.5}
@@ -855,9 +851,9 @@ Transcribe now:`,
                         setVolume(value[0]);
                         if (videoRef.current) {
                           videoRef.current.volume = value[0] / 100;
-                          }
-                          saveToHistory();
-                          }}
+                        }
+                      }}
+                      onValueCommit={saveToHistory}
                       min={0}
                       max={200}
                       step={1}
@@ -936,10 +932,8 @@ Transcribe now:`,
                           </label>
                           <Slider
                             value={[musicVolume]}
-                            onValueChange={(value) => {
-                              setMusicVolume(value[0]);
-                              saveToHistory();
-                            }}
+                            onValueChange={(value) => setMusicVolume(value[0])}
+                            onValueCommit={saveToHistory}
                             min={0}
                             max={100}
                             step={1}
@@ -989,28 +983,49 @@ Transcribe now:`,
                       </div>
                     </div>
 
-                    <div className="flex gap-2">
-                      <Button
-                        onClick={generateCaptions}
-                        disabled={generatingCaptions}
-                        className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white"
-                      >
-                        {generatingCaptions ? (
-                          <>Transcribing...</>
-                        ) : (
-                          <>
-                            <Wand2 className="w-4 h-4 mr-2" />
-                            Auto Transcribe
-                          </>
-                        )}
-                      </Button>
-                      <Button
-                        onClick={addCaption}
-                        variant="outline"
-                        className="flex-1"
-                      >
-                        Add at {formatTime(currentTime)}
-                      </Button>
+                    <div className="space-y-2">
+                      <div className="flex gap-2">
+                        <Button
+                          onClick={generateCaptions}
+                          disabled={generatingCaptions}
+                          className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white"
+                        >
+                          {generatingCaptions ? (
+                            <>Transcribing...</>
+                          ) : (
+                            <>
+                              <Wand2 className="w-4 h-4 mr-2" />
+                              Auto Transcribe
+                            </>
+                          )}
+                        </Button>
+                        <Button
+                          onClick={addCaption}
+                          variant="outline"
+                          className="flex-1"
+                        >
+                          Add at {formatTime(currentTime)}
+                        </Button>
+                      </div>
+
+                      {transcriptionProgress !== null && (
+                        <div className="bg-blue-50 dark:bg-blue-950/30 rounded-lg p-3 border border-blue-200 dark:border-blue-800">
+                          <div className="flex items-center justify-between mb-2">
+                            <span className="text-xs font-medium text-blue-700 dark:text-blue-400">
+                              Processing...
+                            </span>
+                            <span className="text-xs font-bold text-blue-700 dark:text-blue-400">
+                              {transcriptionProgress}%
+                            </span>
+                          </div>
+                          <div className="h-2 bg-blue-200 dark:bg-blue-900 rounded-full overflow-hidden">
+                            <div 
+                              className="h-full bg-blue-600 transition-all duration-300"
+                              style={{ width: `${transcriptionProgress}%` }}
+                            />
+                          </div>
+                        </div>
+                      )}
                     </div>
                     
                     {captions.length > 0 && (
