@@ -388,8 +388,15 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
       // Setup video encoder
       const videoEncoder = new VideoEncoder({
         output: (chunk, meta) => muxer.addVideoChunk(chunk, meta),
-        error: (e) => console.error('Encoder error:', e),
+        error: (e) => {
+          console.error('Encoder error:', e);
+          throw new Error(`Video encoding failed: ${e.message}`);
+        },
       });
+      
+      if (!('VideoEncoder' in window)) {
+        throw new Error('VideoEncoder not supported in this browser');
+      }
       
       videoEncoder.configure({
         codec: 'avc1.42E01F',
@@ -399,36 +406,65 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
         framerate: frameRate || 30,
       });
       
-      const duration = video.duration;
+      const duration = Math.min(video.duration, 60); // Max 60 seconds
       const fps = frameRate || 30;
       const frameInterval = 1 / fps;
       let frameCount = 0;
       
       // Process frames
-      for (let time = 0; time < duration; time += frameInterval) {
-        video.currentTime = time;
+      try {
+        for (let time = 0; time < duration; time += frameInterval) {
+          // Check encoder state before encoding
+          if (videoEncoder.state === 'closed') {
+            throw new Error('Encoder was closed unexpectedly');
+          }
+          
+          video.currentTime = time;
+          
+          await new Promise((resolve, reject) => {
+            const seekTimeout = setTimeout(() => reject(new Error('Seek timeout')), 2000);
+            video.onseeked = () => {
+              clearTimeout(seekTimeout);
+              resolve();
+            };
+            video.onerror = () => {
+              clearTimeout(seekTimeout);
+              reject(new Error('Video seek error'));
+            };
+          });
+          
+          ctx.drawImage(video, 0, 0, targetWidth, targetHeight);
+          
+          const frame = new VideoFrame(canvas, {
+            timestamp: frameCount * (1_000_000 / fps),
+          });
+          
+          if (videoEncoder.state === 'configured') {
+            videoEncoder.encode(frame, { keyFrame: frameCount % 30 === 0 });
+          }
+          
+          frame.close();
+          frameCount++;
+          
+          // Update progress
+          const progress = (time / duration) * 100;
+          if (progress % 10 < frameInterval / duration * 100) {
+            toast.info(`Encoding: ${Math.round(progress)}%`, { id: 'video-encode' });
+          }
+        }
         
-        await new Promise((resolve) => {
-          video.onseeked = resolve;
-          setTimeout(resolve, 100); // Timeout fallback
-        });
-        
-        ctx.drawImage(video, 0, 0, targetWidth, targetHeight);
-        
-        const frame = new VideoFrame(canvas, {
-          timestamp: frameCount * (1_000_000 / fps),
-        });
-        
-        videoEncoder.encode(frame, { keyFrame: frameCount % 30 === 0 });
-        frame.close();
-        frameCount++;
-        
-        // Limit total frames for very long videos
-        if (frameCount >= fps * 60) break; // Max 60 seconds
+        // Ensure all frames are encoded before flushing
+        if (videoEncoder.state === 'configured') {
+          await videoEncoder.flush();
+        }
+      } finally {
+        // Always close encoder
+        if (videoEncoder.state !== 'closed') {
+          videoEncoder.close();
+        }
+        toast.dismiss('video-encode');
       }
       
-      await videoEncoder.flush();
-      videoEncoder.close();
       muxer.finalize();
       
       const mp4Buffer = target.buffer;
@@ -757,8 +793,15 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
       
       const videoEncoder = new VideoEncoder({
         output: (chunk, meta) => muxer.addVideoChunk(chunk, meta),
-        error: (e) => console.error('Encoder error:', e),
+        error: (e) => {
+          console.error('Encoder error:', e);
+          throw new Error(`GIF encoding failed: ${e.message}`);
+        },
       });
+      
+      if (!('VideoEncoder' in window)) {
+        throw new Error('VideoEncoder not supported in this browser');
+      }
       
       videoEncoder.configure({
         codec: 'avc1.42E01F',
@@ -769,31 +812,55 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
       });
       
       // Encode frames
-      let timestamp = 0;
-      for (let i = 0; i < frames.length; i++) {
-        const frame = frames[i];
+      try {
+        let timestamp = 0;
+        for (let i = 0; i < frames.length; i++) {
+          // Check encoder state
+          if (videoEncoder.state === 'closed') {
+            throw new Error('Encoder was closed unexpectedly');
+          }
+          
+          const frame = frames[i];
+          
+          // Create image data from frame
+          const imageData = ctx.createImageData(frame.dims.width, frame.dims.height);
+          imageData.data.set(frame.patch);
+          
+          // Clear canvas and draw frame
+          ctx.fillStyle = '#000000';
+          ctx.fillRect(0, 0, width, height);
+          ctx.putImageData(imageData, frame.dims.left || 0, frame.dims.top || 0);
+          
+          const videoFrame = new VideoFrame(canvas, {
+            timestamp: timestamp,
+          });
+          
+          if (videoEncoder.state === 'configured') {
+            videoEncoder.encode(videoFrame, { keyFrame: i % 30 === 0 });
+          }
+          
+          videoFrame.close();
+          
+          timestamp += (frame.delay || 100) * 1000; // Convert ms to microseconds
+          
+          // Update progress
+          if (i % 5 === 0) {
+            toast.info(`Converting: ${Math.round((i / frames.length) * 100)}%`, { id: 'gif-convert' });
+          }
+        }
         
-        // Create image data from frame
-        const imageData = ctx.createImageData(frame.dims.width, frame.dims.height);
-        imageData.data.set(frame.patch);
-        
-        // Clear canvas and draw frame
-        ctx.fillStyle = '#000000';
-        ctx.fillRect(0, 0, width, height);
-        ctx.putImageData(imageData, frame.dims.left || 0, frame.dims.top || 0);
-        
-        const videoFrame = new VideoFrame(canvas, {
-          timestamp: timestamp,
-        });
-        
-        videoEncoder.encode(videoFrame, { keyFrame: i % 30 === 0 });
-        videoFrame.close();
-        
-        timestamp += (frame.delay || 100) * 1000; // Convert ms to microseconds
+        // Ensure all frames are encoded
+        if (videoEncoder.state === 'configured') {
+          await videoEncoder.flush();
+        }
+      } finally {
+        // Always close encoder
+        if (videoEncoder.state !== 'closed') {
+          videoEncoder.close();
+        }
+        toast.dismiss('gif-convert');
       }
       
-      await videoEncoder.flush();
-      videoEncoder.close();
       muxer.finalize();
       
       const mp4Buffer = target.buffer;
