@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Scissors, Type, Sun, Contrast, Droplet, X, Play, Pause, Undo, Redo, Subtitles, Wand2, Volume2, Music, Upload } from "lucide-react";
 import { toast } from "sonner";
+import { base44 } from "@/api/base44Client";
 
 export default function VideoEditor({ isOpen, onClose, videoData, onSave }) {
   const [isPlaying, setIsPlaying] = useState(false);
@@ -105,6 +106,179 @@ export default function VideoEditor({ isOpen, onClose, videoData, onSave }) {
     setCaptions(newCaptions);
     saveToHistory();
     toast.success("Caption deleted!");
+  };
+
+  const generateCaptions = async () => {
+    if (!videoRef.current) return;
+    
+    setGeneratingCaptions(true);
+    toast.info("Transcribing audio from video...", { id: "gen-captions", duration: Infinity });
+    
+    try {
+      const video = videoRef.current;
+      
+      // Method 1: Try Web Speech API first
+      try {
+        const captionsFromSpeech = await transcribeWithWebSpeech(video);
+        if (captionsFromSpeech && captionsFromSpeech.length > 0) {
+          setCaptions(captionsFromSpeech);
+          setShowCaptions(true);
+          toast.dismiss("gen-captions");
+          toast.success(`Generated ${captionsFromSpeech.length} captions!`);
+          saveToHistory();
+          return;
+        }
+      } catch (speechError) {
+        console.log("Web Speech API failed, trying AI transcription:", speechError);
+      }
+      
+      // Method 2: Use base44 AI for transcription
+      toast.info("Using AI for transcription...", { id: "gen-captions", duration: Infinity });
+      const captionsFromAI = await transcribeWithAI();
+      
+      if (captionsFromAI && captionsFromAI.length > 0) {
+        setCaptions(captionsFromAI);
+        setShowCaptions(true);
+        toast.dismiss("gen-captions");
+        toast.success(`Generated ${captionsFromAI.length} captions with AI!`);
+        saveToHistory();
+      } else {
+        throw new Error("No speech detected in video");
+      }
+      
+    } catch (error) {
+      console.error("Caption generation error:", error);
+      toast.dismiss("gen-captions");
+      toast.error("Failed to generate captions: " + error.message);
+    } finally {
+      setGeneratingCaptions(false);
+    }
+  };
+
+  const transcribeWithWebSpeech = async (video) => {
+    return new Promise((resolve, reject) => {
+      if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
+        reject(new Error("Speech recognition not supported"));
+        return;
+      }
+      
+      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+      const recognition = new SpeechRecognition();
+      
+      recognition.continuous = true;
+      recognition.interimResults = false;
+      recognition.lang = 'en-US';
+      recognition.maxAlternatives = 1;
+      
+      const captionResults = [];
+      let lastEndTime = trimStart;
+      
+      recognition.onresult = (event) => {
+        for (let i = event.resultIndex; i < event.results.length; i++) {
+          if (event.results[i].isFinal) {
+            const transcript = event.results[i][0].transcript.trim();
+            const words = transcript.split(' ');
+            const wordsPerSecond = 2.5; // Average speaking rate
+            const duration = words.length / wordsPerSecond;
+            
+            captionResults.push({
+              text: transcript,
+              startTime: lastEndTime,
+              endTime: lastEndTime + duration,
+            });
+            
+            lastEndTime += duration;
+          }
+        }
+      };
+      
+      recognition.onerror = (event) => {
+        if (event.error === 'no-speech') {
+          reject(new Error("No speech detected in video"));
+        } else {
+          reject(new Error(`Speech recognition error: ${event.error}`));
+        }
+      };
+      
+      recognition.onend = () => {
+        if (captionResults.length === 0) {
+          reject(new Error("No speech detected"));
+        } else {
+          resolve(captionResults);
+        }
+      };
+      
+      // Start playing video and recognition
+      video.currentTime = trimStart;
+      video.muted = false;
+      video.volume = 1.0;
+      
+      video.onplay = () => {
+        recognition.start();
+      };
+      
+      video.onended = () => {
+        recognition.stop();
+      };
+      
+      video.play();
+      
+      // Timeout after video duration
+      setTimeout(() => {
+        video.pause();
+        video.currentTime = 0;
+        recognition.stop();
+      }, (trimEnd - trimStart + 2) * 1000);
+    });
+  };
+
+  const transcribeWithAI = async () => {
+    try {
+      // Extract audio from video and upload
+      const response = await fetch(videoData);
+      const videoBlob = await response.blob();
+      
+      // Upload video file
+      const { file_url } = await base44.integrations.Core.UploadFile({ file: videoBlob });
+      
+      // Use AI to transcribe with timestamps
+      const result = await base44.integrations.Core.InvokeLLM({
+        prompt: `Transcribe this video's audio and provide captions with timestamps. 
+        
+Format as JSON array with this structure:
+[{"text": "caption text", "startTime": 0.0, "endTime": 3.5}]
+
+Rules:
+- Break speech into short segments (5-10 words max per caption)
+- Estimate timing based on natural speaking pace
+- Start timestamps from 0
+- Make captions suitable for social media viewing
+
+Return ONLY the JSON array, no other text.`,
+        file_urls: [file_url],
+        response_json_schema: {
+          type: "object",
+          properties: {
+            captions: {
+              type: "array",
+              items: {
+                type: "object",
+                properties: {
+                  text: { type: "string" },
+                  startTime: { type: "number" },
+                  endTime: { type: "number" }
+                }
+              }
+            }
+          }
+        }
+      });
+      
+      return result.captions || [];
+    } catch (error) {
+      console.error("AI transcription error:", error);
+      throw new Error("AI transcription failed");
+    }
   };
 
   const handleMusicUpload = (e) => {
@@ -965,13 +1139,29 @@ export default function VideoEditor({ isOpen, onClose, videoData, onSave }) {
                       </div>
                     </div>
 
-                    <Button
-                      onClick={addCaption}
-                      className="w-full bg-emerald-600 hover:bg-emerald-700 text-white"
-                    >
-                      <Wand2 className="w-4 h-4 mr-2" />
-                      Add Caption at {formatTime(currentTime)}
-                    </Button>
+                    <div className="flex gap-2">
+                      <Button
+                        onClick={generateCaptions}
+                        disabled={generatingCaptions}
+                        className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white"
+                      >
+                        {generatingCaptions ? (
+                          <>Transcribing...</>
+                        ) : (
+                          <>
+                            <Wand2 className="w-4 h-4 mr-2" />
+                            Auto Transcribe
+                          </>
+                        )}
+                      </Button>
+                      <Button
+                        onClick={addCaption}
+                        variant="outline"
+                        className="flex-1"
+                      >
+                        Add at {formatTime(currentTime)}
+                      </Button>
+                    </div>
                     
                     {captions.length > 0 && (
                       <>
@@ -1096,7 +1286,9 @@ export default function VideoEditor({ isOpen, onClose, videoData, onSave }) {
                     {captions.length === 0 && (
                       <div className="p-4 bg-slate-100 dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-800">
                         <p className="text-xs text-slate-600 dark:text-slate-400 text-center">
-                          Select your caption style above, then add captions at specific timestamps while watching your video.
+                          <strong>Auto Transcribe:</strong> Automatically generates captions from video audio
+                          <br/><br/>
+                          <strong>Add Manually:</strong> Add caption at current timestamp
                         </p>
                       </div>
                     )}
