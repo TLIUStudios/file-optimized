@@ -434,6 +434,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
       
       // Setup audio encoder if video has audio
       let audioEncoder = null;
+      let audioProcessingPromise = null;
       if (hasAudio && 'AudioEncoder' in window) {
         audioEncoder = new AudioEncoder({
           output: (chunk, meta) => muxer.addAudioChunk(chunk, meta),
@@ -458,8 +459,8 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
           const audioTrack = dest.stream.getAudioTracks()[0];
           const reader = new MediaStreamTrackProcessor({ track: audioTrack }).readable.getReader();
           
-          // Process audio frames in background
-          (async () => {
+          // Process audio frames - wait for completion
+          audioProcessingPromise = (async () => {
             try {
               while (true) {
                 const { done, value } = await reader.read();
@@ -530,7 +531,10 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
           await videoEncoder.flush();
         }
         
-        // Flush audio encoder if present
+        // Wait for audio processing to complete and flush
+        if (audioProcessingPromise) {
+          await audioProcessingPromise;
+        }
         if (audioEncoder && audioEncoder.state === 'configured') {
           await audioEncoder.flush();
         }
