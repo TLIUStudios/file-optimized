@@ -1,83 +1,71 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef } from "react";
 
 export default function AutumnEffect() {
-  const [leaves, setLeaves] = useState([]);
+  const containerRef = useRef(null);
+  const leavesRef = useRef([]);
+  const mouseRef = useRef({ x: 50, y: 50 });
 
   useEffect(() => {
-    const initial = Array.from({ length: 18 }, (_, i) => ({
+    leavesRef.current = Array.from({ length: 16 }, (_, i) => ({
       id: i,
       x: Math.random() * 100,
       y: Math.random() * -50,
       rotation: Math.random() * 360,
       type: ['🍂', '🍁', '🍃'][Math.floor(Math.random() * 3)],
-      size: 18 + Math.random() * 10,
-      speedY: 0.5 + Math.random() * 0.4,
-      driftSpeed: (Math.random() - 0.5) * 0.3,
+      size: 18 + Math.random() * 9,
+      vy: 0.45 + Math.random() * 0.35,
+      vx: (Math.random() - 0.5) * 0.25,
     }));
-    setLeaves(initial);
 
-    let mouseX = 50;
-    let mouseY = 50;
-    let animationFrame;
+    let frameId;
 
-    const animate = () => {
-      setLeaves(prev => prev.map(leaf => {
-        let newX = leaf.x + leaf.driftSpeed;
-        let newY = leaf.y + leaf.speedY;
+    const render = () => {
+      leavesRef.current.forEach(leaf => {
+        leaf.x += leaf.vx;
+        leaf.y += leaf.vy;
+        leaf.rotation += 2.2;
         
-        const dx = leaf.x - mouseX;
-        const dy = leaf.y - mouseY;
+        const dx = leaf.x - mouseRef.current.x;
+        const dy = leaf.y - mouseRef.current.y;
         const dist = Math.sqrt(dx * dx + dy * dy);
         
-        if (dist < 15) {
-          const force = (15 - dist) / 15;
-          newX += (dx / dist) * force * 1.2;
-          newY += (dy / dist) * force * 0.6;
+        if (dist < 12) {
+          const force = (12 - dist) / 12;
+          leaf.x += (dx / dist) * force * 1;
+          leaf.y += (dy / dist) * force * 0.5;
         }
 
-        let newRotation = leaf.rotation + 2.5;
-
-        if (newY > 110 || newX < -5 || newX > 105) {
-          return { ...leaf, x: Math.random() * 100, y: Math.random() * -30, rotation: Math.random() * 360 };
+        if (leaf.y > 110 || leaf.x < -5 || leaf.x > 105) {
+          leaf.x = Math.random() * 100;
+          leaf.y = Math.random() * -30;
+          leaf.rotation = Math.random() * 360;
         }
+      });
 
-        return { ...leaf, x: newX, y: newY, rotation: newRotation };
-      }));
-      animationFrame = requestAnimationFrame(animate);
+      if (containerRef.current) {
+        containerRef.current.innerHTML = leavesRef.current.map(l =>
+          `<div class="absolute" style="transform:translate3d(${l.x}vw,${l.y}vh,0) rotate(${l.rotation}deg);font-size:${l.size}px;filter:drop-shadow(0 2px 4px rgba(139,69,19,0.3));will-change:transform;contain:layout style paint">${l.type}</div>`
+        ).join('');
+      }
+
+      frameId = requestAnimationFrame(render);
     };
 
     const handleMouse = (e) => {
-      mouseX = (e.clientX / window.innerWidth) * 100;
-      mouseY = (e.clientY / window.innerHeight) * 100;
+      mouseRef.current = {
+        x: (e.clientX / window.innerWidth) * 100,
+        y: (e.clientY / window.innerHeight) * 100
+      };
     };
 
-    window.addEventListener('mousemove', handleMouse);
-    animationFrame = requestAnimationFrame(animate);
+    window.addEventListener('mousemove', handleMouse, { passive: true });
+    frameId = requestAnimationFrame(render);
 
     return () => {
       window.removeEventListener('mousemove', handleMouse);
-      cancelAnimationFrame(animationFrame);
+      cancelAnimationFrame(frameId);
     };
   }, []);
 
-  return (
-    <div className="fixed inset-0 pointer-events-none z-50">
-      {leaves.map(leaf => (
-        <div
-          key={leaf.id}
-          className="absolute"
-          style={{
-            left: `${leaf.x}%`,
-            top: `${leaf.y}%`,
-            fontSize: `${leaf.size}px`,
-            transform: `rotate(${leaf.rotation}deg)`,
-            filter: 'drop-shadow(0 2px 4px rgba(139,69,19,0.3))',
-            willChange: 'transform',
-          }}
-        >
-          {leaf.type}
-        </div>
-      ))}
-    </div>
-  );
+  return <div ref={containerRef} className="fixed inset-0 pointer-events-none z-50" style={{ contain: 'layout style paint' }} />;
 }

@@ -1,112 +1,118 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, memo } from "react";
+
+const Snowflake = memo(({ flake }) => (
+  <div
+    className="absolute rounded-full bg-white will-change-transform"
+    style={{
+      transform: `translate3d(${flake.x}vw, ${flake.y}vh, 0)`,
+      width: `${flake.size}px`,
+      height: `${flake.size}px`,
+      opacity: flake.opacity,
+      boxShadow: '0 0 8px rgba(255,255,255,0.8)',
+      contain: 'layout style paint',
+    }}
+  />
+));
+
+const GroundPile = memo(({ pile }) => (
+  <div
+    className="absolute bottom-0"
+    style={{
+      transform: `translate3d(${pile.x}vw, 0, 0)`,
+      width: `${pile.size}px`,
+      height: `${pile.size * 0.3}px`,
+      background: 'radial-gradient(ellipse, rgba(255,255,255,0.9), transparent)',
+      borderRadius: '50% 50% 0 0',
+      opacity: pile.opacity,
+      contain: 'layout style paint',
+    }}
+  />
+));
 
 export default function SnowEffect() {
-  const [snowflakes, setSnowflakes] = useState([]);
-  const [groundSnow, setGroundSnow] = useState([]);
+  const snowflakesRef = useRef([]);
+  const groundRef = useRef([]);
+  const mouseRef = useRef({ x: null, y: null });
+  const containerRef = useRef(null);
 
   useEffect(() => {
-    const initial = Array.from({ length: 35 }, (_, i) => ({
+    snowflakesRef.current = Array.from({ length: 30 }, (_, i) => ({
       id: i,
       x: Math.random() * 100,
       y: Math.random() * -100,
       size: 4 + Math.random() * 5,
-      speed: 0.3 + Math.random() * 0.4,
-      drift: (Math.random() - 0.5) * 0.3,
+      speed: 0.25 + Math.random() * 0.35,
+      drift: (Math.random() - 0.5) * 0.25,
       opacity: 0.6 + Math.random() * 0.4,
     }));
-    setSnowflakes(initial);
 
-    let mouseX = null;
-    let mouseY = null;
-    let animationFrame;
-
+    let frameId;
     const animate = () => {
-      setSnowflakes(prev => prev.map(flake => {
-        let newY = flake.y + flake.speed;
-        let newX = flake.x + flake.drift;
+      const { x: mouseX, y: mouseY } = mouseRef.current;
+      
+      snowflakesRef.current.forEach(flake => {
+        flake.y += flake.speed;
+        flake.x += flake.drift;
 
         if (mouseX !== null && mouseY !== null) {
           const dx = flake.x - mouseX;
-          const dy = newY - mouseY;
+          const dy = flake.y - mouseY;
           const dist = Math.sqrt(dx * dx + dy * dy);
-          if (dist < 12) {
-            const force = (12 - dist) / 12;
-            newX += (dx / dist) * force * 1.5;
-            newY += (dy / dist) * force * 0.8;
+          if (dist < 10) {
+            const force = (10 - dist) / 10;
+            flake.x += (dx / dist) * force * 1.2;
+            flake.y += (dy / dist) * force * 0.6;
           }
         }
 
-        if (newY > 110) {
-          if (Math.random() < 0.04) {
+        if (flake.y > 110) {
+          if (Math.random() < 0.03) {
             const pileId = Date.now() + Math.random();
-            setGroundSnow(g => [...g, { id: pileId, x: newX, size: flake.size * 4 }]);
-            setTimeout(() => setGroundSnow(g => g.filter(p => p.id !== pileId)), 7000);
+            groundRef.current.push({ id: pileId, x: flake.x, size: flake.size * 4, opacity: 1 });
+            setTimeout(() => {
+              const idx = groundRef.current.findIndex(p => p.id === pileId);
+              if (idx !== -1) {
+                const interval = setInterval(() => {
+                  groundRef.current[idx].opacity -= 0.02;
+                  if (groundRef.current[idx].opacity <= 0) {
+                    clearInterval(interval);
+                    groundRef.current.splice(idx, 1);
+                  }
+                }, 100);
+              }
+            }, 5000);
           }
-          return { ...flake, x: Math.random() * 100, y: Math.random() * -20 };
+          flake.x = Math.random() * 100;
+          flake.y = Math.random() * -20;
         }
+      });
 
-        return { ...flake, x: newX, y: newY };
-      }));
-      animationFrame = requestAnimationFrame(animate);
+      if (containerRef.current) {
+        containerRef.current.innerHTML = snowflakesRef.current.map(f => 
+          `<div class="absolute rounded-full bg-white" style="transform:translate3d(${f.x}vw,${f.y}vh,0);width:${f.size}px;height:${f.size}px;opacity:${f.opacity};box-shadow:0 0 8px rgba(255,255,255,0.8);will-change:transform;contain:layout style paint"></div>`
+        ).join('') + groundRef.current.map(p =>
+          `<div class="absolute bottom-0" style="transform:translate3d(${p.x}vw,0,0);width:${p.size}px;height:${p.size * 0.3}px;background:radial-gradient(ellipse,rgba(255,255,255,0.9),transparent);border-radius:50% 50% 0 0;opacity:${p.opacity};contain:layout style paint"></div>`
+        ).join('');
+      }
+
+      frameId = requestAnimationFrame(animate);
     };
 
     const handleMouse = (e) => {
-      mouseX = (e.clientX / window.innerWidth) * 100;
-      mouseY = (e.clientY / window.innerHeight) * 100;
+      mouseRef.current = {
+        x: (e.clientX / window.innerWidth) * 100,
+        y: (e.clientY / window.innerHeight) * 100
+      };
     };
 
-    window.addEventListener('mousemove', handleMouse);
-    animationFrame = requestAnimationFrame(animate);
+    window.addEventListener('mousemove', handleMouse, { passive: true });
+    frameId = requestAnimationFrame(animate);
 
     return () => {
       window.removeEventListener('mousemove', handleMouse);
-      cancelAnimationFrame(animationFrame);
+      cancelAnimationFrame(frameId);
     };
   }, []);
 
-  return (
-    <>
-      <div className="fixed inset-0 pointer-events-none z-50">
-        {snowflakes.map(flake => (
-          <div
-            key={flake.id}
-            className="absolute rounded-full bg-white"
-            style={{
-              left: `${flake.x}%`,
-              top: `${flake.y}%`,
-              width: `${flake.size}px`,
-              height: `${flake.size}px`,
-              opacity: flake.opacity,
-              boxShadow: '0 0 8px rgba(255,255,255,0.8)',
-              willChange: 'transform',
-            }}
-          />
-        ))}
-      </div>
-      <div className="fixed bottom-0 inset-x-0 pointer-events-none z-50 h-20">
-        {groundSnow.map(pile => (
-          <div
-            key={pile.id}
-            className="absolute bottom-0 animate-fade-pile"
-            style={{
-              left: `${pile.x}%`,
-              width: `${pile.size}px`,
-              height: `${pile.size * 0.3}px`,
-              background: 'radial-gradient(ellipse, rgba(255,255,255,0.9), transparent)',
-              borderRadius: '50% 50% 0 0',
-            }}
-          />
-        ))}
-      </div>
-      <style jsx>{`
-        @keyframes fade-pile {
-          0% { opacity: 0; transform: scale(0.5); }
-          20% { opacity: 1; }
-          80% { opacity: 1; transform: scale(1); }
-          100% { opacity: 0; transform: scale(1.2); }
-        }
-        .animate-fade-pile { animation: fade-pile 7s ease-out; }
-      `}</style>
-    </>
-  );
+  return <div ref={containerRef} className="fixed inset-0 pointer-events-none z-50" style={{ contain: 'layout style paint' }} />;
 }
