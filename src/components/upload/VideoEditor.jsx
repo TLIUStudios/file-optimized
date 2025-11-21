@@ -110,33 +110,43 @@ export default function VideoEditor({ isOpen, onClose, videoData, onSave }) {
 
   const generateCaptions = async () => {
     setGeneratingCaptions(true);
-    toast.info("Transcribing video audio with AI...", { id: "gen-captions", duration: Infinity });
+    toast.info("Analyzing video audio...", { id: "gen-captions", duration: Infinity });
     
     try {
-      // Upload video file for transcription
       const response = await fetch(videoData);
       const videoBlob = await response.blob();
+      const file = new File([videoBlob], 'video.mp4', { type: 'video/mp4' });
       
-      toast.info("Uploading video...", { id: "gen-captions", duration: Infinity });
-      const { file_url } = await base44.integrations.Core.UploadFile({ file: videoBlob });
+      toast.info("Uploading to AI...", { id: "gen-captions", duration: Infinity });
+      const { file_url } = await base44.integrations.Core.UploadFile({ file });
       
-      // Use AI to transcribe with timestamps
-      toast.info("AI is transcribing speech...", { id: "gen-captions", duration: Infinity });
+      toast.info("Transcribing speech (this may take 30-60 seconds)...", { id: "gen-captions", duration: Infinity });
+      
       const result = await base44.integrations.Core.InvokeLLM({
-        prompt: `Listen to this video and transcribe ALL spoken words into captions with accurate timestamps.
+        prompt: `You are an expert video transcription AI. Watch this video carefully and transcribe every word spoken.
 
-Break the speech into short, readable segments (5-10 words each) perfect for social media captions.
-Estimate timestamps based on natural speaking pace (average 2.5 words per second).
+YOUR TASK:
+1. Listen to ALL audio in the video
+2. Write down EXACTLY what is said
+3. Break into short captions (4-8 words each) 
+4. Provide accurate timestamps
 
-Return as a JSON object with this exact structure:
+OUTPUT FORMAT (JSON):
 {
   "captions": [
-    {"text": "First few words spoken", "startTime": 0.0, "endTime": 2.5},
-    {"text": "Next words in the video", "startTime": 2.5, "endTime": 5.0}
+    {"text": "Hey everyone welcome back", "startTime": 0, "endTime": 2},
+    {"text": "to my channel today", "startTime": 2, "endTime": 4}
   ]
 }
 
-IMPORTANT: Return ONLY valid JSON, no markdown, no explanations.`,
+RULES:
+- Transcribe EVERY word spoken
+- Keep captions short for readability
+- Use natural speaking pace (~2-3 words/second)
+- Start from 0 seconds
+- If NO speech: return empty array
+
+Transcribe now:`,
         file_urls: [file_url],
         response_json_schema: {
           type: "object",
@@ -149,17 +159,19 @@ IMPORTANT: Return ONLY valid JSON, no markdown, no explanations.`,
                   text: { type: "string" },
                   startTime: { type: "number" },
                   endTime: { type: "number" }
-                },
-                required: ["text", "startTime", "endTime"]
+                }
               }
             }
-          },
-          required: ["captions"]
+          }
         }
       });
       
-      if (!result.captions || result.captions.length === 0) {
-        throw new Error("No speech detected in video");
+      console.log("AI Result:", result);
+      
+      if (!result?.captions || result.captions.length === 0) {
+        toast.dismiss("gen-captions");
+        toast.error("No speech detected in video. Try adding captions manually.");
+        return;
       }
       
       setCaptions(result.captions);
@@ -167,12 +179,12 @@ IMPORTANT: Return ONLY valid JSON, no markdown, no explanations.`,
       saveToHistory();
       
       toast.dismiss("gen-captions");
-      toast.success(`✨ Generated ${result.captions.length} captions from speech!`);
+      toast.success(`✨ Generated ${result.captions.length} captions!`);
       
     } catch (error) {
-      console.error("Caption generation error:", error);
+      console.error("Transcription error:", error);
       toast.dismiss("gen-captions");
-      toast.error("Failed to transcribe: " + error.message);
+      toast.error("Transcription failed. Add captions manually instead.");
     } finally {
       setGeneratingCaptions(false);
     }
