@@ -711,11 +711,10 @@ Transcribe now:`,
           {/* Controls Sidebar */}
           <div className="w-full lg:w-80 border-l border-slate-200 dark:border-slate-800 overflow-y-auto">
             <Tabs defaultValue="trim" className="w-full">
-              <TabsList className="w-full grid grid-cols-5 text-xs">
+              <TabsList className="w-full grid grid-cols-4 text-xs">
                 <TabsTrigger value="trim">Trim</TabsTrigger>
                 <TabsTrigger value="adjust">Visual</TabsTrigger>
                 <TabsTrigger value="audio">Audio</TabsTrigger>
-                <TabsTrigger value="text">Text</TabsTrigger>
                 <TabsTrigger value="captions">
                   <Subtitles className="w-3 h-3" />
                 </TabsTrigger>
@@ -732,8 +731,10 @@ Transcribe now:`,
                     </div>
                     <Slider
                       value={[trimStart]}
-                      onValueChange={(v) => setTrimStart(Math.min(v[0], trimEnd - 0.1))}
-                      onValueCommit={saveToHistory}
+                      onValueChange={(v) => {
+                        setTrimStart(Math.min(v[0], trimEnd - 0.1));
+                        saveToHistory();
+                      }}
                       max={duration}
                       step={0.1}
                       className="w-full"
@@ -745,8 +746,10 @@ Transcribe now:`,
                     </label>
                     <Slider
                       value={[trimEnd]}
-                      onValueChange={(v) => setTrimEnd(Math.max(v[0], trimStart + 0.1))}
-                      onValueCommit={saveToHistory}
+                      onValueChange={(v) => {
+                        setTrimEnd(Math.max(v[0], trimStart + 0.1));
+                        saveToHistory();
+                      }}
                       max={duration}
                       step={0.1}
                       className="w-full"
@@ -852,9 +855,9 @@ Transcribe now:`,
                         setVolume(value[0]);
                         if (videoRef.current) {
                           videoRef.current.volume = value[0] / 100;
-                        }
-                      }}
-                      onValueCommit={saveToHistory}
+                          }
+                          saveToHistory();
+                          }}
                       min={0}
                       max={200}
                       step={1}
@@ -960,79 +963,7 @@ Transcribe now:`,
                   </div>
                 </TabsContent>
 
-                <TabsContent value="text" className="space-y-4 mt-0">
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium text-slate-700 dark:text-slate-300">
-                      Text Overlay
-                    </label>
-                    <Input
-                      value={textOverlay}
-                      onChange={(e) => setTextOverlay(e.target.value)}
-                      onBlur={saveToHistory}
-                      placeholder="Enter text..."
-                      className="text-sm"
-                    />
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <div className="flex items-center gap-2">
-                      <Type className="w-4 h-4 text-slate-500" />
-                      <label className="text-sm font-medium text-slate-700 dark:text-slate-300">
-                        Text Size: {textSize}px
-                      </label>
-                    </div>
-                    <Slider
-                      value={[textSize]}
-                      onValueChange={(v) => setTextSize(v[0])}
-                      onValueCommit={saveToHistory}
-                      min={16}
-                      max={72}
-                      step={2}
-                      className="w-full"
-                    />
-                  </div>
 
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium text-slate-700 dark:text-slate-300">
-                      Text Color
-                    </label>
-                    <Input
-                      type="color"
-                      value={textColor}
-                      onChange={(e) => setTextColor(e.target.value)}
-                      onBlur={saveToHistory}
-                      className="h-10 w-full"
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium text-slate-700 dark:text-slate-300">
-                      Horizontal Position: {textPosition.x}%
-                    </label>
-                    <Slider
-                      value={[textPosition.x]}
-                      onValueChange={(v) => setTextPosition({ ...textPosition, x: v[0] })}
-                      onValueCommit={saveToHistory}
-                      min={0}
-                      max={100}
-                      className="w-full"
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium text-slate-700 dark:text-slate-300">
-                      Vertical Position: {textPosition.y}%
-                    </label>
-                    <Slider
-                      value={[textPosition.y]}
-                      onValueChange={(v) => setTextPosition({ ...textPosition, y: v[0] })}
-                      onValueCommit={saveToHistory}
-                      min={0}
-                      max={100}
-                      className="w-full"
-                    />
-                  </div>
-                </TabsContent>
 
                 <TabsContent value="captions" className="space-y-4 mt-0">
                   <div className="space-y-3">
