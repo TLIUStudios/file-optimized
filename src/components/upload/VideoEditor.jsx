@@ -321,57 +321,60 @@ export default function VideoEditor({ isOpen, onClose, videoData, onSave }) {
 
         <div className="flex flex-col lg:flex-row max-h-[calc(95vh-80px)]">
           {/* Video Preview */}
-          <div className="flex-1 bg-slate-100 dark:bg-slate-900 p-4 flex flex-col items-center justify-center overflow-auto">
-            <div className="relative w-full max-w-3xl">
-              <video
-                ref={videoRef}
-                className="w-full rounded-lg bg-black"
-                onEnded={() => setIsPlaying(false)}
-                style={{
-                  filter: `brightness(${brightness}%) contrast(${contrast}%) saturate(${saturation}%) blur(${blur}px)`
-                }}
-              />
-              <Button
-                variant="ghost"
-                size="icon"
-                className="absolute inset-0 m-auto w-16 h-16 bg-black/50 hover:bg-black/70 text-white rounded-full"
-                onClick={togglePlayPause}
-              >
-                {isPlaying ? <Pause className="w-8 h-8" /> : <Play className="w-8 h-8 ml-1" />}
-              </Button>
-              
-              {/* Text Overlay Preview */}
-              {textOverlay && (
-                <div
-                  className="absolute pointer-events-none"
+          <div className="flex-1 bg-slate-100 dark:bg-slate-900 p-4 flex items-center justify-center overflow-auto">
+            <div className="flex flex-col items-center justify-center w-full h-full">
+              <div className="relative max-w-full max-h-[70vh]">
+                <video
+                  ref={videoRef}
+                  className="max-w-full max-h-[70vh] rounded bg-black"
+                  onEnded={() => setIsPlaying(false)}
                   style={{
-                    left: `${textPosition.x}%`,
-                    top: `${textPosition.y}%`,
-                    transform: 'translate(-50%, -50%)',
-                    color: textColor,
-                    fontSize: `${textSize}px`,
-                    fontWeight: 'bold',
-                    textShadow: '2px 2px 4px rgba(0,0,0,0.8)',
+                    filter: `brightness(${brightness}%) contrast(${contrast}%) saturate(${saturation}%) blur(${blur}px)`,
+                    imageRendering: 'high-quality'
                   }}
+                />
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="absolute inset-0 m-auto w-16 h-16 bg-black/50 hover:bg-black/70 text-white rounded-full"
+                  onClick={togglePlayPause}
                 >
-                  {textOverlay}
-                </div>
-              )}
-            </div>
-
-            {/* Timeline */}
-            <div className="w-full max-w-3xl mt-4 space-y-2">
-              <div className="flex items-center justify-between text-xs text-slate-600 dark:text-slate-400">
-                <span>{formatTime(currentTime)}</span>
-                <span>{formatTime(duration)}</span>
+                  {isPlaying ? <Pause className="w-8 h-8" /> : <Play className="w-8 h-8 ml-1" />}
+                </Button>
+                
+                {/* Text Overlay Preview */}
+                {textOverlay && (
+                  <div
+                    className="absolute pointer-events-none"
+                    style={{
+                      left: `${textPosition.x}%`,
+                      top: `${textPosition.y}%`,
+                      transform: 'translate(-50%, -50%)',
+                      color: textColor,
+                      fontSize: `${textSize}px`,
+                      fontWeight: 'bold',
+                      textShadow: '2px 2px 4px rgba(0,0,0,0.8)',
+                    }}
+                  >
+                    {textOverlay}
+                  </div>
+                )}
               </div>
-              <Slider
-                value={[currentTime]}
-                onValueChange={handleTimeChange}
-                max={duration}
-                step={0.1}
-                className="w-full"
-              />
+
+              {/* Timeline */}
+              <div className="w-full max-w-3xl mt-4 space-y-2 px-4">
+                <div className="flex items-center justify-between text-xs text-slate-600 dark:text-slate-400">
+                  <span>{formatTime(currentTime)}</span>
+                  <span>{formatTime(duration)}</span>
+                </div>
+                <Slider
+                  value={[currentTime]}
+                  onValueChange={handleTimeChange}
+                  max={duration}
+                  step={0.1}
+                  className="w-full"
+                />
+              </div>
             </div>
           </div>
 
