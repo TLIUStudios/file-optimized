@@ -109,152 +109,34 @@ export default function VideoEditor({ isOpen, onClose, videoData, onSave }) {
   };
 
   const generateCaptions = async () => {
-    if (!videoRef.current) return;
-    
     setGeneratingCaptions(true);
-    toast.info("Transcribing audio from video...", { id: "gen-captions", duration: Infinity });
+    toast.info("Transcribing video audio with AI...", { id: "gen-captions", duration: Infinity });
     
     try {
-      const video = videoRef.current;
-      
-      // Method 1: Try Web Speech API first
-      try {
-        const captionsFromSpeech = await transcribeWithWebSpeech(video);
-        if (captionsFromSpeech && captionsFromSpeech.length > 0) {
-          setCaptions(captionsFromSpeech);
-          setShowCaptions(true);
-          toast.dismiss("gen-captions");
-          toast.success(`Generated ${captionsFromSpeech.length} captions!`);
-          saveToHistory();
-          return;
-        }
-      } catch (speechError) {
-        console.log("Web Speech API failed, trying AI transcription:", speechError);
-      }
-      
-      // Method 2: Use base44 AI for transcription
-      toast.info("Using AI for transcription...", { id: "gen-captions", duration: Infinity });
-      const captionsFromAI = await transcribeWithAI();
-      
-      if (captionsFromAI && captionsFromAI.length > 0) {
-        setCaptions(captionsFromAI);
-        setShowCaptions(true);
-        toast.dismiss("gen-captions");
-        toast.success(`Generated ${captionsFromAI.length} captions with AI!`);
-        saveToHistory();
-      } else {
-        throw new Error("No speech detected in video");
-      }
-      
-    } catch (error) {
-      console.error("Caption generation error:", error);
-      toast.dismiss("gen-captions");
-      toast.error("Failed to generate captions: " + error.message);
-    } finally {
-      setGeneratingCaptions(false);
-    }
-  };
-
-  const transcribeWithWebSpeech = async (video) => {
-    return new Promise((resolve, reject) => {
-      if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
-        reject(new Error("Speech recognition not supported"));
-        return;
-      }
-      
-      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-      const recognition = new SpeechRecognition();
-      
-      recognition.continuous = true;
-      recognition.interimResults = false;
-      recognition.lang = 'en-US';
-      recognition.maxAlternatives = 1;
-      
-      const captionResults = [];
-      let lastEndTime = trimStart;
-      
-      recognition.onresult = (event) => {
-        for (let i = event.resultIndex; i < event.results.length; i++) {
-          if (event.results[i].isFinal) {
-            const transcript = event.results[i][0].transcript.trim();
-            const words = transcript.split(' ');
-            const wordsPerSecond = 2.5; // Average speaking rate
-            const duration = words.length / wordsPerSecond;
-            
-            captionResults.push({
-              text: transcript,
-              startTime: lastEndTime,
-              endTime: lastEndTime + duration,
-            });
-            
-            lastEndTime += duration;
-          }
-        }
-      };
-      
-      recognition.onerror = (event) => {
-        if (event.error === 'no-speech') {
-          reject(new Error("No speech detected in video"));
-        } else {
-          reject(new Error(`Speech recognition error: ${event.error}`));
-        }
-      };
-      
-      recognition.onend = () => {
-        if (captionResults.length === 0) {
-          reject(new Error("No speech detected"));
-        } else {
-          resolve(captionResults);
-        }
-      };
-      
-      // Start playing video and recognition
-      video.currentTime = trimStart;
-      video.muted = false;
-      video.volume = 1.0;
-      
-      video.onplay = () => {
-        recognition.start();
-      };
-      
-      video.onended = () => {
-        recognition.stop();
-      };
-      
-      video.play();
-      
-      // Timeout after video duration
-      setTimeout(() => {
-        video.pause();
-        video.currentTime = 0;
-        recognition.stop();
-      }, (trimEnd - trimStart + 2) * 1000);
-    });
-  };
-
-  const transcribeWithAI = async () => {
-    try {
-      // Extract audio from video and upload
+      // Upload video file for transcription
       const response = await fetch(videoData);
       const videoBlob = await response.blob();
       
-      // Upload video file
+      toast.info("Uploading video...", { id: "gen-captions", duration: Infinity });
       const { file_url } = await base44.integrations.Core.UploadFile({ file: videoBlob });
       
       // Use AI to transcribe with timestamps
+      toast.info("AI is transcribing speech...", { id: "gen-captions", duration: Infinity });
       const result = await base44.integrations.Core.InvokeLLM({
-        prompt: `Transcribe this video's audio and provide captions with timestamps. 
-        
-Format as JSON array with this structure:
-[{"text": "caption text", "startTime": 0.0, "endTime": 3.5}]
+        prompt: `Listen to this video and transcribe ALL spoken words into captions with accurate timestamps.
 
-Rules:
-- Break speech into short segments (5-10 words max per caption)
-- Estimate timing based on natural speaking pace
-- Start timestamps from 0
-- Make captions suitable for social media viewing
+Break the speech into short, readable segments (5-10 words each) perfect for social media captions.
+Estimate timestamps based on natural speaking pace (average 2.5 words per second).
 
-Return ONLY the JSON array, no other text.`,
+Return as a JSON object with this exact structure:
+{
+  "captions": [
+    {"text": "First few words spoken", "startTime": 0.0, "endTime": 2.5},
+    {"text": "Next words in the video", "startTime": 2.5, "endTime": 5.0}
+  ]
+}
+
+IMPORTANT: Return ONLY valid JSON, no markdown, no explanations.`,
         file_urls: [file_url],
         response_json_schema: {
           type: "object",
@@ -267,17 +149,32 @@ Return ONLY the JSON array, no other text.`,
                   text: { type: "string" },
                   startTime: { type: "number" },
                   endTime: { type: "number" }
-                }
+                },
+                required: ["text", "startTime", "endTime"]
               }
             }
-          }
+          },
+          required: ["captions"]
         }
       });
       
-      return result.captions || [];
+      if (!result.captions || result.captions.length === 0) {
+        throw new Error("No speech detected in video");
+      }
+      
+      setCaptions(result.captions);
+      setShowCaptions(true);
+      saveToHistory();
+      
+      toast.dismiss("gen-captions");
+      toast.success(`✨ Generated ${result.captions.length} captions from speech!`);
+      
     } catch (error) {
-      console.error("AI transcription error:", error);
-      throw new Error("AI transcription failed");
+      console.error("Caption generation error:", error);
+      toast.dismiss("gen-captions");
+      toast.error("Failed to transcribe: " + error.message);
+    } finally {
+      setGeneratingCaptions(false);
     }
   };
 
