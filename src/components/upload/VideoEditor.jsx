@@ -275,6 +275,9 @@ export default function VideoEditor({ isOpen, onClose, videoData, onSave }) {
       setContrast(state.contrast);
       setSaturation(state.saturation);
       setBlur(state.blur);
+      setCaptions(state.captions || []);
+      setCaptionStyle(state.captionStyle || "modern");
+      setShowCaptions(state.showCaptions || false);
       setHistoryIndex(newIndex);
       
       toast.success('Undo applied');
