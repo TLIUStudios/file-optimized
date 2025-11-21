@@ -306,33 +306,10 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
     setSettingsChanged(false);
     try {
       if (isImage && !isGif && enableAnimation) await processImageToAnimation();
-      else if (isVideo) {
-        if (!ffmpegLoaded) {
-          toast.error('Video processor still loading. Please wait...');
-          setProcessing(false);
-          setProcessingStartTime(null);
-          return;
-        }
-        if (format === 'gif') await convertVideoToGif();
-        else await processVideo();
-      } else if (isAudio) {
-        if (!ffmpegLoaded) {
-          toast.error('Audio processor still loading. Please wait...');
-          setProcessing(false);
-          setProcessingStartTime(null);
-          return;
-        }
-        await processAudio();
-      } else if (isGif) {
-        if (!ffmpegLoaded && format === 'mp4') {
-          toast.error('Video processor still loading. Please wait...');
-          setProcessing(false);
-          setProcessingStartTime(null);
-          return;
-        }
-        if (format === 'mp4') await convertGifToMp4();
-        else await processGif();
-      } else if (isImage) await processStaticImage();
+      else if (isVideo) await processVideo();
+      else if (isAudio) await processAudio();
+      else if (isGif) await processGif();
+      else if (isImage) await processStaticImage();
     } catch (error) {
       console.error('Error processing media:', error);
       setError(`Failed to process. ${error.message}`);
