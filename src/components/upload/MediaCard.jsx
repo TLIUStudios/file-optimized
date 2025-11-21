@@ -339,7 +339,6 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
       // Load video
       const video = document.createElement('video');
       video.src = preview;
-      video.muted = true;
       video.crossOrigin = 'anonymous';
       
       await new Promise((resolve, reject) => {
@@ -347,6 +346,8 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
         video.onerror = () => reject(new Error('Failed to load video'));
         setTimeout(() => reject(new Error('Video loading timeout')), 10000);
       });
+      
+      const hasAudio = video.mozHasAudio || Boolean(video.webkitAudioDecodedByteCount) || Boolean(video.audioTracks && video.audioTracks.length);
       
       // Determine target resolution
       let targetWidth = video.videoWidth;
@@ -388,7 +389,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
       const { Muxer, ArrayBufferTarget } = await import('https://cdn.jsdelivr.net/npm/mp4-muxer@5.1.3/+esm');
       
       const target = new ArrayBufferTarget();
-      const muxer = new Muxer({
+      const muxerConfig = {
         target,
         video: {
           codec: 'avc',
@@ -397,13 +398,24 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
           frameRate: frameRate || 30,
         },
         fastStart: 'in-memory',
-      });
+      };
+      
+      // Add audio track if video has audio
+      if (hasAudio) {
+        muxerConfig.audio = {
+          codec: 'aac',
+          sampleRate: 48000,
+          numberOfChannels: 2,
+        };
+      }
+      
+      const muxer = new Muxer(muxerConfig);
       
       // Setup video encoder
       const videoEncoder = new VideoEncoder({
         output: (chunk, meta) => muxer.addVideoChunk(chunk, meta),
         error: (e) => {
-          console.error('Encoder error:', e);
+          console.error('Video encoder error:', e);
           throw new Error(`Video encoding failed: ${e.message}`);
         },
       });
@@ -419,6 +431,52 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
         bitrate: (videoBitrate || 1000) * 1000,
         framerate: frameRate || 30,
       });
+      
+      // Setup audio encoder if video has audio
+      let audioEncoder = null;
+      if (hasAudio && 'AudioEncoder' in window) {
+        audioEncoder = new AudioEncoder({
+          output: (chunk, meta) => muxer.addAudioChunk(chunk, meta),
+          error: (e) => console.error('Audio encoder error:', e),
+        });
+        
+        audioEncoder.configure({
+          codec: 'mp4a.40.2',
+          sampleRate: 48000,
+          numberOfChannels: 2,
+          bitrate: (audioBitrate || 128) * 1000,
+        });
+        
+        // Setup audio processing
+        video.muted = false;
+        const audioContext = new AudioContext({ sampleRate: 48000 });
+        const source = audioContext.createMediaElementSource(video);
+        const dest = audioContext.createMediaStreamDestination();
+        source.connect(dest);
+        
+        if (dest.stream.getAudioTracks().length > 0) {
+          const audioTrack = dest.stream.getAudioTracks()[0];
+          const reader = new MediaStreamTrackProcessor({ track: audioTrack }).readable.getReader();
+          
+          // Process audio frames in background
+          (async () => {
+            try {
+              while (true) {
+                const { done, value } = await reader.read();
+                if (done) break;
+                if (audioEncoder && audioEncoder.state === 'configured') {
+                  audioEncoder.encode(value);
+                }
+                value.close();
+              }
+            } catch (e) {
+              console.warn('Audio processing stopped:', e);
+            }
+          })();
+        }
+      } else {
+        video.muted = true;
+      }
       
       const duration = Math.min(video.duration, 60); // Max 60 seconds
       const fps = frameRate || 30;
@@ -471,10 +529,18 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
         if (videoEncoder.state === 'configured') {
           await videoEncoder.flush();
         }
+        
+        // Flush audio encoder if present
+        if (audioEncoder && audioEncoder.state === 'configured') {
+          await audioEncoder.flush();
+        }
       } finally {
-        // Always close encoder
+        // Always close encoders
         if (videoEncoder.state !== 'closed') {
           videoEncoder.close();
+        }
+        if (audioEncoder && audioEncoder.state !== 'closed') {
+          audioEncoder.close();
         }
         toast.dismiss('video-encode');
       }
@@ -679,7 +745,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
       
       const video = document.createElement('video');
       video.src = preview;
-      video.muted = true;
+      video.muted = true; // Keep muted for GIF conversion (no audio in GIF)
       
       await new Promise((resolve, reject) => {
         video.onloadedmetadata = resolve;
@@ -1756,7 +1822,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
                   {gifFrameCount} frames
                 </Badge>
               )}
-              {isImage ? <LazyImage src={preview} alt="Original" className="w-full h-full object-cover transition-transform group-hover:scale-105" /> : isVideo ? <video src={preview} controls muted loop className="w-full h-full object-cover" /> : isAudio ? (
+              {isImage ? <LazyImage src={preview} alt="Original" className="w-full h-full object-cover transition-transform group-hover:scale-105" /> : isVideo ? <video src={preview} controls loop className="w-full h-full object-cover" /> : isAudio ? (
                 <div className="w-full h-full flex flex-col items-center justify-center p-4">
                   <Music className="w-16 h-16 text-slate-400 mb-2" />
                   <audio src={preview} controls className="w-full" />
@@ -1784,7 +1850,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
                   {outputGifFrameCount} frames
                 </Badge>
               )}
-              {isImage ? <LazyImage src={compressedPreview} alt="Compressed" className="w-full h-full object-cover transition-transform group-hover:scale-105" /> : isVideo ? <video src={compressedPreview} controls muted loop className="w-full h-full object-cover" /> : isAudio ? (
+              {isImage ? <LazyImage src={compressedPreview} alt="Compressed" className="w-full h-full object-cover transition-transform group-hover:scale-105" /> : isVideo ? <video src={compressedPreview} controls loop className="w-full h-full object-cover" /> : isAudio ? (
                 <div className="w-full h-full flex flex-col items-center justify-center p-4">
                   <Music className="w-16 h-16 text-emerald-500 mb-2" />
                   <audio src={compressedPreview} controls className="w-full" />
