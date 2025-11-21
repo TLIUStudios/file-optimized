@@ -280,39 +280,31 @@ Rules:
   };
 
   const saveToHistory = () => {
-    // Clear any pending timeout
-    if (historyTimeoutRef.current) {
-      clearTimeout(historyTimeoutRef.current);
-    }
+    const newState = {
+      trimStart,
+      trimEnd,
+      textOverlay,
+      textPosition: { ...textPosition },
+      textColor,
+      textSize,
+      brightness,
+      contrast,
+      saturation,
+      blur,
+      captions: [...captions],
+      captionStyle,
+      showCaptions,
+      volume,
+      backgroundMusic,
+      musicVolume,
+      noiseReduction,
+      audioNormalization,
+    };
 
-    // Debounce history saves to prevent excessive entries during slider dragging
-    historyTimeoutRef.current = setTimeout(() => {
-      const newState = {
-        trimStart,
-        trimEnd,
-        textOverlay,
-        textPosition: { ...textPosition },
-        textColor,
-        textSize,
-        brightness,
-        contrast,
-        saturation,
-        blur,
-        captions: [...captions],
-        captionStyle,
-        showCaptions,
-        volume,
-        backgroundMusic,
-        musicVolume,
-        noiseReduction,
-        audioNormalization,
-      };
-
-      const newHistory = history.slice(0, historyIndex + 1);
-      newHistory.push(newState);
-      setHistory(newHistory);
-      setHistoryIndex(newHistory.length - 1);
-    }, 300);
+    const newHistory = history.slice(0, historyIndex + 1);
+    newHistory.push(newState);
+    setHistory(newHistory);
+    setHistoryIndex(newHistory.length - 1);
   };
 
   const undo = () => {
@@ -320,6 +312,7 @@ Rules:
       const newIndex = historyIndex - 1;
       const state = history[newIndex];
       
+      // Batch all state updates together
       setTrimStart(state.trimStart);
       setTrimEnd(state.trimEnd);
       setTextOverlay(state.textOverlay);
