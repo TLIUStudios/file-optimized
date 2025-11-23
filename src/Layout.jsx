@@ -1,5 +1,6 @@
 import { useEffect, useState, lazy, Suspense } from "react";
-import { Moon, Sun, Image as ImageIcon, User, LogIn, LogOut } from "lucide-react";
+import { Moon, Sun, User, LogIn, LogOut } from "lucide-react";
+import AnimatedMediaIcon from "./components/AnimatedMediaIcon";
 import { Button } from "@/components/ui/button";
 import { Toaster } from "sonner";
 import { Link } from "react-router-dom";
@@ -188,7 +189,7 @@ export default function Layout({ children }) {
         <div className="container mx-auto px-3 sm:px-4 h-14 sm:h-16 flex items-center justify-between">
           <Link to={createPageUrl('Home')} className="flex items-center gap-2 hover:opacity-80 transition-opacity min-w-0">
             <div className="w-8 h-8 sm:w-9 sm:h-9 md:w-10 md:h-10 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-xl flex items-center justify-center shadow-lg flex-shrink-0">
-              <ImageIcon className="w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6 text-white" />
+              <AnimatedMediaIcon className="w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6 text-white" />
             </div>
             <div className="min-w-0">
               <h1 className="text-sm sm:text-base md:text-xl font-bold text-slate-900 dark:text-white truncate">File Optimized</h1>
