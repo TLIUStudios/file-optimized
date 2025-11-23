@@ -41,7 +41,17 @@ export default function SocialShareModal({ isOpen, onClose, imageUrl, fileName }
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-md [&>button]:hover:bg-red-600 [&>button]:hover:text-white [&>button]:rounded-lg [&>button]:transition-colors">
+      <DialogContent className="sm:max-w-md [&>button]:hidden">
+        <div className="absolute top-4 right-4 z-50">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={onClose}
+            className="h-9 w-9 hover:bg-red-600 hover:text-white rounded-lg transition-colors"
+          >
+            <X className="w-5 h-5" />
+          </Button>
+        </div>
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Share2 className="w-5 h-5" />
@@ -115,9 +125,8 @@ export default function SocialShareModal({ isOpen, onClose, imageUrl, fileName }
           </div>
 
           <div className="border-t pt-4 mt-4">
-            <div className="text-xs text-slate-500 dark:text-slate-400 bg-slate-50 dark:bg-slate-900 rounded-lg p-3 border border-slate-200 dark:border-slate-800">
-              <p className="font-medium mb-1 text-red-600 dark:text-red-400">Note:</p>
-              <p>This feature is currently disabled as we don't store any files uploaded to the platform. All processing happens locally in your browser for maximum privacy and security.</p>
+            <div className="text-xs text-red-600 dark:text-red-400 bg-slate-50 dark:bg-slate-900 rounded-lg p-3 border border-slate-200 dark:border-slate-800">
+              <p><span className="font-bold">Note:</span> This feature is currently disabled as we don't store any files uploaded to the platform. All processing happens locally in your browser for maximum privacy and security.</p>
             </div>
           </div>
         </div>
