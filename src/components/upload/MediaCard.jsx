@@ -2096,11 +2096,11 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
                   </Button>
                 </>
               ) : isAudio ? (
-                <div className="w-full h-full flex flex-col items-center justify-center p-4">
+                <div className="relative w-full h-full flex flex-col items-center justify-center p-4">
                   <Music className="w-16 h-16 text-slate-400 mb-2" />
                   <audio src={preview} controls className="w-full" />
-                  <Button variant="ghost" size="icon" onClick={(e) => { e.stopPropagation(); setShowAudioEditor(true); }} className="absolute top-2 right-2 bg-white/80 hover:bg-white dark:bg-slate-800/80 dark:hover:bg-slate-800 h-7 w-7 rounded-lg">
-                    <Edit2 className="w-3 h-3" />
+                  <Button variant="ghost" size="icon" onClick={(e) => { e.stopPropagation(); setShowAudioEditor(true); }} className="absolute top-2 right-2 bg-slate-800/90 hover:bg-slate-700 dark:bg-slate-800/90 dark:hover:bg-slate-700 h-7 w-7 rounded-lg">
+                    <Edit2 className="w-3 h-3 text-white" />
                   </Button>
                 </div>
               ) : null}
