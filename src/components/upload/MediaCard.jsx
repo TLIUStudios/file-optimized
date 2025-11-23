@@ -998,7 +998,11 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
       setCompressedBlob(blob);
       setProcessed(true);
       setOutputFormat('mp4');
-      
+
+      // Update filename extension to .mp4
+      const nameWithoutExt = editableFilename.split('.').slice(0, -1).join('.') || editableFilename;
+      setEditableFilename(`${nameWithoutExt}.mp4`);
+
       onProcessed({
         id: image.name,
         originalFile: image,
@@ -1012,7 +1016,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
         fileFormat: 'mp4',
         originalFileFormat: originalFormat
       });
-      
+
       toast.success('GIF converted to MP4!');
     } catch (error) {
       console.error('GIF to MP4 conversion failed:', error);
