@@ -1895,15 +1895,15 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
   };
 
   return (
-    <Card className="overflow-visible bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 shadow-lg hover:shadow-xl transition-shadow relative mt-8">
+    <Card className="overflow-visible bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 shadow-lg hover:shadow-xl transition-shadow relative mt-10">
       {/* Close button positioned outside image area */}
       <Button 
         variant="ghost" 
         size="icon" 
         onClick={onRemove} 
-        className="absolute -top-5 right-2 bg-slate-900/90 dark:bg-slate-900/90 hover:bg-red-600 dark:hover:bg-red-600 text-white rounded-lg transition-colors z-30 shadow-lg h-9 w-9"
+        className="absolute -top-4 right-4 bg-slate-900/90 dark:bg-slate-900/90 hover:bg-red-600 dark:hover:bg-red-600 text-white rounded-lg transition-colors z-30 shadow-lg h-8 w-8"
       >
-        <X className="w-5 h-5" />
+        <X className="w-4 h-4" />
       </Button>
 
       <div className="relative">
