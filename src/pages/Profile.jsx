@@ -21,7 +21,9 @@ import {
   CheckCircle2,
   AlertCircle,
   X,
-  Star
+  Star,
+  Package,
+  ShoppingBag
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
@@ -732,6 +734,44 @@ export default function Profile() {
                       <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
                     </svg>
                     Leave a Facebook Review
+                  </a>
+                </Button>
+              </div>
+            </Card>
+          </motion.div>
+
+          {/* Our Other Apps Card */}
+          <motion.div
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.4 }}
+          >
+            <Card className="p-6">
+              <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-4">Our Other Apps</h3>
+              <div className="space-y-2">
+                <Button variant="outline" className="w-full justify-start" asChild>
+                  <a href="https://www.tliu.co/royalty-free-assets/photos" target="_blank" rel="noopener noreferrer">
+                    <Package className="w-4 h-4 mr-2" />
+                    Royalty Free Assets
+                  </a>
+                </Button>
+              </div>
+            </Card>
+          </motion.div>
+
+          {/* Shop Card */}
+          <motion.div
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.5 }}
+          >
+            <Card className="p-6">
+              <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-4">Shop</h3>
+              <div className="space-y-2">
+                <Button variant="outline" className="w-full justify-start" asChild>
+                  <a href="https://shop.tliu.co/" target="_blank" rel="noopener noreferrer">
+                    <ShoppingBag className="w-4 h-4 mr-2" />
+                    TLIU Store
                   </a>
                 </Button>
               </div>
