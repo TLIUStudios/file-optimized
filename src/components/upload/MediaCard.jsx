@@ -1895,7 +1895,17 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
   };
 
   return (
-    <Card className="overflow-hidden bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 shadow-lg hover:shadow-xl transition-shadow">
+    <Card className="overflow-hidden bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 shadow-lg hover:shadow-xl transition-shadow relative">
+      {/* Close button positioned outside image area */}
+      <Button 
+        variant="ghost" 
+        size="icon" 
+        onClick={onRemove} 
+        className="absolute -top-3 -right-3 bg-slate-900/90 dark:bg-slate-900/90 hover:bg-red-600 dark:hover:bg-red-600 text-white rounded-lg transition-colors z-30 shadow-lg h-8 w-8"
+      >
+        <X className="w-4 h-4" />
+      </Button>
+
       <div className="relative">
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 p-3 sm:p-4 bg-slate-50 dark:bg-slate-950">
           {preview && (
@@ -1956,9 +1966,6 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
             </div>
           )}
         </div>
-        <Button variant="ghost" size="icon" onClick={onRemove} className="absolute -top-3 right-2 bg-slate-900/90 dark:bg-slate-900/90 hover:bg-red-600 dark:hover:bg-red-600 text-white rounded-lg transition-colors z-20 shadow-lg h-8 w-8">
-          <X className="w-4 h-4" />
-        </Button>
       </div>
 
       <div className="p-3 sm:p-4 space-y-3 sm:space-y-4">
