@@ -1834,7 +1834,6 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
     // Video/audio/GIF just change format selection - user must click Reprocess
     if (isVideo || isAudio || isGif) {
       setFormat(newFormat);
-      toast.info(`Format set to ${newFormat.toUpperCase()}. Click Reprocess to convert.`);
       return;
     }
     setProcessing(true);
