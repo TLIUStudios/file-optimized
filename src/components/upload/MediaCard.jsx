@@ -128,7 +128,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
   }, [autoProcess, processed, processing]);
 
   useEffect(() => {
-    if (((enableAnimation && isImage && !isGif) || isGif) && !gifJsLoaded) {
+    if (((enableAnimation && isImage && !isGif) || isGif || (isVideo && format === 'gif')) && !gifJsLoaded) {
       const loadGifJs = async () => {
         try {
           if (window.GIF && workerBlobUrl) {
@@ -163,7 +163,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
       };
       loadGifJs();
     }
-  }, [enableAnimation, isGif, gifJsLoaded, workerBlobUrl, isImage]);
+  }, [enableAnimation, isGif, gifJsLoaded, workerBlobUrl, isImage, isVideo, format]);
 
   useEffect(() => {
     return () => {
