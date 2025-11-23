@@ -1,6 +1,6 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Facebook, Twitter, Linkedin, MessageCircle, Share2 } from "lucide-react";
+import { Facebook, Twitter, Linkedin, MessageCircle, Share2, X } from "lucide-react";
 import { toast } from "sonner";
 
 export default function SocialShareModal({ isOpen, onClose, imageUrl, fileName }) {
