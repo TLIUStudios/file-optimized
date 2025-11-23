@@ -2,9 +2,16 @@ import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Check, X, Shield, Zap, Crown, LogIn } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { useState } from "react";
 
 export default function LoginPromptModal({ isOpen, onClose, onLogin, context = "general", userPlan = "free" }) {
   const isPro = userPlan === 'pro';
+  const [billingFrequency, setBillingFrequency] = useState('monthly');
+  
+  const isAnnual = billingFrequency === 'annual';
+  const proPrice = isAnnual ? '$100 USD' : '$10 USD';
+  const proPeriod = isAnnual ? '/yr' : '/mo';
+  
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-[500px] max-w-[95vw] p-0 overflow-hidden bg-gradient-to-br from-slate-50 to-white dark:from-slate-950 dark:to-slate-900 [&>button]:hidden">
@@ -36,7 +43,33 @@ export default function LoginPromptModal({ isOpen, onClose, onLogin, context = "
         <div className="p-6 space-y-4">
           {/* Benefits Section */}
           <div className="space-y-3">
-            
+            {/* Billing Frequency Toggle */}
+            <div className="flex items-center justify-center gap-2 p-1 bg-slate-100 dark:bg-slate-900 rounded-lg">
+              <button
+                onClick={() => setBillingFrequency('monthly')}
+                className={`flex-1 px-4 py-2 rounded-md text-sm font-medium transition-all ${
+                  billingFrequency === 'monthly'
+                    ? 'bg-white dark:bg-slate-800 text-slate-900 dark:text-white shadow-sm'
+                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                }`}
+              >
+                Monthly
+              </button>
+              <button
+                onClick={() => setBillingFrequency('annual')}
+                className={`flex-1 px-4 py-2 rounded-md text-sm font-medium transition-all relative ${
+                  billingFrequency === 'annual'
+                    ? 'bg-white dark:bg-slate-800 text-slate-900 dark:text-white shadow-sm'
+                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                }`}
+              >
+                Annual
+                <Badge className="absolute -top-2 -right-2 bg-emerald-600 text-white text-[10px] px-1.5 py-0.5">
+                  Save 17%
+                </Badge>
+              </button>
+            </div>
+
             {/* Plan Comparison Grid */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               {/* Free Plan Card */}
@@ -47,7 +80,14 @@ export default function LoginPromptModal({ isOpen, onClose, onLogin, context = "
                   </Badge>
                 )}
                 <h3 className="text-base font-bold text-slate-900 dark:text-white mb-1 text-center">Free Plan</h3>
-                <p className="text-2xl font-bold text-center text-slate-600 dark:text-slate-400 mb-3">$0</p>
+                <div className="text-center mb-3">
+                  <p className="text-2xl font-bold text-slate-600 dark:text-slate-400">$0</p>
+                  <div className="h-4 mt-1">
+                    <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">
+                      Limited Options
+                    </p>
+                  </div>
+                </div>
                 <div className="space-y-2">
                   <div className="flex items-center gap-2 text-xs text-slate-700 dark:text-slate-300">
                     <Check className="w-3.5 h-3.5 text-slate-500 flex-shrink-0" />
@@ -86,7 +126,18 @@ export default function LoginPromptModal({ isOpen, onClose, onLogin, context = "
                   <Zap className="w-4 h-4 text-amber-600" />
                   Pro Plan
                 </h3>
-                <p className="text-2xl font-bold text-center text-amber-600 dark:text-amber-500 mb-3">$10<span className="text-sm">/mo</span></p>
+                <div className="text-center mb-3">
+                  <p className="text-2xl font-bold text-amber-600 dark:text-amber-500">
+                    {proPrice}<span className="text-sm">{proPeriod}</span>
+                  </p>
+                  <div className="h-4 mt-1">
+                    {isAnnual && (
+                      <p className="text-xs text-emerald-600 dark:text-emerald-400 font-medium">
+                        Save $20/year vs monthly
+                      </p>
+                    )}
+                  </div>
+                </div>
                 <div className="space-y-2">
                   <div className="flex items-center gap-2 text-xs text-slate-900 dark:text-white font-medium">
                     <Check className="w-3.5 h-3.5 text-emerald-600 flex-shrink-0" />
