@@ -1919,6 +1919,18 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
           <span className="text-xs font-medium text-slate-500 dark:text-slate-400">
             {isVideo ? 'Video' : isAudio ? 'Audio' : isGif ? 'GIF' : isImage ? 'Image' : 'File'}
           </span>
+          {isGif && gifFrameCount > 0 && (
+            <Badge className="bg-slate-900/90 text-white text-xs px-2 py-0.5 font-bold flex items-center gap-1">
+              <Film className="w-3 h-3" />
+              {gifFrameCount} frames
+            </Badge>
+          )}
+          {isGif && processed && outputGifFrameCount > 0 && (
+            <Badge className="bg-emerald-600/90 text-white text-xs px-2 py-0.5 font-bold flex items-center gap-1">
+              <Film className="w-3 h-3" />
+              {outputGifFrameCount} frames
+            </Badge>
+          )}
         </div>
         <Button 
           variant="ghost" 
@@ -1934,12 +1946,6 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 p-3 sm:p-4 bg-slate-50 dark:bg-slate-950">
           {preview && (
             <div className="relative aspect-square rounded-lg overflow-hidden bg-slate-200 dark:bg-slate-800 cursor-pointer group" onClick={(isImage || isGif) && processed ? handleCompare : undefined}>
-              {isGif && gifFrameCount > 0 && (
-                <Badge className="absolute top-2 left-2 bg-slate-900/90 text-white text-xs px-2 py-1 font-bold flex items-center gap-1 shadow-lg z-10 rounded-md">
-                  <Film className="w-3 h-3" />
-                  {gifFrameCount} frames
-                </Badge>
-              )}
               {isImage ? <LazyImage src={preview} alt="Original" className="w-full h-full object-cover transition-transform group-hover:scale-105" /> : isVideo ? (
                 <>
                   <video src={preview} controls loop className="w-full h-full object-cover" />
@@ -1969,12 +1975,6 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
           )}
           {compressedPreview ? (
             <div className="relative aspect-square rounded-lg overflow-hidden bg-slate-200 dark:bg-slate-800 cursor-pointer group" onClick={(isImage || isGif) ? handleCompare : undefined}>
-              {isGif && outputGifFrameCount > 0 && (
-                <Badge className="absolute top-2 left-2 bg-emerald-600/90 text-white text-xs px-2 py-1 font-bold flex items-center gap-1 shadow-lg z-10 rounded-md">
-                  <Film className="w-3 h-3" />
-                  {outputGifFrameCount} frames
-                </Badge>
-              )}
               {isImage ? <LazyImage src={compressedPreview} alt="Compressed" className="w-full h-full object-cover transition-transform group-hover:scale-105" /> : isVideo ? <video src={compressedPreview} controls loop className="w-full h-full object-cover" /> : isAudio ? (
                 <div className="w-full h-full flex flex-col items-center justify-center p-4">
                   <Music className="w-16 h-16 text-emerald-500 mb-2" />
