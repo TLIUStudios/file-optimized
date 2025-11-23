@@ -324,7 +324,7 @@ export default function ImageComparisonModal({
 
       // Generate with AI - updated prompt for more fields
       const aiResult = await base44.integrations.Core.InvokeLLM({
-        prompt: "Analyze this image and provide: a short title (under 60 chars), brief description (under 160 chars), category (1-2 words), mood (1-2 words describing the emotional tone), alt text for accessibility (descriptive, under 125 chars), 5-8 social media tags (comma-separated, casual style for social posts like 'anime', 'art', 'digital'), 5-8 SEO keywords (comma-separated, formal style for search optimization like 'digital illustration', 'anime character', 'high resolution'), and 5-8 social media hashtags (format: #word, #anotherword, #thirdword with space after comma).",
+        prompt: "Analyze this image and provide: a short title (under 60 chars), brief description (under 160 chars), category (1-2 words), mood (1-2 words describing the emotional tone), alt text for accessibility (descriptive, under 125 chars), 10 social media tags (comma-separated, casual/trendy style for social posts like 'anime', 'art', 'aesthetic', 'vibes'), 10 SEO keywords (comma-separated, formal/descriptive style for search optimization like 'digital illustration', 'anime character design', 'high resolution artwork'), and 10 social media hashtags (format: #word, #anotherword, #thirdword with space after comma).",
         file_urls: [uploadResult.file_url],
         response_json_schema: {
           type: "object",
@@ -402,15 +402,15 @@ export default function ImageComparisonModal({
           schemaProperty = "alt_text";
           break;
         case "tags":
-          prompt = "Analyze this image and provide ONLY 5-8 social media tags (comma-separated, casual style for social posts).";
+          prompt = "Analyze this image and provide ONLY 10 social media tags (comma-separated, casual/trendy style for social posts).";
           schemaProperty = "tags";
           break;
         case "keywords":
-          prompt = "Analyze this image and provide ONLY 5-8 SEO keywords (comma-separated, formal style for search optimization).";
+          prompt = "Analyze this image and provide ONLY 10 SEO keywords (comma-separated, formal/descriptive style for search optimization).";
           schemaProperty = "keywords";
           break;
         case "hashtags":
-          prompt = "Analyze this image and provide ONLY 5-8 social media hashtags (format: #word, #anotherword, #thirdword with space after comma).";
+          prompt = "Analyze this image and provide ONLY 10 social media hashtags (format: #word, #anotherword, #thirdword with space after comma).";
           schemaProperty = "hashtags";
           break;
         default:
@@ -1093,9 +1093,16 @@ export default function ImageComparisonModal({
                   size="sm"
                   onClick={async () => {
                     try {
-                      if (navigator.share && compressedImage) {
-                        const response = await fetch(compressedImage);
-                        const blob = await response.blob();
+                      if (!navigator.share) {
+                        toast.info('Sharing not supported on this device');
+                        return;
+                      }
+                      
+                      const response = await fetch(compressedImage);
+                      const blob = await response.blob();
+                      
+                      // Check if files sharing is supported
+                      if (navigator.canShare && navigator.canShare({ files: [new File([blob], fileName, { type: blob.type })] })) {
                         const file = new File([blob], fileName, { type: blob.type });
                         await navigator.share({
                           title: fileName,
@@ -1104,12 +1111,31 @@ export default function ImageComparisonModal({
                         });
                         toast.success('Shared successfully!');
                       } else {
-                        toast.info('Sharing not supported on this device');
+                        // Fallback: share URL instead
+                        const url = window.location.href;
+                        await navigator.share({
+                          title: fileName,
+                          text: 'Check out my optimized image!',
+                          url: url
+                        });
+                        toast.success('Shared successfully!');
                       }
                     } catch (error) {
-                      if (error.name !== 'AbortError') {
-                        console.error('Share error:', error);
-                        toast.error('Failed to share');
+                      if (error.name === 'AbortError') {
+                        // User cancelled, do nothing
+                        return;
+                      }
+                      console.error('Share error:', error);
+                      // Copy to clipboard as fallback
+                      try {
+                        const response = await fetch(compressedImage);
+                        const blob = await response.blob();
+                        await navigator.clipboard.write([
+                          new ClipboardItem({ [blob.type]: blob })
+                        ]);
+                        toast.success('Image copied to clipboard!');
+                      } catch (clipError) {
+                        toast.error('Sharing not available. Please download and share manually.');
                       }
                     }
                   }}
@@ -1260,8 +1286,10 @@ export default function ImageComparisonModal({
                         <div className="flex items-center justify-between py-2 px-3 bg-slate-50 dark:bg-slate-950 rounded-lg border border-slate-200 dark:border-slate-800">
                           <span className="text-slate-600 dark:text-slate-400 text-xs font-medium">Resolution</span>
                           {originalResolution && compressedResolution && (originalResolution.width !== compressedResolution.width || originalResolution.height !== compressedResolution.height) ? (
-                            <span className="text-slate-900 dark:text-white font-bold text-sm">
-                              {originalResolution.width} × {originalResolution.height} → {compressedResolution.width} × {compressedResolution.height}
+                            <span className="font-bold text-sm">
+                              <span className="text-slate-900 dark:text-white">{originalResolution.width} × {originalResolution.height}</span>
+                              <span className="text-slate-500 dark:text-slate-400"> → </span>
+                              <span className="text-emerald-600 dark:text-emerald-400">{compressedResolution.width} × {compressedResolution.height}</span>
                             </span>
                           ) : (
                             <span className="text-slate-900 dark:text-white font-bold text-sm">{imageDimensions.width} × {imageDimensions.height}</span>

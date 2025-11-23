@@ -2078,9 +2078,16 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
               size="sm" 
               onClick={async () => {
                 try {
-                  if (navigator.share && compressedPreview) {
-                    const response = await fetch(compressedPreview);
-                    const blob = await response.blob();
+                  if (!navigator.share) {
+                    toast.info('Sharing not supported on this device');
+                    return;
+                  }
+                  
+                  const response = await fetch(compressedPreview);
+                  const blob = await response.blob();
+                  
+                  // Check if files sharing is supported
+                  if (navigator.canShare && navigator.canShare({ files: [new File([blob], getOutputFilename(), { type: blob.type })] })) {
                     const file = new File([blob], getOutputFilename(), { type: blob.type });
                     await navigator.share({
                       title: getOutputFilename(),
@@ -2089,12 +2096,30 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
                     });
                     toast.success('Shared successfully!');
                   } else {
-                    toast.info('Sharing not supported on this device');
+                    // Fallback: share URL instead
+                    const url = window.location.href;
+                    await navigator.share({
+                      title: getOutputFilename(),
+                      text: 'Check out my optimized file!',
+                      url: url
+                    });
+                    toast.success('Shared successfully!');
                   }
                 } catch (error) {
-                  if (error.name !== 'AbortError') {
-                    console.error('Share error:', error);
-                    toast.error('Failed to share');
+                  if (error.name === 'AbortError') {
+                    return;
+                  }
+                  console.error('Share error:', error);
+                  // Copy to clipboard as fallback
+                  try {
+                    const response = await fetch(compressedPreview);
+                    const blob = await response.blob();
+                    await navigator.clipboard.write([
+                      new ClipboardItem({ [blob.type]: blob })
+                    ]);
+                    toast.success('File copied to clipboard!');
+                  } catch (clipError) {
+                    toast.error('Sharing not available. Please download and share manually.');
                   }
                 }
               }}
