@@ -34,15 +34,14 @@ export default function SocialShareModal({ isOpen, onClose, imageUrl, fileName }
   };
 
   const handleCopyLink = () => {
-    navigator.clipboard.writeText(window.location.href);
-    toast.success('Link copied to clipboard!');
+    // Disabled - no copying functionality
   };
 
 
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-md [&>button]:bg-slate-800/80 [&>button]:hover:bg-red-600 [&>button]:transition-colors [&>button]:rounded-lg [&>button]:text-white">
+      <DialogContent className="sm:max-w-md [&>button]:hover:bg-red-600 [&>button]:hover:text-white [&>button]:rounded-lg [&>button]:transition-colors">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Share2 className="w-5 h-5" />
@@ -117,7 +116,7 @@ export default function SocialShareModal({ isOpen, onClose, imageUrl, fileName }
 
           <div className="border-t pt-4 mt-4">
             <div className="text-xs text-slate-500 dark:text-slate-400 bg-slate-50 dark:bg-slate-900 rounded-lg p-3 border border-slate-200 dark:border-slate-800">
-              <p className="font-medium mb-1">Note:</p>
+              <p className="font-medium mb-1 text-red-600 dark:text-red-400">Note:</p>
               <p>This feature is currently disabled as we don't store any files uploaded to the platform. All processing happens locally in your browser for maximum privacy and security.</p>
             </div>
           </div>
