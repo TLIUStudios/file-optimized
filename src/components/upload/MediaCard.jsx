@@ -1935,7 +1935,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
           {preview && (
             <div className="relative aspect-square rounded-lg overflow-hidden bg-slate-200 dark:bg-slate-800 cursor-pointer group" onClick={(isImage || isGif) && processed ? handleCompare : undefined}>
               {isGif && gifFrameCount > 0 && (
-                <Badge className="absolute -top-9 left-0 bg-slate-900/90 text-white text-xs px-3 py-1.5 font-bold flex items-center gap-1 shadow-lg z-10 rounded-md">
+                <Badge className="absolute top-2 left-2 bg-slate-900/90 text-white text-xs px-2 py-1 font-bold flex items-center gap-1 shadow-lg z-10 rounded-md">
                   <Film className="w-3 h-3" />
                   {gifFrameCount} frames
                 </Badge>
@@ -1970,7 +1970,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
           {compressedPreview ? (
             <div className="relative aspect-square rounded-lg overflow-hidden bg-slate-200 dark:bg-slate-800 cursor-pointer group" onClick={(isImage || isGif) ? handleCompare : undefined}>
               {isGif && outputGifFrameCount > 0 && (
-                <Badge className="absolute -top-9 left-0 bg-slate-900/90 text-white text-xs px-3 py-1.5 font-bold flex items-center gap-1 shadow-lg z-10 rounded-md">
+                <Badge className="absolute top-2 left-2 bg-emerald-600/90 text-white text-xs px-2 py-1 font-bold flex items-center gap-1 shadow-lg z-10 rounded-md">
                   <Film className="w-3 h-3" />
                   {outputGifFrameCount} frames
                 </Badge>
