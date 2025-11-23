@@ -2329,7 +2329,41 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
                         {(upscaleMultiplier || maxWidth || maxHeight) && (
                           <div className="flex items-center justify-between text-xs">
                             <span className="text-slate-500 dark:text-slate-400">After Upscale:</span>
-                            <span className="font-medium text-emerald-600 dark:text-emerald-400">
+                            <span className={cn(
+                              "font-medium",
+                              (() => {
+                                let targetWidth, targetHeight;
+                                if (upscaleMultiplier) {
+                                  targetWidth = Math.round(originalImageDimensions.width * (upscaleMultiplier / 100));
+                                  targetHeight = Math.round(originalImageDimensions.height * (upscaleMultiplier / 100));
+                                } else if (useStandardResolutions && maxWidth && maxHeight) {
+                                  targetWidth = maxWidth;
+                                  targetHeight = maxHeight;
+                                } else {
+                                  const aspectRatio = originalImageDimensions.width / originalImageDimensions.height;
+                                  let newWidth = maxWidth || originalImageDimensions.width;
+                                  let newHeight = maxHeight || originalImageDimensions.height;
+                                  if (maxWidth && maxHeight) {
+                                    const widthRatio = maxWidth / originalImageDimensions.width;
+                                    const heightRatio = maxHeight / originalImageDimensions.height;
+                                    const ratio = Math.max(widthRatio, heightRatio);
+                                    newWidth = Math.round(originalImageDimensions.width * ratio);
+                                    newHeight = Math.round(originalImageDimensions.height * ratio);
+                                  } else if (maxWidth) {
+                                    newWidth = maxWidth;
+                                    newHeight = Math.round(maxWidth / aspectRatio);
+                                  } else if (maxHeight) {
+                                    newHeight = maxHeight;
+                                    newWidth = Math.round(maxHeight * aspectRatio);
+                                  }
+                                  targetWidth = newWidth;
+                                  targetHeight = newHeight;
+                                }
+                                return targetWidth > 7680 || targetHeight > 7680 
+                                  ? "text-red-600 dark:text-red-400" 
+                                  : "text-emerald-600 dark:text-emerald-400";
+                              })()
+                            )}>
                               {upscaleMultiplier ? (
                                 `${Math.round(originalImageDimensions.width * (upscaleMultiplier / 100))} × ${Math.round(originalImageDimensions.height * (upscaleMultiplier / 100))}`
                               ) : (
