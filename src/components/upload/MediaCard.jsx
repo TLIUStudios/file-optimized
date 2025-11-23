@@ -2129,9 +2129,8 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
               </div>
               <div className={cn("grid gap-2", availableFormats.length === 1 ? "grid-cols-1" : availableFormats.length === 2 ? "grid-cols-2" : "grid-cols-2 sm:grid-cols-4")}>
                 {availableFormats.map((fmt) => (
-                  <Button key={fmt} size="sm" variant={displayFormat === fmt ? "default" : "outline"} onClick={() => convertFormat(fmt)} disabled={displayFormat === fmt || processing} className={cn("relative text-xs h-8 sm:h-9", format === fmt && "bg-emerald-600 hover:bg-emerald-700")}>
+                  <Button key={fmt} size="sm" variant={format === fmt ? "default" : "outline"} onClick={() => convertFormat(fmt)} disabled={processing} className={cn("relative text-xs h-8 sm:h-9", format === fmt && "bg-emerald-600 hover:bg-emerald-700")}>
                     {fmt.toUpperCase()}
-                    {displayFormat === fmt && processing && <Loader2 className="ml-1 h-3 w-3 animate-spin" />}
                   </Button>
                 ))}
               </div>
