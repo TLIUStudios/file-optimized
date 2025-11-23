@@ -507,7 +507,8 @@ export default function Home() {
             accept="image/*,video/mp4,audio/mp3,audio/wav,audio/mpeg"
             onChange={(e) => handleFilesSelected(e.target.files)}
             className="absolute inset-0 w-full h-16 opacity-0 cursor-pointer z-10"
-            id="add-more" />
+            id="add-more"
+            title="" />
 
             <Button
             variant="outline"
