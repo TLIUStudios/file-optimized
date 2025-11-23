@@ -24,7 +24,7 @@ const ImageEditor = lazy(() => import("./ImageEditor"));
 const GifEditor = lazy(() => import("./GifEditor"));
 const VideoEditor = lazy(() => import("./VideoEditor"));
 
-export default function MediaCard({ image, onRemove, onProcessed, onCompare, autoProcess, isPro }) {
+export default function MediaCard({ image, onRemove, onProcessed, onCompare, autoProcess, isPro, onFilenameUpdate }) {
   const [processing, setProcessing] = useState(false);
   const [processed, setProcessed] = useState(false);
   const [originalSize, setOriginalSize] = useState(0);
@@ -1744,7 +1744,13 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
         fileName: getOutputFilename(),
         mediaType: isVideo ? 'video' : isAudio ? 'audio' : 'image',
         fileFormat: outputFormat || format,
-        originalFileFormat: originalFormat
+        originalFileFormat: originalFormat,
+        onFilenameChange: (newFilename) => {
+          setEditableFilename(newFilename);
+          if (onFilenameUpdate) {
+            onFilenameUpdate(newFilename);
+          }
+        }
       });
     }
   };

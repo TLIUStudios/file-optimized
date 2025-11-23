@@ -88,21 +88,6 @@ export default function Home() {
     });
   };
 
-  const handleFilenameChange = (id, newFilename) => {
-    setProcessedImages((prev) => {
-      const existingData = prev[id];
-      if (!existingData) return prev;
-      
-      return {
-        ...prev,
-        [id]: {
-          ...existingData,
-          filename: newFilename
-        }
-      };
-    });
-  };
-
   const handleImageProcessed = (id, data) => {
     setProcessedImages((prev) => {
       const newProcessed = {
@@ -550,7 +535,20 @@ export default function Home() {
                       onProcessed={(data) => handleImageProcessed(image.id, data)}
                       onCompare={handleCompare}
                       autoProcess={!processedImages[image.id] && autoProcessTrigger}
-                      isPro={isPro} />
+                      isPro={isPro}
+                      onFilenameUpdate={(newFilename) => {
+                        setProcessedImages((prev) => {
+                          const existingData = prev[image.id];
+                          if (!existingData) return prev;
+                          return {
+                            ...prev,
+                            [image.id]: {
+                              ...existingData,
+                              filename: newFilename
+                            }
+                          };
+                        });
+                      }} />
 
                           </Suspense>
                         </div>
@@ -580,15 +578,7 @@ export default function Home() {
           fileFormat={comparisonData.fileFormat}
           originalFileFormat={comparisonData.originalFileFormat}
           generatedAnimations={comparisonData.animations || null}
-          onFilenameChange={(newFilename) => {
-            // Find the corresponding image ID and update it
-            const imageEntry = images.find(img => processedImages[img.id]?.filename === comparisonData.fileName);
-            if (imageEntry) {
-              handleFilenameChange(imageEntry.id, newFilename);
-              // Update comparison data to reflect the change immediately
-              setComparisonData(prev => prev ? { ...prev, fileName: newFilename } : null);
-            }
-          }} />
+          onFilenameChange={comparisonData.onFilenameChange} />
 
         </Suspense>
       }
