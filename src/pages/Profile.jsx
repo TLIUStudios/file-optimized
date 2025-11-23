@@ -1,5 +1,6 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, lazy, Suspense } from "react";
 import { base44 } from "@/api/base44Client";
+import SEOHead from "../components/SEOHead";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -28,8 +29,10 @@ import {
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { motion } from "framer-motion";
-import ProUpgradeModal from "../components/ProUpgradeModal";
-import LoginPromptModal from "../components/LoginPromptModal";
+import { lazy, Suspense } from "react";
+
+const ProUpgradeModal = lazy(() => import("../components/ProUpgradeModal"));
+const LoginPromptModal = lazy(() => import("../components/LoginPromptModal"));
 
 export default function Profile() {
   const [user, setUser] = useState(null);
@@ -258,7 +261,12 @@ export default function Profile() {
   const daysRemaining = planExpires ? Math.ceil((planExpires - new Date()) / (1000 * 60 * 60 * 24)) : null;
 
   return (
-    <div className="max-w-6xl mx-auto space-y-6">
+    <>
+      <SEOHead 
+        title="Profile & Settings - File Optimized"
+        description="Manage your File Optimized account, subscription, and preferences. Upgrade to Pro for enhanced features."
+      />
+      <div className="max-w-6xl mx-auto space-y-6">
       {/* Header */}
       <motion.div
         initial={{ opacity: 0, y: -20 }}
@@ -917,29 +925,35 @@ export default function Profile() {
 
       {/* Pro Upgrade Modal */}
       {showProModal && (
-        <ProUpgradeModal
-          key={`pro-modal-${Date.now()}`}
-          isOpen={showProModal}
-          onClose={() => {
-            setShowProModal(false);
-            setUpgradeError(null);
-            setProcessingCheckout(false);
-          }}
-          onUpgrade={handleUpgrade}
-          processing={processingCheckout}
-          error={upgradeError}
-          userPlan={user?.plan || 'free'}
-        />
+        <Suspense fallback={null}>
+          <ProUpgradeModal
+            key={`pro-modal-${Date.now()}`}
+            isOpen={showProModal}
+            onClose={() => {
+              setShowProModal(false);
+              setUpgradeError(null);
+              setProcessingCheckout(false);
+            }}
+            onUpgrade={handleUpgrade}
+            processing={processingCheckout}
+            error={upgradeError}
+            userPlan={user?.plan || 'free'}
+          />
+        </Suspense>
       )}
 
       {/* Login Prompt Modal */}
-      <LoginPromptModal
-        isOpen={showLoginPrompt}
-        onClose={() => setShowLoginPrompt(false)}
-        onLogin={handleLoginFromPrompt}
-        context="upgrade"
-        userPlan={user?.plan || 'free'}
-      />
+      {showLoginPrompt && (
+        <Suspense fallback={null}>
+          <LoginPromptModal
+            isOpen={showLoginPrompt}
+            onClose={() => setShowLoginPrompt(false)}
+            onLogin={handleLoginFromPrompt}
+            context="upgrade"
+            userPlan={user?.plan || 'free'}
+          />
+        </Suspense>
+      )}
     </div>
   );
 }
