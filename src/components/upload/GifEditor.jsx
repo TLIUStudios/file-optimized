@@ -53,9 +53,21 @@ export default function GifEditor({ isOpen, onClose, gifData, onSave }) {
 
   useEffect(() => {
     if (frames.length > 0 && canvasRef.current) {
-      drawFrame(currentFrame);
+      // Small delay to ensure canvas is ready
+      requestAnimationFrame(() => {
+        drawFrame(currentFrame);
+      });
     }
   }, [currentFrame, frames, textOverlays]);
+
+  // Redraw when canvas ref becomes available
+  useEffect(() => {
+    if (canvasRef.current && frames.length > 0) {
+      requestAnimationFrame(() => {
+        drawFrame(currentFrame);
+      });
+    }
+  }, [canvasRef.current]);
 
   const loadGifFrames = async () => {
     try {
@@ -154,18 +166,21 @@ export default function GifEditor({ isOpen, onClose, gifData, onSave }) {
   const drawFrame = (frameIndex) => {
     const canvas = canvasRef.current;
     if (!canvas || !frames[frameIndex]) {
+      console.log('Cannot draw frame:', { canvas: !!canvas, frame: !!frames[frameIndex] });
       return;
     }
 
     const frame = frames[frameIndex];
     
     // Set canvas dimensions
-    if (canvas.width !== frame.width || canvas.height !== frame.height) {
-      canvas.width = frame.width;
-      canvas.height = frame.height;
-    }
+    canvas.width = frame.width;
+    canvas.height = frame.height;
     
-    const ctx = canvas.getContext('2d', { alpha: true });
+    const ctx = canvas.getContext('2d', { alpha: true, willReadFrequently: false });
+    if (!ctx) {
+      console.error('Failed to get canvas context');
+      return;
+    }
     
     // Clear and draw frame
     ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -178,6 +193,8 @@ export default function GifEditor({ isOpen, onClose, gifData, onSave }) {
       ctx.textAlign = overlay.align;
       ctx.fillText(overlay.text, overlay.x, overlay.y);
     });
+    
+    console.log('Frame drawn:', frameIndex, 'Size:', frame.width, 'x', frame.height);
   };
 
   const updateFrameDelay = (frameIndex, delay) => {
@@ -417,7 +434,11 @@ export default function GifEditor({ isOpen, onClose, gifData, onSave }) {
                   <canvas
                     ref={canvasRef}
                     className="max-w-full max-h-full bg-white dark:bg-slate-800 rounded-lg shadow-lg"
-                    style={{ imageRendering: 'pixelated' }}
+                    style={{ 
+                      imageRendering: 'auto',
+                      minWidth: '100px',
+                      minHeight: '100px'
+                    }}
                   />
                 ) : (
                   <div className="text-slate-400 text-sm">Loading frames...</div>
