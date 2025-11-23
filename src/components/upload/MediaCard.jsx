@@ -1831,11 +1831,10 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
       toast.error('Cannot convert format while animation is enabled.');
       return;
     }
-    // Video/audio conversion handled by native APIs
+    // Video/audio/GIF just change format selection - user must click Reprocess
     if (isVideo || isAudio || isGif) {
       setFormat(newFormat);
-      // Small delay to ensure state update before processing
-      setTimeout(() => processMedia(), 0);
+      toast.info(`Format set to ${newFormat.toUpperCase()}. Click Reprocess to convert.`);
       return;
     }
     setProcessing(true);
