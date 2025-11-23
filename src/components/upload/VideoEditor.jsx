@@ -714,8 +714,9 @@ Rules:
                 )}
               </div>
 
-              {/* Timeline */}
-              <div className="w-full max-w-3xl mt-4 space-y-2 px-4">
+              {/* Timeline with Trim Controls */}
+              <div className="w-full max-w-3xl mt-4 space-y-3 px-4">
+                {/* Playback position */}
                 <div className="flex items-center justify-between text-xs text-slate-600 dark:text-slate-400">
                   <span>{formatTime(currentTime)}</span>
                   <span>{formatTime(duration)}</span>
@@ -728,15 +729,103 @@ Rules:
                   className="w-full"
                   disabled={!duration || duration === 0}
                 />
+                
+                {/* Trim range selector */}
+                <div className="space-y-2 pt-2 border-t border-slate-200 dark:border-slate-800">
+                  <div className="flex items-center justify-between text-xs text-slate-600 dark:text-slate-400">
+                    <div className="flex items-center gap-2">
+                      <Scissors className="w-3 h-3" />
+                      <span>Trim: {formatTime(trimStart)} - {formatTime(trimEnd)}</span>
+                    </div>
+                    <span className="text-emerald-600 dark:text-emerald-400 font-medium">
+                      Duration: {formatTime(trimEnd - trimStart)}
+                    </span>
+                  </div>
+                  
+                  {/* Dual slider for trim range */}
+                  <div className="relative h-8 bg-slate-200 dark:bg-slate-800 rounded-lg overflow-hidden">
+                    {/* Trimmed region highlight */}
+                    <div
+                      className="absolute top-0 bottom-0 bg-emerald-500/30 dark:bg-emerald-500/20 border-x-2 border-emerald-500"
+                      style={{
+                        left: `${(trimStart / duration) * 100}%`,
+                        width: `${((trimEnd - trimStart) / duration) * 100}%`,
+                      }}
+                    />
+                    
+                    {/* Start handle */}
+                    <div
+                      className="absolute top-0 bottom-0 w-1 bg-emerald-600 cursor-ew-resize hover:w-2 transition-all group"
+                      style={{ left: `${(trimStart / duration) * 100}%` }}
+                      onMouseDown={(e) => {
+                        e.preventDefault();
+                        const startX = e.clientX;
+                        const startTrim = trimStart;
+                        
+                        const handleMouseMove = (moveEvent) => {
+                          const deltaX = moveEvent.clientX - startX;
+                          const rect = e.currentTarget.parentElement.getBoundingClientRect();
+                          const deltaTime = (deltaX / rect.width) * duration;
+                          const newTrimStart = Math.max(0, Math.min(trimEnd - 0.1, startTrim + deltaTime));
+                          setTrimStart(newTrimStart);
+                        };
+                        
+                        const handleMouseUp = () => {
+                          document.removeEventListener('mousemove', handleMouseMove);
+                          document.removeEventListener('mouseup', handleMouseUp);
+                          saveToHistory();
+                        };
+                        
+                        document.addEventListener('mousemove', handleMouseMove);
+                        document.addEventListener('mouseup', handleMouseUp);
+                      }}
+                    >
+                      <div className="absolute -left-2 top-1/2 -translate-y-1/2 w-4 h-6 bg-emerald-600 rounded shadow-lg flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                        <div className="w-1 h-3 bg-white rounded-full" />
+                      </div>
+                    </div>
+                    
+                    {/* End handle */}
+                    <div
+                      className="absolute top-0 bottom-0 w-1 bg-emerald-600 cursor-ew-resize hover:w-2 transition-all group"
+                      style={{ left: `${(trimEnd / duration) * 100}%` }}
+                      onMouseDown={(e) => {
+                        e.preventDefault();
+                        const startX = e.clientX;
+                        const startTrim = trimEnd;
+                        
+                        const handleMouseMove = (moveEvent) => {
+                          const deltaX = moveEvent.clientX - startX;
+                          const rect = e.currentTarget.parentElement.getBoundingClientRect();
+                          const deltaTime = (deltaX / rect.width) * duration;
+                          const newTrimEnd = Math.max(trimStart + 0.1, Math.min(duration, startTrim + deltaTime));
+                          setTrimEnd(newTrimEnd);
+                        };
+                        
+                        const handleMouseUp = () => {
+                          document.removeEventListener('mousemove', handleMouseMove);
+                          document.removeEventListener('mouseup', handleMouseUp);
+                          saveToHistory();
+                        };
+                        
+                        document.addEventListener('mousemove', handleMouseMove);
+                        document.addEventListener('mouseup', handleMouseUp);
+                      }}
+                    >
+                      <div className="absolute -right-2 top-1/2 -translate-y-1/2 w-4 h-6 bg-emerald-600 rounded shadow-lg flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                        <div className="w-1 h-3 bg-white rounded-full" />
+                      </div>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
 
           {/* Controls Sidebar */}
           <div className="w-full lg:w-80 border-l border-slate-200 dark:border-slate-800 overflow-y-auto">
-            <Tabs defaultValue="trim" className="w-full">
-              <TabsList className="w-full grid grid-cols-4 text-xs">
-                <TabsTrigger value="trim">Trim</TabsTrigger>
+            <Tabs defaultValue="adjust" className="w-full">
+              <TabsList className="w-full grid grid-cols-3 text-xs">
                 <TabsTrigger value="adjust">Visual</TabsTrigger>
                 <TabsTrigger value="audio">Audio</TabsTrigger>
                 <TabsTrigger value="captions">
@@ -745,42 +834,6 @@ Rules:
               </TabsList>
 
               <div className="p-4 space-y-4">
-                <TabsContent value="trim" className="space-y-4 mt-0">
-                  <div className="space-y-2">
-                    <div className="flex items-center gap-2">
-                      <Scissors className="w-4 h-4 text-slate-500" />
-                      <label className="text-sm font-medium text-slate-700 dark:text-slate-300">
-                        Start: {formatTime(trimStart)}
-                      </label>
-                    </div>
-                    <Slider
-                      value={[trimStart]}
-                      onValueChange={(v) => setTrimStart(Math.min(v[0], trimEnd - 0.1))}
-                      onValueCommit={saveToHistory}
-                      max={duration}
-                      step={0.1}
-                      className="w-full"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium text-slate-700 dark:text-slate-300">
-                      End: {formatTime(trimEnd)}
-                    </label>
-                    <Slider
-                      value={[trimEnd]}
-                      onValueChange={(v) => setTrimEnd(Math.max(v[0], trimStart + 0.1))}
-                      onValueCommit={saveToHistory}
-                      max={duration}
-                      step={0.1}
-                      className="w-full"
-                    />
-                  </div>
-                  <div className="p-3 bg-emerald-50 dark:bg-emerald-950/20 rounded-lg border border-emerald-200 dark:border-emerald-800">
-                    <p className="text-xs text-emerald-700 dark:text-emerald-400">
-                      Duration: {formatTime(trimEnd - trimStart)}
-                    </p>
-                  </div>
-                </TabsContent>
 
                 <TabsContent value="adjust" className="space-y-4 mt-0">
                   <div className="space-y-2">
