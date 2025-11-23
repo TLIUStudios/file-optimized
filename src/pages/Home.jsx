@@ -8,9 +8,11 @@ import { toast } from "sonner";
 import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
 import { cn } from "@/lib/utils";
 import { base44 } from "@/api/base44Client";
-import LoginPromptModal from "../components/LoginPromptModal";
-import ProUpgradeModal from "../components/ProUpgradeModal";
 import AnimatedMediaIcon from "../components/AnimatedMediaIcon";
+import SEOHead from "../components/SEOHead";
+
+const LoginPromptModal = lazy(() => import("../components/LoginPromptModal"));
+const ProUpgradeModal = lazy(() => import("../components/ProUpgradeModal"));
 
 // Lazy load heavy components for better performance
 const MediaCard = lazy(() => import("../components/upload/MediaCard"));
@@ -306,7 +308,12 @@ export default function Home() {
   const isPro = userPlan === 'pro';
 
   return (
-    <div className="max-w-7xl mx-auto">
+    <>
+      <SEOHead 
+        title="File Optimized - Compress, Upscale & Convert Media Files"
+        description="Professional file optimization tool. Compress images up to 90%, upscale photos with AI, convert between formats. Fast, secure, and privacy-focused. Free & Pro plans available."
+      />
+      <div className="max-w-7xl mx-auto">
       {/* Hero Section */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
@@ -583,30 +590,39 @@ export default function Home() {
       }
 
       {/* Pro Upgrade Modal */}
-      {showProModal &&
-      <ProUpgradeModal
-        key={`pro-modal-${Date.now()}`}
-        isOpen={showProModal}
-        onClose={() => {
-          setShowProModal(false);
-          setUpgradeError(null);
-          setProcessingCheckout(false);
-        }}
-        onUpgrade={handleUpgradeToPro}
-        processing={processingCheckout}
-        error={upgradeError}
-        userPlan={userPlan} />
-
-      }
+      {showProModal && (
+        <Suspense fallback={null}>
+          <ProUpgradeModal
+            key={`pro-modal-${Date.now()}`}
+            isOpen={showProModal}
+            onClose={() => {
+              setShowProModal(false);
+              setUpgradeError(null);
+              setProcessingCheckout(false);
+            }}
+            onUpgrade={handleUpgradeToPro}
+            processing={processingCheckout}
+            error={upgradeError}
+            userPlan={userPlan}
+          />
+        </Suspense>
+      )}
 
       {/* Login Prompt Modal */}
-      <LoginPromptModal
-        isOpen={showLoginPrompt}
-        onClose={() => setShowLoginPrompt(false)}
-        onLogin={handleLoginFromPrompt}
-        context="upgrade"
-        userPlan={userPlan} />
+      {showLoginPrompt && (
+        <Suspense fallback={null}>
+          <LoginPromptModal
+            isOpen={showLoginPrompt}
+            onClose={() => setShowLoginPrompt(false)}
+            onLogin={handleLoginFromPrompt}
+            context="upgrade"
+            userPlan={userPlan}
+          />
+        </Suspense>
+      )}
 
-    </div>);
+    </div>
+    </>
+  );
 
 }
