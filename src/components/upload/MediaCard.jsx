@@ -2552,11 +2552,46 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
                 <Info className="w-3 h-3 text-slate-400 cursor-help" />
               </TooltipTrigger>
               <TooltipContent className="max-w-xs">
-                <div className="space-y-1 text-xs">
-                  {isImage && <p>• Max Resolution: 8K (7680px)</p>}
-                  {isVideo && <p>• Max Duration: 120 seconds</p>}
-                  {isGif && <p>• Max Frames: 500 frames</p>}
-                  {isVideo && format === 'gif' && <p>• GIF from Video: 10s, 100 frames</p>}
+                <div className="space-y-2 text-xs">
+                  {isImage && !isGif && (
+                    <div>
+                      <p className="font-semibold text-slate-900 dark:text-white mb-0.5">Images:</p>
+                      <p>Max Resolution: 8K (7680px)</p>
+                    </div>
+                  )}
+                  {isVideo && (
+                    <div>
+                      <p className="font-semibold text-slate-900 dark:text-white mb-0.5">Video:</p>
+                      <p>Max Duration: 120 seconds</p>
+                      <p>Max Resolution: 8K (7680px)</p>
+                      {format === 'gif' && (
+                        <>
+                          <p className="font-semibold text-slate-900 dark:text-white mt-1 mb-0.5">Video to GIF:</p>
+                          <p>Max Duration: 10 seconds</p>
+                          <p>Max Frames: 100 frames</p>
+                        </>
+                      )}
+                    </div>
+                  )}
+                  {isGif && (
+                    <div>
+                      <p className="font-semibold text-slate-900 dark:text-white mb-0.5">GIF:</p>
+                      <p>Max Frames: 500 frames</p>
+                      <p>Max Resolution: 8K (7680px)</p>
+                      {format === 'mp4' && (
+                        <>
+                          <p className="font-semibold text-slate-900 dark:text-white mt-1 mb-0.5">GIF to Video:</p>
+                          <p>Max Frames: 500 frames</p>
+                        </>
+                      )}
+                    </div>
+                  )}
+                  {isAudio && (
+                    <div>
+                      <p className="font-semibold text-slate-900 dark:text-white mb-0.5">Audio:</p>
+                      <p>No specific limits</p>
+                    </div>
+                  )}
                 </div>
               </TooltipContent>
             </Tooltip>
