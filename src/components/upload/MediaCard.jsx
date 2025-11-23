@@ -1091,9 +1091,11 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
       if (processedFrames.length === 0) throw new Error('No frames processed');
       const GIF = window.GIF;
       // Map user quality to gif.js quality (1=best/largest, 10=worst/smallest)
-      // Default 85% -> gif.js 7 for good compression
-      // Lower user quality = higher gif.js number = more compression
-      const gifQuality = Math.max(1, Math.min(10, Math.round((100 - quality) / 10)));
+      // For actual compression, we need to use higher quality numbers
+      // Quality 85% -> gif.js 6 (good compression ~30-40%)
+      // Quality 70% -> gif.js 8 (more compression ~40-50%)
+      // Quality 50% -> gif.js 9 (aggressive ~50-60%)
+      const gifQuality = Math.max(1, Math.min(10, Math.round(10 - (quality / 10))));
 
       const gif = new GIF({
         workers: 4,
@@ -1117,31 +1119,8 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
       });
       if (!gifBlob || gifBlob.size === 0) throw new Error('Encoding failed');
 
-      // Only use original if compressed is significantly larger (20%+)
-      if (gifBlob.size >= originalBlob.size * 1.2) {
-        const compressedUrl = URL.createObjectURL(originalBlob);
-        setCompressedPreview(compressedUrl);
-        setCompressedSize(originalBlob.size);
-        setCompressedBlob(originalBlob);
-        setProcessed(true);
-        setOutputFormat('gif');
-        setOutputGifFrameCount(gifFrameCount);
-        onProcessed({
-          id: image.name,
-          originalFile: image,
-          compressedBlob: originalBlob,
-          compressedUrl: compressedUrl,
-          originalSize: image.size,
-          compressedSize: originalBlob.size,
-          format: 'gif',
-          filename: getOutputFilename('gif'),
-          mediaType: 'image',
-          fileFormat: 'gif',
-          originalFileFormat: originalFormat
-        });
-        toast.info('GIF already optimized - using original');
-        return;
-      }
+      // Don't use original - always use compressed version
+      // (If quality is too high and user wants smaller file, they should lower quality)
 
       const compressedUrl = URL.createObjectURL(gifBlob);
       setCompressedPreview(compressedUrl);
