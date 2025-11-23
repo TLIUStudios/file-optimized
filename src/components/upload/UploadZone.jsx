@@ -186,10 +186,10 @@ export default function UploadZone({ onFilesSelected, isDragActive, onDragStateC
           </div>
           <div className="mt-3 text-xs text-slate-500 dark:text-slate-400 space-y-1">
             <p>
-              <strong>Free Plan:</strong> • Max 9 files batch upload • 50MB per file • Standard processing speeds • Displays Ads
+              <strong>Free Plan:</strong> • Max 9 files batch upload • 50MB per file • Standard processing speeds • No Watermark • Displays Ads
             </p>
             <p>
-              <strong>Pro Plan:</strong> • Max 30 files batch upload • 500MB per file • Priority processing speeds • No Ads • Supports future TLIU Studios projects
+              <strong>Pro Plan:</strong> • Max 30 files batch upload • 500MB per file • Priority processing speeds • No Watermark • No Ads • Supports future TLIU Studios projects
             </p>
           </div>
           {isPro && (
@@ -198,7 +198,7 @@ export default function UploadZone({ onFilesSelected, isDragActive, onDragStateC
             </div>
           )}
           <p className="text-xs text-slate-400 dark:text-slate-500 mt-2">
-            🔒 Secure: Only approved file types accepted
+            🔒 Secure: Only approved file types accepted.
           </p>
         </div>
       </div>
