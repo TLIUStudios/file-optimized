@@ -41,6 +41,7 @@ export default function Profile() {
   const [showLoginPrompt, setShowLoginPrompt] = useState(false);
   const [selectedTheme, setSelectedTheme] = useState('none');
   const [savingTheme, setSavingTheme] = useState(false);
+  const [billingFrequency, setBillingFrequency] = useState('monthly');
 
   // Load user data
   useEffect(() => {
@@ -316,6 +317,33 @@ export default function Profile() {
             <Card className="p-6">
               <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-4">Your Plan</h3>
               
+              {/* Billing Frequency Toggle */}
+              <div className="flex items-center justify-center gap-2 p-1 bg-slate-100 dark:bg-slate-900 rounded-lg mb-4">
+                <button
+                  onClick={() => setBillingFrequency('monthly')}
+                  className={`flex-1 px-4 py-2 rounded-md text-sm font-medium transition-all ${
+                    billingFrequency === 'monthly'
+                      ? 'bg-white dark:bg-slate-800 text-slate-900 dark:text-white shadow-sm'
+                      : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                  }`}
+                >
+                  Monthly
+                </button>
+                <button
+                  onClick={() => setBillingFrequency('annual')}
+                  className={`flex-1 px-4 py-2 rounded-md text-sm font-medium transition-all relative ${
+                    billingFrequency === 'annual'
+                      ? 'bg-white dark:bg-slate-800 text-slate-900 dark:text-white shadow-sm'
+                      : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                  }`}
+                >
+                  Annual
+                  <Badge className="absolute -top-2 -right-2 bg-emerald-600 text-white text-[10px] px-1.5 py-0.5">
+                    Save 17%
+                  </Badge>
+                </button>
+              </div>
+
               {/* Plan Comparison Grid */}
               <div className="grid grid-cols-2 gap-4 mb-4">
                 {/* Free Plan */}
@@ -365,7 +393,19 @@ export default function Profile() {
                     <Zap className="w-4 h-4 text-amber-600" />
                     Pro Plan
                   </h4>
-                  <p className="text-2xl font-bold text-center text-amber-600 dark:text-amber-500 mb-3">$10<span className="text-sm">/mo</span></p>
+                  <div className="text-center mb-3">
+                    <p className="text-2xl font-bold text-amber-600 dark:text-amber-500">
+                      {billingFrequency === 'annual' ? '$100' : '$10'}
+                      <span className="text-sm">{billingFrequency === 'annual' ? '/yr' : '/mo'}</span>
+                    </p>
+                    <div className="h-4 mt-1">
+                      {billingFrequency === 'annual' && (
+                        <p className="text-xs text-emerald-600 dark:text-emerald-400 font-medium">
+                          Save $20/year vs monthly
+                        </p>
+                      )}
+                    </div>
+                  </div>
                   <div className="space-y-2">
                     <div className="flex items-center gap-2 text-xs text-slate-900 dark:text-white font-medium">
                       <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 flex-shrink-0" />
@@ -450,7 +490,7 @@ export default function Profile() {
                   className="w-full bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white"
                 >
                   <Sparkles className="w-4 h-4 mr-2" />
-                  Upgrade to Pro
+                  Upgrade to Pro - {billingFrequency === 'annual' ? '$100/yr' : '$10/mo'}
                 </Button>
               )}
             </Card>

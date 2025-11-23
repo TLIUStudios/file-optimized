@@ -133,11 +133,13 @@ export default function ProUpgradeModal({ isOpen, onClose, onUpgrade, processing
                 <p className="text-2xl font-bold text-amber-600 dark:text-amber-500">
                   {price}<span className="text-sm">{period}</span>
                 </p>
-                {isAnnual && (
-                  <p className="text-xs text-emerald-600 dark:text-emerald-400 font-medium mt-1">
-                    Save $20/year vs monthly
-                  </p>
-                )}
+                <div className="h-4 mt-1">
+                  {isAnnual && (
+                    <p className="text-xs text-emerald-600 dark:text-emerald-400 font-medium">
+                      Save $20/year vs monthly
+                    </p>
+                  )}
+                </div>
               </div>
               <div className="space-y-2">
                 <div className="flex items-center gap-2 text-xs text-slate-900 dark:text-white font-medium">
