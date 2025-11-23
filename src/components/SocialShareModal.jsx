@@ -12,26 +12,26 @@ export default function SocialShareModal({ isOpen, onClose, imageUrl, fileName }
     
     switch (platform) {
       case 'facebook':
-        url = `https://www.facebook.com/sharer/sharer.php?u=${shareUrl}`;
+        url = 'https://www.facebook.com';
         break;
       case 'twitter':
-        url = `https://twitter.com/intent/tweet?url=${shareUrl}&text=${shareText}`;
+        url = 'https://twitter.com';
         break;
       case 'linkedin':
-        url = `https://www.linkedin.com/sharing/share-offsite/?url=${shareUrl}`;
+        url = 'https://www.linkedin.com';
         break;
       case 'whatsapp':
-        url = `https://wa.me/?text=${shareText}%20${shareUrl}`;
+        url = 'https://web.whatsapp.com';
         break;
       case 'pinterest':
-        url = `https://pinterest.com/pin/create/button/?url=${shareUrl}&media=${encodeURIComponent(imageUrl)}&description=${shareText}`;
+        url = 'https://www.pinterest.com';
         break;
       default:
         return;
     }
 
-    window.open(url, '_blank', 'width=600,height=400');
-    toast.success(`Opening ${platform}...`);
+    window.open(url, '_blank');
+    toast.info(`Opening ${platform}...`);
   };
 
   const handleCopyLink = () => {
@@ -39,21 +39,7 @@ export default function SocialShareModal({ isOpen, onClose, imageUrl, fileName }
     toast.success('Link copied to clipboard!');
   };
 
-  const handleDownload = async () => {
-    try {
-      const response = await fetch(imageUrl);
-      const blob = await response.blob();
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = fileName;
-      a.click();
-      URL.revokeObjectURL(url);
-      toast.success('Downloaded!');
-    } catch (error) {
-      toast.error('Download failed');
-    }
-  };
+
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -119,7 +105,7 @@ export default function SocialShareModal({ isOpen, onClose, imageUrl, fileName }
             </Button>
           </div>
 
-          <div className="border-t pt-4 space-y-2">
+          <div className="border-t pt-4 space-y-3">
             <Button
               variant="secondary"
               onClick={handleCopyLink}
@@ -127,13 +113,11 @@ export default function SocialShareModal({ isOpen, onClose, imageUrl, fileName }
             >
               Copy Link
             </Button>
-            <Button
-              variant="outline"
-              onClick={handleDownload}
-              className="w-full"
-            >
-              Download Instead
-            </Button>
+            
+            <div className="text-xs text-slate-500 dark:text-slate-400 bg-slate-50 dark:bg-slate-900 rounded-lg p-3 border border-slate-200 dark:border-slate-800">
+              <p className="font-medium mb-1">Note:</p>
+              <p>This feature is currently disabled as we don't store any files uploaded to the platform. All processing happens locally in your browser for maximum privacy and security.</p>
+            </div>
           </div>
         </div>
       </DialogContent>
