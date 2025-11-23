@@ -1916,21 +1916,9 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
       <div className="flex items-center justify-between px-4 py-2 border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900">
         <div className="flex items-start gap-2">
           {MediaIcon && <MediaIcon className="w-4 h-4 text-slate-400 flex-shrink-0 mt-0.5" />}
-          <div className="flex flex-col">
-            <span className="text-xs font-medium text-slate-500 dark:text-slate-400">
-              {isVideo ? 'Video' : isAudio ? 'Audio' : isGif ? 'GIF' : isImage ? 'Image' : 'File'}
-            </span>
-            {isGif && gifFrameCount > 0 && (
-              <span className="text-xs font-medium text-emerald-600 dark:text-emerald-400">
-                {gifFrameCount} frames
-              </span>
-            )}
-            {isGif && processed && outputGifFrameCount > 0 && (
-              <span className="text-xs font-medium text-emerald-600 dark:text-emerald-400">
-                {outputGifFrameCount} frames
-              </span>
-            )}
-          </div>
+          <span className="text-xs font-medium text-slate-500 dark:text-slate-400">
+            {isVideo ? 'Video' : isAudio ? 'Audio' : isGif ? 'GIF' : isImage ? 'Image' : 'File'}
+          </span>
         </div>
         <Button 
           variant="ghost" 
@@ -1961,6 +1949,9 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
               ) : null}
               <Badge className="absolute top-2 left-2 bg-slate-900/80 text-white">Original</Badge>
               <Badge className="absolute bottom-2 right-2 bg-slate-900/95 backdrop-blur-sm text-white border border-slate-700 text-xs px-2 py-1 font-bold shadow-lg">{originalExt}</Badge>
+              {isGif && gifFrameCount > 0 && (
+                <Badge className="absolute bottom-2 left-2 bg-emerald-600/95 backdrop-blur-sm text-white border border-emerald-500 text-xs px-2 py-1 font-bold shadow-lg">{gifFrameCount} frames</Badge>
+              )}
               {isImage && !isGif && (
                 <Button variant="ghost" size="icon" onClick={(e) => { e.stopPropagation(); handleEditImage(); }} className="absolute top-2 right-2 bg-white/80 hover:bg-white dark:bg-slate-800/80 dark:hover:bg-slate-800 h-7 w-7 rounded-lg">
                   <Edit2 className="w-3 h-3" />
@@ -1968,7 +1959,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
               )}
               {isGif && (
                 <Button variant="ghost" size="icon" onClick={(e) => { e.stopPropagation(); setShowGifEditor(true); }} className="absolute top-2 right-2 bg-white/80 hover:bg-white dark:bg-slate-800/80 dark:hover:bg-slate-800 h-7 w-7 rounded-lg">
-                  <Wand2 className="w-3 h-3" />
+                  <Edit2 className="w-3 h-3" />
                 </Button>
               )}
             </div>
@@ -1983,10 +1974,13 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
               ) : null}
               <Badge className="absolute top-2 left-2 bg-emerald-600 text-white">Compressed</Badge>
               <Badge className="absolute bottom-2 right-2 bg-emerald-600/95 backdrop-blur-sm text-white border border-emerald-500 text-xs px-2 py-1 font-bold shadow-lg">{displayCompressedExt}</Badge>
+              {isGif && outputGifFrameCount > 0 && (
+                <Badge className="absolute bottom-2 left-2 bg-emerald-600/95 backdrop-blur-sm text-white border border-emerald-500 text-xs px-2 py-1 font-bold shadow-lg">{outputGifFrameCount} frames</Badge>
+              )}
             </div>
           ) : (
             <div className="aspect-square rounded-lg bg-slate-200 dark:bg-slate-800 flex items-center justify-center">
-              <p className="text-sm text-slate-400 text-center px-2">Preview after compression</p>
+              <p className="text-sm text-slate-400 text-center px-2">Preview after Optimizing Asset</p>
             </div>
           )}
         </div>
