@@ -780,8 +780,9 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
       
       const targetWidth = maxWidth || Math.min(480, video.videoWidth);
       const targetHeight = Math.round((targetWidth / video.videoWidth) * video.videoHeight);
-      const fps = Math.max(5, Math.round((frameRate || 30) / 3));
-      const duration = video.duration;
+      // Use higher FPS for smoother GIF (15 fps is good balance between quality and size)
+      const fps = 15;
+      const duration = Math.min(video.duration, 10); // Limit to 10 seconds for reasonable file size
       const frameInterval = 1 / fps;
       
       const canvas = document.createElement('canvas');
@@ -814,11 +815,12 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
       const GIF = window.GIF;
       const gif = new GIF({
         workers: 4,
-        quality: 10,
+        quality: 5, // Better quality for smoother appearance
         width: targetWidth,
         height: targetHeight,
         workerScript: workerBlobUrl,
         repeat: 0,
+        dither: false,
       });
       
       for (const frame of frames) {
@@ -910,7 +912,10 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
       const { Muxer, ArrayBufferTarget } = await import('https://cdn.jsdelivr.net/npm/mp4-muxer@5.1.3/+esm');
       
       const target = new ArrayBufferTarget();
-      const fps = 10; // Standard GIF playback rate
+      
+      // Calculate average FPS from GIF frame delays for smooth playback
+      const avgDelay = frames.reduce((sum, f) => sum + (f.delay || 100), 0) / frames.length;
+      const fps = Math.round(1000 / avgDelay); // Convert delay (ms) to FPS
       
       const muxer = new Muxer({
         target,
