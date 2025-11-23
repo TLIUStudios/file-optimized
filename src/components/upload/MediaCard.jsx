@@ -1915,19 +1915,30 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
       {/* Header with close button and media type */}
       <div className="flex items-center justify-between px-4 py-2 border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900">
         <div className="flex items-center gap-2">
-          {MediaIcon && <MediaIcon className="w-4 h-4 text-slate-400 flex-shrink-0" />}
-          <span className="text-xs font-medium text-slate-500 dark:text-slate-400">
-            {isVideo ? 'Video' : isAudio ? 'Audio' : isGif ? 'GIF' : isImage ? 'Image' : 'File'}
-          </span>
-          {isGif && gifFrameCount > 0 && (
-            <span className="text-xs font-medium text-emerald-600 dark:text-emerald-400">
-              • {gifFrameCount} frames
-            </span>
-          )}
-          {isGif && processed && outputGifFrameCount > 0 && (
-            <span className="text-xs font-medium text-emerald-600 dark:text-emerald-400">
-              • {outputGifFrameCount} frames
-            </span>
+          {isGif ? (
+            <>
+              {MediaIcon && <MediaIcon className="w-4 h-4 text-slate-400 flex-shrink-0" />}
+              <div className="flex flex-col">
+                <span className="text-xs font-medium text-slate-500 dark:text-slate-400">GIF</span>
+                {gifFrameCount > 0 && (
+                  <span className="text-xs font-medium text-emerald-600 dark:text-emerald-400">
+                    {gifFrameCount} frames
+                  </span>
+                )}
+                {processed && outputGifFrameCount > 0 && (
+                  <span className="text-xs font-medium text-emerald-600 dark:text-emerald-400">
+                    {outputGifFrameCount} frames
+                  </span>
+                )}
+              </div>
+            </>
+          ) : (
+            <>
+              {MediaIcon && <MediaIcon className="w-4 h-4 text-slate-400 flex-shrink-0" />}
+              <span className="text-xs font-medium text-slate-500 dark:text-slate-400">
+                {isVideo ? 'Video' : isAudio ? 'Audio' : isImage ? 'Image' : 'File'}
+              </span>
+            </>
           )}
         </div>
         <Button 
