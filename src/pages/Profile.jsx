@@ -838,7 +838,7 @@ export default function Profile() {
                 <Button variant="outline" className="w-full justify-start" asChild>
                   <a href="https://www.tliu.co/donate" target="_blank" rel="noopener noreferrer">
                     <Star className="w-4 h-4 mr-2" />
-                    Support TLIU Studios
+                    Support Us
                   </a>
                 </Button>
               </div>
