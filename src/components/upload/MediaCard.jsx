@@ -2549,7 +2549,17 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
       />
       {showMetadataViewer && fileMetadata && (
         <Dialog open={showMetadataViewer} onOpenChange={setShowMetadataViewer}>
-          <DialogContent className="sm:max-w-[425px]">
+          <DialogContent className="sm:max-w-[425px] [&>button]:hidden">
+            <div className="absolute top-4 right-4 z-50">
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setShowMetadataViewer(false)}
+                className="bg-slate-900/90 dark:bg-slate-900/90 hover:bg-red-600 dark:hover:bg-red-600 text-white rounded-lg transition-colors shadow-lg h-8 w-8"
+              >
+                <X className="w-4 h-4" />
+              </Button>
+            </div>
             <DialogHeader>
               <DialogTitle>File Metadata</DialogTitle>
               <DialogDescription>Detailed information about your file.</DialogDescription>
