@@ -2468,11 +2468,11 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
                   variant={settingsChanged ? "default" : "outline"} 
                   className={cn(
                     "flex-1 text-sm relative overflow-hidden",
-                    settingsChanged && "bg-red-600 hover:bg-red-700 text-white"
+                    settingsChanged && "bg-emerald-600 hover:bg-emerald-700 text-white"
                   )} 
                   disabled={processing || (((isGif && format === 'gif') || (isImage && !isGif && enableAnimation)) && !gifJsLoaded)}
                 >
-                  {processing && <div className="absolute inset-0 bg-red-500 transition-all duration-300 ease-linear" style={{ width: `${processingProgress}%`, left: 0 }} />}
+                  {processing && <div className="absolute inset-0 bg-emerald-500 transition-all duration-300 ease-linear" style={{ width: `${processingProgress}%`, left: 0 }} />}
                   <span className="relative z-10 flex items-center justify-center">
                     <RefreshCcw className={cn("w-4 h-4 mr-2", processing && "animate-spin")} />
                     <span className="hidden sm:inline">{processing ? `${Math.round(processingProgress)}%` : 'Reprocess'}</span>
