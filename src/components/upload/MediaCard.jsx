@@ -1956,8 +1956,8 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
             </div>
           )}
         </div>
-        <Button variant="ghost" size="icon" onClick={onRemove} className="absolute top-1 right-1 sm:top-0 sm:right-2 bg-slate-900/90 dark:bg-slate-900/90 hover:bg-red-600 dark:hover:bg-red-600 text-white rounded-lg transition-colors z-20 shadow-lg h-8 w-8 sm:h-10 sm:w-10">
-          <X className="w-3 h-3 sm:w-4 sm:h-4" />
+        <Button variant="ghost" size="icon" onClick={onRemove} className="absolute -top-3 right-2 bg-slate-900/90 dark:bg-slate-900/90 hover:bg-red-600 dark:hover:bg-red-600 text-white rounded-lg transition-colors z-20 shadow-lg h-8 w-8">
+          <X className="w-4 h-4" />
         </Button>
       </div>
 
