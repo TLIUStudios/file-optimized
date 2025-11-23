@@ -83,7 +83,11 @@ export default function ImageComparisonModal({
   fileFormat = 'webp',
   originalFileFormat = null,
   generatedAnimations = null, // Add this prop for animation variations
-  onFilenameChange = null // Callback to sync filename changes back to parent
+  onFilenameChange = null, // Callback to sync filename changes back to parent
+  cachedFormatData = null, // Pre-cached format blobs and sizes
+  cachedSeoMetadata = null, // Pre-cached SEO metadata
+  onFormatDataCached = null, // Callback to cache format data
+  onSeoMetadataCached = null // Callback to cache SEO metadata
 }) {
   const [sliderPosition, setSliderPosition] = useState(50);
   const [isDragging, setIsDragging] = useState(false);
@@ -106,6 +110,7 @@ export default function ImageComparisonModal({
   const [originalResolution, setOriginalResolution] = useState(null);
   const [compressedResolution, setCompressedResolution] = useState(null);
   const [showSocialShare, setShowSocialShare] = useState(false);
+  const [seoGenerationTime, setSeoGenerationTime] = useState(6); // Estimated time for SEO generation
 
 
   const containerRef = useRef(null);
@@ -172,10 +177,32 @@ export default function ImageComparisonModal({
     }
   }, [originalImage, mediaType]);
 
+  // Load cached SEO metadata if available
+  useEffect(() => {
+    if (cachedSeoMetadata) {
+      setAiTitle(cachedSeoMetadata.title || "");
+      setAiDescription(cachedSeoMetadata.description || "");
+      setAiCategory(cachedSeoMetadata.category || "");
+      setAiMood(cachedSeoMetadata.mood || "");
+      setAiAltText(cachedSeoMetadata.altText || "");
+      setAiTags(cachedSeoMetadata.tags || "");
+      setAiKeywords(cachedSeoMetadata.keywords || "");
+      setAiHashtags(cachedSeoMetadata.hashtags || "");
+    }
+  }, [cachedSeoMetadata]);
+
   // Calculate sizes for all formats AND cache the blobs
   useEffect(() => {
     const calculateAllFormatSizes = async () => {
       if (mediaType !== 'image' || isAnimationVariations) {
+        setLoadingFormatSizes(false);
+        return;
+      }
+
+      // Use cached data if available
+      if (cachedFormatData) {
+        setAllFormatSizes(cachedFormatData.sizes);
+        setCachedFormatBlobs(cachedFormatData.blobs);
         setLoadingFormatSizes(false);
         return;
       }
@@ -283,6 +310,11 @@ export default function ImageComparisonModal({
 
         setAllFormatSizes(sizes);
         setCachedFormatBlobs(blobs);
+        
+        // Cache the data for reuse
+        if (onFormatDataCached) {
+          onFormatDataCached({ sizes, blobs });
+        }
       } catch (error) {
         console.error('Error calculating format sizes:', error);
       } finally {
@@ -291,7 +323,7 @@ export default function ImageComparisonModal({
     };
 
     calculateAllFormatSizes();
-  }, [compressedImage, mediaType, isAnimationVariations, fileFormat, compressedSize]);
+  }, [compressedImage, mediaType, isAnimationVariations, fileFormat, compressedSize, cachedFormatData, onFormatDataCached]);
 
   const generateMetadata = async () => {
     console.log('🚀 Starting AI metadata generation...');
@@ -353,6 +385,21 @@ export default function ImageComparisonModal({
       setAiTags(aiResult.tags || "image, photo");
       setAiKeywords(aiResult.keywords || "image, photo, digital");
       setAiHashtags(aiResult.hashtags || "#image #photo");
+      
+      // Cache the SEO metadata for reuse
+      if (onSeoMetadataCached) {
+        onSeoMetadataCached({
+          title: aiResult.title || "Generated Title",
+          description: aiResult.description || "Generated description of the image.",
+          category: aiResult.category || "General",
+          mood: aiResult.mood || "Neutral",
+          altText: aiResult.alt_text || "Image description",
+          tags: aiResult.tags || "image, photo",
+          keywords: aiResult.keywords || "image, photo, digital",
+          hashtags: aiResult.hashtags || "#image #photo"
+        });
+      }
+      
       toast.success('Metadata generated!');
 
     } catch (error) {
@@ -456,6 +503,21 @@ export default function ImageComparisonModal({
         case "hashtags":
           setAiHashtags(aiResult.hashtags || "#image #photo");
           break;
+      }
+
+      // Update cached metadata after regeneration
+      if (onSeoMetadataCached) {
+        onSeoMetadataCached({
+          title: aiTitle,
+          description: aiDescription,
+          category: aiCategory,
+          mood: aiMood,
+          altText: aiAltText,
+          tags: aiTags,
+          keywords: aiKeywords,
+          hashtags: aiHashtags,
+          [fieldName === 'alt_text' ? 'altText' : fieldName]: aiResult[fieldName]
+        });
       }
 
       toast.success(`${fieldName.charAt(0).toUpperCase() + fieldName.slice(1)} regenerated!`);
@@ -1323,7 +1385,10 @@ export default function ImageComparisonModal({
                     {isGenerating ? (
                       <div className="bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg p-6 text-center">
                         <RefreshCw className="w-6 h-6 animate-spin mx-auto mb-2 text-slate-400" />
-                        <p className="text-xs text-slate-500 dark:text-slate-400">Analyzing image with AI...</p>
+                        <p className="text-xs text-slate-500 dark:text-slate-400 mb-2">Analyzing image with AI...</p>
+                        <Badge variant="outline" className="border-blue-300 text-blue-700 dark:border-blue-700 dark:text-blue-400">
+                          ~{seoGenerationTime}s
+                        </Badge>
                       </div>
                     ) : hasAnyMetadata ? (
                       <div className="space-y-2">

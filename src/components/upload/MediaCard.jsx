@@ -68,6 +68,8 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
   const [showMetadataViewer, setShowMetadataViewer] = useState(false);
   const [fileMetadata, setFileMetadata] = useState(null);
   const [showSocialShare, setShowSocialShare] = useState(false);
+  const [cachedFormatData, setCachedFormatData] = useState(null);
+  const [cachedSeoMetadata, setCachedSeoMetadata] = useState(null);
   const isImage = image?.type?.startsWith('image/') || false;
   const isVideo = image?.type?.startsWith('video/') || false;
   const isAudio = image?.type?.startsWith('audio/') || false;
@@ -361,6 +363,9 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
     setOutputFormat(null);
     setOutputGifFrameCount(0);
     setSettingsChanged(false);
+    // Clear cached data on reprocess
+    setCachedFormatData(null);
+    setCachedSeoMetadata(null);
     try {
       if (isImage && !isGif && enableAnimation) await processImageToAnimation();
       else if (isVideo) await processVideo();
@@ -1831,9 +1836,21 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
         fileName: getOutputFilename(),
         mediaType: isVideo ? 'video' : isAudio ? 'audio' : 'image',
         fileFormat: outputFormat || format,
-        originalFileFormat: originalFormat
+        originalFileFormat: originalFormat,
+        cachedFormatData,
+        cachedSeoMetadata
       });
     }
+  };
+
+  // Store format data callback
+  const handleFormatDataCached = (formatData) => {
+    setCachedFormatData(formatData);
+  };
+
+  // Store SEO metadata callback
+  const handleSeoMetadataCached = (seoData) => {
+    setCachedSeoMetadata(seoData);
   };
 
   const handleEditImage = () => setShowEditor(true);
