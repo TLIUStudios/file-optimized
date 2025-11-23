@@ -825,6 +825,25 @@ export default function Profile() {
               </div>
             </Card>
           </motion.div>
+
+          {/* Donate Card */}
+          <motion.div
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.6 }}
+          >
+            <Card className="p-6">
+              <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-4">Donate</h3>
+              <div className="space-y-2">
+                <Button variant="outline" className="w-full justify-start" asChild>
+                  <a href="https://www.tliu.co/donate" target="_blank" rel="noopener noreferrer">
+                    <Star className="w-4 h-4 mr-2" />
+                    Support TLIU Studios
+                  </a>
+                </Button>
+              </div>
+            </Card>
+          </motion.div>
         </div>
       </div>
 
