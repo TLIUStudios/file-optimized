@@ -88,6 +88,21 @@ export default function Home() {
     });
   };
 
+  const handleFilenameChange = (id, newFilename) => {
+    setProcessedImages((prev) => {
+      const existingData = prev[id];
+      if (!existingData) return prev;
+      
+      return {
+        ...prev,
+        [id]: {
+          ...existingData,
+          filename: newFilename
+        }
+      };
+    });
+  };
+
   const handleImageProcessed = (id, data) => {
     setProcessedImages((prev) => {
       const newProcessed = {
@@ -564,7 +579,16 @@ export default function Home() {
           mediaType={comparisonData.mediaType}
           fileFormat={comparisonData.fileFormat}
           originalFileFormat={comparisonData.originalFileFormat}
-          generatedAnimations={comparisonData.animations || null} />
+          generatedAnimations={comparisonData.animations || null}
+          onFilenameChange={(newFilename) => {
+            // Find the corresponding image ID and update it
+            const imageEntry = images.find(img => processedImages[img.id]?.filename === comparisonData.fileName);
+            if (imageEntry) {
+              handleFilenameChange(imageEntry.id, newFilename);
+              // Update comparison data to reflect the change immediately
+              setComparisonData(prev => prev ? { ...prev, fileName: newFilename } : null);
+            }
+          }} />
 
         </Suspense>
       }

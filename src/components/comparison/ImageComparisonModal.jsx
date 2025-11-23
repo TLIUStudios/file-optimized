@@ -81,7 +81,8 @@ export default function ImageComparisonModal({
   mediaType = 'image',
   fileFormat = 'webp',
   originalFileFormat = null,
-  generatedAnimations = null // Add this prop for animation variations
+  generatedAnimations = null, // Add this prop for animation variations
+  onFilenameChange = null // Callback to sync filename changes back to parent
 }) {
   const [sliderPosition, setSliderPosition] = useState(50);
   const [isDragging, setIsDragging] = useState(false);
@@ -1046,6 +1047,9 @@ export default function ImageComparisonModal({
                       onKeyDown={(e) => {
                         if (e.key === 'Enter') {
                           setIsEditingFilename(false);
+                          if (onFilenameChange && editableFilename !== fileName) {
+                            onFilenameChange(editableFilename);
+                          }
                           toast.success('Filename updated!');
                         }
                         if (e.key === 'Escape') {
@@ -1060,6 +1064,9 @@ export default function ImageComparisonModal({
                       variant="ghost"
                       onClick={() => {
                         setIsEditingFilename(false);
+                        if (onFilenameChange && editableFilename !== fileName) {
+                          onFilenameChange(editableFilename);
+                        }
                         toast.success('Filename updated!');
                       }}
                       className="h-7 w-7 p-0"
