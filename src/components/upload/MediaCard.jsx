@@ -843,6 +843,10 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
       setProcessed(true);
       setOutputFormat('gif');
       
+      // Update filename extension to .gif
+      const nameWithoutExt = editableFilename.split('.').slice(0, -1).join('.') || editableFilename;
+      setEditableFilename(`${nameWithoutExt}.gif`);
+      
       onProcessed({
         id: image.name,
         originalFile: image,
