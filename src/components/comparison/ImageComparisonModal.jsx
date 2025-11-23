@@ -637,6 +637,7 @@ export default function ImageComparisonModal({
 
 
   const getAspectRatio = (width, height) => {
+    if (!width || !height) return "N/A";
     const gcd = (a, b) => b === 0 ? a : gcd(b, a % b);
     const divisor = gcd(width, height);
     const ratioW = width / divisor;
@@ -654,6 +655,14 @@ export default function ImageComparisonModal({
       return `${ratio.toFixed(2)}:1`;
     }
     return `${ratioW}:${ratioH}`;
+  };
+
+  const getOrientation = (width, height) => {
+    if (!width || !height) return "N/A";
+    const ratio = width / height;
+    if (Math.abs(ratio - 1) < 0.01) return "Square";
+    if (ratio > 1) return "Landscape";
+    return "Portrait";
   };
 
   useEffect(() => {
