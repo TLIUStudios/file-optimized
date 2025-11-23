@@ -313,7 +313,47 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
     }
   };
 
+  const checkCapLimits = () => {
+    // Check resolution caps
+    if ((maxWidth && maxWidth > 7680) || (maxHeight && maxHeight > 7680)) {
+      return 'Resolution exceeds 8K limit (7680px)';
+    }
+    
+    // Check upscale multiplier
+    if (enableUpscale && upscaleMultiplier && originalImageDimensions.width > 0) {
+      const targetWidth = Math.round(originalImageDimensions.width * (upscaleMultiplier / 100));
+      const targetHeight = Math.round(originalImageDimensions.height * (upscaleMultiplier / 100));
+      if (targetWidth > 7680 || targetHeight > 7680) {
+        return 'Upscale exceeds 8K limit (7680px)';
+      }
+    }
+    
+    // Check video duration
+    if (isVideo && preview) {
+      const video = document.createElement('video');
+      video.src = preview;
+      if (video.duration > 120) {
+        return 'Video exceeds 120 second limit';
+      }
+    }
+    
+    // Check GIF frame count
+    if (isGif && gifFrameCount > 500) {
+      return 'GIF exceeds 500 frame limit';
+    }
+    
+    return null;
+  };
+
   const processMedia = async () => {
+    // Check cap limits before processing
+    const capError = checkCapLimits();
+    if (capError) {
+      setError(capError);
+      toast.error(capError);
+      return;
+    }
+    
     setProcessing(true);
     setProcessingStartTime(Date.now());
     setProcessingProgress(0);
@@ -497,7 +537,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
         video.muted = true;
       }
       
-      const duration = Math.min(video.duration, 60); // Max 60 seconds
+      const duration = Math.min(video.duration, 120); // Max 120 seconds
       const fps = frameRate || 30;
       const frameInterval = 1 / fps;
       let frameCount = 0;
@@ -1498,15 +1538,19 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
           height = maxHeight;
           width = Math.round(maxHeight * aspectRatio);
         }
-      } else {
-        // Default: cap at 800px for reasonable file size
-        if (img.width > 800 || img.height > 800) {
-          const ratio = Math.min(800 / img.width, 800 / img.height);
-          width = Math.round(img.width * ratio);
-          height = Math.round(img.height * ratio);
-        }
       }
       
+      // Cap at 8K resolution
+      const maxRes = 7680;
+      if (width > maxRes) {
+        height = Math.round(height * (maxRes / width));
+        width = maxRes;
+      }
+      if (height > maxRes) {
+        width = Math.round(width * (maxRes / height));
+        height = maxRes;
+      }
+
       // Ensure even dimensions for GIF encoding
       width = width % 2 === 0 ? width : width - 1;
       height = height % 2 === 0 ? height : height - 1;
@@ -2129,10 +2173,21 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
             </Button>
           </div>
 
+          {/* Processing Caps Info */}
+          <div className="bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 rounded-lg p-3">
+            <p className="text-xs font-medium text-blue-700 dark:text-blue-400 mb-1">Processing Limits:</p>
+            <div className="space-y-0.5 text-xs text-blue-600 dark:text-blue-400">
+              {isImage && <p>• Max Resolution: 8K (7680px)</p>}
+              {isVideo && <p>• Max Duration: 120 seconds</p>}
+              {isGif && <p>• Max Frames: 500 frames</p>}
+              {isVideo && format === 'gif' && <p>• GIF from Video: 10s, 100 frames</p>}
+            </div>
+          </div>
+
           {error && (
-            <div className="flex items-center gap-2 text-sm text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/30 p-3 rounded-lg">
+            <div className="flex items-center gap-2 text-sm text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-950/30 p-3 rounded-lg border border-red-200 dark:border-red-800">
               <AlertCircle className="w-4 h-4 flex-shrink-0" />
-              <span className="text-xs">{error}</span>
+              <span className="text-xs font-medium">{error}</span>
             </div>
           )}
 
@@ -2256,11 +2311,15 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
                 {enableUpscale && (
                   <>
                     {originalImageDimensions.width > 0 && originalImageDimensions.height > 0 && (
-                      <div className="bg-slate-100 border border-slate-200 dark:border-transparent dark:bg-slate-950 rounded-lg p-3 space-y-2">
-                        <div className="flex items-center justify-between text-xs">
-                          <span className="text-slate-500 dark:text-slate-400">Current Resolution:</span>
-                          <span className="font-medium text-slate-900 dark:text-white">{originalImageDimensions.width} × {originalImageDimensions.height}</span>
-                        </div>
+                     <div className="bg-slate-100 border border-slate-200 dark:border-transparent dark:bg-slate-950 rounded-lg p-3 space-y-2">
+                       <div className="flex items-center justify-between text-xs">
+                         <span className="text-slate-500 dark:text-slate-400">Current Resolution:</span>
+                         <span className="font-medium text-slate-900 dark:text-white">{originalImageDimensions.width} × {originalImageDimensions.height}</span>
+                       </div>
+                       <div className="flex items-center justify-between text-xs">
+                         <span className="text-slate-500 dark:text-slate-400">Max Resolution:</span>
+                         <span className="font-medium text-amber-600 dark:text-amber-400">8K (7680px)</span>
+                       </div>
                         {(upscaleMultiplier || maxWidth || maxHeight) && (
                           <div className="flex items-center justify-between text-xs">
                             <span className="text-slate-500 dark:text-slate-400">After Upscale:</span>
