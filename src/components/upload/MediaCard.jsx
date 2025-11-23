@@ -1762,42 +1762,106 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
     setProcessing(true);
     setError(null);
     try {
+      // ALWAYS load from original preview for consistent compression
       const img = new Image();
-      img.src = compressedPreview;
+      img.src = preview; // Use original, not compressed
       await new Promise((resolve) => { img.onload = resolve; });
+      
       const canvas = document.createElement('canvas');
       canvas.width = img.width;
       canvas.height = img.height;
       const ctx = canvas.getContext('2d');
-      ctx.drawImage(img, 0, 0);
-      const mimeType = newFormat === 'jpg' ? 'image/jpeg' : `image/${newFormat}`;
-      let blob = await new Promise((resolve) => canvas.toBlob((b) => resolve(b), mimeType, quality / 100));
-      const originalFileFormat = image.name.split('.').pop().toLowerCase();
-      const isConvertingBackToOriginal = newFormat === originalFileFormat || (newFormat === 'jpg' && (originalFileFormat === 'jpeg' || originalFileFormat === 'jpg'));
-      if (isConvertingBackToOriginal && blob.size > originalSize) {
-        const originalUrl = URL.createObjectURL(image);
-        setCompressedPreview(originalUrl);
-        setCompressedSize(image.size);
-        setCompressedBlob(image);
-        setOutputFormat(newFormat);
-        setFormat(newFormat);
-        onProcessed({
-          id: image.name,
-          originalFile: image,
-          compressedBlob: image,
-          compressedUrl: originalUrl,
-          originalSize: originalSize,
-          compressedSize: image.size,
-          format: newFormat,
-          filename: getOutputFilename(newFormat),
-          mediaType: 'image',
-          fileFormat: newFormat,
-          originalFileFormat: originalFormat
-        });
-        toast.info(`Converted to ${newFormat.toUpperCase()} - using original file (0% change)`);
-        setProcessing(false);
-        return;
+      
+      // Apply noise reduction if enabled
+      if (noiseReduction) {
+        ctx.imageSmoothingEnabled = true;
+        ctx.imageSmoothingQuality = 'high';
       }
+      ctx.drawImage(img, 0, 0);
+      
+      // Use advanced PNG compression for PNG format
+      if (newFormat === 'png') {
+        try {
+          if (!window.imageCompression) {
+            await new Promise((resolve, reject) => {
+              const script = document.createElement('script');
+              script.src = 'https://cdn.jsdelivr.net/npm/browser-image-compression@2.0.2/dist/browser-image-compression.js';
+              script.onload = () => {
+                setTimeout(() => {
+                  if (window.imageCompression) resolve();
+                  else reject(new Error('Library not loaded'));
+                }, 100);
+              };
+              script.onerror = () => reject(new Error('Failed to load library'));
+              document.head.appendChild(script);
+            });
+          }
+
+          const canvasBlob = await new Promise((resolve) => {
+            canvas.toBlob(resolve, 'image/png');
+          });
+
+          const options = {
+            maxSizeMB: Math.max(0.1, (canvasBlob.size / 1024 / 1024) * (quality / 100)),
+            maxWidthOrHeight: Math.max(canvas.width, canvas.height),
+            useWebWorker: true,
+            fileType: 'image/png',
+            initialQuality: quality / 100
+          };
+
+          const compressedFile = await window.imageCompression(canvasBlob, options);
+          
+          const url = URL.createObjectURL(compressedFile);
+          setCompressedPreview(url);
+          setCompressedSize(compressedFile.size);
+          setCompressedBlob(compressedFile);
+          setOutputFormat(newFormat);
+          setFormat(newFormat);
+          onProcessed({
+            id: image.name,
+            originalFile: image,
+            compressedBlob: compressedFile,
+            compressedUrl: url,
+            originalSize: originalSize,
+            compressedSize: compressedFile.size,
+            format: newFormat,
+            filename: getOutputFilename(newFormat),
+            mediaType: 'image',
+            fileFormat: newFormat,
+            originalFileFormat: originalFormat
+          });
+          
+          const savings = ((1 - compressedFile.size / originalSize) * 100).toFixed(1);
+          toast.success(`Converted to PNG (${savings}% savings)`);
+          setProcessing(false);
+          return;
+        } catch (error) {
+          console.warn('PNG advanced compression failed, using standard:', error);
+          // Fall through to standard compression
+        }
+      }
+      
+      // Standard compression with aggressive quality for other formats
+      const mimeType = newFormat === 'jpg' ? 'image/jpeg' : `image/${newFormat}`;
+      let baseQuality = quality / 100;
+      
+      // Apply compression mode adjustments
+      if (compressionMode === 'aggressive') baseQuality = Math.max(0.5, baseQuality - 0.15);
+      else if (compressionMode === 'maximum') baseQuality = Math.max(0.3, baseQuality - 0.3);
+      
+      let qualityValue = baseQuality;
+      let blob = null;
+      let attempts = 0;
+      const maxAttempts = compressionMode === 'aggressive' || compressionMode === 'maximum' ? 8 : 5;
+      
+      // Try multiple quality levels to get best compression
+      while (attempts < maxAttempts) {
+        blob = await new Promise((resolve) => canvas.toBlob((b) => resolve(b), mimeType, qualityValue));
+        if ((blob && blob.size < originalSize) || attempts === maxAttempts - 1) break;
+        qualityValue -= compressionMode === 'maximum' ? 0.2 : 0.15;
+        attempts++;
+      }
+      
       const url = URL.createObjectURL(blob);
       setCompressedPreview(url);
       setCompressedSize(blob.size);
@@ -1817,9 +1881,9 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
         fileFormat: newFormat,
         originalFileFormat: originalFormat
       });
+      
       const savings = ((1 - blob.size / originalSize) * 100).toFixed(1);
       if (blob.size < originalSize) toast.success(`Converted to ${newFormat.toUpperCase()} (${savings}% savings)`);
-      else if (blob.size === originalSize) toast.success(`Converted to ${newFormat.toUpperCase()} (0% change)`);
       else toast.success(`Converted to ${newFormat.toUpperCase()}`);
     } catch (error) {
       console.error('Error converting format:', error);
