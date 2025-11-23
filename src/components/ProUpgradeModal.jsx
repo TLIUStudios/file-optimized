@@ -90,7 +90,14 @@ export default function ProUpgradeModal({ isOpen, onClose, onUpgrade, processing
                 </Badge>
               )}
               <h3 className="text-base font-bold text-slate-900 dark:text-white mb-1 text-center">Free Plan</h3>
-              <p className="text-2xl font-bold text-center text-slate-600 dark:text-slate-400 mb-3">$0</p>
+              <div className="text-center mb-3">
+                <p className="text-2xl font-bold text-slate-600 dark:text-slate-400">$0</p>
+                <div className="h-4 mt-1">
+                  <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">
+                    Limited Options
+                  </p>
+                </div>
+              </div>
               <div className="space-y-2">
                 <div className="flex items-center gap-2 text-xs text-slate-900 dark:text-white font-medium">
                   <Check className="w-3.5 h-3.5 text-slate-500 flex-shrink-0" />
