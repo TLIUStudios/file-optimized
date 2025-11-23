@@ -1,6 +1,6 @@
 import { useState, lazy, Suspense, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Download, Trash2, Sparkles, Shield, Zap, Image as ImageIcon } from "lucide-react";
+import { Download, Trash2, Sparkles, Shield, Zap, Image as ImageIcon, FolderPlus } from "lucide-react";
 import UploadZone from "../components/upload/UploadZone";
 import { motion, AnimatePresence } from "framer-motion";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -513,7 +513,7 @@ export default function Home() {
             variant="outline"
             className="w-full h-16 border-2 border-dashed hover:border-emerald-400 dark:hover:border-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-950/20">
 
-              <Sparkles className="w-5 h-5 mr-2" />
+              <FolderPlus className="w-5 h-5 mr-2" />
               Add More Files
             </Button>
           </div>
