@@ -42,7 +42,7 @@ export default function SocialShareModal({ isOpen, onClose, imageUrl, fileName }
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-md [&>button]:hover:bg-red-600 [&>button]:transition-colors">
+      <DialogContent className="sm:max-w-md [&>button]:bg-slate-800/80 [&>button]:hover:bg-red-600 [&>button]:transition-colors [&>button]:rounded-lg [&>button]:text-white">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Share2 className="w-5 h-5" />
