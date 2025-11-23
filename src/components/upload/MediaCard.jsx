@@ -204,16 +204,13 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
       enableUpscale, upscaleMultiplier, useStandardResolutions, enableAnimation, animationType, 
       animationDuration, videoBitrate, audioBitrate, frameRate, videoPreset, videoResolution, audioQuality]);
 
-  // Estimate time remaining for UI display (doesn't control progress)
+  // Calculate time remaining based on actual progress
   useEffect(() => {
-    if (processing && processingStartTime) {
+    if (processing && processingStartTime && processingProgress > 0 && processingProgress < 100) {
       const interval = setInterval(() => {
         const elapsed = Date.now() - processingStartTime;
-        let estimatedTotal = 3000;
-        if (isGif) estimatedTotal = Math.max(5000, gifFrameCount * 50);
-        else if (isVideo) estimatedTotal = Math.max(10000, image.size / 100000);
-        else if (isImage && enableAnimation) estimatedTotal = 8000;
-        else if (isImage) estimatedTotal = 2000;
+        const progressFraction = processingProgress / 100;
+        const estimatedTotal = elapsed / progressFraction;
         const remaining = Math.max(0, estimatedTotal - elapsed);
         setEstimatedTimeForFile(Math.ceil(remaining / 1000));
       }, 100);
@@ -221,7 +218,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
     } else {
       setEstimatedTimeForFile(null);
     }
-  }, [processing, processingStartTime, isGif, isVideo, isImage, enableAnimation, gifFrameCount, image.size]);
+  }, [processing, processingStartTime, processingProgress]);
 
   const parseGif = async (dataUrl) => {
     try {
