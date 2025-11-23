@@ -539,11 +539,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
           frame.close();
           frameCount++;
           
-          // Update progress
-          const progress = (time / duration) * 100;
-          if (progress % 10 < frameInterval / duration * 100) {
-            toast.info(`Encoding: ${Math.round(progress)}%`, { id: 'video-encode' });
-          }
+          // Update progress is tracked by processingProgress state
         }
         
         // Ensure all frames are encoded before flushing
@@ -566,7 +562,6 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
         if (audioEncoder && audioEncoder.state !== 'closed') {
           audioEncoder.close();
         }
-        toast.dismiss('video-encode');
       }
       
       muxer.finalize();
@@ -961,10 +956,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
           
           timestamp += (frame.delay || 100) * 1000; // Convert ms to microseconds
           
-          // Update progress
-          if (i % 5 === 0) {
-            toast.info(`Converting: ${Math.round((i / frames.length) * 100)}%`, { id: 'gif-convert' });
-          }
+          // Update progress is tracked by processingProgress state
         }
         
         // Ensure all frames are encoded
@@ -976,7 +968,6 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
         if (videoEncoder.state !== 'closed') {
           videoEncoder.close();
         }
-        toast.dismiss('gif-convert');
       }
       
       muxer.finalize();
