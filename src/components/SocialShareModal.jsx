@@ -47,9 +47,9 @@ export default function SocialShareModal({ isOpen, onClose, imageUrl, fileName }
             variant="ghost"
             size="icon"
             onClick={onClose}
-            className="h-9 w-9 hover:bg-red-600 hover:text-white rounded-lg transition-colors"
+            className="bg-slate-900/90 dark:bg-slate-900/90 hover:bg-red-600 dark:hover:bg-red-600 text-white rounded-lg transition-colors shadow-lg h-8 w-8"
           >
-            <X className="w-5 h-5" />
+            <X className="w-4 h-4" />
           </Button>
         </div>
         <DialogHeader>
