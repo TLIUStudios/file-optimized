@@ -53,7 +53,6 @@ export default function LoginPromptModal({ isOpen, onClose, onLogin, context = "
                   </Badge>
                 )}
                 <div className="flex items-center gap-1.5 mb-1.5 justify-center">
-                  <Shield className="w-3.5 h-3.5 text-slate-600 dark:text-slate-400" />
                   <p className="text-xs font-bold text-slate-900 dark:text-white">Free Plan</p>
                 </div>
                 <p className="text-xl font-bold text-slate-600 dark:text-slate-400 mb-2 text-center">$0</p>
