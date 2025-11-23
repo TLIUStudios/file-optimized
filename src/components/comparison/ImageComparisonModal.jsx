@@ -1066,6 +1066,32 @@ export default function ImageComparisonModal({
               </div>
 
               <div className="space-y-3">
+                {/* Social Media Share */}
+                <Button
+                  variant="outline"
+                  className="w-full justify-center"
+                  size="sm"
+                  onClick={() => {
+                    if (navigator.share && compressedImage) {
+                      fetch(compressedImage)
+                        .then(res => res.blob())
+                        .then(blob => {
+                          const file = new File([blob], fileName, { type: blob.type });
+                          navigator.share({
+                            title: fileName,
+                            text: 'Check out my optimized image!',
+                            files: [file]
+                          }).catch(err => console.log('Share cancelled'));
+                        });
+                    } else {
+                      toast.info('Sharing not supported on this device');
+                    }
+                  }}
+                >
+                  <Share2 className="w-4 h-4 mr-2" />
+                  Share to Social Media
+                </Button>
+              
                 <div className="bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg p-4">
                   <p className="text-slate-500 dark:text-slate-400 text-[10px] font-semibold uppercase tracking-wider mb-1">Original Size</p>
                   <p className="text-slate-900 dark:text-white text-2xl font-bold">{formatFileSize(originalSize)}</p>
@@ -1261,36 +1287,6 @@ export default function ImageComparisonModal({
 
               {!isAnimationVariations && (
                 <>
-                  <div className="h-px bg-slate-200 dark:bg-slate-800" />
-                  
-                  {/* Social Media Share */}
-                  <div className="space-y-2">
-                    <Button
-                      variant="outline"
-                      className="w-full justify-center"
-                      size="sm"
-                      onClick={() => {
-                        if (navigator.share && compressedImage) {
-                          fetch(compressedImage)
-                            .then(res => res.blob())
-                            .then(blob => {
-                              const file = new File([blob], fileName, { type: blob.type });
-                              navigator.share({
-                                title: fileName,
-                                text: 'Check out my optimized image!',
-                                files: [file]
-                              }).catch(err => console.log('Share cancelled'));
-                            });
-                        } else {
-                          toast.info('Sharing not supported on this device');
-                        }
-                      }}
-                    >
-                      <Share2 className="w-4 h-4 mr-2" />
-                      Share to Social Media
-                    </Button>
-                  </div>
-                  
                   <div className="h-px bg-slate-200 dark:bg-slate-800" />
                   {/* SEO Generation Section */}
                   {mediaType === 'image' && (
