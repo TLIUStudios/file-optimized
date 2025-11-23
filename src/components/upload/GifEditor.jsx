@@ -52,8 +52,12 @@ export default function GifEditor({ isOpen, onClose, gifData, onSave }) {
   }, [isPlaying, frames, currentFrame, globalDelay]);
 
   useEffect(() => {
+    console.log('Draw effect triggered:', { framesCount: frames.length, currentFrame, hasCanvas: !!canvasRef.current });
     if (frames.length > 0 && canvasRef.current) {
-      drawFrame(currentFrame);
+      const timer = setTimeout(() => {
+        drawFrame(currentFrame);
+      }, 10);
+      return () => clearTimeout(timer);
     }
   }, [currentFrame, frames, textOverlays]);
 
@@ -140,22 +144,10 @@ export default function GifEditor({ isOpen, onClose, gifData, onSave }) {
         }
       }
 
+      console.log('Setting frames state with', loadedFrames.length, 'frames');
       setFrames(loadedFrames);
       setGlobalDelay(loadedFrames[0]?.delay || 100);
       setCurrentFrame(0);
-      
-      // Force initial draw after frames are loaded
-      setTimeout(() => {
-        if (canvasRef.current && loadedFrames[0]) {
-          const canvas = canvasRef.current;
-          canvas.width = loadedFrames[0].width;
-          canvas.height = loadedFrames[0].height;
-          const ctx = canvas.getContext('2d', { alpha: true });
-          if (ctx) {
-            ctx.drawImage(loadedFrames[0].canvas, 0, 0);
-          }
-        }
-      }, 50);
       
       toast.success(`Loaded ${loadedFrames.length} frames`);
     } catch (error) {
@@ -166,36 +158,50 @@ export default function GifEditor({ isOpen, onClose, gifData, onSave }) {
 
   const drawFrame = (frameIndex) => {
     const canvas = canvasRef.current;
-    if (!canvas || !frames[frameIndex]) {
-      console.log('Cannot draw frame:', { canvas: !!canvas, frame: !!frames[frameIndex] });
-      return;
-    }
-
     const frame = frames[frameIndex];
     
-    // Set canvas dimensions
-    canvas.width = frame.width;
-    canvas.height = frame.height;
-    
-    const ctx = canvas.getContext('2d', { alpha: true, willReadFrequently: false });
-    if (!ctx) {
-      console.error('Failed to get canvas context');
+    if (!canvas) {
+      console.error('Canvas ref not available');
       return;
     }
     
-    // Clear and draw frame
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    ctx.drawImage(frame.canvas, 0, 0);
+    if (!frame) {
+      console.error('Frame not found:', frameIndex);
+      return;
+    }
 
-    // Draw text overlays for this frame
-    textOverlays.filter(t => t.frameIndex === frameIndex).forEach(overlay => {
-      ctx.font = `${overlay.fontSize}px ${overlay.fontFamily}`;
-      ctx.fillStyle = overlay.color;
-      ctx.textAlign = overlay.align;
-      ctx.fillText(overlay.text, overlay.x, overlay.y);
-    });
+    if (!frame.canvas) {
+      console.error('Frame canvas not available:', frameIndex);
+      return;
+    }
     
-    console.log('Frame drawn:', frameIndex, 'Size:', frame.width, 'x', frame.height);
+    try {
+      // Only set dimensions if they changed
+      if (canvas.width !== frame.width || canvas.height !== frame.height) {
+        canvas.width = frame.width;
+        canvas.height = frame.height;
+      }
+      
+      const ctx = canvas.getContext('2d', { alpha: true });
+      if (!ctx) {
+        console.error('Failed to get canvas context');
+        return;
+      }
+      
+      // Draw frame
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.drawImage(frame.canvas, 0, 0);
+
+      // Draw text overlays for this frame
+      textOverlays.filter(t => t.frameIndex === frameIndex).forEach(overlay => {
+        ctx.font = `${overlay.fontSize}px ${overlay.fontFamily}`;
+        ctx.fillStyle = overlay.color;
+        ctx.textAlign = overlay.align;
+        ctx.fillText(overlay.text, overlay.x, overlay.y);
+      });
+    } catch (error) {
+      console.error('Error drawing frame:', error);
+    }
   };
 
   const updateFrameDelay = (frameIndex, delay) => {
