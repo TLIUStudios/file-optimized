@@ -48,7 +48,7 @@ export default function ProUpgradeModal({ isOpen, onClose, onUpgrade, processing
           {/* Comparison Grid */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             {/* Free Plan */}
-            <div className="p-3 sm:p-4 rounded-lg border-2 border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 relative">
+            <div className="p-3 sm:p-4 rounded-lg border-2 border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 relative">
               {!isPro && (
                 <Badge className="absolute -top-2 left-1/2 -translate-x-1/2 bg-emerald-600 text-white text-[10px] sm:text-xs whitespace-nowrap">
                   Current Plan
