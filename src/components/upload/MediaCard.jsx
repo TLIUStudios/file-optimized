@@ -1832,9 +1832,10 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
       return;
     }
     // Video/audio conversion handled by native APIs
-    if (isVideo || isAudio) {
+    if (isVideo || isAudio || isGif) {
       setFormat(newFormat);
-      await processMedia();
+      // Small delay to ensure state update before processing
+      setTimeout(() => processMedia(), 0);
       return;
     }
     setProcessing(true);
