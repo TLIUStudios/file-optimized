@@ -238,9 +238,24 @@ export default function GifEditor({ isOpen, onClose, gifData, onSave }) {
       
       frameCanvasesRef.current = canvasesForFrames;
       setCanvasDimensions({ width: canvasWidth, height: canvasHeight });
+      
+      // Set frames LAST and draw immediately after
       setFrames(loadedFrames);
       setGlobalDelay(loadedFrames[0]?.delay || 100);
       setCurrentFrame(0);
+      
+      // Force initial draw after state is set
+      setTimeout(() => {
+        if (canvasRef.current && canvasesForFrames[0]) {
+          const canvas = canvasRef.current;
+          canvas.width = canvasWidth;
+          canvas.height = canvasHeight;
+          const ctx = canvas.getContext('2d', { alpha: true });
+          ctx.clearRect(0, 0, canvas.width, canvas.height);
+          ctx.drawImage(canvasesForFrames[0], 0, 0);
+          console.log('✅ Initial frame drawn');
+        }
+      }, 0);
       
       toast.success(`Loaded ${loadedFrames.length} frames`);
     } catch (error) {
@@ -493,17 +508,15 @@ export default function GifEditor({ isOpen, onClose, gifData, onSave }) {
             {/* Main Canvas Area */}
             <div className="flex-1 flex flex-col bg-slate-100 dark:bg-slate-900 overflow-auto">
               <div className="flex-1 flex items-center justify-center p-4">
-                {frames.length > 0 && canvasDimensions.width > 0 ? (
-                  <canvas
-                    ref={canvasRef}
-                    width={canvasDimensions.width}
-                    height={canvasDimensions.height}
-                    className="max-w-full max-h-full bg-white dark:bg-slate-800 rounded-lg shadow-lg"
-                    style={{ 
-                      imageRendering: 'auto'
-                    }}
-                  />
-                ) : (
+                <canvas
+                  ref={canvasRef}
+                  className="max-w-full max-h-full bg-white dark:bg-slate-800 rounded-lg shadow-lg"
+                  style={{ 
+                    imageRendering: 'auto',
+                    display: frames.length > 0 ? 'block' : 'none'
+                  }}
+                />
+                {frames.length === 0 && (
                   <div className="text-slate-400 text-sm">Loading frames...</div>
                 )}
               </div>
