@@ -1897,7 +1897,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
   return (
     <Card className="overflow-hidden bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 shadow-lg hover:shadow-xl transition-shadow relative">
       {/* Header with close button */}
-      <div className="flex items-center justify-end px-4 py-2 border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950">
+      <div className="flex items-center justify-end px-4 py-2 border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900">
         <Button 
           variant="ghost" 
           size="icon" 
