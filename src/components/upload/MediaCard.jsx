@@ -2044,8 +2044,8 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
             </div>
           )}
           {compressedPreview ? (
-            <div className="relative aspect-square rounded-lg overflow-hidden bg-slate-200 dark:bg-slate-800 cursor-pointer group" onClick={(isImage || isGif) ? handleCompare : undefined}>
-              {isImage ? <LazyImage src={compressedPreview} alt="Compressed" className="w-full h-full object-cover transition-transform group-hover:scale-105" /> : isVideo ? <video src={compressedPreview} controls loop className="w-full h-full object-cover" /> : isAudio ? (
+            <div className="relative aspect-square rounded-lg overflow-hidden bg-slate-200 dark:bg-slate-800 cursor-pointer group" onClick={(isImage || isGif || outputFormat === 'gif') ? handleCompare : undefined}>
+              {(isImage || outputFormat === 'gif') ? <LazyImage src={compressedPreview} alt="Compressed" className="w-full h-full object-cover transition-transform group-hover:scale-105" /> : (isVideo && outputFormat !== 'gif') ? <video src={compressedPreview} controls loop className="w-full h-full object-cover" /> : isAudio ? (
                 <div className="w-full h-full flex flex-col items-center justify-center p-4">
                   <Music className="w-16 h-16 text-emerald-500 mb-2" />
                   <audio src={compressedPreview} controls className="w-full" />
