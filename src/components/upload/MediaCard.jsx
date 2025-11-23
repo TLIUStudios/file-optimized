@@ -2508,8 +2508,11 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
               <>
                 <Button 
                   onClick={processMedia} 
-                  variant="outline"
-                  className="flex-1 text-sm relative overflow-hidden transition-all duration-300"
+                  variant={settingsChanged && !processing ? "default" : "outline"} 
+                  className={cn(
+                    "flex-1 text-sm relative overflow-hidden transition-all duration-300",
+                    settingsChanged && !processing && "bg-red-600 hover:bg-red-700 text-white"
+                  )} 
                   disabled={processing || (((isGif && format === 'gif') || (isImage && !isGif && enableAnimation)) && !gifJsLoaded)}
                 >
                   {processing && <div className="absolute inset-0 bg-emerald-500 transition-all duration-300 ease-linear" style={{ width: `${processingProgress}%`, left: 0 }} />}
