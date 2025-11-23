@@ -57,15 +57,17 @@ export default function GifEditor({ isOpen, onClose, gifData, onSave }) {
     const canvas = canvasRef.current;
     const frameCanvas = frameCanvasesRef.current[frameIndex];
     
-    if (!canvas) {
-      return;
-    }
-    
-    if (!frameCanvas) {
+    if (!canvas || !frameCanvas) {
       return;
     }
     
     try {
+      // Set canvas dimensions ONLY if they changed to avoid clearing
+      if (canvas.width !== frameCanvas.width || canvas.height !== frameCanvas.height) {
+        canvas.width = frameCanvas.width;
+        canvas.height = frameCanvas.height;
+      }
+      
       const ctx = canvas.getContext('2d', { alpha: true });
       if (!ctx) {
         return;
@@ -493,8 +495,6 @@ export default function GifEditor({ isOpen, onClose, gifData, onSave }) {
                 {frames.length > 0 ? (
                   <canvas
                     ref={canvasRef}
-                    width={canvasDimensions.width}
-                    height={canvasDimensions.height}
                     className="max-w-full max-h-full bg-white dark:bg-slate-800 rounded-lg shadow-lg"
                     style={{ 
                       imageRendering: 'auto'
