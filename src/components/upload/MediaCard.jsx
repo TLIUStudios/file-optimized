@@ -290,6 +290,22 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
         metadata.aspectRatio = getAspectRatio(img.width, img.height);
         metadata.megapixels = ((img.width * img.height) / 1000000).toFixed(2) + ' MP';
         metadata.format = image.name.split('.').pop().toUpperCase();
+      } else if (isGif) {
+        metadata.frames = gifFrameCount;
+        metadata.width = gifSettings.width;
+        metadata.height = gifSettings.height;
+        metadata.format = 'GIF';
+      } else if (isVideo) {
+        const video = document.createElement('video');
+        video.src = preview;
+        await new Promise((resolve, reject) => {
+          video.onloadedmetadata = resolve;
+          video.onerror = () => reject(new Error('Failed to load video for metadata.'));
+        });
+        metadata.duration = formatDuration(video.duration);
+        metadata.width = video.videoWidth;
+        metadata.height = video.videoHeight;
+        metadata.format = image.name.split('.').pop().toUpperCase();
       }
       setFileMetadata(metadata);
       setShowMetadataViewer(true);
@@ -1896,8 +1912,14 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
 
   return (
     <Card className="overflow-hidden bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 shadow-lg hover:shadow-xl transition-shadow relative">
-      {/* Header with close button */}
-      <div className="flex items-center justify-end px-4 py-2 border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900">
+      {/* Header with close button and media type */}
+      <div className="flex items-center justify-between px-4 py-2 border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900">
+        <div className="flex items-center gap-2">
+          {MediaIcon && <MediaIcon className="w-4 h-4 text-slate-400" />}
+          <span className="text-xs font-medium text-slate-500 dark:text-slate-400">
+            {isVideo ? 'Video' : isAudio ? 'Audio' : isGif ? 'GIF' : isImage ? 'Image' : 'File'}
+          </span>
+        </div>
         <Button 
           variant="ghost" 
           size="icon" 
@@ -1913,7 +1935,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
           {preview && (
             <div className="relative aspect-square rounded-lg overflow-hidden bg-slate-200 dark:bg-slate-800 cursor-pointer group" onClick={(isImage || isGif) && processed ? handleCompare : undefined}>
               {isGif && gifFrameCount > 0 && (
-                <Badge className="absolute -top-8 left-0 bg-slate-900/90 text-white text-xs px-3 py-1.5 font-bold flex items-center gap-1 shadow-lg z-10 rounded-md">
+                <Badge className="absolute -top-9 left-0 bg-slate-900/90 text-white text-xs px-3 py-1.5 font-bold flex items-center gap-1 shadow-lg z-10 rounded-md">
                   <Film className="w-3 h-3" />
                   {gifFrameCount} frames
                 </Badge>
@@ -1948,7 +1970,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
           {compressedPreview ? (
             <div className="relative aspect-square rounded-lg overflow-hidden bg-slate-200 dark:bg-slate-800 cursor-pointer group" onClick={(isImage || isGif) ? handleCompare : undefined}>
               {isGif && outputGifFrameCount > 0 && (
-                <Badge className="absolute -top-8 left-0 bg-slate-900/90 text-white text-xs px-3 py-1.5 font-bold flex items-center gap-1 shadow-lg z-10 rounded-md">
+                <Badge className="absolute -top-9 left-0 bg-slate-900/90 text-white text-xs px-3 py-1.5 font-bold flex items-center gap-1 shadow-lg z-10 rounded-md">
                   <Film className="w-3 h-3" />
                   {outputGifFrameCount} frames
                 </Badge>
