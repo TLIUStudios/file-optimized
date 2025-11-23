@@ -9,7 +9,7 @@ export default function ProUpgradeModal({ isOpen, onClose, onUpgrade, processing
   const [billingFrequency, setBillingFrequency] = useState('monthly');
   
   const isAnnual = billingFrequency === 'annual';
-  const price = isAnnual ? '$100' : '$10';
+  const price = isAnnual ? '$100 USD' : '$10 USD';
   const period = isAnnual ? '/yr' : '/mo';
   const savings = isAnnual ? '17% OFF' : null;
   

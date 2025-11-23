@@ -395,7 +395,7 @@ export default function Profile() {
                   </h4>
                   <div className="text-center mb-3">
                     <p className="text-2xl font-bold text-amber-600 dark:text-amber-500">
-                      {billingFrequency === 'annual' ? '$100' : '$10'}
+                      {billingFrequency === 'annual' ? '$100 USD' : '$10 USD'}
                       <span className="text-sm">{billingFrequency === 'annual' ? '/yr' : '/mo'}</span>
                     </p>
                     <div className="h-4 mt-1">
@@ -490,7 +490,7 @@ export default function Profile() {
                   className="w-full bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white"
                 >
                   <Sparkles className="w-4 h-4 mr-2" />
-                  Upgrade to Pro - {billingFrequency === 'annual' ? '$100/yr' : '$10/mo'}
+                  Upgrade to Pro - {billingFrequency === 'annual' ? '$100 USD/yr' : '$10 USD/mo'}
                 </Button>
               )}
             </Card>
