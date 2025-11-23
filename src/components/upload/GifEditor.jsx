@@ -308,18 +308,21 @@ export default function GifEditor({ isOpen, onClose, gifData, onSave }) {
           break;
         case 'brightness':
           ctx.filter = 'brightness(1.2)';
-          // Redraw original content with filter applied to the new canvas
-          ctx.drawImage(frame.canvas, 0, 0); 
+          ctx.clearRect(0, 0, frame.width, frame.height);
+          ctx.drawImage(frame.canvas, 0, 0);
+          ctx.filter = 'none';
           break;
         case 'contrast':
           ctx.filter = 'contrast(1.3)';
-          // Redraw original content with filter applied to the new canvas
+          ctx.clearRect(0, 0, frame.width, frame.height);
           ctx.drawImage(frame.canvas, 0, 0);
+          ctx.filter = 'none';
           break;
         case 'blur':
           ctx.filter = 'blur(2px)';
-          // Redraw original content with filter applied to the new canvas
+          ctx.clearRect(0, 0, frame.width, frame.height);
           ctx.drawImage(frame.canvas, 0, 0);
+          ctx.filter = 'none';
           break;
         default:
           // No effect or unknown effect, just return original canvas (already copied)
@@ -509,27 +512,9 @@ export default function GifEditor({ isOpen, onClose, gifData, onSave }) {
                           : "border-slate-300 dark:border-slate-700 hover:border-slate-400"
                       )}
                     >
-                      <canvas
-                        ref={el => {
-                          if (el && frame.canvas) {
-                            // Ensure the canvas dimensions match the frame
-                            el.width = frame.width;
-                            el.height = frame.height;
-                            const ctx = el.getContext('2d');
-                            ctx.clearRect(0, 0, el.width, el.height);
-                            ctx.drawImage(frame.canvas, 0, 0);
-                            
-                            // Draw text overlays for thumbnail preview
-                            textOverlays.filter(t => t.frameIndex === index).forEach(overlay => {
-                                // Scale down font size and position for thumbnail
-                                const scaleFactor = 0.25; // Example scale factor, adjust as needed
-                                ctx.font = `${overlay.fontSize * scaleFactor}px ${overlay.fontFamily}`;
-                                ctx.fillStyle = overlay.color;
-                                ctx.textAlign = overlay.align;
-                                ctx.fillText(overlay.text, overlay.x * scaleFactor, overlay.y * scaleFactor); 
-                            });
-                          }
-                        }}
+                      <img
+                        src={frame.canvas.toDataURL()}
+                        alt={`Frame ${index + 1}`}
                         className="w-full h-full object-contain rounded"
                       />
                       <div className="absolute bottom-0 left-0 right-0 bg-black/70 text-white text-[8px] text-center py-0.5">
