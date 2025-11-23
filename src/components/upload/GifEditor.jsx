@@ -388,8 +388,6 @@ export default function GifEditor({ isOpen, onClose, gifData, onSave }) {
     }
   };
 
-  if (!isOpen) return null;
-
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-7xl w-[98vw] h-[98vh] p-0 overflow-hidden [&>button]:hidden">

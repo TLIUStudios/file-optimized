@@ -861,8 +861,8 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
       
       const GIF = window.GIF;
       const gif = new GIF({
-        workers: 4,
-        quality: 5, // Better quality for smoother appearance
+        workers: 2,
+        quality: gifQuality,
         width: targetWidth,
         height: targetHeight,
         workerScript: workerBlobUrl,
