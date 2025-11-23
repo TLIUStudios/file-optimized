@@ -89,8 +89,9 @@ export default function Profile() {
     enabled: !!user?.id && user?.plan === 'pro',
   });
 
-  const handleUpgrade = async () => {
+  const handleUpgrade = async (billingFrequency = 'monthly') => {
     console.log('🚀 Upgrade clicked from Profile');
+    console.log('📅 Billing frequency:', billingFrequency);
     
     setUpgradeError(null);
     
@@ -119,8 +120,8 @@ export default function Profile() {
       setProcessingCheckout(true);
       const toastId = toast.loading('Creating checkout session...', { duration: Infinity });
       
-      console.log('Calling createCheckoutSession...');
-      const response = await base44.functions.invoke('createCheckoutSession');
+      console.log('Calling createCheckoutSession with billing frequency:', billingFrequency);
+      const response = await base44.functions.invoke('createCheckoutSession', { billingFrequency });
       
       console.log('Response:', response);
       

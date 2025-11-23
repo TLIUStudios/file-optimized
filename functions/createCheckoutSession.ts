@@ -5,6 +5,12 @@ Deno.serve(async (req) => {
   console.log('🚀 createCheckoutSession function invoked');
 
   try {
+    // Parse request body to get billing frequency
+    const body = await req.json().catch(() => ({}));
+    const billingFrequency = body.billingFrequency || 'monthly';
+    
+    console.log('📅 Billing frequency:', billingFrequency);
+    
     // Initialize Base44 client
     const base44 = createClientFromRequest(req);
     
@@ -34,12 +40,18 @@ Deno.serve(async (req) => {
 
     // Get Stripe keys
     const stripeSecretKey = Deno.env.get('STRIPE_SECRET_KEY');
-    const stripePriceId = Deno.env.get('STRIPE_PRICE_ID');
+    const stripeMonthlyPriceId = Deno.env.get('STRIPE_PRICE_ID');
+    const stripeAnnualPriceId = Deno.env.get('STRIPE_ANNUAL_PRICE_ID');
+    
+    // Select the correct price ID based on billing frequency
+    const stripePriceId = billingFrequency === 'annual' ? stripeAnnualPriceId : stripeMonthlyPriceId;
 
     console.log('🔑 Stripe Secret Key exists:', !!stripeSecretKey);
     console.log('🔑 Stripe Secret Key length:', stripeSecretKey?.length || 0);
     console.log('🔑 Stripe Secret Key prefix:', stripeSecretKey?.substring(0, 10));
-    console.log('💰 Stripe Price ID:', stripePriceId);
+    console.log('💰 Stripe Monthly Price ID:', stripeMonthlyPriceId);
+    console.log('💰 Stripe Annual Price ID:', stripeAnnualPriceId);
+    console.log('✅ Selected Price ID:', stripePriceId);
 
     if (!stripeSecretKey) {
       console.error('❌ STRIPE_SECRET_KEY not set');
@@ -49,7 +61,7 @@ Deno.serve(async (req) => {
     }
 
     if (!stripePriceId) {
-      console.error('❌ STRIPE_PRICE_ID not set');
+      console.error('❌ STRIPE_PRICE_ID not set for billing frequency:', billingFrequency);
       return Response.json({ 
         error: 'Stripe pricing not configured. Please contact support.' 
       }, { status: 500 });

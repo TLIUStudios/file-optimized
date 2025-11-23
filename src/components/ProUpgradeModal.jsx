@@ -2,9 +2,17 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Check, Zap, Loader2, AlertCircle, X } from "lucide-react";
+import { useState } from "react";
 
 export default function ProUpgradeModal({ isOpen, onClose, onUpgrade, processing = false, error = null, userPlan = 'free' }) {
   const isPro = userPlan === 'pro';
+  const [billingFrequency, setBillingFrequency] = useState('monthly');
+  
+  const isAnnual = billingFrequency === 'annual';
+  const price = isAnnual ? '$100' : '$10';
+  const period = isAnnual ? '/yr' : '/mo';
+  const savings = isAnnual ? '17% OFF' : null;
+  
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-[500px] max-w-[95vw] p-0 overflow-hidden bg-gradient-to-br from-slate-50 to-white dark:from-slate-950 dark:to-slate-900 [&>button]:hidden">
@@ -44,6 +52,33 @@ export default function ProUpgradeModal({ isOpen, onClose, onUpgrade, processing
               </div>
             </div>
           )}
+
+          {/* Billing Frequency Toggle */}
+          <div className="flex items-center justify-center gap-2 p-1 bg-slate-100 dark:bg-slate-900 rounded-lg">
+            <button
+              onClick={() => setBillingFrequency('monthly')}
+              className={`flex-1 px-4 py-2 rounded-md text-sm font-medium transition-all ${
+                billingFrequency === 'monthly'
+                  ? 'bg-white dark:bg-slate-800 text-slate-900 dark:text-white shadow-sm'
+                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+              }`}
+            >
+              Monthly
+            </button>
+            <button
+              onClick={() => setBillingFrequency('annual')}
+              className={`flex-1 px-4 py-2 rounded-md text-sm font-medium transition-all relative ${
+                billingFrequency === 'annual'
+                  ? 'bg-white dark:bg-slate-800 text-slate-900 dark:text-white shadow-sm'
+                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+              }`}
+            >
+              Annual
+              <Badge className="absolute -top-2 -right-2 bg-emerald-600 text-white text-[10px] px-1.5 py-0.5">
+                Save 17%
+              </Badge>
+            </button>
+          </div>
 
           {/* Comparison Grid */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -94,7 +129,16 @@ export default function ProUpgradeModal({ isOpen, onClose, onUpgrade, processing
                 <Zap className="w-4 h-4 text-amber-600" />
                 Pro Plan
               </h3>
-              <p className="text-2xl font-bold text-center text-amber-600 dark:text-amber-500 mb-3">$10<span className="text-sm">/mo</span></p>
+              <div className="text-center mb-3">
+                <p className="text-2xl font-bold text-amber-600 dark:text-amber-500">
+                  {price}<span className="text-sm">{period}</span>
+                </p>
+                {isAnnual && (
+                  <p className="text-xs text-emerald-600 dark:text-emerald-400 font-medium mt-1">
+                    Save $20/year vs monthly
+                  </p>
+                )}
+              </div>
               <div className="space-y-2">
                 <div className="flex items-center gap-2 text-xs text-slate-900 dark:text-white font-medium">
                   <Check className="w-3.5 h-3.5 text-emerald-600 flex-shrink-0" />
@@ -129,7 +173,7 @@ export default function ProUpgradeModal({ isOpen, onClose, onUpgrade, processing
             <div className="relative">
               <div className="absolute -inset-1 bg-gradient-to-r from-yellow-400 via-amber-500 to-orange-500 rounded-lg opacity-75 blur-lg animate-pulse" style={{ animationDuration: '2s' }}></div>
               <Button
-                onClick={onUpgrade}
+                onClick={() => onUpgrade(billingFrequency)}
                 disabled={processing}
                 className="relative w-full bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-semibold h-12 text-base shadow-lg disabled:opacity-50 disabled:cursor-not-allowed overflow-hidden group"
               >
