@@ -24,6 +24,7 @@ import { base44 } from "@/api/base44Client";
 const ImageEditor = lazy(() => import("./ImageEditor"));
 const GifEditor = lazy(() => import("./GifEditor"));
 const VideoEditor = lazy(() => import("./VideoEditor"));
+const AudioEditor = lazy(() => import("./AudioEditor"));
 
 export default function MediaCard({ image, onRemove, onProcessed, onCompare, autoProcess, isPro, onFilenameUpdate }) {
   const [processing, setProcessing] = useState(false);
@@ -43,6 +44,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
   const [noiseReduction, setNoiseReduction] = useState(false);
   const [showEditor, setShowEditor] = useState(false);
   const [showVideoEditor, setShowVideoEditor] = useState(false);
+  const [showAudioEditor, setShowAudioEditor] = useState(false);
   const [outputFormat, setOutputFormat] = useState(null);
   const [compressedBlob, setCompressedBlob] = useState(null);
   const [enableUpscale, setEnableUpscale] = useState(false);
@@ -1869,6 +1871,18 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
     toast.success("Video edited successfully. Re-process to apply compression.");
   };
 
+  const handleSaveAudioEdit = (newBlob) => {
+    const newUrl = URL.createObjectURL(newBlob);
+    setPreview(newUrl);
+    setOriginalSize(newBlob.size);
+    setProcessed(false);
+    setCompressedPreview(null);
+    setCompressedSize(0);
+    setError(null);
+    setShowAudioEditor(false);
+    toast.success("Audio edited successfully. Re-process to apply compression.");
+  };
+
   const handleSaveEdit = (newImageUrl, newBlob) => {
     setPreview(newImageUrl);
     setOriginalSize(newBlob.size);
@@ -2085,6 +2099,9 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
                 <div className="w-full h-full flex flex-col items-center justify-center p-4">
                   <Music className="w-16 h-16 text-slate-400 mb-2" />
                   <audio src={preview} controls className="w-full" />
+                  <Button variant="ghost" size="icon" onClick={(e) => { e.stopPropagation(); setShowAudioEditor(true); }} className="absolute top-2 right-2 bg-white/80 hover:bg-white dark:bg-slate-800/80 dark:hover:bg-slate-800 h-7 w-7 rounded-lg">
+                    <Edit2 className="w-3 h-3" />
+                  </Button>
                 </div>
               ) : null}
               <Badge className="absolute top-2 left-2 bg-slate-900/80 text-white">Original</Badge>
@@ -2693,6 +2710,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
       {showEditor && isImage && !isGif && <ImageEditor isOpen={showEditor} onClose={() => setShowEditor(false)} imageData={preview} onSave={handleSaveEdit} />}
       {showGifEditor && isGif && <GifEditor isOpen={showGifEditor} onClose={() => setShowGifEditor(false)} gifData={preview} onSave={handleSaveGifEdit} />}
       {showVideoEditor && isVideo && <VideoEditor isOpen={showVideoEditor} onClose={() => setShowVideoEditor(false)} videoData={preview} onSave={handleSaveVideoEdit} />}
+      {showAudioEditor && isAudio && <AudioEditor isOpen={showAudioEditor} onClose={() => setShowAudioEditor(false)} audioData={preview} onSave={handleSaveAudioEdit} />}
       <SocialShareModal
         isOpen={showSocialShare}
         onClose={() => setShowSocialShare(false)}
