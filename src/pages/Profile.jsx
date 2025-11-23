@@ -316,7 +316,7 @@ export default function Profile() {
               {/* Plan Comparison Grid */}
               <div className="grid grid-cols-2 gap-4 mb-4">
                 {/* Free Plan */}
-                <div className={`p-4 rounded-lg border-2 ${!isPro ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-950/30' : 'border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-950'} relative`}>
+                <div className={`p-4 rounded-lg border-2 ${!isPro ? 'border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-950' : 'border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-950'} relative`}>
                   {!isPro && (
                     <Badge className="absolute -top-2 left-1/2 -translate-x-1/2 bg-emerald-600 text-white">
                       Current Plan
