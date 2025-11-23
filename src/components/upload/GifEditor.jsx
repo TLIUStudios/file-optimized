@@ -53,21 +53,9 @@ export default function GifEditor({ isOpen, onClose, gifData, onSave }) {
 
   useEffect(() => {
     if (frames.length > 0 && canvasRef.current) {
-      // Small delay to ensure canvas is ready
-      requestAnimationFrame(() => {
-        drawFrame(currentFrame);
-      });
+      drawFrame(currentFrame);
     }
   }, [currentFrame, frames, textOverlays]);
-
-  // Redraw when canvas ref becomes available
-  useEffect(() => {
-    if (canvasRef.current && frames.length > 0) {
-      requestAnimationFrame(() => {
-        drawFrame(currentFrame);
-      });
-    }
-  }, [canvasRef.current]);
 
   const loadGifFrames = async () => {
     try {
@@ -155,6 +143,19 @@ export default function GifEditor({ isOpen, onClose, gifData, onSave }) {
       setFrames(loadedFrames);
       setGlobalDelay(loadedFrames[0]?.delay || 100);
       setCurrentFrame(0);
+      
+      // Force initial draw after frames are loaded
+      setTimeout(() => {
+        if (canvasRef.current && loadedFrames[0]) {
+          const canvas = canvasRef.current;
+          canvas.width = loadedFrames[0].width;
+          canvas.height = loadedFrames[0].height;
+          const ctx = canvas.getContext('2d', { alpha: true });
+          if (ctx) {
+            ctx.drawImage(loadedFrames[0].canvas, 0, 0);
+          }
+        }
+      }, 50);
       
       toast.success(`Loaded ${loadedFrames.length} frames`);
     } catch (error) {
