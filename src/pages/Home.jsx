@@ -116,6 +116,20 @@ export default function Home() {
   const handleCompare = (data) => {
     setComparisonData(data);
   };
+  
+  const handleFilenameUpdate = (imageId, newFilename) => {
+    setProcessedImages((prev) => {
+      const existingData = prev[imageId];
+      if (!existingData) return prev;
+      return {
+        ...prev,
+        [imageId]: {
+          ...existingData,
+          filename: newFilename
+        }
+      };
+    });
+  };
 
   const clearAll = () => {
     setImages([]);
@@ -536,19 +550,7 @@ export default function Home() {
                       onCompare={handleCompare}
                       autoProcess={!processedImages[image.id] && autoProcessTrigger}
                       isPro={isPro}
-                      onFilenameUpdate={(newFilename) => {
-                        setProcessedImages((prev) => {
-                          const existingData = prev[image.id];
-                          if (!existingData) return prev;
-                          return {
-                            ...prev,
-                            [image.id]: {
-                              ...existingData,
-                              filename: newFilename
-                            }
-                          };
-                        });
-                      }} />
+                      onFilenameUpdate={(newFilename) => handleFilenameUpdate(image.id, newFilename)} />
 
                           </Suspense>
                         </div>
@@ -577,8 +579,7 @@ export default function Home() {
           mediaType={comparisonData.mediaType}
           fileFormat={comparisonData.fileFormat}
           originalFileFormat={comparisonData.originalFileFormat}
-          generatedAnimations={comparisonData.animations || null}
-          onFilenameChange={comparisonData.onFilenameChange} />
+          generatedAnimations={comparisonData.animations || null} />
 
         </Suspense>
       }

@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
-import { X, MoveHorizontal, ZoomIn, ZoomOut, Maximize2, Copy, RefreshCw, Download as DownloadIcon, Check, Loader2, CheckCircle2 } from "lucide-react"; // Renamed Download to DownloadIcon, added Check
+import { X, MoveHorizontal, ZoomIn, ZoomOut, Maximize2, Copy, RefreshCw, Download as DownloadIcon, Check, Loader2, CheckCircle2, Share2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { base44 } from "@/api/base44Client";
@@ -97,22 +97,27 @@ export default function ImageComparisonModal({
   const [aiMood, setAiMood] = useState("");
   const [aiAltText, setAiAltText] = useState("");
   const [aiTags, setAiTags] = useState("");
+  const [aiKeywords, setAiKeywords] = useState("");
+  const [aiHashtags, setAiHashtags] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
   const [regeneratingField, setRegeneratingField] = useState(null);
-  const [showDownloadModalForImage, setShowDownloadModalForImage] = useState(false); // New state for download modal
-
-  // New states for editable filename
-  const [isEditingFilename, setIsEditingFilename] = useState(false);
-  const [editableFilename, setEditableFilename] = useState(fileName);
+  const [showDownloadModalForImage, setShowDownloadModalForImage] = useState(false);
+  const [originalResolution, setOriginalResolution] = useState(null);
 
 
   const containerRef = useRef(null);
   const imageContainerRef = useRef(null);
 
-  // Sync editableFilename with fileName prop when it changes
+  // Load original image resolution for comparison
   useEffect(() => {
-    setEditableFilename(fileName);
-  }, [fileName]);
+    if (mediaType === 'image' && originalImage) {
+      const img = new Image();
+      img.onload = () => {
+        setOriginalResolution({ width: img.width, height: img.height });
+      };
+      img.src = originalImage;
+    }
+  }, [originalImage, mediaType]);
 
   // Extract file extensions
   const originalExt = originalFileFormat ? originalFileFormat.toUpperCase() : fileName.split('.').pop().toUpperCase();
@@ -308,7 +313,7 @@ export default function ImageComparisonModal({
 
       // Generate with AI - updated prompt for more fields
       const aiResult = await base44.integrations.Core.InvokeLLM({
-        prompt: "Analyze this image and provide: a short title (under 60 chars), brief description (under 160 chars), category (1-2 words), mood (1-2 words describing the emotional tone), alt text for accessibility (descriptive, under 125 chars), and 5-8 relevant tags (comma-separated keywords).",
+        prompt: "Analyze this image and provide: a short title (under 60 chars), brief description (under 160 chars), category (1-2 words), mood (1-2 words describing the emotional tone), alt text for accessibility (descriptive, under 125 chars), 5-8 relevant tags (comma-separated keywords), 5-8 SEO keywords (comma-separated), and 5-8 social media hashtags (with # symbol, comma-separated).",
         file_urls: [uploadResult.file_url],
         response_json_schema: {
           type: "object",
@@ -318,7 +323,9 @@ export default function ImageComparisonModal({
             category: { type: "string" },
             mood: { type: "string" },
             alt_text: { type: "string" },
-            tags: { type: "string" }
+            tags: { type: "string" },
+            keywords: { type: "string" },
+            hashtags: { type: "string" }
           }
         }
       });
@@ -331,6 +338,8 @@ export default function ImageComparisonModal({
       setAiMood(aiResult.mood || "Neutral");
       setAiAltText(aiResult.alt_text || "Image description");
       setAiTags(aiResult.tags || "image, photo");
+      setAiKeywords(aiResult.keywords || "image, photo, digital");
+      setAiHashtags(aiResult.hashtags || "#image #photo");
       toast.success('Metadata generated!');
 
     } catch (error) {
@@ -385,6 +394,14 @@ export default function ImageComparisonModal({
           prompt = "Analyze this image and provide ONLY 5-8 relevant keywords as comma-separated tags.";
           schemaProperty = "tags";
           break;
+        case "keywords":
+          prompt = "Analyze this image and provide ONLY 5-8 SEO keywords as comma-separated terms.";
+          schemaProperty = "keywords";
+          break;
+        case "hashtags":
+          prompt = "Analyze this image and provide ONLY 5-8 social media hashtags (with # symbol) as comma-separated items.";
+          schemaProperty = "hashtags";
+          break;
         default:
           throw new Error("Invalid field name for regeneration.");
       }
@@ -420,6 +437,12 @@ export default function ImageComparisonModal({
         case "tags":
           setAiTags(aiResult.tags || "image, photo");
           break;
+        case "keywords":
+          setAiKeywords(aiResult.keywords || "image, photo, digital");
+          break;
+        case "hashtags":
+          setAiHashtags(aiResult.hashtags || "#image #photo");
+          break;
       }
 
       toast.success(`${fieldName.charAt(0).toUpperCase() + fieldName.slice(1)} regenerated!`);
@@ -449,7 +472,7 @@ export default function ImageComparisonModal({
           const url = URL.createObjectURL(cachedBlob);
           const link = document.createElement('a');
           link.href = url;
-          const baseName = editableFilename.split('.')[0];
+          const baseName = fileName.split('.')[0];
           link.download = `${baseName}.${format}`;
           link.click();
           URL.revokeObjectURL(url);
@@ -462,7 +485,7 @@ export default function ImageComparisonModal({
       } else {
         const link = document.createElement('a');
         link.href = mediaUrl;
-        const baseName = editableFilename.split('.')[0];
+        const baseName = fileName.split('.')[0];
         link.download = `${baseName}.${format || fileFormat}`;
         link.click();
         toast.success(`${mediaTypeOverride.charAt(0).toUpperCase() + mediaTypeOverride.slice(1)} downloaded!`);
@@ -527,7 +550,7 @@ export default function ImageComparisonModal({
     try {
       const JSZip = (await import('https://cdn.jsdelivr.net/npm/jszip@3.10.1/+esm')).default;
       const zip = new JSZip();
-      const baseName = editableFilename.split('.')[0];
+      const baseName = fileName.split('.')[0];
 
       // Use cached blobs for all formats
       for (const format of ['jpg', 'png', 'webp', 'avif']) {
@@ -558,7 +581,7 @@ export default function ImageComparisonModal({
       const JSZip = (await import('https://cdn.jsdelivr.net/npm/jszip@3.10.1/+esm')).default;
       const zip = new JSZip();
 
-      const baseName = editableFilename.split('.').slice(0, -1).join('.') || editableFilename;
+      const baseName = fileName.split('.').slice(0, -1).join('.') || fileName;
 
       for (const anim of generatedAnimations) {
         const response = await fetch(anim.url);
@@ -590,7 +613,7 @@ export default function ImageComparisonModal({
       const url = URL.createObjectURL(convertedBlob);
       const link = document.createElement('a');
       link.href = url;
-      const baseName = editableFilename.split('.')[0];
+      const baseName = fileName.split('.')[0];
       link.download = `${baseName}.${selectedFormat}`;
       link.click();
       URL.revokeObjectURL(url);
@@ -735,7 +758,7 @@ export default function ImageComparisonModal({
   // Check if file got larger
   const sizeIncreased = displaySize > originalSize;
 
-  const hasAnyMetadata = aiTitle || aiDescription || aiCategory || aiMood || aiAltText || aiTags;
+  const hasAnyMetadata = aiTitle || aiDescription || aiCategory || aiMood || aiAltText || aiTags || aiKeywords || aiHashtags;
 
 
   if (!isOpen) return null;
@@ -853,7 +876,7 @@ export default function ImageComparisonModal({
                       onClick={() => {
                         const link = document.createElement('a');
                         link.href = anim.url;
-                        const baseName = editableFilename.split('.').slice(0, -1).join('.') || editableFilename;
+                        const baseName = fileName.split('.').slice(0, -1).join('.') || fileName;
                         link.download = `${baseName}_${anim.name.toLowerCase().replace(/\s+/g, '_')}.gif`;
                         link.click();
                         toast.success(`${anim.name} downloaded!`);
@@ -1036,52 +1059,9 @@ export default function ImageComparisonModal({
           <div className="w-full lg:w-[360px] xl:w-[400px] bg-white dark:bg-slate-900 border-t lg:border-t-0 lg:border-l border-slate-200 dark:border-slate-800 flex flex-col overflow-y-auto">
             <div className="p-5 space-y-4">
               <div>
-                {isEditingFilename ? (
-                  <div className="flex items-center gap-2 mb-1">
-                    <input
-                      type="text"
-                      value={editableFilename}
-                      onChange={(e) => setEditableFilename(e.target.value)}
-                      className="flex-1 text-sm font-bold text-slate-900 dark:text-white bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded px-2 py-1"
-                      onBlur={() => setIsEditingFilename(false)}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter') {
-                          setIsEditingFilename(false);
-                          if (onFilenameChange && editableFilename !== fileName) {
-                            onFilenameChange(editableFilename);
-                          }
-                          toast.success('Filename updated!');
-                        }
-                        if (e.key === 'Escape') {
-                          setEditableFilename(fileName);
-                          setIsEditingFilename(false);
-                        }
-                      }}
-                      autoFocus
-                    />
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      onClick={() => {
-                        setIsEditingFilename(false);
-                        if (onFilenameChange && editableFilename !== fileName) {
-                          onFilenameChange(editableFilename);
-                        }
-                        toast.success('Filename updated!');
-                      }}
-                      className="h-7 w-7 p-0"
-                    >
-                      <Check className="w-4 h-4 text-emerald-600" />
-                    </Button>
-                  </div>
-                ) : (
-                  <h2
-                    className="text-slate-900 dark:text-white text-sm font-bold mb-1 break-words line-clamp-2 cursor-pointer hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors"
-                    onClick={() => setIsEditingFilename(true)}
-                  >
-                    {editableFilename}
-                  </h2>
-                )}
+                <h2 className="text-slate-900 dark:text-white text-sm font-bold mb-1 break-words line-clamp-2">
+                  {fileName}
+                </h2>
                 <p className="text-slate-500 dark:text-slate-400 text-xs">Compare quality and analyze compression efficiency</p>
               </div>
 
@@ -1205,7 +1185,7 @@ export default function ImageComparisonModal({
 
               {!isAnimationVariations && (
                 <div className="space-y-2">
-                  <h3 className="text-slate-900 dark:text-white font-semibold text-xs uppercase tracking-wider">Compression Details</h3>
+                  <h3 className="text-slate-900 dark:text-white font-semibold text-xs uppercase tracking-wider">Optimization Details</h3>
 
                   <div className="space-y-2">
                     <div className="flex items-center justify-between py-2 px-3 bg-slate-50 dark:bg-slate-950 rounded-lg border border-slate-200 dark:border-slate-800">
@@ -1227,7 +1207,13 @@ export default function ImageComparisonModal({
                       <>
                         <div className="flex items-center justify-between py-2 px-3 bg-slate-50 dark:bg-slate-950 rounded-lg border border-slate-200 dark:border-slate-800">
                           <span className="text-slate-600 dark:text-slate-400 text-xs font-medium">Resolution</span>
-                          <span className="text-slate-900 dark:text-white font-bold text-sm">{imageDimensions.width} × {imageDimensions.height}</span>
+                          {originalResolution && (originalResolution.width !== imageDimensions.width || originalResolution.height !== imageDimensions.height) ? (
+                            <span className="text-slate-900 dark:text-white font-bold text-sm">
+                              {originalResolution.width} × {originalResolution.height} → {imageDimensions.width} × {imageDimensions.height}
+                            </span>
+                          ) : (
+                            <span className="text-slate-900 dark:text-white font-bold text-sm">{imageDimensions.width} × {imageDimensions.height}</span>
+                          )}
                         </div>
 
                         <div className="flex items-center justify-between py-2 px-3 bg-slate-50 dark:bg-slate-950 rounded-lg border border-slate-200 dark:border-slate-800">
@@ -1251,7 +1237,7 @@ export default function ImageComparisonModal({
                         onClick={() => {
                           const link = document.createElement('a');
                           link.href = anim.url;
-                          const baseName = editableFilename.split('.').slice(0, -1).join('.') || editableFilename;
+                          const baseName = fileName.split('.').slice(0, -1).join('.') || fileName;
                           link.download = `${baseName}_${anim.name.toLowerCase().replace(/\s+/g, '_')}.gif`;
                           link.click();
                           toast.success(`${anim.name} downloaded!`);
@@ -1275,6 +1261,36 @@ export default function ImageComparisonModal({
 
               {!isAnimationVariations && (
                 <>
+                  <div className="h-px bg-slate-200 dark:bg-slate-800" />
+                  
+                  {/* Social Media Share */}
+                  <div className="space-y-2">
+                    <Button
+                      variant="outline"
+                      className="w-full justify-center"
+                      size="sm"
+                      onClick={() => {
+                        if (navigator.share && compressedImage) {
+                          fetch(compressedImage)
+                            .then(res => res.blob())
+                            .then(blob => {
+                              const file = new File([blob], fileName, { type: blob.type });
+                              navigator.share({
+                                title: fileName,
+                                text: 'Check out my optimized image!',
+                                files: [file]
+                              }).catch(err => console.log('Share cancelled'));
+                            });
+                        } else {
+                          toast.info('Sharing not supported on this device');
+                        }
+                      }}
+                    >
+                      <Share2 className="w-4 h-4 mr-2" />
+                      Share to Social Media
+                    </Button>
+                  </div>
+                  
                   <div className="h-px bg-slate-200 dark:bg-slate-800" />
                   {/* SEO Generation Section */}
                   {mediaType === 'image' && (
@@ -1493,6 +1509,70 @@ export default function ImageComparisonModal({
                             className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded px-3 py-2 text-xs text-slate-900 dark:text-white"
                           />
                         </div>
+
+                        {/* Keywords */}
+                        <div className="bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg p-3">
+                          <div className="flex items-center justify-between mb-2">
+                            <label className="text-[10px] font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider">Keywords</label>
+                            <div className="flex gap-1">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => regenerateField('keywords')}
+                                disabled={regeneratingField === 'keywords'}
+                                className="h-5 w-5 p-0 hover:bg-slate-200 dark:hover:bg-slate-800"
+                              >
+                                <RefreshCw className={cn("w-3 h-3", regeneratingField === 'keywords' && "animate-spin")} />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => copyToClipboard(aiKeywords, 'Keywords')}
+                                className="h-5 w-5 p-0 hover:bg-slate-200 dark:hover:bg-slate-800"
+                              >
+                                <Copy className="w-3 h-3" />
+                              </Button>
+                            </div>
+                          </div>
+                          <input
+                            type="text"
+                            value={aiKeywords}
+                            readOnly
+                            className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded px-3 py-2 text-xs text-slate-900 dark:text-white"
+                          />
+                        </div>
+
+                        {/* Hashtags */}
+                        <div className="bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg p-3">
+                          <div className="flex items-center justify-between mb-2">
+                            <label className="text-[10px] font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider">Hashtags</label>
+                            <div className="flex gap-1">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => regenerateField('hashtags')}
+                                disabled={regeneratingField === 'hashtags'}
+                                className="h-5 w-5 p-0 hover:bg-slate-200 dark:hover:bg-slate-800"
+                              >
+                                <RefreshCw className={cn("w-3 h-3", regeneratingField === 'hashtags' && "animate-spin")} />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => copyToClipboard(aiHashtags, 'Hashtags')}
+                                className="h-5 w-5 p-0 hover:bg-slate-200 dark:hover:bg-slate-800"
+                              >
+                                <Copy className="w-3 h-3" />
+                              </Button>
+                            </div>
+                          </div>
+                          <input
+                            type="text"
+                            value={aiHashtags}
+                            readOnly
+                            className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded px-3 py-2 text-xs text-slate-900 dark:text-white"
+                          />
+                        </div>
                       </div>
                     ) : (
                       <div className="bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg p-4 text-center">
@@ -1530,7 +1610,7 @@ export default function ImageComparisonModal({
             onDownloadSpecificFormat={(format) => performSingleMediaDownload(compressedImage, format)}
             onDownloadAllFormatsZip={downloadAllImageFormatsAsZip}
             availableImageFormats={['jpg', 'png', 'webp', 'avif']} // Pass image specific formats
-            fileName={editableFilename} // Pass the editable filename to the download modal
+            fileName={fileName}
             // For future AI metadata integration:
             // aiTitle={aiTitle}
             // aiDescription={aiDescription}

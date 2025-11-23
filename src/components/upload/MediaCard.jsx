@@ -3,7 +3,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Slider } from "@/components/ui/slider";
-import { Download, X, Loader2, CheckCircle2, ArrowRight, Settings2, AlertCircle, Info, Edit2, RefreshCcw, Sparkles, Film, Music, Video, ChevronDown, Check, Wand2, ImageIcon } from "lucide-react";
+import { Download, X, Loader2, CheckCircle2, ArrowRight, Settings2, AlertCircle, Info, Edit2, RefreshCcw, Sparkles, Film, Music, Video, ChevronDown, Check, Wand2, ImageIcon, Share2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
@@ -1744,13 +1744,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
         fileName: getOutputFilename(),
         mediaType: isVideo ? 'video' : isAudio ? 'audio' : 'image',
         fileFormat: outputFormat || format,
-        originalFileFormat: originalFormat,
-        onFilenameChange: (newFilename) => {
-          setEditableFilename(newFilename);
-          if (onFilenameUpdate) {
-            onFilenameUpdate(newFilename);
-          }
-        }
+        originalFileFormat: originalFormat
       });
     }
   };
@@ -2075,9 +2069,34 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
             </div>
           </div>
 
-          <Button variant="outline" size="sm" onClick={extractMetadata} className="w-full justify-center mt-2 sm:mt-3 text-xs">
-            <Info className="w-3 h-3 mr-1" /> <span className="hidden sm:inline">View Metadata</span><span className="sm:hidden">Metadata</span>
-          </Button>
+          <div className="grid grid-cols-2 gap-2 mt-2 sm:mt-3">
+            <Button variant="outline" size="sm" onClick={extractMetadata} className="justify-center text-xs">
+              <Info className="w-3 h-3 mr-1" /> <span className="hidden sm:inline">Metadata</span><span className="sm:hidden">Info</span>
+            </Button>
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={() => {
+                if (navigator.share && compressedPreview) {
+                  fetch(compressedPreview)
+                    .then(res => res.blob())
+                    .then(blob => {
+                      const file = new File([blob], getOutputFilename(), { type: blob.type });
+                      navigator.share({
+                        title: getOutputFilename(),
+                        text: 'Check out my optimized file!',
+                        files: [file]
+                      }).catch(err => console.log('Share cancelled'));
+                    });
+                } else {
+                  toast.info('Sharing not supported on this device');
+                }
+              }}
+              className="justify-center text-xs"
+            >
+              <Share2 className="w-3 h-3 mr-1" /> <span className="hidden sm:inline">Share</span>
+            </Button>
+          </div>
 
           {error && (
             <div className="flex items-center gap-2 text-sm text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/30 p-3 rounded-lg">
