@@ -126,7 +126,7 @@ export default function SocialShareModal({ isOpen, onClose, imageUrl, fileName }
 
           <div className="border-t pt-4 mt-4">
             <div className="text-xs bg-slate-950 dark:bg-slate-950 rounded-lg p-4 border border-slate-800 dark:border-slate-800">
-              <p className="text-slate-400 dark:text-slate-400"><span className="font-bold text-red-600 dark:text-red-400">Note:</span> <span className="italic">This feature is currently disabled as we don't store any files uploaded to the platform. All processing happens locally in your browser for maximum privacy and security.</span></p>
+              <p className="text-slate-400 dark:text-slate-400"><span className="font-bold text-red-600 dark:text-red-400">Note:</span> <span className="italic">This feature is currently disabled as we don't store any files uploaded on the platform. All processing happens locally in your browser for maximum privacy and security.</span></p>
             </div>
           </div>
         </div>
