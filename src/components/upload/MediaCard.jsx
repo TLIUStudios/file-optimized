@@ -204,26 +204,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
       enableUpscale, upscaleMultiplier, useStandardResolutions, enableAnimation, animationType, 
       animationDuration, videoBitrate, audioBitrate, frameRate, videoPreset, videoResolution, audioQuality]);
 
-  useEffect(() => {
-    if (processing && processingStartTime) {
-      const interval = setInterval(() => {
-        const elapsed = Date.now() - processingStartTime;
-        let estimatedTotal = 3000;
-        if (isGif) estimatedTotal = Math.max(5000, gifFrameCount * 50);
-        else if (isVideo) estimatedTotal = Math.max(10000, image.size / 100000);
-        else if (isImage && enableAnimation) estimatedTotal = 8000;
-        else if (isImage) estimatedTotal = 2000;
-        const remaining = Math.max(0, estimatedTotal - elapsed);
-        setEstimatedTimeForFile(Math.ceil(remaining / 1000));
-        const progress = Math.min(95, (elapsed / estimatedTotal) * 100);
-        setProcessingProgress(progress);
-      }, 100);
-      return () => clearInterval(interval);
-    } else {
-      setEstimatedTimeForFile(null);
-      setProcessingProgress(0);
-    }
-  }, [processing, processingStartTime, isGif, isVideo, isImage, enableAnimation, gifFrameCount, image.size]);
+  // Progress tracking removed - now handled directly in processing functions
 
   const parseGif = async (dataUrl) => {
     try {
@@ -320,6 +301,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
   const processMedia = async () => {
     setProcessing(true);
     setProcessingStartTime(Date.now());
+    setProcessingProgress(0);
     setError(null);
     setOutputFormat(null);
     setOutputGifFrameCount(0);
@@ -340,6 +322,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
     }
     setProcessing(false);
     setProcessingStartTime(null);
+    setProcessingProgress(0);
     setEstimatedTimeForFile(null);
   };
 
@@ -354,7 +337,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
         return;
       }
       
-      toast.info('Processing video to MP4...');
+      setProcessingProgress(5);
       
       // Load video
       const video = document.createElement('video');
@@ -505,15 +488,16 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
       let frameCount = 0;
       
       // Process frames
+      const totalFrames = Math.ceil(duration * fps);
       try {
         for (let time = 0; time < duration; time += frameInterval) {
           // Check encoder state before encoding
           if (videoEncoder.state === 'closed') {
             throw new Error('Encoder was closed unexpectedly');
           }
-          
+
           video.currentTime = time;
-          
+
           await new Promise((resolve, reject) => {
             const seekTimeout = setTimeout(() => reject(new Error('Seek timeout')), 2000);
             video.onseeked = () => {
@@ -525,21 +509,23 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
               reject(new Error('Video seek error'));
             };
           });
-          
+
           ctx.drawImage(video, 0, 0, targetWidth, targetHeight);
-          
+
           const frame = new VideoFrame(canvas, {
             timestamp: frameCount * (1_000_000 / fps),
           });
-          
+
           if (videoEncoder.state === 'configured') {
             videoEncoder.encode(frame, { keyFrame: frameCount % 30 === 0 });
           }
-          
+
           frame.close();
           frameCount++;
-          
-          // Update progress is tracked by processingProgress state
+
+          // Update progress based on actual frames processed
+          const progress = Math.min(90, 5 + (frameCount / totalFrames) * 85);
+          setProcessingProgress(progress);
         }
         
         // Ensure all frames are encoded before flushing
@@ -603,12 +589,14 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
 
   const processAudio = async () => {
     try {
-      toast.info('Processing audio...');
+      setProcessingProgress(10);
       
       // Decode audio
       const audioContext = new AudioContext();
       const arrayBuffer = await image.arrayBuffer();
       const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
+      
+      setProcessingProgress(30);
       
       // Target sample rate and bitrate
       const targetSampleRate = 44100;
@@ -628,6 +616,8 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
         source.start();
         processedBuffer = await offlineContext.startRendering();
       }
+      
+      setProcessingProgress(50);
       
       let blob, mimeType, outputExt;
       
@@ -717,6 +707,8 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
         outputExt = 'wav';
       }
       
+      setProcessingProgress(100);
+      
       const compressedUrl = URL.createObjectURL(blob);
       
       setCompressedPreview(compressedUrl);
@@ -760,7 +752,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
         return;
       }
       
-      toast.info('Converting video to GIF...');
+      setProcessingProgress(5);
       
       const video = document.createElement('video');
       video.src = preview;
@@ -783,6 +775,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
       const ctx = canvas.getContext('2d');
       
       const frames = [];
+      const maxFrames = Math.min(100, Math.ceil(duration * fps));
       
       for (let time = 0; time < duration; time += frameInterval) {
         video.currentTime = time;
@@ -797,6 +790,8 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
         const frameCtx = frameCanvas.getContext('2d');
         frameCtx.drawImage(canvas, 0, 0);
         frames.push(frameCanvas);
+        
+        setProcessingProgress(5 + (frames.length / maxFrames) * 45);
         
         if (frames.length >= 100) break; // Limit frames
       }
@@ -815,11 +810,16 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
         gif.addFrame(frame, { delay: Math.round(frameInterval * 1000), copy: true });
       }
       
+      setProcessingProgress(60);
+      
       const gifBlob = await new Promise((resolve, reject) => {
         gif.on('finished', resolve);
         gif.on('error', reject);
+        gif.on('progress', (p) => setProcessingProgress(60 + p * 35));
         gif.render();
       });
+      
+      setProcessingProgress(100);
       
       const compressedUrl = URL.createObjectURL(gifBlob);
       setCompressedPreview(compressedUrl);
@@ -851,7 +851,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
 
   const convertGifToMp4 = async () => {
     try {
-      toast.info('Converting GIF to MP4...');
+      setProcessingProgress(5);
       
       // Parse GIF frames
       const response = await fetch(preview);
@@ -932,31 +932,33 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
           if (videoEncoder.state === 'closed') {
             throw new Error('Encoder was closed unexpectedly');
           }
-          
+
           const frame = frames[i];
-          
+
           // Create image data from frame
           const imageData = ctx.createImageData(frame.dims.width, frame.dims.height);
           imageData.data.set(frame.patch);
-          
+
           // Clear canvas and draw frame
           ctx.fillStyle = '#000000';
           ctx.fillRect(0, 0, width, height);
           ctx.putImageData(imageData, frame.dims.left || 0, frame.dims.top || 0);
-          
+
           const videoFrame = new VideoFrame(canvas, {
             timestamp: timestamp,
           });
-          
+
           if (videoEncoder.state === 'configured') {
             videoEncoder.encode(videoFrame, { keyFrame: i % 30 === 0 });
           }
-          
+
           videoFrame.close();
-          
+
           timestamp += (frame.delay || 100) * 1000; // Convert ms to microseconds
-          
-          // Update progress is tracked by processingProgress state
+
+          // Update progress based on frames processed
+          const progress = Math.min(90, 5 + (i / frames.length) * 85);
+          setProcessingProgress(progress);
         }
         
         // Ensure all frames are encoded
@@ -1011,6 +1013,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
         toast.error('GIF processor still loading. Please wait...');
         return;
       }
+      setProcessingProgress(5);
       const response = await fetch(preview);
       const originalBlob = await response.blob();
       if (!gifSettings.frames || gifSettings.frames.length === 0) {
@@ -1051,6 +1054,9 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
       for (let i = 0; i < maxFrames; i++) {
         const frame = framesToProcess[i];
         if (!frame || !frame.patch || !frame.dims) continue;
+        
+        setProcessingProgress(5 + (i / maxFrames) * 45);
+        
         try {
           if (i > 0) {
             const prevFrame = framesToProcess[i - 1];
@@ -1102,12 +1108,18 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
         const { canvas, delay } = processedFrames[i];
         gif.addFrame(canvas, { delay: delay, copy: true, dispose: 2 });
       }
+      
+      setProcessingProgress(60);
+      
       const gifBlob = await new Promise((resolve, reject) => {
         const timeout = setTimeout(() => reject(new Error('Timeout')), 300000);
         gif.on('finished', (blob) => { clearTimeout(timeout); resolve(blob); });
         gif.on('error', (error) => { clearTimeout(timeout); reject(error); });
+        gif.on('progress', (p) => setProcessingProgress(60 + p * 35));
         gif.render();
       });
+      
+      setProcessingProgress(100);
       if (!gifBlob || gifBlob.size === 0) throw new Error('Encoding failed');
 
       // If compressed is larger than original, use original instead
@@ -1191,9 +1203,11 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
   };
 
   const processStaticImage = async () => {
+    setProcessingProgress(10);
     const img = new Image();
     img.src = preview;
     await new Promise((resolve) => { img.onload = resolve; });
+    setProcessingProgress(20);
     const canvas = document.createElement('canvas');
     let width = img.width;
     let height = img.height;
@@ -1250,11 +1264,13 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
       ctx.imageSmoothingQuality = 'high';
     }
     ctx.drawImage(img, 0, 0, width, height);
+    
+    setProcessingProgress(40);
 
     // Use browser-image-compression for better PNG handling
     if (format === 'png') {
       try {
-        console.log('🎨 Compressing PNG with browser-image-compression...');
+        setProcessingProgress(50);
 
         // Load browser-image-compression library
         if (!window.imageCompression) {
@@ -1287,6 +1303,8 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
         };
 
         const compressedFile = await window.imageCompression(canvasBlob, options);
+        
+        setProcessingProgress(100);
 
         if (!enableUpscale && compressedFile.size >= image.size) {
           console.log('⚠️ Using original (compressed is larger)');
@@ -1353,10 +1371,13 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
     const maxAttempts = compressionMode === 'aggressive' || compressionMode === 'maximum' ? 8 : 5;
     while (attempts < maxAttempts) {
       blob = await new Promise((resolve) => canvas.toBlob((b) => resolve(b), mimeType, qualityValue));
+      setProcessingProgress(40 + ((attempts + 1) / maxAttempts) * 55);
       if (enableUpscale || (blob && blob.size < image.size) || attempts === maxAttempts - 1) break;
       qualityValue -= compressionMode === 'maximum' ? 0.2 : 0.15;
       attempts++;
     }
+    
+    setProcessingProgress(100);
     if (!enableUpscale && blob && blob.size >= image.size) {
       const compressedUrl = URL.createObjectURL(image);
       setCompressedPreview(compressedUrl);
@@ -1407,7 +1428,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
       return;
     }
     try {
-      toast.info('Creating animation from your image...', { duration: Infinity, id: 'anim-gen' });
+      setProcessingProgress(5);
       const img = new Image();
       img.src = preview;
       await new Promise((resolve, reject) => {
@@ -1464,6 +1485,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
       const totalFrames = 120;
       const frames = [];
       for (let i = 0; i < totalFrames; i++) {
+        setProcessingProgress(5 + (i / totalFrames) * 45);
         const canvas = document.createElement('canvas');
         canvas.width = width;
         canvas.height = height;
@@ -1513,6 +1535,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
         dither: false
       });
       const frameDelay = Math.round((animationDuration * 1000) / totalFrames);
+      setProcessingProgress(55);
       for (const canvas of frames) {
         gif.addFrame(canvas, { delay: frameDelay, copy: true, dispose: 2 });
       }
@@ -1520,11 +1543,11 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
         const timeout = setTimeout(() => reject(new Error('Timeout')), 180000);
         gif.on('finished', (blob) => { clearTimeout(timeout); resolve(blob); });
         gif.on('error', (err) => { clearTimeout(timeout); reject(err); });
-        gif.on('progress', (p) => {
-          if (p % 0.2 < 0.01) toast.info(`Rendering: ${(p * 100).toFixed(0)}%...`, { id: 'anim-gen' });
-        });
+        gif.on('progress', (p) => setProcessingProgress(55 + p * 40));
         gif.render();
       });
+      
+      setProcessingProgress(100);
       const gifUrl = URL.createObjectURL(gifBlob);
       const animationData = {
         name: animationType.replace('-', ' ').split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' '),
@@ -1541,6 +1564,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
       setProcessed(true);
       setOutputFormat('gif');
       setOutputGifFrameCount(totalFrames);
+      
       onProcessed({
         id: image.name,
         originalFile: image,
@@ -1555,11 +1579,9 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
         originalFileFormat: originalFormat,
         animations: [animationData]
       });
-      toast.dismiss('anim-gen');
       toast.success(`Animation created! (${totalFrames} frames)`);
     } catch (error) {
       console.error('❌ Animation failed:', error);
-      toast.dismiss('anim-gen');
       toast.error('Animation failed: ' + error.message);
       throw error;
     }
