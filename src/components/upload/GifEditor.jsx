@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { X, Play, Pause, Plus, Trash2, Type, Wand2, Download, ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -51,15 +51,60 @@ export default function GifEditor({ isOpen, onClose, gifData, onSave }) {
     };
   }, [isPlaying, frames, currentFrame, globalDelay]);
 
+  const drawFrame = useCallback((frameIndex) => {
+    const canvas = canvasRef.current;
+    const frame = frames[frameIndex];
+    
+    if (!canvas) {
+      console.error('Canvas ref not available');
+      return;
+    }
+    
+    if (!frame) {
+      console.error('Frame not found:', frameIndex);
+      return;
+    }
+
+    if (!frame.canvas) {
+      console.error('Frame canvas not available:', frameIndex);
+      return;
+    }
+    
+    try {
+      // Only set dimensions if they changed
+      if (canvas.width !== frame.width || canvas.height !== frame.height) {
+        canvas.width = frame.width;
+        canvas.height = frame.height;
+      }
+      
+      const ctx = canvas.getContext('2d', { alpha: true });
+      if (!ctx) {
+        console.error('Failed to get canvas context');
+        return;
+      }
+      
+      // Draw frame
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.drawImage(frame.canvas, 0, 0);
+
+      // Draw text overlays for this frame
+      textOverlays.filter(t => t.frameIndex === frameIndex).forEach(overlay => {
+        ctx.font = `${overlay.fontSize}px ${overlay.fontFamily}`;
+        ctx.fillStyle = overlay.color;
+        ctx.textAlign = overlay.align;
+        ctx.fillText(overlay.text, overlay.x, overlay.y);
+      });
+    } catch (error) {
+      console.error('Error drawing frame:', error);
+    }
+  }, [frames, textOverlays]);
+
   useEffect(() => {
     console.log('Draw effect triggered:', { framesCount: frames.length, currentFrame, hasCanvas: !!canvasRef.current });
     if (frames.length > 0 && canvasRef.current) {
-      const timer = setTimeout(() => {
-        drawFrame(currentFrame);
-      }, 10);
-      return () => clearTimeout(timer);
+      drawFrame(currentFrame);
     }
-  }, [currentFrame, frames, textOverlays]);
+  }, [currentFrame, frames, textOverlays, drawFrame]);
 
   const loadGifFrames = async () => {
     try {
@@ -153,54 +198,6 @@ export default function GifEditor({ isOpen, onClose, gifData, onSave }) {
     } catch (error) {
       console.error('❌ Failed to load GIF:', error);
       toast.error('Failed to load GIF: ' + error.message);
-    }
-  };
-
-  const drawFrame = (frameIndex) => {
-    const canvas = canvasRef.current;
-    const frame = frames[frameIndex];
-    
-    if (!canvas) {
-      console.error('Canvas ref not available');
-      return;
-    }
-    
-    if (!frame) {
-      console.error('Frame not found:', frameIndex);
-      return;
-    }
-
-    if (!frame.canvas) {
-      console.error('Frame canvas not available:', frameIndex);
-      return;
-    }
-    
-    try {
-      // Only set dimensions if they changed
-      if (canvas.width !== frame.width || canvas.height !== frame.height) {
-        canvas.width = frame.width;
-        canvas.height = frame.height;
-      }
-      
-      const ctx = canvas.getContext('2d', { alpha: true });
-      if (!ctx) {
-        console.error('Failed to get canvas context');
-        return;
-      }
-      
-      // Draw frame
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      ctx.drawImage(frame.canvas, 0, 0);
-
-      // Draw text overlays for this frame
-      textOverlays.filter(t => t.frameIndex === frameIndex).forEach(overlay => {
-        ctx.font = `${overlay.fontSize}px ${overlay.fontFamily}`;
-        ctx.fillStyle = overlay.color;
-        ctx.textAlign = overlay.align;
-        ctx.fillText(overlay.text, overlay.x, overlay.y);
-      });
-    } catch (error) {
-      console.error('Error drawing frame:', error);
     }
   };
 
