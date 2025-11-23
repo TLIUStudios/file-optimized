@@ -176,9 +176,13 @@ export default function GifEditor({ isOpen, onClose, gifData, onSave }) {
         const frameCtx = frameCanvas.getContext('2d', { alpha: true });
         frameCtx.drawImage(bgCanvas, 0, 0);
 
+        // Cache data URL for thumbnails to avoid blocking renders
+        const dataUrl = frameCanvas.toDataURL('image/png');
+        
         loadedFrames.push({
           id: i,
           canvas: frameCanvas,
+          dataUrl: dataUrl,
           delay: frame.delay * 10 || 100,
           width: canvasWidth,
           height: canvasHeight
@@ -510,7 +514,7 @@ export default function GifEditor({ isOpen, onClose, gifData, onSave }) {
                       )}
                     >
                       <img
-                        src={frame.canvas.toDataURL()}
+                        src={frame.dataUrl}
                         alt={`Frame ${index + 1}`}
                         className="w-full h-full object-contain rounded"
                       />
