@@ -134,6 +134,7 @@ export default function ImageComparisonModal({
   const [convertedBlob, setConvertedBlob] = useState(null);
   const [allFormatSizes, setAllFormatSizes] = useState({});
   const [loadingFormatSizes, setLoadingFormatSizes] = useState(true);
+  const [cachedFormatBlobs, setCachedFormatBlobs] = useState({}); // Cache all format blobs
 
   // Check if we're displaying animated variations
   const isAnimationVariations = generatedAnimations && generatedAnimations.length > 0;
@@ -152,7 +153,7 @@ export default function ImageComparisonModal({
     }
   }, [originalImage, mediaType]);
 
-  // Calculate sizes for all formats
+  // Calculate sizes for all formats AND cache the blobs
   useEffect(() => {
     const calculateAllFormatSizes = async () => {
       if (mediaType !== 'image' || isAnimationVariations) {
@@ -162,10 +163,13 @@ export default function ImageComparisonModal({
 
       setLoadingFormatSizes(true);
       const sizes = {};
+      const blobs = {};
 
       try {
-        // Use the actual compressed size for the current format
+        // Use the actual compressed blob for the current format
+        const currentBlob = await fetch(compressedImage).then(r => r.blob());
         sizes[fileFormat] = compressedSize;
+        blobs[fileFormat] = currentBlob;
 
         const img = new Image();
         img.src = compressedImage;
@@ -182,39 +186,61 @@ export default function ImageComparisonModal({
         ctx.imageSmoothingQuality = 'high';
         ctx.drawImage(img, 0, 0);
 
-        // Calculate for each standard format (except the current one)
+        // Generate and cache blobs for each format
         for (const format of ['jpg', 'png', 'webp']) {
-          // Skip if this is the current format - we already have the real size
-          if (format === fileFormat) continue;
+          if (format === fileFormat) continue; // Already have current format
           
           try {
             const mimeType = format === 'jpg' ? 'image/jpeg' : `image/${format}`;
-            const quality = format === 'jpg' ? 0.92 : format === 'png' ? 1.0 : 0.95;
             
-            const blob = await new Promise((resolve) => {
-              canvas.toBlob(resolve, mimeType, quality);
-            });
+            let blob;
+            if (format === 'png') {
+              // Use advanced PNG compression
+              try {
+                if (!window.imageCompression) {
+                  await new Promise((resolve, reject) => {
+                    const script = document.createElement('script');
+                    script.src = 'https://cdn.jsdelivr.net/npm/browser-image-compression@2.0.2/dist/browser-image-compression.js';
+                    script.onload = () => setTimeout(() => window.imageCompression ? resolve() : reject(new Error('Library not loaded')), 100);
+                    script.onerror = reject;
+                    document.head.appendChild(script);
+                  });
+                }
+
+                const canvasBlob = await new Promise((resolve) => canvas.toBlob(resolve, 'image/png'));
+                blob = await window.imageCompression(canvasBlob, {
+                  maxSizeMB: Math.max(0.1, (canvasBlob.size / 1024 / 1024) * 0.85),
+                  maxWidthOrHeight: Math.max(canvas.width, canvas.height),
+                  useWebWorker: true,
+                  fileType: 'image/png',
+                  initialQuality: 0.85
+                });
+              } catch (pngError) {
+                console.warn('PNG advanced compression failed, using standard:', pngError);
+                blob = await new Promise((resolve) => canvas.toBlob(resolve, 'image/png', 0.95));
+              }
+            } else {
+              // Standard compression for JPG and WEBP
+              const quality = format === 'jpg' ? 0.85 : 0.90;
+              blob = await new Promise((resolve) => canvas.toBlob(resolve, mimeType, quality));
+            }
             
             if (blob) {
               sizes[format] = blob.size;
+              blobs[format] = blob;
             }
           } catch (err) {
-            console.warn(`Failed to calculate ${format} size:`, err);
+            console.warn(`Failed to generate ${format}:`, err);
           }
         }
 
-        // Calculate AVIF separately
+        // Generate and cache AVIF
         try {
           if (!window.imageCompression) {
             await new Promise((resolve, reject) => {
               const script = document.createElement('script');
               script.src = 'https://cdn.jsdelivr.net/npm/browser-image-compression@2.0.2/dist/browser-image-compression.js';
-              script.onload = () => {
-                setTimeout(() => {
-                  if (window.imageCompression) resolve();
-                  else reject(new Error('Library not loaded'));
-                }, 100);
-              };
+              script.onload = () => setTimeout(() => window.imageCompression ? resolve() : reject(new Error('Library not loaded')), 100);
               script.onerror = reject;
               document.head.appendChild(script);
             });
@@ -227,15 +253,17 @@ export default function ImageComparisonModal({
             maxSizeMB: 50,
             fileType: 'image/avif',
             useWebWorker: true,
-            initialQuality: 0.92
+            initialQuality: 0.85
           });
           
           sizes.avif = avifBlob.size;
+          blobs.avif = avifBlob;
         } catch (err) {
           console.warn('AVIF not supported:', err);
         }
 
         setAllFormatSizes(sizes);
+        setCachedFormatBlobs(blobs);
       } catch (error) {
         console.error('Error calculating format sizes:', error);
       } finally {
@@ -244,7 +272,7 @@ export default function ImageComparisonModal({
     };
 
     calculateAllFormatSizes();
-  }, [compressedImage, mediaType, isAnimationVariations]);
+  }, [compressedImage, mediaType, isAnimationVariations, fileFormat, compressedSize]);
 
   const generateMetadata = async () => {
     console.log('🚀 Starting AI metadata generation...');
@@ -407,102 +435,29 @@ export default function ImageComparisonModal({
     toast.success(`${label} copied!`);
   };
 
-  // Enhanced helper function for downloading with better compression
+  // Use cached blobs for downloads
   const performSingleMediaDownload = async (mediaUrl, format, mediaTypeOverride = mediaType) => {
     try {
       toast.info(`Preparing download as ${format.toUpperCase()}...`);
+      
       if (mediaTypeOverride === 'image') {
-        // Special handling for AVIF using browser-image-compression
-        if (format === 'avif') {
-          try {
-            // Load browser-image-compression library
-            if (!window.imageCompression) {
-              await new Promise((resolve, reject) => {
-                const script = document.createElement('script');
-                script.src = 'https://cdn.jsdelivr.net/npm/browser-image-compression@2.0.2/dist/browser-image-compression.js';
-                script.onload = () => {
-                  setTimeout(() => {
-                    if (window.imageCompression) resolve();
-                    else reject(new Error('Library not loaded'));
-                  }, 100);
-                };
-                script.onerror = () => reject(new Error('Failed to load library'));
-                document.head.appendChild(script);
-              });
-            }
-            
-            // Convert mediaUrl to blob
-            const response = await fetch(mediaUrl);
-            const sourceBlob = await response.blob();
-            
-            // Compress to AVIF
-            const options = {
-              maxSizeMB: 50,
-              fileType: 'image/avif',
-              useWebWorker: true,
-              initialQuality: 0.92
-            };
-            
-            const avifBlob = await window.imageCompression(sourceBlob, options);
-            
-            const url = URL.createObjectURL(avifBlob);
-            const link = document.createElement('a');
-            link.href = url;
-            const baseName = editableFilename.split('.')[0];
-            link.download = `${baseName}.avif`;
-            link.click();
-            URL.revokeObjectURL(url);
-            toast.success(`Downloaded as AVIF!`);
-            return;
-          } catch (avifError) {
-            console.error('AVIF conversion failed:', avifError);
-            throw new Error('AVIF format not supported by your browser. Try updating Chrome or use a different browser.');
-          }
-        }
+        // Use cached blob if available
+        const cachedBlob = cachedFormatBlobs[format];
         
-        // Standard canvas conversion for other formats
-        const img = new Image();
-        img.src = mediaUrl;
-
-        await new Promise((resolve, reject) => {
-          img.onload = resolve;
-          img.onerror = () => reject(new Error('Failed to load image for conversion.'));
-        });
-
-        const canvas = document.createElement('canvas');
-        canvas.width = img.width;
-        canvas.height = img.height;
-        const ctx = canvas.getContext('2d');
-        
-        // Enable high quality rendering
-        ctx.imageSmoothingEnabled = true;
-        ctx.imageSmoothingQuality = 'high';
-        ctx.drawImage(img, 0, 0);
-
-        const mimeType = format === 'jpg' ? 'image/jpeg' : `image/${format}`;
-
-        // Use higher quality for downloads (0.92 for JPEG, native for others)
-        const quality = format === 'jpg' ? 0.92 : 0.95;
-        
-        const blob = await new Promise((resolve, reject) => {
-          canvas.toBlob((b) => {
-            if (b) resolve(b);
-            else reject(new Error(`Browser cannot encode ${format.toUpperCase()}`));
-          }, mimeType, quality);
-        });
-
-        if (!blob) {
-          toast.error(`Failed to create ${format.toUpperCase()} image blob.`);
+        if (cachedBlob) {
+          const url = URL.createObjectURL(cachedBlob);
+          const link = document.createElement('a');
+          link.href = url;
+          const baseName = editableFilename.split('.')[0];
+          link.download = `${baseName}.${format}`;
+          link.click();
+          URL.revokeObjectURL(url);
+          toast.success(`Downloaded as ${format.toUpperCase()}!`);
           return;
         }
-        const url = URL.createObjectURL(blob);
-        const link = document.createElement('a');
-        link.href = url;
-        const baseName = editableFilename.split('.')[0];
-        link.download = `${baseName}.${format}`;
-        link.click();
-        URL.revokeObjectURL(url);
-        toast.success(`Downloaded as ${format.toUpperCase()}!`);
+        
+        // Fallback: generate if not cached (shouldn't happen)
+        toast.warning('Generating format...');
       } else {
         const link = document.createElement('a');
         link.href = mediaUrl;
@@ -517,11 +472,10 @@ export default function ImageComparisonModal({
     }
   };
   
-  // New: Convert and preview format
+  // Use cached blobs for format conversion
   const convertToFormat = async (format) => {
-    if (format === selectedFormat && previewFormat === format && convertedBlob) {
-      // Already on this format with blob cached
-      return;
+    if (format === selectedFormat && previewFormat === format) {
+      return; // Already on this format
     }
     
     setIsConverting(true);
@@ -529,217 +483,57 @@ export default function ImageComparisonModal({
     
     try {
       if (mediaType === 'image' && !isAnimationVariations) {
-        // Special handling for AVIF using browser-image-compression
-        if (format === 'avif') {
-          try {
-            // Load browser-image-compression library
-            if (!window.imageCompression) {
-              await new Promise((resolve, reject) => {
-                const script = document.createElement('script');
-                script.src = 'https://cdn.jsdelivr.net/npm/browser-image-compression@2.0.2/dist/browser-image-compression.js';
-                script.onload = () => {
-                  setTimeout(() => {
-                    if (window.imageCompression) resolve();
-                    else reject(new Error('Library not loaded'));
-                  }, 100);
-                };
-                script.onerror = () => reject(new Error('Failed to load library'));
-                document.head.appendChild(script);
-              });
-            }
-            
-            // Convert compressedImage to blob
-            const response = await fetch(compressedImage);
-            const sourceBlob = await response.blob();
-            
-            // Compress to AVIF
-            const options = {
-              maxSizeMB: 50,
-              fileType: 'image/avif',
-              useWebWorker: true,
-              initialQuality: 0.92
-            };
-            
-            const avifBlob = await window.imageCompression(sourceBlob, options);
-            
-            console.log(`📊 AVIF: ${(avifBlob.size / 1024).toFixed(1)}KB`);
-            
-            // Store the converted blob
-            setConvertedBlob(avifBlob);
-            setPreviewSize(avifBlob.size);
-            setPreviewFormat(format);
-            
-            const sizeDiff = avifBlob.size - originalSize;
-            const percentChange = ((sizeDiff / originalSize) * 100).toFixed(1);
-            
-            if (avifBlob.size > originalSize) {
-              toast.info(`AVIF: ${formatFileSize(avifBlob.size)} (+${percentChange}% larger)`);
-            } else {
-              toast.success(`AVIF: ${formatFileSize(avifBlob.size)} (${Math.abs(percentChange)}% smaller)`);
-            }
-            
-            setIsConverting(false);
-            return;
-          } catch (avifError) {
-            console.error('AVIF conversion failed:', avifError);
-            throw new Error('AVIF format not supported by your browser');
+        // Use cached blob if available
+        const cachedBlob = cachedFormatBlobs[format];
+        
+        if (cachedBlob) {
+          setConvertedBlob(cachedBlob);
+          setPreviewSize(cachedBlob.size);
+          setPreviewFormat(format);
+          
+          const sizeDiff = cachedBlob.size - originalSize;
+          const percentChange = ((sizeDiff / originalSize) * 100).toFixed(1);
+          
+          if (cachedBlob.size > originalSize) {
+            toast.info(`${format.toUpperCase()}: ${formatFileSize(cachedBlob.size)} (+${percentChange}% larger)`);
+          } else {
+            toast.success(`${format.toUpperCase()}: ${formatFileSize(cachedBlob.size)} (${Math.abs(percentChange)}% smaller)`);
           }
+          
+          setIsConverting(false);
+          return;
         }
         
-        // Standard canvas conversion for other formats
-        const img = new Image();
-        img.src = compressedImage;
-        
-        await new Promise((resolve, reject) => {
-          img.onload = resolve;
-          img.onerror = () => reject(new Error('Failed to load image'));
-        });
-        
-        const canvas = document.createElement('canvas');
-        canvas.width = img.width;
-        canvas.height = img.height;
-        const ctx = canvas.getContext('2d');
-        ctx.imageSmoothingEnabled = true;
-        ctx.imageSmoothingQuality = 'high';
-        ctx.drawImage(img, 0, 0);
-        
-        const mimeType = format === 'jpg' ? 'image/jpeg' : `image/${format}`;
-        const quality = format === 'jpg' ? 0.92 : format === 'png' ? 1.0 : 0.95;
-        
-        const blob = await new Promise((resolve, reject) => {
-          canvas.toBlob((b) => {
-            if (b) {
-              resolve(b);
-            } else {
-              reject(new Error(`Browser cannot encode ${format.toUpperCase()}`));
-            }
-          }, mimeType, quality);
-        });
-        
-        if (!blob) {
-          throw new Error('Failed to create blob');
-        }
-        
-        console.log(`📊 ${format.toUpperCase()}: ${(blob.size / 1024).toFixed(1)}KB (was ${(previewSize / 1024).toFixed(1)}KB)`);
-        
-        // Store the converted blob and update size
-        setConvertedBlob(blob);
-        setPreviewSize(blob.size);
-        setPreviewFormat(format);
-        
-        const sizeDiff = blob.size - originalSize;
-        const percentChange = ((sizeDiff / originalSize) * 100).toFixed(1);
-        
-        if (blob.size > originalSize) {
-          toast.info(`${format.toUpperCase()}: ${formatFileSize(blob.size)} (+${percentChange}% larger)`);
-        } else {
-          toast.success(`${format.toUpperCase()}: ${formatFileSize(blob.size)} (${Math.abs(percentChange)}% smaller)`);
-        }
+        // If not cached, shouldn't happen but handle gracefully
+        toast.warning('Format not ready, please wait...');
+        setSelectedFormat(previewFormat);
       } else {
-        // For video/audio, just update the format selection
         setPreviewFormat(format);
       }
     } catch (error) {
       console.error('❌ Conversion error:', error);
       toast.error(`${error.message || 'Failed to convert to ' + format.toUpperCase()}`);
-      // Revert to previous format on error
       setSelectedFormat(previewFormat);
     } finally {
       setIsConverting(false);
     }
   };
 
-  // Function to download all image formats as a ZIP
+  // Use cached blobs for ZIP download
   const downloadAllImageFormatsAsZip = async () => {
     toast.info('Creating multi-format ZIP...');
 
     try {
       const JSZip = (await import('https://cdn.jsdelivr.net/npm/jszip@3.10.1/+esm')).default;
       const zip = new JSZip();
+      const baseName = editableFilename.split('.')[0];
 
-      const img = new Image();
-      img.src = compressedImage; // Assuming compressedImage is the base for all formats in zip
-
-      await new Promise((resolve, reject) => {
-        img.onload = resolve;
-        img.onerror = () => reject(new Error('Failed to load image for ZIP conversion.'));
-      });
-
-      const canvas = document.createElement('canvas');
-      canvas.width = img.width;
-      canvas.height = img.height;
-      const ctx = canvas.getContext('2d');
-      ctx.drawImage(img, 0, 0);
-
-      const baseName = editableFilename.split('.')[0]; // Use editableFilename for zip name
-      const imageFormatsForZip = [ // Explicitly define image formats for ZIP
-        { ext: 'jpg', mime: 'image/jpeg' },
-        { ext: 'png', mime: 'image/png' },
-        { ext: 'webp', mime: 'image/webp' },
-        { ext: 'avif', mime: 'image/avif' }
-      ];
-
-      for (const f of imageFormatsForZip) {
-        try {
-          let blob;
-          
-          // Special handling for AVIF using browser-image-compression
-          if (f.ext === 'avif') {
-            try {
-              // Load browser-image-compression library if not loaded
-              if (!window.imageCompression) {
-                await new Promise((resolve, reject) => {
-                  const script = document.createElement('script');
-                  script.src = 'https://cdn.jsdelivr.net/npm/browser-image-compression@2.0.2/dist/browser-image-compression.js';
-                  script.onload = () => {
-                    setTimeout(() => {
-                      if (window.imageCompression) resolve();
-                      else reject(new Error('Library not loaded'));
-                    }, 100);
-                  };
-                  script.onerror = () => reject(new Error('Failed to load library'));
-                  document.head.appendChild(script);
-                });
-              }
-              
-              // Convert canvas to blob first
-              const tempBlob = await new Promise((resolve) => {
-                canvas.toBlob(resolve, 'image/png');
-              });
-              
-              // Compress to AVIF
-              const options = {
-                maxSizeMB: 50,
-                fileType: 'image/avif',
-                useWebWorker: true,
-                initialQuality: 0.92
-              };
-              
-              blob = await window.imageCompression(tempBlob, options);
-              console.log(`✓ Added ${f.ext} to ZIP (${(blob.size / 1024).toFixed(1)}KB)`);
-            } catch (avifError) {
-              console.warn(`AVIF not supported, skipping:`, avifError.message);
-              continue; // Skip AVIF if not supported
-            }
-          } else {
-            // Standard canvas conversion for other formats
-            blob = await new Promise((resolve, reject) => {
-              canvas.toBlob((b) => {
-                if (b) {
-                  resolve(b);
-                } else {
-                  reject(new Error(`Failed to create ${f.ext} blob`));
-                }
-              }, f.mime, 0.95);
-            });
-            console.log(`✓ Added ${f.ext} to ZIP (${(blob.size / 1024).toFixed(1)}KB)`);
-          }
-          
-          if (blob && blob.size > 0) {
-            zip.file(`${baseName}.${f.ext}`, blob);
-          }
-        } catch (error) {
-          console.warn(`Could not add ${f.ext} to ZIP:`, error.message);
+      // Use cached blobs for all formats
+      for (const format of ['jpg', 'png', 'webp', 'avif']) {
+        const blob = cachedFormatBlobs[format];
+        if (blob) {
+          zip.file(`${baseName}.${format}`, blob);
+          console.log(`✓ Added ${format} to ZIP (${(blob.size / 1024).toFixed(1)}KB)`);
         }
       }
 
