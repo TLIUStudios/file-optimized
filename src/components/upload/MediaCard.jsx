@@ -2091,8 +2091,8 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
               {isImage ? <LazyImage src={preview} alt="Original" className="w-full h-full object-cover transition-transform group-hover:scale-105" /> : isVideo ? (
                 <>
                   <video src={preview} controls loop className="w-full h-full object-cover" />
-                  <Button variant="ghost" size="icon" onClick={(e) => { e.stopPropagation(); handleEditVideo(); }} className="absolute top-2 right-2 bg-white/80 hover:bg-white dark:bg-slate-800/80 dark:hover:bg-slate-800 h-7 w-7 rounded-lg">
-                    <Edit2 className="w-3 h-3" />
+                  <Button variant="ghost" size="icon" onClick={(e) => { e.stopPropagation(); handleEditVideo(); }} className="absolute top-2 right-2 bg-slate-800/90 hover:bg-slate-700 dark:bg-slate-800/90 dark:hover:bg-slate-700 h-7 w-7 rounded-lg">
+                    <Edit2 className="w-3 h-3 text-white" />
                   </Button>
                 </>
               ) : isAudio ? (
@@ -2110,13 +2110,13 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
                 <Badge className="absolute bottom-2 left-2 bg-slate-900/95 backdrop-blur-sm text-white border border-slate-700 text-xs px-2 py-1 font-bold shadow-lg">{gifFrameCount} frames</Badge>
               )}
               {isImage && !isGif && (
-                <Button variant="ghost" size="icon" onClick={(e) => { e.stopPropagation(); handleEditImage(); }} className="absolute top-2 right-2 bg-white/80 hover:bg-white dark:bg-slate-800/80 dark:hover:bg-slate-800 h-7 w-7 rounded-lg">
-                  <Edit2 className="w-3 h-3" />
+                <Button variant="ghost" size="icon" onClick={(e) => { e.stopPropagation(); handleEditImage(); }} className="absolute top-2 right-2 bg-slate-800/90 hover:bg-slate-700 dark:bg-slate-800/90 dark:hover:bg-slate-700 h-7 w-7 rounded-lg">
+                  <Edit2 className="w-3 h-3 text-white" />
                 </Button>
               )}
               {isGif && (
-                <Button variant="ghost" size="icon" onClick={(e) => { e.stopPropagation(); setShowGifEditor(true); }} className="absolute top-2 right-2 bg-white/80 hover:bg-white dark:bg-slate-800/80 dark:hover:bg-slate-800 h-7 w-7 rounded-lg">
-                  <Edit2 className="w-3 h-3" />
+                <Button variant="ghost" size="icon" onClick={(e) => { e.stopPropagation(); setShowGifEditor(true); }} className="absolute top-2 right-2 bg-slate-800/90 hover:bg-slate-700 dark:bg-slate-800/90 dark:hover:bg-slate-700 h-7 w-7 rounded-lg">
+                  <Edit2 className="w-3 h-3 text-white" />
                 </Button>
               )}
             </div>
