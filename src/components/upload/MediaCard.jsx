@@ -2421,7 +2421,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
             <Collapsible open={animationSettingsOpen} onOpenChange={setAnimationSettingsOpen}>
               <CollapsibleTrigger asChild>
                 <Button variant="outline" className="w-full justify-between" size="sm">
-                  <span className="flex items-center gap-2"><Sparkles className="w-4 h-4" />Simple Animation {!gifJsLoaded && enableAnimation && <span className="text-xs text-slate-500">(Loading...)</span>}</span>
+                  <span className="flex items-center gap-2"><Wand2 className="w-4 h-4" />Animate Settings {!gifJsLoaded && enableAnimation && <span className="text-xs text-slate-500">(Loading...)</span>}</span>
                   <ChevronDown className={cn("w-4 h-4 transition-transform duration-200", animationSettingsOpen && "rotate-180")} />
                 </Button>
               </CollapsibleTrigger>
@@ -2504,7 +2504,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
                 >
                   {processing && <div className="absolute inset-0 bg-emerald-500 transition-all duration-300 ease-linear" style={{ width: `${processingProgress}%`, left: 0 }} />}
                   <span className="relative z-10 flex items-center justify-center">
-                    <RefreshCcw className={cn("w-4 h-4 mr-2 transition-all duration-700", processing && "animate-spin", settingsChanged && !processing && "animate-[spin_10s_ease-in-out_infinite]")} />
+                    <RefreshCcw className={cn("w-4 h-4 mr-2 transition-all duration-700", processing && "animate-spin", settingsChanged && !processing && "animate-[spin_15s_ease-in-out_infinite]")} />
                     <span className="hidden sm:inline">{processing ? `${Math.round(processingProgress)}%` : 'Reprocess'}</span>
                     <span className="sm:hidden">{processing ? `${Math.round(processingProgress)}%` : 'Reprocess'}</span>
                   </span>
