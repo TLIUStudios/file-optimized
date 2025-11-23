@@ -2045,7 +2045,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
           )}
           {compressedPreview ? (
             <div className="relative aspect-square rounded-lg overflow-hidden bg-slate-200 dark:bg-slate-800 cursor-pointer group" onClick={(isImage || isGif || outputFormat === 'gif') ? handleCompare : undefined}>
-              {(isImage || outputFormat === 'gif') ? <LazyImage src={compressedPreview} alt="Compressed" className="w-full h-full object-cover transition-transform group-hover:scale-105" /> : (isVideo && outputFormat !== 'gif') ? <video src={compressedPreview} controls loop className="w-full h-full object-cover" /> : isAudio ? (
+              {(isImage || outputFormat === 'gif') ? <LazyImage src={compressedPreview} alt="Compressed" className="w-full h-full object-cover transition-transform group-hover:scale-105" /> : (outputFormat === 'mp4' || (isVideo && outputFormat !== 'gif')) ? <video src={compressedPreview} controls loop className="w-full h-full object-cover" /> : isAudio ? (
                 <div className="w-full h-full flex flex-col items-center justify-center p-4">
                   <Music className="w-16 h-16 text-emerald-500 mb-2" />
                   <audio src={compressedPreview} controls className="w-full" />
@@ -2508,11 +2508,8 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
               <>
                 <Button 
                   onClick={processMedia} 
-                  variant={settingsChanged ? "default" : "outline"} 
-                  className={cn(
-                    "flex-1 text-sm relative overflow-hidden transition-all duration-300",
-                    settingsChanged && "bg-red-600 hover:bg-red-700 text-white"
-                  )} 
+                  variant="outline"
+                  className="flex-1 text-sm relative overflow-hidden transition-all duration-300"
                   disabled={processing || (((isGif && format === 'gif') || (isImage && !isGif && enableAnimation)) && !gifJsLoaded)}
                 >
                   {processing && <div className="absolute inset-0 bg-emerald-500 transition-all duration-300 ease-linear" style={{ width: `${processingProgress}%`, left: 0 }} />}
