@@ -1090,9 +1090,13 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
       }
       if (processedFrames.length === 0) throw new Error('No frames processed');
       const GIF = window.GIF;
-      // Aggressive quality settings for actual compression
-      // Quality 85 -> 1 (best), 70 -> 3, 50 -> 6, 30 -> 9
-      const gifQuality = Math.max(1, Math.min(10, Math.round(10 - (quality / 11))));
+      // Quality mapping for actual compression without losing much quality:
+      // Quality 100 -> 1 (best, minimal compression)
+      // Quality 85 -> 3 (good quality, ~20-30% compression)
+      // Quality 70 -> 5 (balanced, ~30-40% compression)
+      // Quality 50 -> 7 (more compression, ~40-50% compression)
+      // Quality 30 -> 9 (max compression, ~50-60% compression)
+      const gifQuality = Math.max(1, Math.min(10, Math.round((100 - quality) / 10)));
       const gif = new GIF({
         workers: 4,
         quality: gifQuality,
