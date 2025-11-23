@@ -33,13 +33,9 @@ export default function LoginPromptModal({ isOpen, onClose, onLogin, context = "
         </div>
 
         {/* Content */}
-        <div className="p-6 space-y-6">
+        <div className="p-6 space-y-4">
           {/* Benefits Section */}
           <div className="space-y-3">
-            <h3 className="font-semibold text-slate-900 dark:text-white text-sm flex items-center gap-2">
-              <Zap className="w-4 h-4 text-emerald-600" />
-              Why Sign In?
-            </h3>
             
             {/* Plan Comparison Grid */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -113,15 +109,8 @@ export default function LoginPromptModal({ isOpen, onClose, onLogin, context = "
             </div>
           </div>
 
-          {/* Security Note */}
-          <div className="bg-slate-100 dark:bg-slate-900 rounded-lg p-3 border border-slate-200 dark:border-slate-800">
-            <p className="text-xs text-slate-600 dark:text-slate-400 text-center">
-              🔒 <strong>100% Secure</strong> - Your data stays private. We never store or share your files.
-            </p>
-          </div>
-
           {/* Action Buttons */}
-          <div className="space-y-3 pt-2">
+          <div className="space-y-3">
             <Button
               onClick={onLogin}
               className="w-full bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white font-semibold h-12 text-base shadow-lg"
@@ -133,15 +122,15 @@ export default function LoginPromptModal({ isOpen, onClose, onLogin, context = "
             <Button
               onClick={onClose}
               variant="ghost"
-              className="w-full h-10 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 text-sm"
+              className="w-full text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 text-sm"
             >
               Continue as Guest (Free Plan)
             </Button>
+            
+            <p className="text-center text-xs text-slate-500 dark:text-slate-400">
+              🔒 100% Secure • No credit card required • Free account
+            </p>
           </div>
-
-          <p className="text-center text-xs text-slate-500 dark:text-slate-400">
-            No credit card required • Free account • Takes 30 seconds
-          </p>
         </div>
       </DialogContent>
     </Dialog>
