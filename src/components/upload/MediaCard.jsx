@@ -1090,23 +1090,10 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
       }
       if (processedFrames.length === 0) throw new Error('No frames processed');
       const GIF = window.GIF;
-      // Aggressive quality mapping for real compression (gif.js: 1=best/largest, 10=worst/smallest)
-      // User Quality 100% -> gif.js quality 1 (minimal compression)
-      // User Quality 85% -> gif.js quality 5 (good compression ~30-40%)
-      // User Quality 70% -> gif.js quality 7 (balanced ~40-50%)
-      // User Quality 50% -> gif.js quality 9 (aggressive ~50-60%)
-      // User Quality 30% -> gif.js quality 10 (maximum compression)
-      let gifQuality;
-      if (quality >= 90) {
-        gifQuality = Math.round(1 + (100 - quality) / 10); // 90-100 -> 1-2
-      } else if (quality >= 70) {
-        gifQuality = Math.round(3 + (90 - quality) / 10); // 70-89 -> 3-5
-      } else if (quality >= 50) {
-        gifQuality = Math.round(6 + (70 - quality) / 10); // 50-69 -> 6-8
-      } else {
-        gifQuality = Math.round(8 + (50 - quality) / 25); // 1-49 -> 8-10
-      }
-      gifQuality = Math.max(1, Math.min(10, gifQuality));
+      // Map user quality to gif.js quality (1=best/largest, 10=worst/smallest)
+      // Default 85% -> gif.js 7 for good compression
+      // Lower user quality = higher gif.js number = more compression
+      const gifQuality = Math.max(1, Math.min(10, Math.round((100 - quality) / 10)));
 
       const gif = new GIF({
         workers: 4,
@@ -1130,8 +1117,8 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
       });
       if (!gifBlob || gifBlob.size === 0) throw new Error('Encoding failed');
 
-      // If compressed is larger, use original
-      if (gifBlob.size >= originalBlob.size * 1.05) {
+      // Only use original if compressed is significantly larger (20%+)
+      if (gifBlob.size >= originalBlob.size * 1.2) {
         const compressedUrl = URL.createObjectURL(originalBlob);
         setCompressedPreview(compressedUrl);
         setCompressedSize(originalBlob.size);
