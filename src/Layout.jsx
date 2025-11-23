@@ -190,9 +190,9 @@ export default function Layout({ children }) {
             <div className="w-8 h-8 sm:w-9 sm:h-9 md:w-10 md:h-10 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-xl flex items-center justify-center shadow-lg flex-shrink-0">
               <ImageIcon className="w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6 text-white" />
             </div>
-            <div className="min-w-0 hidden xs:block">
+            <div className="min-w-0">
               <h1 className="text-sm sm:text-base md:text-xl font-bold text-slate-900 dark:text-white truncate">File Optimized</h1>
-              <p className="text-[9px] sm:text-[10px] md:text-xs text-slate-500 dark:text-slate-400 truncate hidden sm:block">Compress, Upscale, & Convert</p>
+              <p className="text-[9px] sm:text-[10px] md:text-xs text-slate-500 dark:text-slate-400 truncate">Compress, Upscale, & Convert</p>
             </div>
           </Link>
           
