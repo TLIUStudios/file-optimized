@@ -18,8 +18,10 @@ export default function GifEditor({ isOpen, onClose, gifData, onSave }) {
   const [textOverlays, setTextOverlays] = useState([]);
   const [showTextEditor, setShowTextEditor] = useState(false);
   const [editingText, setEditingText] = useState(null);
+  const [canvasDimensions, setCanvasDimensions] = useState({ width: 0, height: 0 });
   const canvasRef = useRef(null);
   const playIntervalRef = useRef(null);
+  const frameCanvasesRef = useRef([]);
 
   useEffect(() => {
     if (isOpen && gifData) {
@@ -53,39 +55,25 @@ export default function GifEditor({ isOpen, onClose, gifData, onSave }) {
 
   const drawFrame = useCallback((frameIndex) => {
     const canvas = canvasRef.current;
-    const frame = frames[frameIndex];
+    const frameCanvas = frameCanvasesRef.current[frameIndex];
     
     if (!canvas) {
-      console.error('Canvas ref not available');
       return;
     }
     
-    if (!frame) {
-      console.error('Frame not found:', frameIndex);
-      return;
-    }
-
-    if (!frame.canvas) {
-      console.error('Frame canvas not available:', frameIndex);
+    if (!frameCanvas) {
       return;
     }
     
     try {
-      // Only set dimensions if they changed
-      if (canvas.width !== frame.width || canvas.height !== frame.height) {
-        canvas.width = frame.width;
-        canvas.height = frame.height;
-      }
-      
       const ctx = canvas.getContext('2d', { alpha: true });
       if (!ctx) {
-        console.error('Failed to get canvas context');
         return;
       }
       
       // Draw frame
       ctx.clearRect(0, 0, canvas.width, canvas.height);
-      ctx.drawImage(frame.canvas, 0, 0);
+      ctx.drawImage(frameCanvas, 0, 0);
 
       // Draw text overlays for this frame
       textOverlays.filter(t => t.frameIndex === frameIndex).forEach(overlay => {
@@ -97,7 +85,7 @@ export default function GifEditor({ isOpen, onClose, gifData, onSave }) {
     } catch (error) {
       console.error('Error drawing frame:', error);
     }
-  }, [frames, textOverlays]);
+  }, [textOverlays]);
 
   useEffect(() => {
     console.log('Draw effect triggered:', { framesCount: frames.length, currentFrame, hasCanvas: !!canvasRef.current });
@@ -176,13 +164,8 @@ export default function GifEditor({ isOpen, onClose, gifData, onSave }) {
         const frameCtx = frameCanvas.getContext('2d', { alpha: true });
         frameCtx.drawImage(bgCanvas, 0, 0);
 
-        // Cache data URL for thumbnails to avoid blocking renders
-        const dataUrl = frameCanvas.toDataURL('image/png');
-        
         loadedFrames.push({
           id: i,
-          canvas: frameCanvas,
-          dataUrl: dataUrl,
           delay: frame.delay * 10 || 100,
           width: canvasWidth,
           height: canvasHeight
@@ -194,6 +177,64 @@ export default function GifEditor({ isOpen, onClose, gifData, onSave }) {
       }
 
       console.log('Setting frames state with', loadedFrames.length, 'frames');
+      
+      // Store canvas references separately to prevent re-render issues
+      const canvasesForFrames = [];
+      for (let i = 0; i < loadedFrames.length; i++) {
+        const tempCanvas = document.createElement('canvas');
+        tempCanvas.width = canvasWidth;
+        tempCanvas.height = canvasHeight;
+        const tempCtx = tempCanvas.getContext('2d', { alpha: true });
+        const frameCanvas = document.querySelectorAll('.frame-accumulator')[0];
+        if (i === 0) {
+          // First frame - copy from bgCanvas
+          tempCtx.drawImage(bgCanvas, 0, 0);
+        }
+        canvasesForFrames.push(tempCanvas);
+      }
+      
+      // Re-render all frames into separate canvases
+      bgCtx.clearRect(0, 0, canvasWidth, canvasHeight);
+      for (let i = 0; i < decompressed.length; i++) {
+        const frame = decompressed[i];
+        
+        if (i > 0) {
+          const prevFrame = decompressed[i - 1];
+          if (prevFrame.disposalType === 2) {
+            bgCtx.clearRect(
+              prevFrame.dims.left || 0,
+              prevFrame.dims.top || 0,
+              prevFrame.dims.width,
+              prevFrame.dims.height
+            );
+          }
+        }
+
+        const tempCanvas = document.createElement('canvas');
+        tempCanvas.width = frame.dims.width;
+        tempCanvas.height = frame.dims.height;
+        const tempCtx = tempCanvas.getContext('2d', { alpha: true });
+        
+        const imageData = new ImageData(
+          new Uint8ClampedArray(frame.patch),
+          frame.dims.width,
+          frame.dims.height
+        );
+        tempCtx.putImageData(imageData, 0, 0);
+
+        bgCtx.drawImage(
+          tempCanvas,
+          frame.dims.left || 0,
+          frame.dims.top || 0
+        );
+
+        const finalCtx = canvasesForFrames[i].getContext('2d', { alpha: true });
+        finalCtx.clearRect(0, 0, canvasWidth, canvasHeight);
+        finalCtx.drawImage(bgCanvas, 0, 0);
+      }
+      
+      frameCanvasesRef.current = canvasesForFrames;
+      setCanvasDimensions({ width: canvasWidth, height: canvasHeight });
       setFrames(loadedFrames);
       setGlobalDelay(loadedFrames[0]?.delay || 100);
       setCurrentFrame(0);
@@ -230,14 +271,24 @@ export default function GifEditor({ isOpen, onClose, gifData, onSave }) {
 
   const duplicateFrame = (frameIndex) => {
     const frame = frames[frameIndex];
-    // Create a new canvas for the duplicated frame to avoid reference issues
+    const frameCanvas = frameCanvasesRef.current[frameIndex];
+    
+    // Create a new canvas for the duplicated frame
     const newCanvas = document.createElement('canvas');
-    newCanvas.width = frame.canvas.width;
-    newCanvas.height = frame.canvas.height;
+    newCanvas.width = frameCanvas.width;
+    newCanvas.height = frameCanvas.height;
     const newCtx = newCanvas.getContext('2d');
-    newCtx.drawImage(frame.canvas, 0, 0);
+    newCtx.drawImage(frameCanvas, 0, 0);
 
-    const newFrame = { ...frame, id: Date.now(), canvas: newCanvas }; // Assign a new unique ID and new canvas
+    const newFrame = { ...frame, id: Date.now() };
+    
+    // Insert into canvas refs
+    frameCanvasesRef.current = [
+      ...frameCanvasesRef.current.slice(0, frameIndex + 1),
+      newCanvas,
+      ...frameCanvasesRef.current.slice(frameIndex + 1)
+    ];
+    
     setFrames(prev => [
       ...prev.slice(0, frameIndex + 1),
       newFrame,
@@ -287,15 +338,14 @@ export default function GifEditor({ isOpen, onClose, gifData, onSave }) {
     }
     toast.info('Applying effect...', { duration: Infinity, id: 'effect-apply' });
     
-    const newFrames = await Promise.all(frames.map(async (frame) => {
-      // Create a new canvas for the modified frame to avoid altering the original
+    const newCanvases = await Promise.all(frameCanvasesRef.current.map(async (frameCanvas, idx) => {
+      const frame = frames[idx];
       const newFrameCanvas = document.createElement('canvas');
       newFrameCanvas.width = frame.width;
       newFrameCanvas.height = frame.height;
       const ctx = newFrameCanvas.getContext('2d');
       
-      // Draw the original frame's content to the new canvas
-      ctx.drawImage(frame.canvas, 0, 0);
+      ctx.drawImage(frameCanvas, 0, 0);
       
       switch (effect) {
         case 'grayscale':
@@ -310,30 +360,30 @@ export default function GifEditor({ isOpen, onClose, gifData, onSave }) {
         case 'brightness':
           ctx.filter = 'brightness(1.2)';
           ctx.clearRect(0, 0, frame.width, frame.height);
-          ctx.drawImage(frame.canvas, 0, 0);
+          ctx.drawImage(frameCanvas, 0, 0);
           ctx.filter = 'none';
           break;
         case 'contrast':
           ctx.filter = 'contrast(1.3)';
           ctx.clearRect(0, 0, frame.width, frame.height);
-          ctx.drawImage(frame.canvas, 0, 0);
+          ctx.drawImage(frameCanvas, 0, 0);
           ctx.filter = 'none';
           break;
         case 'blur':
           ctx.filter = 'blur(2px)';
           ctx.clearRect(0, 0, frame.width, frame.height);
-          ctx.drawImage(frame.canvas, 0, 0);
+          ctx.drawImage(frameCanvas, 0, 0);
           ctx.filter = 'none';
           break;
         default:
-          // No effect or unknown effect, just return original canvas (already copied)
           break;
       }
       
-      return { ...frame, canvas: newFrameCanvas }; // Return frame with new canvas
+      return newFrameCanvas;
     }));
     
-    setFrames(newFrames);
+    frameCanvasesRef.current = newCanvases;
+    setFrames(prev => [...prev]); // Trigger re-render
     toast.dismiss('effect-apply');
     toast.success('Effect applied to all frames');
   };
@@ -374,16 +424,15 @@ export default function GifEditor({ isOpen, onClose, gifData, onSave }) {
 
       for (let i = 0; i < frames.length; i++) {
         const frame = frames[i];
+        const frameCanvas = frameCanvasesRef.current[i];
         const canvas = document.createElement('canvas');
         canvas.width = frame.width;
         canvas.height = frame.height;
         const ctx = canvas.getContext('2d');
         
-        // Draw the frame's pre-rendered canvas content
-        ctx.drawImage(frame.canvas, 0, 0);
+        ctx.drawImage(frameCanvas, 0, 0);
         
-        // Draw text overlays that apply to this specific frame
-        textOverlays.filter(t => t.frameIndex === i).forEach(overlay => { // Filter by frame index
+        textOverlays.filter(t => t.frameIndex === i).forEach(overlay => {
           ctx.font = `${overlay.fontSize}px ${overlay.fontFamily}`;
           ctx.fillStyle = overlay.color;
           ctx.textAlign = overlay.align;
@@ -444,11 +493,11 @@ export default function GifEditor({ isOpen, onClose, gifData, onSave }) {
                 {frames.length > 0 ? (
                   <canvas
                     ref={canvasRef}
+                    width={canvasDimensions.width}
+                    height={canvasDimensions.height}
                     className="max-w-full max-h-full bg-white dark:bg-slate-800 rounded-lg shadow-lg"
                     style={{ 
-                      imageRendering: 'auto',
-                      minWidth: '100px',
-                      minHeight: '100px'
+                      imageRendering: 'auto'
                     }}
                   />
                 ) : (
@@ -514,7 +563,7 @@ export default function GifEditor({ isOpen, onClose, gifData, onSave }) {
                       )}
                     >
                       <img
-                        src={frame.dataUrl}
+                        src={frameCanvasesRef.current[index]?.toDataURL('image/png') || ''}
                         alt={`Frame ${index + 1}`}
                         className="w-full h-full object-contain rounded"
                       />
