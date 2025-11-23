@@ -1950,7 +1950,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
               <Badge className="absolute top-2 left-2 bg-slate-900/80 text-white">Original</Badge>
               <Badge className="absolute bottom-2 right-2 bg-slate-900/95 backdrop-blur-sm text-white border border-slate-700 text-xs px-2 py-1 font-bold shadow-lg">{originalExt}</Badge>
               {isGif && gifFrameCount > 0 && (
-                <Badge className="absolute bottom-2 left-2 bg-emerald-600/95 backdrop-blur-sm text-white border border-emerald-500 text-xs px-2 py-1 font-bold shadow-lg">{gifFrameCount} frames</Badge>
+                <Badge className="absolute bottom-2 left-2 bg-slate-900/95 backdrop-blur-sm text-white border border-slate-700 text-xs px-2 py-1 font-bold shadow-lg">{gifFrameCount} frames</Badge>
               )}
               {isImage && !isGif && (
                 <Button variant="ghost" size="icon" onClick={(e) => { e.stopPropagation(); handleEditImage(); }} className="absolute top-2 right-2 bg-white/80 hover:bg-white dark:bg-slate-800/80 dark:hover:bg-slate-800 h-7 w-7 rounded-lg">
