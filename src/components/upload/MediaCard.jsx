@@ -2173,26 +2173,6 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
             </Button>
           </div>
 
-          {/* Processing Caps Info - Collapsible */}
-          <Collapsible>
-            <CollapsibleTrigger asChild>
-              <Button variant="ghost" size="sm" className="w-full justify-start text-xs text-yellow-600 dark:text-yellow-500 hover:bg-yellow-50 dark:hover:bg-yellow-950/20 px-2 h-7">
-                <Info className="w-3 h-3 mr-1.5" />
-                Processing Limits
-              </Button>
-            </CollapsibleTrigger>
-            <CollapsibleContent>
-              <div className="bg-yellow-50 dark:bg-yellow-950/20 border border-yellow-200 dark:border-yellow-800/50 rounded-lg p-2 mt-1">
-                <div className="space-y-0.5 text-xs text-yellow-700 dark:text-yellow-400">
-                  {isImage && <p>• Max Resolution: 8K (7680px)</p>}
-                  {isVideo && <p>• Max Duration: 120 seconds</p>}
-                  {isGif && <p>• Max Frames: 500 frames</p>}
-                  {isVideo && format === 'gif' && <p>• GIF from Video: 10s, 100 frames</p>}
-                </div>
-              </div>
-            </CollapsibleContent>
-          </Collapsible>
-
           {error && (
             <div className="flex items-center gap-2 text-sm text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-950/30 p-3 rounded-lg border border-red-200 dark:border-red-800">
               <AlertCircle className="w-4 h-4 flex-shrink-0" />
@@ -2563,6 +2543,24 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
               </CollapsibleContent>
             </Collapsible>
           )}
+
+          {/* Processing Limits Info */}
+          <div className="flex items-center gap-2 mb-2">
+            <label className="text-xs font-medium text-slate-700 dark:text-slate-300">Processing Limits</label>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Info className="w-3 h-3 text-slate-400 cursor-help" />
+              </TooltipTrigger>
+              <TooltipContent className="max-w-xs">
+                <div className="space-y-1 text-xs">
+                  {isImage && <p>• Max Resolution: 8K (7680px)</p>}
+                  {isVideo && <p>• Max Duration: 120 seconds</p>}
+                  {isGif && <p>• Max Frames: 500 frames</p>}
+                  {isVideo && format === 'gif' && <p>• GIF from Video: 10s, 100 frames</p>}
+                </div>
+              </TooltipContent>
+            </Tooltip>
+          </div>
 
           <div className="flex flex-col sm:flex-row gap-2">
             {!processed ? (
