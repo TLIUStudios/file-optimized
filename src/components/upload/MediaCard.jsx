@@ -1088,7 +1088,10 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
       }
       if (processedFrames.length === 0) throw new Error('No frames processed');
       const GIF = window.GIF;
-      const gifQuality = 10;
+      // Map quality slider (0-100) to gif.js quality (1-10, where 1=best, 10=worst)
+      // Higher quality slider = lower gif.js number = better quality but larger file
+      // For compression: quality 85 -> ~2, quality 70 -> ~4, quality 50 -> ~7
+      const gifQuality = Math.max(1, Math.min(10, Math.round(11 - (quality / 10))));
       const gif = new GIF({
         workers: 4,
         quality: gifQuality,
