@@ -142,7 +142,7 @@ export default function UploadZone({ onFilesSelected, isDragActive, onDragStateC
         "relative border-2 border-dashed rounded-2xl p-12 transition-all duration-300",
         isDragActive
           ? "border-emerald-500 bg-emerald-50 dark:bg-emerald-950/20 scale-[1.02]"
-          : "border-slate-300 dark:border-slate-700 hover:border-emerald-500 dark:hover:border-emerald-500"
+          : "border-slate-300 dark:border-slate-700 hover:border-emerald-500 dark:hover:border-emerald-500 hover:bg-emerald-50 dark:hover:bg-emerald-950/20"
       )}
     >
       <input
