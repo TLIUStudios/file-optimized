@@ -58,20 +58,18 @@ export default function GifEditor({ isOpen, onClose, gifData, onSave }) {
     const frameCanvas = frameCanvasesRef.current[frameIndex];
     
     if (!canvas || !frameCanvas) {
+      console.log('Missing canvas or frameCanvas:', { canvas: !!canvas, frameCanvas: !!frameCanvas });
       return;
     }
     
     try {
-      // Set canvas dimensions ONLY if they changed to avoid clearing
-      if (canvas.width !== frameCanvas.width || canvas.height !== frameCanvas.height) {
-        canvas.width = frameCanvas.width;
-        canvas.height = frameCanvas.height;
-      }
-      
       const ctx = canvas.getContext('2d', { alpha: true });
       if (!ctx) {
+        console.log('No context');
         return;
       }
+      
+      console.log('Drawing frame', frameIndex);
       
       // Draw frame
       ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -495,9 +493,11 @@ export default function GifEditor({ isOpen, onClose, gifData, onSave }) {
             {/* Main Canvas Area */}
             <div className="flex-1 flex flex-col bg-slate-100 dark:bg-slate-900 overflow-auto">
               <div className="flex-1 flex items-center justify-center p-4">
-                {frames.length > 0 ? (
+                {frames.length > 0 && canvasDimensions.width > 0 ? (
                   <canvas
                     ref={canvasRef}
+                    width={canvasDimensions.width}
+                    height={canvasDimensions.height}
                     className="max-w-full max-h-full bg-white dark:bg-slate-800 rounded-lg shadow-lg"
                     style={{ 
                       imageRendering: 'auto'
