@@ -90,9 +90,12 @@ export default function GifEditor({ isOpen, onClose, gifData, onSave }) {
   }, [textOverlays]);
 
   useEffect(() => {
-    console.log('Draw effect triggered:', { framesCount: frames.length, currentFrame, hasCanvas: !!canvasRef.current });
-    if (frames.length > 0 && canvasRef.current) {
-      drawFrame(currentFrame);
+    console.log('Draw effect triggered:', { framesCount: frames.length, currentFrame, hasCanvas: !!canvasRef.current, hasFrameCanvas: !!frameCanvasesRef.current[currentFrame] });
+    if (frames.length > 0 && frameCanvasesRef.current.length > 0) {
+      // Use requestAnimationFrame to ensure DOM is ready
+      requestAnimationFrame(() => {
+        drawFrame(currentFrame);
+      });
     }
   }, [currentFrame, frames, textOverlays, drawFrame]);
 
