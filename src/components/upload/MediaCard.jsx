@@ -1914,23 +1914,21 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
     <Card className="overflow-hidden bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 shadow-lg hover:shadow-xl transition-shadow relative">
       {/* Header with close button and media type */}
       <div className="flex items-center justify-between px-4 py-2 border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900">
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-3">
           {MediaIcon && <MediaIcon className="w-4 h-4 text-slate-400 flex-shrink-0" />}
-          <div className="flex flex-col gap-1">
+          <div className="flex flex-col">
             <span className="text-xs font-medium text-slate-500 dark:text-slate-400">
               {isVideo ? 'Video' : isAudio ? 'Audio' : isGif ? 'GIF' : isImage ? 'Image' : 'File'}
             </span>
             {isGif && gifFrameCount > 0 && (
-              <Badge className="bg-slate-900/90 text-white text-xs px-2 py-0.5 font-bold flex items-center gap-1 w-fit">
-                <Film className="w-3 h-3" />
+              <span className="text-[10px] font-bold text-slate-900 dark:text-white">
                 {gifFrameCount} frames
-              </Badge>
+              </span>
             )}
             {isGif && processed && outputGifFrameCount > 0 && (
-              <Badge className="bg-emerald-600/90 text-white text-xs px-2 py-0.5 font-bold flex items-center gap-1 w-fit">
-                <Film className="w-3 h-3" />
+              <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400">
                 {outputGifFrameCount} frames
-              </Badge>
+              </span>
             )}
           </div>
         </div>
