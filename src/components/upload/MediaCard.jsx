@@ -1823,17 +1823,21 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
 
   const convertFormat = async (newFormat) => {
     if (!compressedPreview || processing) return;
-    if (newFormat === (outputFormat || format)) {
-      toast.info(`Already in ${newFormat.toUpperCase()} format.`);
-      return;
-    }
+    
     if (enableAnimation && newFormat !== 'gif') {
       toast.error('Cannot convert format while animation is enabled.');
       return;
     }
+    
     // Video/audio/GIF just change format selection - user must click Reprocess
     if (isVideo || isAudio || isGif) {
       setFormat(newFormat);
+      return;
+    }
+    
+    // For images, check if already in format
+    if (newFormat === (outputFormat || format)) {
+      toast.info(`Already in ${newFormat.toUpperCase()} format.`);
       return;
     }
     setProcessing(true);
