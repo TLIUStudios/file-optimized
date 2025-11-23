@@ -204,7 +204,24 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
       enableUpscale, upscaleMultiplier, useStandardResolutions, enableAnimation, animationType, 
       animationDuration, videoBitrate, audioBitrate, frameRate, videoPreset, videoResolution, audioQuality]);
 
-  // Progress tracking removed - now handled directly in processing functions
+  // Estimate time remaining for UI display (doesn't control progress)
+  useEffect(() => {
+    if (processing && processingStartTime) {
+      const interval = setInterval(() => {
+        const elapsed = Date.now() - processingStartTime;
+        let estimatedTotal = 3000;
+        if (isGif) estimatedTotal = Math.max(5000, gifFrameCount * 50);
+        else if (isVideo) estimatedTotal = Math.max(10000, image.size / 100000);
+        else if (isImage && enableAnimation) estimatedTotal = 8000;
+        else if (isImage) estimatedTotal = 2000;
+        const remaining = Math.max(0, estimatedTotal - elapsed);
+        setEstimatedTimeForFile(Math.ceil(remaining / 1000));
+      }, 100);
+      return () => clearInterval(interval);
+    } else {
+      setEstimatedTimeForFile(null);
+    }
+  }, [processing, processingStartTime, isGif, isVideo, isImage, enableAnimation, gifFrameCount, image.size]);
 
   const parseGif = async (dataUrl) => {
     try {
