@@ -5,7 +5,8 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { base44 } from "@/api/base44Client";
 import { toast } from "sonner";
-import { cn } from "@/lib/utils"; // Assuming cn utility is available at this path
+import { cn } from "@/lib/utils";
+import SocialShareModal from "../SocialShareModal";
 
 // Helper component for the download options modal for images
 function DownloadWithOptionsModal({
@@ -104,6 +105,7 @@ export default function ImageComparisonModal({
   const [showDownloadModalForImage, setShowDownloadModalForImage] = useState(false);
   const [originalResolution, setOriginalResolution] = useState(null);
   const [compressedResolution, setCompressedResolution] = useState(null);
+  const [showSocialShare, setShowSocialShare] = useState(false);
 
 
   const containerRef = useRef(null);
@@ -1626,6 +1628,14 @@ export default function ImageComparisonModal({
             // aiTags={aiTags}
           />
         )}
+
+        {/* Social Share Modal */}
+        <SocialShareModal
+          isOpen={showSocialShare}
+          onClose={() => setShowSocialShare(false)}
+          imageUrl={compressedImage}
+          fileName={fileName}
+        />
       </DialogContent>
     </Dialog>
   );
