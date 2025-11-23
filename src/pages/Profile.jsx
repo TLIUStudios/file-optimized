@@ -339,6 +339,10 @@ export default function Profile() {
                     </div>
                     <div className="flex items-center gap-2 text-xs text-slate-700 dark:text-slate-300">
                       <CheckCircle2 className="w-3.5 h-3.5 text-slate-500 flex-shrink-0" />
+                      <span>No Watermark</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-xs text-slate-700 dark:text-slate-300">
+                      <CheckCircle2 className="w-3.5 h-3.5 text-slate-500 flex-shrink-0" />
                       <span>Displays Ads</span>
                     </div>
                   </div>
@@ -371,6 +375,10 @@ export default function Profile() {
                     <div className="flex items-center gap-2 text-xs text-slate-900 dark:text-white font-medium">
                       <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 flex-shrink-0" />
                       <span>Priority processing speed</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-xs text-slate-900 dark:text-white font-medium">
+                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 flex-shrink-0" />
+                      <span>No Watermark</span>
                     </div>
                     <div className="flex items-center gap-2 text-xs text-slate-900 dark:text-white font-medium">
                       <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 flex-shrink-0" />
