@@ -492,13 +492,28 @@ export default function Profile() {
                   )}
                 </Button>
               ) : (
-                <Button
-                  onClick={() => setShowProModal(true)}
-                  className="w-full bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white"
-                >
-                  <Sparkles className="w-4 h-4 mr-2" />
-                  Upgrade to Pro - {billingFrequency === 'annual' ? '$100 USD/yr' : '$10 USD/mo'}
-                </Button>
+                <div className="relative">
+                  <div className="absolute -inset-1 bg-gradient-to-r from-yellow-400 via-amber-500 to-orange-500 rounded-lg opacity-75 blur-lg animate-pulse" style={{ animationDuration: '2s' }}></div>
+                  <Button
+                    onClick={() => setShowProModal(true)}
+                    className="relative w-full bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white overflow-hidden group"
+                  >
+                    <div className="absolute inset-0">
+                      <div className="absolute top-2 left-[15%] w-2 h-2 bg-yellow-200 rounded-full animate-ping" style={{ animationDuration: '1.5s' }} />
+                      <div className="absolute top-3 left-[35%] w-1.5 h-1.5 bg-white rounded-full animate-ping" style={{ animationDuration: '1.8s', animationDelay: '0.3s' }} />
+                      <div className="absolute top-2 left-[55%] w-2 h-2 bg-yellow-300 rounded-full animate-ping" style={{ animationDuration: '1.6s', animationDelay: '0.6s' }} />
+                      <div className="absolute top-3 left-[75%] w-1.5 h-1.5 bg-yellow-200 rounded-full animate-ping" style={{ animationDuration: '1.7s', animationDelay: '0.2s' }} />
+                      <div className="absolute top-2 left-[85%] w-2 h-2 bg-white rounded-full animate-ping" style={{ animationDuration: '1.9s', animationDelay: '0.8s' }} />
+                      <div className="absolute bottom-2 left-[20%] w-1.5 h-1.5 bg-yellow-300 rounded-full animate-ping" style={{ animationDuration: '1.4s', animationDelay: '0.4s' }} />
+                      <div className="absolute bottom-3 left-[45%] w-2 h-2 bg-white rounded-full animate-ping" style={{ animationDuration: '1.7s', animationDelay: '0.5s' }} />
+                      <div className="absolute bottom-2 left-[70%] w-1.5 h-1.5 bg-yellow-200 rounded-full animate-ping" style={{ animationDuration: '1.5s', animationDelay: '0.7s' }} />
+                    </div>
+                    <span className="relative z-10 flex items-center justify-center">
+                      <Sparkles className="w-4 h-4 mr-2" />
+                      Upgrade to Pro - {billingFrequency === 'annual' ? '$100 USD/yr' : '$10 USD/mo'}
+                    </span>
+                  </Button>
+                </div>
               )}
             </Card>
           </motion.div>
