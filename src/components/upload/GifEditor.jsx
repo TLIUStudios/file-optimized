@@ -1,4 +1,3 @@
-
 import { useState, useRef, useEffect } from "react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { X, Play, Pause, Plus, Trash2, Type, Wand2, Download, ChevronLeft, ChevronRight } from "lucide-react";
@@ -145,19 +144,6 @@ export default function GifEditor({ isOpen, onClose, gifData, onSave }) {
       setGlobalDelay(loadedFrames[0]?.delay || 100);
       setCurrentFrame(0);
       
-      // Draw first frame immediately
-      setTimeout(() => {
-        if (canvasRef.current && loadedFrames.length > 0) {
-          const canvas = canvasRef.current;
-          const firstFrame = loadedFrames[0];
-          canvas.width = firstFrame.width;
-          canvas.height = firstFrame.height;
-          const ctx = canvas.getContext('2d');
-          ctx.drawImage(firstFrame.canvas, 0, 0);
-          console.log(`✅ Canvas ready: ${canvas.width}x${canvas.height}`);
-        }
-      }, 100);
-      
       toast.success(`Loaded ${loadedFrames.length} frames`);
     } catch (error) {
       console.error('❌ Failed to load GIF:', error);
@@ -168,15 +154,20 @@ export default function GifEditor({ isOpen, onClose, gifData, onSave }) {
   const drawFrame = (frameIndex) => {
     const canvas = canvasRef.current;
     if (!canvas || !frames[frameIndex]) {
-      console.warn('Canvas or frame not ready');
       return;
     }
 
     const frame = frames[frameIndex];
-    canvas.width = frame.width;
-    canvas.height = frame.height;
-    const ctx = canvas.getContext('2d');
     
+    // Set canvas dimensions
+    if (canvas.width !== frame.width || canvas.height !== frame.height) {
+      canvas.width = frame.width;
+      canvas.height = frame.height;
+    }
+    
+    const ctx = canvas.getContext('2d', { alpha: true });
+    
+    // Clear and draw frame
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     ctx.drawImage(frame.canvas, 0, 0);
 
@@ -424,11 +415,15 @@ export default function GifEditor({ isOpen, onClose, gifData, onSave }) {
             {/* Main Canvas Area */}
             <div className="flex-1 flex flex-col bg-slate-100 dark:bg-slate-900 overflow-auto">
               <div className="flex-1 flex items-center justify-center p-4">
-                <canvas
-                  ref={canvasRef}
-                  className="max-w-full max-h-full bg-white dark:bg-slate-800 rounded-lg shadow-lg"
-                  style={{ imageRendering: 'pixelated' }}
-                />
+                {frames.length > 0 ? (
+                  <canvas
+                    ref={canvasRef}
+                    className="max-w-full max-h-full bg-white dark:bg-slate-800 rounded-lg shadow-lg"
+                    style={{ imageRendering: 'pixelated' }}
+                  />
+                ) : (
+                  <div className="text-slate-400 text-sm">Loading frames...</div>
+                )}
               </div>
 
               {/* Playback Controls */}
