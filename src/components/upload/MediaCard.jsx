@@ -1045,32 +1045,6 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
         return;
       }
 
-      // If dimensions aren't being changed and quality is high, just use original
-      if (quality >= 85 && !maxWidth && !maxHeight) {
-        const compressedUrl = URL.createObjectURL(originalBlob);
-        setCompressedPreview(compressedUrl);
-        setCompressedSize(originalBlob.size);
-        setCompressedBlob(originalBlob);
-        setProcessed(true);
-        setOutputFormat('gif');
-        setOutputGifFrameCount(gifFrameCount);
-        onProcessed({
-          id: image.name,
-          originalFile: image,
-          compressedBlob: originalBlob,
-          compressedUrl: compressedUrl,
-          originalSize: image.size,
-          compressedSize: originalBlob.size,
-          format: 'gif',
-          filename: getOutputFilename('gif'),
-          mediaType: 'image',
-          fileFormat: 'gif',
-          originalFileFormat: originalFormat
-        });
-        toast.info('GIF already optimized at this quality level');
-        return;
-      }
-
       const targetWidth = gifSettings.width;
       const targetHeight = gifSettings.height;
       const framesToProcess = gifSettings.frames;
