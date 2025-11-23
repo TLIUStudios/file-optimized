@@ -20,7 +20,7 @@ export default function LoginPromptModal({ isOpen, onClose, onLogin, context = "
               <p className="text-emerald-100 mt-1 text-sm">
                 {context === "upgrade" 
                   ? "Create an account or sign in to upgrade to Pro"
-                  : "Unlock your full potential with a free account"}
+                  : "Unlock your potential with an account."}
               </p>
             </div>
             <button
