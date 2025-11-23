@@ -2076,20 +2076,26 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
             <Button 
               variant="outline" 
               size="sm" 
-              onClick={() => {
-                if (navigator.share && compressedPreview) {
-                  fetch(compressedPreview)
-                    .then(res => res.blob())
-                    .then(blob => {
-                      const file = new File([blob], getOutputFilename(), { type: blob.type });
-                      navigator.share({
-                        title: getOutputFilename(),
-                        text: 'Check out my optimized file!',
-                        files: [file]
-                      }).catch(err => console.log('Share cancelled'));
+              onClick={async () => {
+                try {
+                  if (navigator.share && compressedPreview) {
+                    const response = await fetch(compressedPreview);
+                    const blob = await response.blob();
+                    const file = new File([blob], getOutputFilename(), { type: blob.type });
+                    await navigator.share({
+                      title: getOutputFilename(),
+                      text: 'Check out my optimized file!',
+                      files: [file]
                     });
-                } else {
-                  toast.info('Sharing not supported on this device');
+                    toast.success('Shared successfully!');
+                  } else {
+                    toast.info('Sharing not supported on this device');
+                  }
+                } catch (error) {
+                  if (error.name !== 'AbortError') {
+                    console.error('Share error:', error);
+                    toast.error('Failed to share');
+                  }
                 }
               }}
               className="justify-center text-xs"

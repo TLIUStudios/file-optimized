@@ -103,12 +103,13 @@ export default function ImageComparisonModal({
   const [regeneratingField, setRegeneratingField] = useState(null);
   const [showDownloadModalForImage, setShowDownloadModalForImage] = useState(false);
   const [originalResolution, setOriginalResolution] = useState(null);
+  const [compressedResolution, setCompressedResolution] = useState(null);
 
 
   const containerRef = useRef(null);
   const imageContainerRef = useRef(null);
 
-  // Load original image resolution for comparison
+  // Load original and compressed image resolutions for comparison
   useEffect(() => {
     if (mediaType === 'image' && originalImage) {
       const img = new Image();
@@ -118,6 +119,16 @@ export default function ImageComparisonModal({
       img.src = originalImage;
     }
   }, [originalImage, mediaType]);
+
+  useEffect(() => {
+    if (mediaType === 'image' && compressedImage) {
+      const img = new Image();
+      img.onload = () => {
+        setCompressedResolution({ width: img.width, height: img.height });
+      };
+      img.src = compressedImage;
+    }
+  }, [compressedImage, mediaType]);
 
   // Extract file extensions
   const originalExt = originalFileFormat ? originalFileFormat.toUpperCase() : fileName.split('.').pop().toUpperCase();
@@ -313,7 +324,7 @@ export default function ImageComparisonModal({
 
       // Generate with AI - updated prompt for more fields
       const aiResult = await base44.integrations.Core.InvokeLLM({
-        prompt: "Analyze this image and provide: a short title (under 60 chars), brief description (under 160 chars), category (1-2 words), mood (1-2 words describing the emotional tone), alt text for accessibility (descriptive, under 125 chars), 5-8 relevant tags (comma-separated keywords), 5-8 SEO keywords (comma-separated), and 5-8 social media hashtags (with # symbol, comma-separated).",
+        prompt: "Analyze this image and provide: a short title (under 60 chars), brief description (under 160 chars), category (1-2 words), mood (1-2 words describing the emotional tone), alt text for accessibility (descriptive, under 125 chars), 5-8 social media tags (comma-separated, casual style for social posts like 'anime', 'art', 'digital'), 5-8 SEO keywords (comma-separated, formal style for search optimization like 'digital illustration', 'anime character', 'high resolution'), and 5-8 social media hashtags (format: #word, #anotherword, #thirdword with space after comma).",
         file_urls: [uploadResult.file_url],
         response_json_schema: {
           type: "object",
@@ -391,15 +402,15 @@ export default function ImageComparisonModal({
           schemaProperty = "alt_text";
           break;
         case "tags":
-          prompt = "Analyze this image and provide ONLY 5-8 relevant keywords as comma-separated tags.";
+          prompt = "Analyze this image and provide ONLY 5-8 social media tags (comma-separated, casual style for social posts).";
           schemaProperty = "tags";
           break;
         case "keywords":
-          prompt = "Analyze this image and provide ONLY 5-8 SEO keywords as comma-separated terms.";
+          prompt = "Analyze this image and provide ONLY 5-8 SEO keywords (comma-separated, formal style for search optimization).";
           schemaProperty = "keywords";
           break;
         case "hashtags":
-          prompt = "Analyze this image and provide ONLY 5-8 social media hashtags (with # symbol) as comma-separated items.";
+          prompt = "Analyze this image and provide ONLY 5-8 social media hashtags (format: #word, #anotherword, #thirdword with space after comma).";
           schemaProperty = "hashtags";
           break;
         default:
@@ -1071,20 +1082,26 @@ export default function ImageComparisonModal({
                   variant="outline"
                   className="w-full justify-center"
                   size="sm"
-                  onClick={() => {
-                    if (navigator.share && compressedImage) {
-                      fetch(compressedImage)
-                        .then(res => res.blob())
-                        .then(blob => {
-                          const file = new File([blob], fileName, { type: blob.type });
-                          navigator.share({
-                            title: fileName,
-                            text: 'Check out my optimized image!',
-                            files: [file]
-                          }).catch(err => console.log('Share cancelled'));
+                  onClick={async () => {
+                    try {
+                      if (navigator.share && compressedImage) {
+                        const response = await fetch(compressedImage);
+                        const blob = await response.blob();
+                        const file = new File([blob], fileName, { type: blob.type });
+                        await navigator.share({
+                          title: fileName,
+                          text: 'Check out my optimized image!',
+                          files: [file]
                         });
-                    } else {
-                      toast.info('Sharing not supported on this device');
+                        toast.success('Shared successfully!');
+                      } else {
+                        toast.info('Sharing not supported on this device');
+                      }
+                    } catch (error) {
+                      if (error.name !== 'AbortError') {
+                        console.error('Share error:', error);
+                        toast.error('Failed to share');
+                      }
                     }
                   }}
                 >
@@ -1233,13 +1250,18 @@ export default function ImageComparisonModal({
                       <>
                         <div className="flex items-center justify-between py-2 px-3 bg-slate-50 dark:bg-slate-950 rounded-lg border border-slate-200 dark:border-slate-800">
                           <span className="text-slate-600 dark:text-slate-400 text-xs font-medium">Resolution</span>
-                          {originalResolution && (originalResolution.width !== imageDimensions.width || originalResolution.height !== imageDimensions.height) ? (
+                          {originalResolution && compressedResolution && (originalResolution.width !== compressedResolution.width || originalResolution.height !== compressedResolution.height) ? (
                             <span className="text-slate-900 dark:text-white font-bold text-sm">
-                              {originalResolution.width} × {originalResolution.height} → {imageDimensions.width} × {imageDimensions.height}
+                              {originalResolution.width} × {originalResolution.height} → {compressedResolution.width} × {compressedResolution.height}
                             </span>
                           ) : (
                             <span className="text-slate-900 dark:text-white font-bold text-sm">{imageDimensions.width} × {imageDimensions.height}</span>
                           )}
+                        </div>
+
+                        <div className="flex items-center justify-between py-2 px-3 bg-slate-50 dark:bg-slate-950 rounded-lg border border-slate-200 dark:border-slate-800">
+                          <span className="text-slate-600 dark:text-slate-400 text-xs font-medium">Orientation</span>
+                          <span className="text-slate-900 dark:text-white font-bold text-sm">{getOrientation(imageDimensions.width, imageDimensions.height)}</span>
                         </div>
 
                         <div className="flex items-center justify-between py-2 px-3 bg-slate-50 dark:bg-slate-950 rounded-lg border border-slate-200 dark:border-slate-800">
