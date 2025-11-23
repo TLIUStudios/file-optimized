@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import LazyImage from "./LazyImage";
+import SocialShareModal from "../SocialShareModal";
 import {
   Tooltip,
   TooltipContent,
@@ -66,6 +67,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
   const [isEditingFilename, setIsEditingFilename] = useState(false);
   const [showMetadataViewer, setShowMetadataViewer] = useState(false);
   const [fileMetadata, setFileMetadata] = useState(null);
+  const [showSocialShare, setShowSocialShare] = useState(false);
   const isImage = image?.type?.startsWith('image/') || false;
   const isVideo = image?.type?.startsWith('video/') || false;
   const isAudio = image?.type?.startsWith('audio/') || false;
@@ -2076,42 +2078,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
             <Button 
               variant="outline" 
               size="sm" 
-              onClick={async () => {
-                try {
-                  const response = await fetch(compressedPreview);
-                  const blob = await response.blob();
-                  const file = new File([blob], getOutputFilename(), { type: blob.type });
-                  
-                  if (navigator.share) {
-                    await navigator.share({
-                      files: [file],
-                      title: getOutputFilename(),
-                      text: 'Check out my optimized file!'
-                    });
-                    toast.success('Shared successfully!');
-                  } else {
-                    toast.info('Sharing not supported - downloading file instead');
-                    const url = URL.createObjectURL(blob);
-                    const a = document.createElement('a');
-                    a.href = url;
-                    a.download = getOutputFilename();
-                    a.click();
-                    URL.revokeObjectURL(url);
-                  }
-                } catch (error) {
-                  if (error.name === 'AbortError') return;
-                  console.error('Share error:', error);
-                  toast.info('Share cancelled - downloading file instead');
-                  const response = await fetch(compressedPreview);
-                  const blob = await response.blob();
-                  const url = URL.createObjectURL(blob);
-                  const a = document.createElement('a');
-                  a.href = url;
-                  a.download = getOutputFilename();
-                  a.click();
-                  URL.revokeObjectURL(url);
-                }
-              }}
+              onClick={() => setShowSocialShare(true)}
               className="justify-center text-xs"
             >
               <Share2 className="w-3 h-3 mr-1" /> <span className="hidden sm:inline">Share</span>
@@ -2500,13 +2467,17 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
                   onClick={processMedia} 
                   variant={settingsChanged ? "default" : "outline"} 
                   className={cn(
-                    "flex-1 text-sm",
-                    settingsChanged && "bg-red-600 hover:bg-red-700 text-white animate-pulse"
+                    "flex-1 text-sm relative overflow-hidden",
+                    settingsChanged && "bg-red-600 hover:bg-red-700 text-white"
                   )} 
                   disabled={processing || (((isGif && format === 'gif') || (isImage && !isGif && enableAnimation)) && !gifJsLoaded)}
                 >
-                  <RefreshCcw className={cn("w-4 h-4 mr-2", settingsChanged && "animate-spin")} />
-                  <span className="hidden sm:inline">Reprocess</span>
+                  {processing && <div className="absolute inset-0 bg-red-500 transition-all duration-300 ease-linear" style={{ width: `${processingProgress}%`, left: 0 }} />}
+                  <span className="relative z-10 flex items-center justify-center">
+                    <RefreshCcw className={cn("w-4 h-4 mr-2", processing && "animate-spin")} />
+                    <span className="hidden sm:inline">{processing ? `${Math.round(processingProgress)}%` : 'Reprocess'}</span>
+                    <span className="sm:hidden">{processing ? `${Math.round(processingProgress)}%` : 'Reprocess'}</span>
+                  </span>
                 </Button>
                 <Button onClick={() => downloadMedia()} className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white text-sm" disabled={processing}>
                   <Download className="w-4 h-4 mr-2" /><span className="hidden sm:inline">Download</span>
@@ -2527,6 +2498,12 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
       {showEditor && isImage && !isGif && <ImageEditor isOpen={showEditor} onClose={() => setShowEditor(false)} imageData={preview} onSave={handleSaveEdit} />}
       {showGifEditor && isGif && <GifEditor isOpen={showGifEditor} onClose={() => setShowGifEditor(false)} gifData={preview} onSave={handleSaveGifEdit} />}
       {showVideoEditor && isVideo && <VideoEditor isOpen={showVideoEditor} onClose={() => setShowVideoEditor(false)} videoData={preview} onSave={handleSaveVideoEdit} />}
+      <SocialShareModal
+        isOpen={showSocialShare}
+        onClose={() => setShowSocialShare(false)}
+        imageUrl={compressedPreview}
+        fileName={getOutputFilename()}
+      />
       {showMetadataViewer && fileMetadata && (
         <Dialog open={showMetadataViewer} onOpenChange={setShowMetadataViewer}>
           <DialogContent className="sm:max-w-[425px]">

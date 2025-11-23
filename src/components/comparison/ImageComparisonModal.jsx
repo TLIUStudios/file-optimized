@@ -1091,42 +1091,7 @@ export default function ImageComparisonModal({
                   variant="outline"
                   className="w-full justify-center"
                   size="sm"
-                  onClick={async () => {
-                    try {
-                      const response = await fetch(compressedImage);
-                      const blob = await response.blob();
-                      const file = new File([blob], fileName, { type: blob.type });
-                      
-                      if (navigator.share) {
-                        await navigator.share({
-                          files: [file],
-                          title: fileName,
-                          text: 'Check out my optimized image!'
-                        });
-                        toast.success('Shared successfully!');
-                      } else {
-                        toast.info('Sharing not supported - downloading file instead');
-                        const url = URL.createObjectURL(blob);
-                        const a = document.createElement('a');
-                        a.href = url;
-                        a.download = fileName;
-                        a.click();
-                        URL.revokeObjectURL(url);
-                      }
-                    } catch (error) {
-                      if (error.name === 'AbortError') return;
-                      console.error('Share error:', error);
-                      toast.info('Share cancelled - downloading file instead');
-                      const response = await fetch(compressedImage);
-                      const blob = await response.blob();
-                      const url = URL.createObjectURL(blob);
-                      const a = document.createElement('a');
-                      a.href = url;
-                      a.download = fileName;
-                      a.click();
-                      URL.revokeObjectURL(url);
-                    }
-                  }}
+                  onClick={() => setShowSocialShare(true)}
                 >
                   <Share2 className="w-4 h-4 mr-2" />
                   Share to Social Media
