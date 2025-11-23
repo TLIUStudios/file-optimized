@@ -2003,7 +2003,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
                   <audio src={compressedPreview} controls className="w-full" />
                 </div>
               ) : null}
-              <Badge className="absolute top-2 left-2 bg-emerald-600 text-white">Compressed</Badge>
+              <Badge className="absolute top-2 left-2 bg-emerald-600 text-white">Optimized</Badge>
               <Badge className="absolute bottom-2 right-2 bg-emerald-600/95 backdrop-blur-sm text-white border border-emerald-500 text-xs px-2 py-1 font-bold shadow-lg">{displayCompressedExt}</Badge>
               {isGif && outputGifFrameCount > 0 && (
                 <Badge className="absolute bottom-2 left-2 bg-emerald-600/95 backdrop-blur-sm text-white border border-emerald-500 text-xs px-2 py-1 font-bold shadow-lg">{outputGifFrameCount} frames</Badge>
