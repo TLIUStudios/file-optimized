@@ -584,7 +584,11 @@ export default function Home() {
           mediaType={comparisonData.mediaType}
           fileFormat={comparisonData.fileFormat}
           originalFileFormat={comparisonData.originalFileFormat}
-          generatedAnimations={comparisonData.animations || null} />
+          generatedAnimations={comparisonData.animations || null}
+          cachedFormatData={comparisonData.cachedFormatData}
+          cachedSeoMetadata={comparisonData.cachedSeoMetadata}
+          onFormatDataCached={comparisonData.onFormatDataCached}
+          onSeoMetadataCached={comparisonData.onSeoMetadataCached} />
 
         </Suspense>
       }
