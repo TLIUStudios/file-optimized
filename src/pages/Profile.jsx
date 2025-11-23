@@ -29,7 +29,6 @@ import {
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { motion } from "framer-motion";
-import { lazy, Suspense } from "react";
 
 const ProUpgradeModal = lazy(() => import("../components/ProUpgradeModal"));
 const LoginPromptModal = lazy(() => import("../components/LoginPromptModal"));
@@ -955,5 +954,6 @@ export default function Profile() {
         </Suspense>
       )}
     </div>
+    </>
   );
 }
