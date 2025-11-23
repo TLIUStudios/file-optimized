@@ -1044,6 +1044,33 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
         toast.info('GIF has no frames to optimize');
         return;
       }
+
+      // If dimensions aren't being changed and quality is high, just use original
+      if (quality >= 85 && !maxWidth && !maxHeight) {
+        const compressedUrl = URL.createObjectURL(originalBlob);
+        setCompressedPreview(compressedUrl);
+        setCompressedSize(originalBlob.size);
+        setCompressedBlob(originalBlob);
+        setProcessed(true);
+        setOutputFormat('gif');
+        setOutputGifFrameCount(gifFrameCount);
+        onProcessed({
+          id: image.name,
+          originalFile: image,
+          compressedBlob: originalBlob,
+          compressedUrl: compressedUrl,
+          originalSize: image.size,
+          compressedSize: originalBlob.size,
+          format: 'gif',
+          filename: getOutputFilename('gif'),
+          mediaType: 'image',
+          fileFormat: 'gif',
+          originalFileFormat: originalFormat
+        });
+        toast.info('GIF already optimized at this quality level');
+        return;
+      }
+
       const targetWidth = gifSettings.width;
       const targetHeight = gifSettings.height;
       const framesToProcess = gifSettings.frames;
@@ -1079,8 +1106,9 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
           outputCanvas.height = targetHeight;
           const outputCtx = outputCanvas.getContext('2d', { alpha: true });
           outputCtx.drawImage(backgroundCanvas, 0, 0);
+          // Preserve original frame timing exactly
           const originalDelay = frame.delay || 10;
-          const delayMs = originalDelay * 10;
+          const delayMs = Math.max(20, originalDelay * 10); // Minimum 20ms for smooth playback
           processedFrames.push({ canvas: outputCanvas, delay: delayMs });
         } catch (err) {
           console.error(`Frame ${i} error:`, err);
@@ -1088,10 +1116,9 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
       }
       if (processedFrames.length === 0) throw new Error('No frames processed');
       const GIF = window.GIF;
-      // Map quality slider (0-100) to gif.js quality (1-10, where 1=best, 10=worst)
-      // Higher quality slider = lower gif.js number = better quality but larger file
-      // For compression: quality 85 -> ~2, quality 70 -> ~4, quality 50 -> ~7
-      const gifQuality = Math.max(1, Math.min(10, Math.round(11 - (quality / 10))));
+      // Aggressive quality settings for actual compression
+      // Quality 85 -> 1 (best), 70 -> 3, 50 -> 6, 30 -> 9
+      const gifQuality = Math.max(1, Math.min(10, Math.round(10 - (quality / 11))));
       const gif = new GIF({
         workers: 4,
         quality: gifQuality,
@@ -1113,6 +1140,33 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
         gif.render();
       });
       if (!gifBlob || gifBlob.size === 0) throw new Error('Encoding failed');
+
+      // If compressed is larger, use original
+      if (gifBlob.size >= originalBlob.size * 1.05) {
+        const compressedUrl = URL.createObjectURL(originalBlob);
+        setCompressedPreview(compressedUrl);
+        setCompressedSize(originalBlob.size);
+        setCompressedBlob(originalBlob);
+        setProcessed(true);
+        setOutputFormat('gif');
+        setOutputGifFrameCount(gifFrameCount);
+        onProcessed({
+          id: image.name,
+          originalFile: image,
+          compressedBlob: originalBlob,
+          compressedUrl: compressedUrl,
+          originalSize: image.size,
+          compressedSize: originalBlob.size,
+          format: 'gif',
+          filename: getOutputFilename('gif'),
+          mediaType: 'image',
+          fileFormat: 'gif',
+          originalFileFormat: originalFormat
+        });
+        toast.info('GIF already optimized - using original');
+        return;
+      }
+
       const compressedUrl = URL.createObjectURL(gifBlob);
       setCompressedPreview(compressedUrl);
       setCompressedSize(gifBlob.size);
@@ -1134,8 +1188,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
         originalFileFormat: originalFormat
       });
       const savings = ((1 - gifBlob.size / image.size) * 100).toFixed(1);
-      if (gifBlob.size < image.size) toast.success(`✨ GIF optimized! ${processedFrames.length} frames • Saved ${savings}%`);
-      else toast.warning(`GIF processed. May already be optimized.`);
+      toast.success(`✨ GIF optimized! ${processedFrames.length} frames • Saved ${savings}%`);
     } catch (error) {
       console.error('❌ GIF failed:', error);
       try {
@@ -1147,6 +1200,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
         setCompressedBlob(originalBlob);
         setProcessed(true);
         setOutputFormat('gif');
+        setOutputGifFrameCount(gifFrameCount);
         onProcessed({
           id: image.name,
           originalFile: image,
