@@ -280,31 +280,41 @@ Rules:
   };
 
   const saveToHistory = () => {
-    const newState = {
-      trimStart,
-      trimEnd,
-      textOverlay,
-      textPosition: { ...textPosition },
-      textColor,
-      textSize,
-      brightness,
-      contrast,
-      saturation,
-      blur,
-      captions: [...captions],
-      captionStyle,
-      showCaptions,
-      volume,
-      backgroundMusic,
-      musicVolume,
-      noiseReduction,
-      audioNormalization,
-    };
+    // Clear any pending timeout
+    if (historyTimeoutRef.current) {
+      clearTimeout(historyTimeoutRef.current);
+    }
 
-    const newHistory = history.slice(0, historyIndex + 1);
-    newHistory.push(newState);
-    setHistory(newHistory);
-    setHistoryIndex(newHistory.length - 1);
+    // Debounce to avoid excessive history entries
+    historyTimeoutRef.current = setTimeout(() => {
+      const newState = {
+        trimStart,
+        trimEnd,
+        textOverlay,
+        textPosition: { ...textPosition },
+        textColor,
+        textSize,
+        brightness,
+        contrast,
+        saturation,
+        blur,
+        captions: [...captions],
+        captionStyle,
+        showCaptions,
+        volume,
+        backgroundMusic,
+        musicVolume,
+        noiseReduction,
+        audioNormalization,
+      };
+
+      setHistory(prev => {
+        const newHistory = prev.slice(0, historyIndex + 1);
+        newHistory.push(newState);
+        return newHistory;
+      });
+      setHistoryIndex(prev => prev + 1);
+    }, 300);
   };
 
   const undo = () => {
