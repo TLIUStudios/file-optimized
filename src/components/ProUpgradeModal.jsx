@@ -92,23 +92,23 @@ export default function ProUpgradeModal({ isOpen, onClose, onUpgrade, processing
               <h3 className="text-base font-bold text-slate-900 dark:text-white mb-1 text-center">Free Plan</h3>
               <p className="text-2xl font-bold text-center text-slate-600 dark:text-slate-400 mb-3">$0</p>
               <div className="space-y-2">
-                <div className="flex items-center gap-2 text-xs text-slate-700 dark:text-slate-300">
+                <div className="flex items-center gap-2 text-xs text-slate-900 dark:text-white font-medium">
                   <Check className="w-3.5 h-3.5 text-slate-500 flex-shrink-0" />
                   <span>50MB file limit</span>
                 </div>
-                <div className="flex items-center gap-2 text-xs text-slate-700 dark:text-slate-300">
+                <div className="flex items-center gap-2 text-xs text-slate-900 dark:text-white font-medium">
                   <Check className="w-3.5 h-3.5 text-slate-500 flex-shrink-0" />
                   <span>9 files batch</span>
                 </div>
-                <div className="flex items-center gap-2 text-xs text-slate-700 dark:text-slate-300">
+                <div className="flex items-center gap-2 text-xs text-slate-900 dark:text-white font-medium">
                   <Check className="w-3.5 h-3.5 text-slate-500 flex-shrink-0" />
                   <span>Standard processing speed</span>
                 </div>
-                <div className="flex items-center gap-2 text-xs text-slate-700 dark:text-slate-300">
+                <div className="flex items-center gap-2 text-xs text-slate-900 dark:text-white font-medium">
                   <Check className="w-3.5 h-3.5 text-slate-500 flex-shrink-0" />
                   <span>No Watermark</span>
                 </div>
-                <div className="flex items-center gap-2 text-xs text-slate-700 dark:text-slate-300">
+                <div className="flex items-center gap-2 text-xs text-slate-900 dark:text-white font-medium">
                   <Check className="w-3.5 h-3.5 text-slate-500 flex-shrink-0" />
                   <span>Displays Ads</span>
                 </div>
