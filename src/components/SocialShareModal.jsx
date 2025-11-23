@@ -31,7 +31,6 @@ export default function SocialShareModal({ isOpen, onClose, imageUrl, fileName }
     }
 
     window.open(url, '_blank');
-    toast.info(`Opening ${platform}...`);
   };
 
   const handleCopyLink = () => {
