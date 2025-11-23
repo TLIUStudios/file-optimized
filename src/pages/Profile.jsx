@@ -738,7 +738,7 @@ export default function Profile() {
             transition={{ delay: 0.2 }}
           >
             <Card className="p-6">
-              <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-4">Need Help?</h3>
+              <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-4">Support & Feedback</h3>
               <div className="space-y-2">
                 <Button variant="outline" className="w-full justify-start" asChild>
                   <a href="https://support.tliu.co/" target="_blank" rel="noopener noreferrer">
