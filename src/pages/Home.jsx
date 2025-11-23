@@ -500,7 +500,7 @@ export default function Home() {
           </div>
 
           {/* Add More Button */}
-          <div className="relative">
+          <div className="relative group">
             <input
             type="file"
             multiple
@@ -510,13 +510,10 @@ export default function Home() {
             id="add-more"
             title="" />
 
-            <Button
-            variant="outline"
-            className="w-full h-16 border-2 border-dashed hover:border-emerald-500 hover:bg-emerald-50 dark:hover:bg-emerald-950/20 transition-all duration-300">
-
-              <FolderPlus className="w-5 h-5 mr-2" />
-              Add More Files
-            </Button>
+            <div className="w-full h-16 border-2 border-dashed border-slate-300 dark:border-slate-700 group-hover:border-emerald-500 group-hover:bg-emerald-50 dark:group-hover:bg-emerald-950/20 rounded-lg transition-all duration-300 flex items-center justify-center pointer-events-none">
+              <FolderPlus className="w-5 h-5 mr-2 text-slate-700 dark:text-slate-300" />
+              <span className="text-slate-700 dark:text-slate-300">Add More Files</span>
+            </div>
           </div>
 
           {/* Images Grid with Drag & Drop */}

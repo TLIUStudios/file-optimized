@@ -152,6 +152,7 @@ export default function UploadZone({ onFilesSelected, isDragActive, onDragStateC
         onChange={handleFileInput}
         className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
         id="file-upload"
+        title="No file chosen"
       />
       
       <div className="flex flex-col items-center gap-4 pointer-events-none">
