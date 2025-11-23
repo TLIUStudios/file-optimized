@@ -2078,49 +2078,38 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
               size="sm" 
               onClick={async () => {
                 try {
-                  if (!navigator.share) {
-                    toast.info('Sharing not supported on this device');
-                    return;
-                  }
-                  
                   const response = await fetch(compressedPreview);
                   const blob = await response.blob();
+                  const file = new File([blob], getOutputFilename(), { type: blob.type });
                   
-                  // Check if files sharing is supported
-                  if (navigator.canShare && navigator.canShare({ files: [new File([blob], getOutputFilename(), { type: blob.type })] })) {
-                    const file = new File([blob], getOutputFilename(), { type: blob.type });
+                  if (navigator.share) {
                     await navigator.share({
+                      files: [file],
                       title: getOutputFilename(),
-                      text: 'Check out my optimized file!',
-                      files: [file]
+                      text: 'Check out my optimized file!'
                     });
                     toast.success('Shared successfully!');
                   } else {
-                    // Fallback: share URL instead
-                    const url = window.location.href;
-                    await navigator.share({
-                      title: getOutputFilename(),
-                      text: 'Check out my optimized file!',
-                      url: url
-                    });
-                    toast.success('Shared successfully!');
+                    toast.info('Sharing not supported - downloading file instead');
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = getOutputFilename();
+                    a.click();
+                    URL.revokeObjectURL(url);
                   }
                 } catch (error) {
-                  if (error.name === 'AbortError') {
-                    return;
-                  }
+                  if (error.name === 'AbortError') return;
                   console.error('Share error:', error);
-                  // Copy to clipboard as fallback
-                  try {
-                    const response = await fetch(compressedPreview);
-                    const blob = await response.blob();
-                    await navigator.clipboard.write([
-                      new ClipboardItem({ [blob.type]: blob })
-                    ]);
-                    toast.success('File copied to clipboard!');
-                  } catch (clipError) {
-                    toast.error('Sharing not available. Please download and share manually.');
-                  }
+                  toast.info('Share cancelled - downloading file instead');
+                  const response = await fetch(compressedPreview);
+                  const blob = await response.blob();
+                  const url = URL.createObjectURL(blob);
+                  const a = document.createElement('a');
+                  a.href = url;
+                  a.download = getOutputFilename();
+                  a.click();
+                  URL.revokeObjectURL(url);
                 }
               }}
               className="justify-center text-xs"

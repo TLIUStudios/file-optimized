@@ -324,7 +324,7 @@ export default function ImageComparisonModal({
 
       // Generate with AI - updated prompt for more fields
       const aiResult = await base44.integrations.Core.InvokeLLM({
-        prompt: "Analyze this image and provide: a short title (under 60 chars), brief description (under 160 chars), category (1-2 words), mood (1-2 words describing the emotional tone), alt text for accessibility (descriptive, under 125 chars), 10 social media tags (comma-separated, casual/trendy style for social posts like 'anime', 'art', 'aesthetic', 'vibes'), 10 SEO keywords (comma-separated, formal/descriptive style for search optimization like 'digital illustration', 'anime character design', 'high resolution artwork'), and 10 social media hashtags (format: #word, #anotherword, #thirdword with space after comma).",
+        prompt: "Analyze this image and provide: a short title (under 60 chars), brief description (under 160 chars), category (1-2 words), mood (1-2 words describing the emotional tone), alt text for accessibility (descriptive, under 125 chars), 10 playful/fun social media tags (comma-separated, use casual slang, trendy words, vibes, aesthetic terms like 'aesthetic', 'vibes', 'iconic', 'slay', 'mood'), 10 professional SEO keywords (comma-separated, use formal descriptive language for search engines like 'digital illustration', 'high resolution image', 'professional artwork'), and 10 social media hashtags (format: #word, #anotherword, #thirdword with space after comma). IMPORTANT: Ensure tags, keywords, and hashtags are all completely different from each other with no overlap.",
         file_urls: [uploadResult.file_url],
         response_json_schema: {
           type: "object",
@@ -402,11 +402,11 @@ export default function ImageComparisonModal({
           schemaProperty = "alt_text";
           break;
         case "tags":
-          prompt = "Analyze this image and provide ONLY 10 social media tags (comma-separated, casual/trendy style for social posts).";
+          prompt = "Analyze this image and provide ONLY 10 playful/fun social media tags (comma-separated, use casual slang, trendy words, vibes, aesthetic terms).";
           schemaProperty = "tags";
           break;
         case "keywords":
-          prompt = "Analyze this image and provide ONLY 10 SEO keywords (comma-separated, formal/descriptive style for search optimization).";
+          prompt = "Analyze this image and provide ONLY 10 professional SEO keywords (comma-separated, use formal descriptive language for search engines).";
           schemaProperty = "keywords";
           break;
         case "hashtags":
@@ -1093,50 +1093,38 @@ export default function ImageComparisonModal({
                   size="sm"
                   onClick={async () => {
                     try {
-                      if (!navigator.share) {
-                        toast.info('Sharing not supported on this device');
-                        return;
-                      }
-                      
                       const response = await fetch(compressedImage);
                       const blob = await response.blob();
+                      const file = new File([blob], fileName, { type: blob.type });
                       
-                      // Check if files sharing is supported
-                      if (navigator.canShare && navigator.canShare({ files: [new File([blob], fileName, { type: blob.type })] })) {
-                        const file = new File([blob], fileName, { type: blob.type });
+                      if (navigator.share) {
                         await navigator.share({
+                          files: [file],
                           title: fileName,
-                          text: 'Check out my optimized image!',
-                          files: [file]
+                          text: 'Check out my optimized image!'
                         });
                         toast.success('Shared successfully!');
                       } else {
-                        // Fallback: share URL instead
-                        const url = window.location.href;
-                        await navigator.share({
-                          title: fileName,
-                          text: 'Check out my optimized image!',
-                          url: url
-                        });
-                        toast.success('Shared successfully!');
+                        toast.info('Sharing not supported - downloading file instead');
+                        const url = URL.createObjectURL(blob);
+                        const a = document.createElement('a');
+                        a.href = url;
+                        a.download = fileName;
+                        a.click();
+                        URL.revokeObjectURL(url);
                       }
                     } catch (error) {
-                      if (error.name === 'AbortError') {
-                        // User cancelled, do nothing
-                        return;
-                      }
+                      if (error.name === 'AbortError') return;
                       console.error('Share error:', error);
-                      // Copy to clipboard as fallback
-                      try {
-                        const response = await fetch(compressedImage);
-                        const blob = await response.blob();
-                        await navigator.clipboard.write([
-                          new ClipboardItem({ [blob.type]: blob })
-                        ]);
-                        toast.success('Image copied to clipboard!');
-                      } catch (clipError) {
-                        toast.error('Sharing not available. Please download and share manually.');
-                      }
+                      toast.info('Share cancelled - downloading file instead');
+                      const response = await fetch(compressedImage);
+                      const blob = await response.blob();
+                      const url = URL.createObjectURL(blob);
+                      const a = document.createElement('a');
+                      a.href = url;
+                      a.download = fileName;
+                      a.click();
+                      URL.revokeObjectURL(url);
                     }
                   }}
                 >
