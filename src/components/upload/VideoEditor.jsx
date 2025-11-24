@@ -684,13 +684,13 @@ Rules:
 
         <div className="flex h-[calc(98vh-65px)]">
           {/* Main Content - Video + Timeline */}
-          <div className="flex-1 flex flex-col bg-slate-900">
+          <div className="flex-1 flex flex-col bg-slate-900 min-w-0">
             {/* Video Preview Area */}
-            <div className="flex-1 flex items-center justify-center p-6 min-h-0">
-              <div className="relative max-w-full max-h-full flex items-center justify-center">
+            <div className="flex items-center justify-center p-4 h-[45vh]">
+              <div className="relative max-w-full h-full flex items-center justify-center">
                 <video
                   ref={videoRef}
-                  className="max-w-full max-h-full rounded-lg shadow-2xl"
+                  className="max-w-full max-h-full rounded-lg shadow-2xl object-contain"
                   onEnded={() => setIsPlaying(false)}
                   preload="auto"
                   playsInline
@@ -765,8 +765,8 @@ Rules:
             </div>
 
             {/* Timeline Section */}
-            <div className="border-t border-slate-800 bg-slate-950 p-4">
-              <div className="space-y-3">
+            <div className="border-t border-slate-800 bg-slate-950 p-4 flex-shrink-0 overflow-y-auto max-h-[50vh]">
+              <div className="space-y-3 min-w-0">
                 {/* Playback Controls */}
                 <div className="flex items-center justify-center gap-3">
                   <Button
@@ -818,7 +818,7 @@ Rules:
                     </span>
                   </div>
                   
-                  <div className="relative h-20 bg-slate-800 rounded-lg overflow-hidden border border-slate-700">
+                  <div className="relative h-20 bg-slate-800 rounded-lg overflow-hidden border border-slate-700 w-full">
                     {/* Thumbnail strip */}
                     {thumbnails.length > 0 ? (
                       <div className="absolute inset-0 flex">
@@ -975,7 +975,7 @@ Rules:
                   </div>
                   
                   {/* Timeline Controls */}
-                  <div className="flex gap-2">
+                  <div className="flex gap-2 w-full">
                     <Button
                       variant="outline"
                       size="sm"
@@ -1007,8 +1007,8 @@ Rules:
                   </div>
                   
                   {/* Fade Controls */}
-                  <div className="grid grid-cols-2 gap-3 pt-2 border-t border-slate-800">
-                    <div className="space-y-1">
+                  <div className="grid grid-cols-2 gap-3 pt-2 border-t border-slate-800 w-full">
+                    <div className="space-y-1 min-w-0">
                       <label className="text-xs font-medium text-slate-300">
                         Fade In: {fadeIn.toFixed(1)}s
                       </label>
@@ -1021,7 +1021,7 @@ Rules:
                         className="w-full"
                       />
                     </div>
-                    <div className="space-y-1">
+                    <div className="space-y-1 min-w-0">
                       <label className="text-xs font-medium text-slate-300">
                         Fade Out: {fadeOut.toFixed(1)}s
                       </label>
