@@ -366,7 +366,7 @@ export default function ImageEditor({ isOpen, onClose, imageData, onSave }) {
             variant="ghost" 
             size="icon" 
             onClick={onClose}
-            className="hover:bg-red-100 dark:hover:bg-red-950 hover:text-red-600 dark:hover:text-red-400"
+            className="h-9 w-9 hover:bg-red-600 hover:text-white rounded-lg transition-colors"
           >
             <X className="w-5 h-5" />
           </Button>
