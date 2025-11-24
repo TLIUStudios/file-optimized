@@ -51,43 +51,50 @@ export default function VideoEditor({ isOpen, onClose, videoData, onSave }) {
     if (!videoRef.current || !videoData || !isOpen) return;
     
     const video = videoRef.current;
+    let hasSetDuration = false;
     
-    const handleMetadataLoaded = () => {
-      if (video.duration && !isNaN(video.duration) && video.duration > 0) {
-        console.log('Video loaded:', video.duration, 'seconds');
-        setDuration(video.duration);
-        setTrimEnd(video.duration);
-        generateThumbnails(video);
-        
-        // Save initial state immediately (no debounce)
-        const initialState = {
-          trimStart: 0,
-          trimEnd: video.duration,
-          textOverlay: "",
-          textPosition: { x: 50, y: 50 },
-          textColor: "#ffffff",
-          textSize: 32,
-          brightness: 100,
-          contrast: 100,
-          saturation: 100,
-          blur: 0,
-          captions: [],
-          captionStyle: "modern",
-          showCaptions: false,
-          volume: 100,
-          backgroundMusic: null,
-          musicVolume: 50,
-          noiseReduction: false,
-          audioNormalization: false,
-          cutRanges: [],
-          fadeIn: 0,
-          fadeOut: 0,
-        };
-        setHistory([initialState]);
-        setHistoryIndex(0);
-      } else {
+    const initializeVideo = () => {
+      if (hasSetDuration) return;
+      if (!video.duration || isNaN(video.duration) || video.duration <= 0) {
         console.warn('Invalid duration:', video.duration);
+        return;
       }
+      
+      hasSetDuration = true;
+      console.log('Video loaded:', video.duration, 'seconds');
+      
+      const videoDuration = video.duration;
+      setDuration(videoDuration);
+      setTrimEnd(videoDuration);
+      
+      // Save initial state
+      const initialState = {
+        trimStart: 0,
+        trimEnd: videoDuration,
+        textOverlay: "",
+        textPosition: { x: 50, y: 50 },
+        textColor: "#ffffff",
+        textSize: 32,
+        brightness: 100,
+        contrast: 100,
+        saturation: 100,
+        blur: 0,
+        captions: [],
+        captionStyle: "modern",
+        showCaptions: false,
+        volume: 100,
+        backgroundMusic: null,
+        musicVolume: 50,
+        noiseReduction: false,
+        audioNormalization: false,
+        cutRanges: [],
+        fadeIn: 0,
+        fadeOut: 0,
+      };
+      setHistory([initialState]);
+      setHistoryIndex(0);
+      
+      generateThumbnails(video);
     };
     
     const handleTimeUpdate = () => {
@@ -99,35 +106,33 @@ export default function VideoEditor({ isOpen, onClose, videoData, onSave }) {
       toast.error('Failed to load video');
     };
     
-    const handleCanPlay = () => {
-      // Fallback if loadedmetadata doesn't fire
-      if (!duration || duration === 0) {
-        handleMetadataLoaded();
-      }
-    };
-    
-    video.addEventListener('loadedmetadata', handleMetadataLoaded);
-    video.addEventListener('canplay', handleCanPlay);
+    video.addEventListener('loadedmetadata', initializeVideo);
+    video.addEventListener('loadeddata', initializeVideo);
+    video.addEventListener('canplay', initializeVideo);
     video.addEventListener('timeupdate', handleTimeUpdate);
     video.addEventListener('error', handleError);
     
-    // Force load
+    // Set source and load
     video.src = videoData;
     video.load();
     
-    // Fallback check after 1 second
-    const timeoutId = setTimeout(() => {
-      if (video.duration && video.duration > 0 && !duration) {
-        handleMetadataLoaded();
-      }
-    }, 1000);
+    // Multiple fallback checks
+    const timeoutId1 = setTimeout(() => {
+      if (video.readyState >= 1) initializeVideo();
+    }, 500);
+    
+    const timeoutId2 = setTimeout(() => {
+      if (video.readyState >= 1) initializeVideo();
+    }, 1500);
     
     return () => {
-      video.removeEventListener('loadedmetadata', handleMetadataLoaded);
-      video.removeEventListener('canplay', handleCanPlay);
+      video.removeEventListener('loadedmetadata', initializeVideo);
+      video.removeEventListener('loadeddata', initializeVideo);
+      video.removeEventListener('canplay', initializeVideo);
       video.removeEventListener('timeupdate', handleTimeUpdate);
       video.removeEventListener('error', handleError);
-      clearTimeout(timeoutId);
+      clearTimeout(timeoutId1);
+      clearTimeout(timeoutId2);
     };
   }, [videoData, isOpen]);
 
