@@ -88,14 +88,12 @@ export default function GifEditor({ isOpen, onClose, gifData, onSave }) {
   }, [textOverlays]);
 
   useEffect(() => {
-    console.log('Draw effect triggered:', { framesCount: frames.length, currentFrame, hasCanvas: !!canvasRef.current, hasFrameCanvas: !!frameCanvasesRef.current[currentFrame] });
-    if (frames.length > 0 && frameCanvasesRef.current.length > 0) {
-      // Use requestAnimationFrame to ensure DOM is ready
+    if (frames.length > 0 && frameCanvasesRef.current.length > 0 && canvasDimensions.width > 0) {
       requestAnimationFrame(() => {
         drawFrame(currentFrame);
       });
     }
-  }, [currentFrame, frames, textOverlays, drawFrame]);
+  }, [currentFrame, frames, textOverlays, drawFrame, canvasDimensions]);
 
   const loadGifFrames = async () => {
     try {
@@ -454,15 +452,17 @@ export default function GifEditor({ isOpen, onClose, gifData, onSave }) {
             {/* Main Canvas Area */}
             <div className="flex-1 flex flex-col bg-slate-100 dark:bg-slate-900 overflow-auto">
               <div className="flex-1 flex items-center justify-center p-4">
-                <canvas
-                  ref={canvasRef}
-                  className="max-w-full max-h-full bg-white dark:bg-slate-800 rounded-lg shadow-lg"
-                  style={{ 
-                    imageRendering: 'auto',
-                    display: frames.length > 0 ? 'block' : 'none'
-                  }}
-                />
-                {frames.length === 0 && (
+                {canvasDimensions.width > 0 && canvasDimensions.height > 0 ? (
+                  <canvas
+                    ref={canvasRef}
+                    width={canvasDimensions.width}
+                    height={canvasDimensions.height}
+                    className="max-w-full max-h-full bg-white dark:bg-slate-800 rounded-lg shadow-lg"
+                    style={{ 
+                      imageRendering: 'auto'
+                    }}
+                  />
+                ) : (
                   <div className="text-slate-400 text-sm">Loading frames...</div>
                 )}
               </div>

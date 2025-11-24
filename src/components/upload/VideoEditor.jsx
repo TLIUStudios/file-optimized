@@ -38,6 +38,9 @@ export default function VideoEditor({ isOpen, onClose, videoData, onSave }) {
   const canvasRef = useRef(null);
   const [thumbnails, setThumbnails] = useState([]);
   const [generatingThumbnails, setGeneratingThumbnails] = useState(false);
+  const [cutRanges, setCutRanges] = useState([]);
+  const [fadeIn, setFadeIn] = useState(0);
+  const [fadeOut, setFadeOut] = useState(0);
 
   // History management
   const [history, setHistory] = useState([]);
@@ -78,6 +81,9 @@ export default function VideoEditor({ isOpen, onClose, videoData, onSave }) {
         musicVolume: 50,
         noiseReduction: false,
         audioNormalization: false,
+        cutRanges: [],
+        fadeIn: 0,
+        fadeOut: 0,
       };
       setHistory([initialState]);
       setHistoryIndex(0);
@@ -309,6 +315,9 @@ Rules:
         musicVolume,
         noiseReduction,
         audioNormalization,
+        cutRanges: [...cutRanges],
+        fadeIn,
+        fadeOut,
       };
 
       setHistory(prev => {
@@ -373,6 +382,9 @@ Rules:
       setMusicVolume(state.musicVolume || 50);
       setNoiseReduction(state.noiseReduction || false);
       setAudioNormalization(state.audioNormalization || false);
+      setCutRanges(state.cutRanges || []);
+      setFadeIn(state.fadeIn || 0);
+      setFadeOut(state.fadeOut || 0);
       setHistoryIndex(newIndex);
       
       toast.success('Redo applied');
@@ -763,16 +775,16 @@ Rules:
                 />
                 
                 {/* Visual Timeline with Thumbnails */}
-                <div className="space-y-2 pt-2">
-                  <div className="flex items-center justify-between text-xs text-slate-600 dark:text-slate-400">
-                    <div className="flex items-center gap-2">
-                      <Scissors className="w-3 h-3" />
-                      <span>Trim: {formatTime(trimStart)} - {formatTime(trimEnd)}</span>
-                    </div>
-                    <span className="text-emerald-600 dark:text-emerald-400 font-medium">
-                      Duration: {formatTime(trimEnd - trimStart)}
-                    </span>
+                <div className="space-y-3 pt-2">
+                <div className="flex items-center justify-between text-xs text-slate-600 dark:text-slate-400">
+                  <div className="flex items-center gap-2">
+                    <Scissors className="w-3 h-3" />
+                    <span>Trim: {formatTime(trimStart)} - {formatTime(trimEnd)}</span>
                   </div>
+                  <span className="text-emerald-600 dark:text-emerald-400 font-medium">
+                    Final: {formatTime(trimEnd - trimStart - cutRanges.reduce((sum, r) => sum + (r.end - r.start), 0))}
+                  </span>
+                </div>
                   
                   <div className="relative h-16 bg-slate-900 rounded-lg overflow-hidden">
                     {/* Thumbnail strip */}
@@ -799,17 +811,57 @@ Rules:
                     
                     {/* Dimmed regions (trimmed out) */}
                     <div
-                      className="absolute top-0 bottom-0 left-0 bg-slate-900/80"
+                      className="absolute top-0 bottom-0 left-0 bg-slate-900/90"
                       style={{
                         width: `${(trimStart / duration) * 100}%`,
                       }}
                     />
                     <div
-                      className="absolute top-0 bottom-0 right-0 bg-slate-900/80"
+                      className="absolute top-0 bottom-0 right-0 bg-slate-900/90"
                       style={{
                         width: `${((duration - trimEnd) / duration) * 100}%`,
                       }}
                     />
+                    
+                    {/* Cut ranges (removed sections) */}
+                    {cutRanges.map((range, idx) => (
+                      <div
+                        key={idx}
+                        className="absolute top-0 bottom-0 bg-red-900/70 border-x border-red-500 group cursor-pointer hover:bg-red-900/90"
+                        style={{
+                          left: `${(range.start / duration) * 100}%`,
+                          width: `${((range.end - range.start) / duration) * 100}%`,
+                        }}
+                        onClick={() => {
+                          setCutRanges(prev => prev.filter((_, i) => i !== idx));
+                          saveToHistory();
+                        }}
+                      >
+                        <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                          <X className="w-4 h-4 text-white" />
+                        </div>
+                      </div>
+                    ))}
+                    
+                    {/* Fade indicators */}
+                    {fadeIn > 0 && (
+                      <div
+                        className="absolute top-0 bottom-0 bg-gradient-to-r from-blue-500/30 to-transparent pointer-events-none"
+                        style={{
+                          left: `${(trimStart / duration) * 100}%`,
+                          width: `${(fadeIn / duration) * 100}%`,
+                        }}
+                      />
+                    )}
+                    {fadeOut > 0 && (
+                      <div
+                        className="absolute top-0 bottom-0 bg-gradient-to-l from-blue-500/30 to-transparent pointer-events-none"
+                        style={{
+                          right: `${((duration - trimEnd) / duration) * 100}%`,
+                          width: `${(fadeOut / duration) * 100}%`,
+                        }}
+                      />
+                    )}
                     
                     {/* Active region highlight */}
                     <div
