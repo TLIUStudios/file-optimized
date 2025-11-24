@@ -52,41 +52,42 @@ export default function VideoEditor({ isOpen, onClose, videoData, onSave }) {
     
     const video = videoRef.current;
     
-    video.src = videoData;
-    video.load();
-    
     const handleMetadataLoaded = () => {
-      console.log('Video loaded:', video.duration, 'seconds');
-      setDuration(video.duration);
-      setTrimEnd(video.duration);
-      generateThumbnails(video);
-      
-      // Save initial state immediately (no debounce)
-      const initialState = {
-        trimStart: 0,
-        trimEnd: video.duration,
-        textOverlay: "",
-        textPosition: { x: 50, y: 50 },
-        textColor: "#ffffff",
-        textSize: 32,
-        brightness: 100,
-        contrast: 100,
-        saturation: 100,
-        blur: 0,
-        captions: [],
-        captionStyle: "modern",
-        showCaptions: false,
-        volume: 100,
-        backgroundMusic: null,
-        musicVolume: 50,
-        noiseReduction: false,
-        audioNormalization: false,
-        cutRanges: [],
-        fadeIn: 0,
-        fadeOut: 0,
-      };
-      setHistory([initialState]);
-      setHistoryIndex(0);
+      if (video.duration && !isNaN(video.duration) && video.duration > 0) {
+        console.log('Video loaded:', video.duration, 'seconds');
+        setDuration(video.duration);
+        setTrimEnd(video.duration);
+        generateThumbnails(video);
+        
+        // Save initial state immediately (no debounce)
+        const initialState = {
+          trimStart: 0,
+          trimEnd: video.duration,
+          textOverlay: "",
+          textPosition: { x: 50, y: 50 },
+          textColor: "#ffffff",
+          textSize: 32,
+          brightness: 100,
+          contrast: 100,
+          saturation: 100,
+          blur: 0,
+          captions: [],
+          captionStyle: "modern",
+          showCaptions: false,
+          volume: 100,
+          backgroundMusic: null,
+          musicVolume: 50,
+          noiseReduction: false,
+          audioNormalization: false,
+          cutRanges: [],
+          fadeIn: 0,
+          fadeOut: 0,
+        };
+        setHistory([initialState]);
+        setHistoryIndex(0);
+      } else {
+        console.warn('Invalid duration:', video.duration);
+      }
     };
     
     const handleTimeUpdate = () => {
@@ -98,14 +99,35 @@ export default function VideoEditor({ isOpen, onClose, videoData, onSave }) {
       toast.error('Failed to load video');
     };
     
+    const handleCanPlay = () => {
+      // Fallback if loadedmetadata doesn't fire
+      if (!duration || duration === 0) {
+        handleMetadataLoaded();
+      }
+    };
+    
     video.addEventListener('loadedmetadata', handleMetadataLoaded);
+    video.addEventListener('canplay', handleCanPlay);
     video.addEventListener('timeupdate', handleTimeUpdate);
     video.addEventListener('error', handleError);
     
+    // Force load
+    video.src = videoData;
+    video.load();
+    
+    // Fallback check after 1 second
+    const timeoutId = setTimeout(() => {
+      if (video.duration && video.duration > 0 && !duration) {
+        handleMetadataLoaded();
+      }
+    }, 1000);
+    
     return () => {
       video.removeEventListener('loadedmetadata', handleMetadataLoaded);
+      video.removeEventListener('canplay', handleCanPlay);
       video.removeEventListener('timeupdate', handleTimeUpdate);
       video.removeEventListener('error', handleError);
+      clearTimeout(timeoutId);
     };
   }, [videoData, isOpen]);
 
