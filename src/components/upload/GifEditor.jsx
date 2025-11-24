@@ -113,22 +113,32 @@ export default function GifEditor({ isOpen, onClose, gifData, onSave }) {
         throw new Error('No frames found in GIF');
       }
 
-      // Get canvas dimensions from first frame
       const canvasWidth = decompressed[0].dims.width;
       const canvasHeight = decompressed[0].dims.height;
 
-      // Background canvas for accumulation
+      // Set dimensions immediately
+      setCanvasDimensions({ width: canvasWidth, height: canvasHeight });
+
+      // Setup main canvas
+      if (canvasRef.current) {
+        canvasRef.current.width = canvasWidth;
+        canvasRef.current.height = canvasHeight;
+      }
+
+      // Background accumulation canvas
       const bgCanvas = document.createElement('canvas');
       bgCanvas.width = canvasWidth;
       bgCanvas.height = canvasHeight;
       const bgCtx = bgCanvas.getContext('2d', { alpha: true });
 
+      const canvasesForFrames = [];
       const loadedFrames = [];
 
+      // Process each frame
       for (let i = 0; i < decompressed.length; i++) {
         const frame = decompressed[i];
-        
-        // Handle disposal
+
+        // Handle disposal from previous frame
         if (i > 0) {
           const prevFrame = decompressed[i - 1];
           if (prevFrame.disposalType === 2) {
@@ -141,122 +151,58 @@ export default function GifEditor({ isOpen, onClose, gifData, onSave }) {
           }
         }
 
-        // Draw frame patch
-        const tempCanvas = document.createElement('canvas');
-        tempCanvas.width = frame.dims.width;
-        tempCanvas.height = frame.dims.height;
-        const tempCtx = tempCanvas.getContext('2d', { alpha: true });
-        
+        // Draw current frame patch
+        const patchCanvas = document.createElement('canvas');
+        patchCanvas.width = frame.dims.width;
+        patchCanvas.height = frame.dims.height;
+        const patchCtx = patchCanvas.getContext('2d', { alpha: true });
+
         const imageData = new ImageData(
           new Uint8ClampedArray(frame.patch),
           frame.dims.width,
           frame.dims.height
         );
-        tempCtx.putImageData(imageData, 0, 0);
+        patchCtx.putImageData(imageData, 0, 0);
 
+        // Draw patch onto background
         bgCtx.drawImage(
-          tempCanvas,
+          patchCanvas,
           frame.dims.left || 0,
           frame.dims.top || 0
         );
 
-        // Copy to final canvas
+        // Save this frame's complete state
         const frameCanvas = document.createElement('canvas');
         frameCanvas.width = canvasWidth;
         frameCanvas.height = canvasHeight;
         const frameCtx = frameCanvas.getContext('2d', { alpha: true });
         frameCtx.drawImage(bgCanvas, 0, 0);
 
+        canvasesForFrames.push(frameCanvas);
         loadedFrames.push({
           id: i,
           delay: frame.delay * 10 || 100,
           width: canvasWidth,
           height: canvasHeight
         });
-
-        if (i % 10 === 0) {
-          console.log(`Loaded frame ${i + 1}/${decompressed.length}`);
-        }
       }
 
-      console.log('Setting frames state with', loadedFrames.length, 'frames');
-      
-      // Store canvas references separately to prevent re-render issues
-      const canvasesForFrames = [];
-      for (let i = 0; i < loadedFrames.length; i++) {
-        const tempCanvas = document.createElement('canvas');
-        tempCanvas.width = canvasWidth;
-        tempCanvas.height = canvasHeight;
-        const tempCtx = tempCanvas.getContext('2d', { alpha: true });
-        const frameCanvas = document.querySelectorAll('.frame-accumulator')[0];
-        if (i === 0) {
-          // First frame - copy from bgCanvas
-          tempCtx.drawImage(bgCanvas, 0, 0);
-        }
-        canvasesForFrames.push(tempCanvas);
-      }
-      
-      // Re-render all frames into separate canvases
-      bgCtx.clearRect(0, 0, canvasWidth, canvasHeight);
-      for (let i = 0; i < decompressed.length; i++) {
-        const frame = decompressed[i];
-        
-        if (i > 0) {
-          const prevFrame = decompressed[i - 1];
-          if (prevFrame.disposalType === 2) {
-            bgCtx.clearRect(
-              prevFrame.dims.left || 0,
-              prevFrame.dims.top || 0,
-              prevFrame.dims.width,
-              prevFrame.dims.height
-            );
-          }
-        }
-
-        const tempCanvas = document.createElement('canvas');
-        tempCanvas.width = frame.dims.width;
-        tempCanvas.height = frame.dims.height;
-        const tempCtx = tempCanvas.getContext('2d', { alpha: true });
-        
-        const imageData = new ImageData(
-          new Uint8ClampedArray(frame.patch),
-          frame.dims.width,
-          frame.dims.height
-        );
-        tempCtx.putImageData(imageData, 0, 0);
-
-        bgCtx.drawImage(
-          tempCanvas,
-          frame.dims.left || 0,
-          frame.dims.top || 0
-        );
-
-        const finalCtx = canvasesForFrames[i].getContext('2d', { alpha: true });
-        finalCtx.clearRect(0, 0, canvasWidth, canvasHeight);
-        finalCtx.drawImage(bgCanvas, 0, 0);
-      }
-      
+      // Store references
       frameCanvasesRef.current = canvasesForFrames;
-      setCanvasDimensions({ width: canvasWidth, height: canvasHeight });
-      
-      // Set frames LAST and draw immediately after
+
+      // Update state
       setFrames(loadedFrames);
       setGlobalDelay(loadedFrames[0]?.delay || 100);
       setCurrentFrame(0);
-      
-      // Force initial draw after state is set
-      setTimeout(() => {
-        if (canvasRef.current && canvasesForFrames[0]) {
-          const canvas = canvasRef.current;
-          canvas.width = canvasWidth;
-          canvas.height = canvasHeight;
-          const ctx = canvas.getContext('2d', { alpha: true });
-          ctx.clearRect(0, 0, canvas.width, canvas.height);
-          ctx.drawImage(canvasesForFrames[0], 0, 0);
-          console.log('✅ Initial frame drawn');
-        }
-      }, 0);
-      
+
+      // Draw first frame immediately
+      if (canvasRef.current) {
+        const ctx = canvasRef.current.getContext('2d', { alpha: true });
+        ctx.clearRect(0, 0, canvasWidth, canvasHeight);
+        ctx.drawImage(canvasesForFrames[0], 0, 0);
+        console.log('✅ Initial frame drawn');
+      }
+
       toast.success(`Loaded ${loadedFrames.length} frames`);
     } catch (error) {
       console.error('❌ Failed to load GIF:', error);

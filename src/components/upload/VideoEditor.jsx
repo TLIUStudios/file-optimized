@@ -36,6 +36,8 @@ export default function VideoEditor({ isOpen, onClose, videoData, onSave }) {
 
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
+  const [thumbnails, setThumbnails] = useState([]);
+  const [generatingThumbnails, setGeneratingThumbnails] = useState(false);
 
   // History management
   const [history, setHistory] = useState([]);
@@ -54,6 +56,7 @@ export default function VideoEditor({ isOpen, onClose, videoData, onSave }) {
       console.log('Video loaded:', video.duration, 'seconds');
       setDuration(video.duration);
       setTrimEnd(video.duration);
+      generateThumbnails(video);
       
       // Save initial state immediately (no debounce)
       const initialState = {
@@ -398,6 +401,35 @@ Rules:
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
+  const generateThumbnails = async (video) => {
+    setGeneratingThumbnails(true);
+    const thumbCount = 20;
+    const interval = video.duration / thumbCount;
+    const thumbs = [];
+    
+    const canvas = document.createElement('canvas');
+    canvas.width = 160;
+    canvas.height = 90;
+    const ctx = canvas.getContext('2d');
+    
+    for (let i = 0; i < thumbCount; i++) {
+      const time = i * interval;
+      video.currentTime = time;
+      
+      await new Promise(resolve => {
+        video.onseeked = resolve;
+      });
+      
+      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+      const dataUrl = canvas.toDataURL('image/jpeg', 0.6);
+      thumbs.push({ time, dataUrl });
+    }
+    
+    setThumbnails(thumbs);
+    setGeneratingThumbnails(false);
+    video.currentTime = 0;
+  };
+
   const applyEdits = async () => {
     setProcessing(true);
     toast.info("Processing video...", { id: "video-edit" });
@@ -714,8 +746,8 @@ Rules:
                 )}
               </div>
 
-              {/* Timeline with Trim Controls */}
-              <div className="w-full max-w-3xl mt-4 space-y-3 px-4">
+              {/* Timeline with Thumbnails */}
+              <div className="w-full mt-4 space-y-2 px-4 pb-4">
                 {/* Playback position */}
                 <div className="flex items-center justify-between text-xs text-slate-600 dark:text-slate-400">
                   <span>{formatTime(currentTime)}</span>
@@ -730,8 +762,8 @@ Rules:
                   disabled={!duration || duration === 0}
                 />
                 
-                {/* Trim range selector */}
-                <div className="space-y-2 pt-2 border-t border-slate-200 dark:border-slate-800">
+                {/* Visual Timeline with Thumbnails */}
+                <div className="space-y-2 pt-2">
                   <div className="flex items-center justify-between text-xs text-slate-600 dark:text-slate-400">
                     <div className="flex items-center gap-2">
                       <Scissors className="w-3 h-3" />
@@ -742,11 +774,46 @@ Rules:
                     </span>
                   </div>
                   
-                  {/* Dual slider for trim range */}
-                  <div className="relative h-8 bg-slate-200 dark:bg-slate-800 rounded-lg overflow-hidden">
-                    {/* Trimmed region highlight */}
+                  <div className="relative h-16 bg-slate-900 rounded-lg overflow-hidden">
+                    {/* Thumbnail strip */}
+                    {thumbnails.length > 0 ? (
+                      <div className="absolute inset-0 flex">
+                        {thumbnails.map((thumb, idx) => (
+                          <div
+                            key={idx}
+                            className="flex-1 h-full border-r border-slate-800"
+                            style={{ 
+                              backgroundImage: `url(${thumb.dataUrl})`,
+                              backgroundSize: 'cover',
+                              backgroundPosition: 'center',
+                              opacity: 0.6
+                            }}
+                          />
+                        ))}
+                      </div>
+                    ) : generatingThumbnails ? (
+                      <div className="absolute inset-0 flex items-center justify-center text-xs text-slate-400">
+                        Generating preview...
+                      </div>
+                    ) : null}
+                    
+                    {/* Dimmed regions (trimmed out) */}
                     <div
-                      className="absolute top-0 bottom-0 bg-emerald-500/30 dark:bg-emerald-500/20 border-x-2 border-emerald-500"
+                      className="absolute top-0 bottom-0 left-0 bg-slate-900/80"
+                      style={{
+                        width: `${(trimStart / duration) * 100}%`,
+                      }}
+                    />
+                    <div
+                      className="absolute top-0 bottom-0 right-0 bg-slate-900/80"
+                      style={{
+                        width: `${((duration - trimEnd) / duration) * 100}%`,
+                      }}
+                    />
+                    
+                    {/* Active region highlight */}
+                    <div
+                      className="absolute top-0 bottom-0 border-x-2 border-emerald-500 pointer-events-none"
                       style={{
                         left: `${(trimStart / duration) * 100}%`,
                         width: `${((trimEnd - trimStart) / duration) * 100}%`,
@@ -755,7 +822,7 @@ Rules:
                     
                     {/* Start handle */}
                     <div
-                      className="absolute top-0 bottom-0 w-1 bg-emerald-600 cursor-ew-resize hover:w-2 transition-all group"
+                      className="absolute top-0 bottom-0 w-3 bg-emerald-600 cursor-ew-resize hover:bg-emerald-500 transition-all z-10 flex items-center justify-center group"
                       style={{ left: `${(trimStart / duration) * 100}%` }}
                       onMouseDown={(e) => {
                         e.preventDefault();
@@ -780,15 +847,13 @@ Rules:
                         document.addEventListener('mouseup', handleMouseUp);
                       }}
                     >
-                      <div className="absolute -left-2 top-1/2 -translate-y-1/2 w-4 h-6 bg-emerald-600 rounded shadow-lg flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                        <div className="w-1 h-3 bg-white rounded-full" />
-                      </div>
+                      <div className="w-0.5 h-8 bg-white rounded-full opacity-80 group-hover:opacity-100" />
                     </div>
                     
                     {/* End handle */}
                     <div
-                      className="absolute top-0 bottom-0 w-1 bg-emerald-600 cursor-ew-resize hover:w-2 transition-all group"
-                      style={{ left: `${(trimEnd / duration) * 100}%` }}
+                      className="absolute top-0 bottom-0 w-3 bg-emerald-600 cursor-ew-resize hover:bg-emerald-500 transition-all z-10 flex items-center justify-center group"
+                      style={{ left: `calc(${(trimEnd / duration) * 100}% - 12px)` }}
                       onMouseDown={(e) => {
                         e.preventDefault();
                         const startX = e.clientX;
@@ -812,9 +877,15 @@ Rules:
                         document.addEventListener('mouseup', handleMouseUp);
                       }}
                     >
-                      <div className="absolute -right-2 top-1/2 -translate-y-1/2 w-4 h-6 bg-emerald-600 rounded shadow-lg flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                        <div className="w-1 h-3 bg-white rounded-full" />
-                      </div>
+                      <div className="w-0.5 h-8 bg-white rounded-full opacity-80 group-hover:opacity-100" />
+                    </div>
+                    
+                    {/* Playhead */}
+                    <div
+                      className="absolute top-0 bottom-0 w-0.5 bg-white pointer-events-none"
+                      style={{ left: `${(currentTime / duration) * 100}%` }}
+                    >
+                      <div className="absolute -top-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-white rounded-full" />
                     </div>
                   </div>
                 </div>
