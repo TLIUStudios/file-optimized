@@ -646,17 +646,18 @@ Rules:
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-5xl w-[95vw] max-h-[95vh] p-0 bg-slate-50 dark:bg-slate-950 overflow-hidden [&>button]:hidden">
-        <div className="p-4 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
+      <DialogContent className="max-w-6xl w-[98vw] h-[98vh] p-0 bg-slate-950 overflow-hidden [&>button]:hidden">
+        {/* Header */}
+        <div className="p-4 border-b border-slate-800 flex items-center justify-between bg-slate-950">
           <div className="flex items-center gap-2">
-            <h2 className="text-lg font-bold text-slate-900 dark:text-white">Edit Video</h2>
+            <h2 className="text-lg font-bold text-white">Edit Video</h2>
             <div className="flex items-center gap-1 ml-4">
               <Button 
                 variant="outline" 
                 size="icon" 
                 onClick={undo}
                 disabled={!canUndo}
-                className="h-8 w-8"
+                className="h-8 w-8 border-slate-700 hover:bg-slate-800"
               >
                 <Undo className="w-4 h-4" />
               </Button>
@@ -665,7 +666,7 @@ Rules:
                 size="icon" 
                 onClick={redo}
                 disabled={!canRedo}
-                className="h-8 w-8"
+                className="h-8 w-8 border-slate-700 hover:bg-slate-800"
               >
                 <Redo className="w-4 h-4" />
               </Button>
@@ -675,20 +676,21 @@ Rules:
             variant="ghost" 
             size="icon" 
             onClick={onClose}
-            className="hover:bg-red-100 dark:hover:bg-red-950 hover:text-red-600 dark:hover:text-red-400 transition-colors"
+            className="hover:bg-red-900/30 hover:text-red-400 transition-colors"
           >
             <X className="w-5 h-5" />
           </Button>
         </div>
 
-        <div className="flex flex-col lg:flex-row max-h-[calc(95vh-80px)]">
-          {/* Video Preview */}
-          <div className="flex-1 bg-slate-100 dark:bg-slate-900 p-4 flex items-center justify-center overflow-auto">
-            <div className="flex flex-col items-center justify-center w-full">
-              <div className="relative max-w-full max-h-[60vh] mb-4">
+        <div className="flex h-[calc(98vh-65px)]">
+          {/* Main Content - Video + Timeline */}
+          <div className="flex-1 flex flex-col bg-slate-900">
+            {/* Video Preview Area */}
+            <div className="flex-1 flex items-center justify-center p-6 min-h-0">
+              <div className="relative max-w-full max-h-full flex items-center justify-center">
                 <video
                   ref={videoRef}
-                  className="max-w-full max-h-[60vh] rounded bg-black"
+                  className="max-w-full max-h-full rounded-lg shadow-2xl"
                   onEnded={() => setIsPlaying(false)}
                   preload="auto"
                   playsInline
@@ -705,10 +707,10 @@ Rules:
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="absolute inset-0 m-auto w-16 h-16 bg-black/50 hover:bg-black/70 text-white rounded-full"
+                  className="absolute inset-0 m-auto w-20 h-20 bg-black/60 hover:bg-black/80 text-white rounded-full backdrop-blur-sm transition-all"
                   onClick={togglePlayPause}
                 >
-                  {isPlaying ? <Pause className="w-8 h-8" /> : <Play className="w-8 h-8 ml-1" />}
+                  {isPlaying ? <Pause className="w-10 h-10" /> : <Play className="w-10 h-10 ml-1" />}
                 </Button>
                 
                 {/* Caption Preview */}
@@ -761,66 +763,92 @@ Rules:
                 )}
               </div>
 
-              {/* Timeline with Thumbnails */}
-              <div className="w-full mt-4 space-y-2 px-4">
-                {/* Playback position */}
-                <div className="flex items-center justify-between text-xs text-slate-600 dark:text-slate-400">
-                  <span>{formatTime(currentTime)}</span>
-                  <span>{formatTime(duration)}</span>
-                </div>
-                <Slider
-                  value={[currentTime]}
-                  onValueChange={handleTimeChange}
-                  max={duration || 1}
-                  step={0.1}
-                  className="w-full"
-                  disabled={!duration || duration === 0}
-                />
-                
-                {/* Visual Timeline with Thumbnails */}
-                <div className="space-y-2 pt-2 max-w-full">
-                <div className="flex items-center justify-between text-xs text-slate-600 dark:text-slate-400">
-                  <div className="flex items-center gap-2">
-                    <Scissors className="w-3 h-3" />
-                    <span>Trim: {formatTime(trimStart)} - {formatTime(trimEnd)}</span>
-                  </div>
-                  <span className="text-emerald-600 dark:text-emerald-400 font-medium">
-                    Final: {formatTime(trimEnd - trimStart - cutRanges.reduce((sum, r) => sum + (r.end - r.start), 0))}
-                  </span>
-                </div>
+            {/* Timeline Section */}
+            <div className="border-t border-slate-800 bg-slate-950 p-4">
+              <div className="space-y-3">
+                {/* Playback Controls */}
+                <div className="flex items-center justify-center gap-3">
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    onClick={() => setCurrentFrame(prev => Math.max(0, prev - 1))}
+                    disabled={!duration}
+                    className="h-9 w-9 border-slate-700 hover:bg-slate-800"
+                  >
+                    <ChevronLeft className="w-5 h-5" />
+                  </Button>
                   
-                  <div className="relative h-16 bg-slate-900 rounded-lg overflow-hidden">
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    onClick={togglePlayPause}
+                    disabled={!duration}
+                    className="h-10 w-10 border-slate-700 hover:bg-slate-800"
+                  >
+                    {isPlaying ? <Pause className="w-5 h-5" /> : <Play className="w-5 h-5 ml-0.5" />}
+                  </Button>
+                  
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    onClick={() => setCurrentFrame(prev => Math.min(duration, prev + 1))}
+                    disabled={!duration}
+                    className="h-9 w-9 border-slate-700 hover:bg-slate-800"
+                  >
+                    <ChevronRight className="w-5 h-5" />
+                  </Button>
+
+                  <div className="flex items-center gap-2 ml-4 text-sm font-medium text-slate-300">
+                    <span>{formatTime(currentTime)}</span>
+                    <span className="text-slate-600">/</span>
+                    <span>{formatTime(duration)}</span>
+                  </div>
+                </div>
+                
+                {/* Visual Timeline */}
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between text-xs text-slate-400">
+                    <div className="flex items-center gap-2">
+                      <Scissors className="w-3.5 h-3.5" />
+                      <span>Trim: {formatTime(trimStart)} - {formatTime(trimEnd)}</span>
+                    </div>
+                    <span className="text-emerald-400 font-semibold">
+                      Final: {formatTime(trimEnd - trimStart - cutRanges.reduce((sum, r) => sum + (r.end - r.start), 0))}
+                    </span>
+                  </div>
+                  
+                  <div className="relative h-20 bg-slate-800 rounded-lg overflow-hidden border border-slate-700">
                     {/* Thumbnail strip */}
                     {thumbnails.length > 0 ? (
                       <div className="absolute inset-0 flex">
                         {thumbnails.map((thumb, idx) => (
                           <div
                             key={idx}
-                            className="flex-1 h-full border-r border-slate-800"
+                            className="flex-1 h-full border-r border-slate-700"
                             style={{ 
                               backgroundImage: `url(${thumb.dataUrl})`,
                               backgroundSize: 'cover',
                               backgroundPosition: 'center',
-                              opacity: 0.6
+                              opacity: 0.5
                             }}
                           />
                         ))}
                       </div>
                     ) : generatingThumbnails ? (
-                      <div className="absolute inset-0 flex items-center justify-center text-xs text-slate-400">
+                      <div className="absolute inset-0 flex items-center justify-center text-sm text-slate-500">
                         Generating preview...
                       </div>
                     ) : null}
                     
                     {/* Dimmed regions (trimmed out) */}
                     <div
-                      className="absolute top-0 bottom-0 left-0 bg-slate-900/90"
+                      className="absolute top-0 bottom-0 left-0 bg-slate-950/95 backdrop-blur-sm"
                       style={{
                         width: `${(trimStart / duration) * 100}%`,
                       }}
                     />
                     <div
-                      className="absolute top-0 bottom-0 right-0 bg-slate-900/90"
+                      className="absolute top-0 bottom-0 right-0 bg-slate-950/95 backdrop-blur-sm"
                       style={{
                         width: `${((duration - trimEnd) / duration) * 100}%`,
                       }}
@@ -868,7 +896,7 @@ Rules:
                     
                     {/* Active region highlight */}
                     <div
-                      className="absolute top-0 bottom-0 border-x-2 border-emerald-500 pointer-events-none"
+                      className="absolute top-0 bottom-0 border-x-2 border-emerald-500 bg-emerald-500/5 pointer-events-none"
                       style={{
                         left: `${(trimStart / duration) * 100}%`,
                         width: `${((trimEnd - trimStart) / duration) * 100}%`,
@@ -937,10 +965,11 @@ Rules:
                     
                     {/* Playhead */}
                     <div
-                      className="absolute top-0 bottom-0 w-0.5 bg-white pointer-events-none"
+                      className="absolute top-0 bottom-0 w-0.5 bg-white shadow-lg pointer-events-none z-20"
                       style={{ left: `${(currentTime / duration) * 100}%` }}
                     >
-                      <div className="absolute -top-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-white rounded-full" />
+                      <div className="absolute -top-1 left-1/2 -translate-x-1/2 w-3 h-3 bg-white rounded-full shadow-lg" />
+                      <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-3 h-3 bg-white rounded-full shadow-lg" />
                     </div>
                   </div>
                   
@@ -956,7 +985,7 @@ Rules:
                         saveToHistory();
                         toast.success('Section marked for removal');
                       }}
-                      className="flex-1 text-xs"
+                      className="flex-1 text-xs border-slate-700 hover:bg-slate-800"
                     >
                       <Scissors className="w-3 h-3 mr-1" />
                       Cut Here
@@ -970,7 +999,7 @@ Rules:
                         toast.success('Cleared all cuts');
                       }}
                       disabled={cutRanges.length === 0}
-                      className="flex-1 text-xs"
+                      className="flex-1 text-xs border-slate-700 hover:bg-slate-800"
                     >
                       Clear Cuts
                     </Button>
@@ -1026,8 +1055,8 @@ Rules:
                 <TabsContent value="adjust" className="space-y-4 mt-0">
                   <div className="space-y-2">
                     <div className="flex items-center gap-2">
-                      <Sun className="w-4 h-4 text-slate-500" />
-                      <label className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                      <Sun className="w-4 h-4 text-emerald-400" />
+                      <label className="text-sm font-medium text-slate-200">
                         Brightness: {brightness}%
                       </label>
                     </div>
@@ -1044,8 +1073,8 @@ Rules:
 
                   <div className="space-y-2">
                     <div className="flex items-center gap-2">
-                      <Contrast className="w-4 h-4 text-slate-500" />
-                      <label className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                      <Contrast className="w-4 h-4 text-emerald-400" />
+                      <label className="text-sm font-medium text-slate-200">
                         Contrast: {contrast}%
                       </label>
                     </div>
@@ -1062,8 +1091,8 @@ Rules:
 
                   <div className="space-y-2">
                     <div className="flex items-center gap-2">
-                      <Droplet className="w-4 h-4 text-slate-500" />
-                      <label className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                      <Droplet className="w-4 h-4 text-emerald-400" />
+                      <label className="text-sm font-medium text-slate-200">
                         Saturation: {saturation}%
                       </label>
                     </div>
@@ -1079,7 +1108,7 @@ Rules:
                   </div>
 
                   <div className="space-y-2">
-                    <label className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                    <label className="text-sm font-medium text-slate-200">
                       Blur: {blur}px
                     </label>
                     <Slider
@@ -1418,11 +1447,11 @@ Rules:
                 </TabsContent>
 
                 {/* Action Buttons */}
-                <div className="flex gap-3 pt-4 border-t border-slate-200 dark:border-slate-800">
-                  <Button onClick={onClose} variant="outline" className="flex-1" disabled={processing}>
+                <div className="flex gap-3 pt-4 mt-auto border-t border-slate-800">
+                  <Button onClick={onClose} variant="outline" className="flex-1 border-slate-700 hover:bg-slate-800" disabled={processing}>
                     Cancel
                   </Button>
-                  <Button onClick={applyEdits} disabled={processing} className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white">
+                  <Button onClick={applyEdits} disabled={processing} className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold">
                     {processing ? "Processing..." : "Apply Changes"}
                   </Button>
                 </div>
