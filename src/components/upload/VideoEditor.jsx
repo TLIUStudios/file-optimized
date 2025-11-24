@@ -762,7 +762,7 @@ Rules:
               </div>
 
               {/* Timeline with Thumbnails */}
-              <div className="w-full mt-4 space-y-2 px-4 pb-4">
+              <div className="w-full mt-4 space-y-2 px-4 pb-4 max-w-full overflow-hidden">
                 {/* Playback position */}
                 <div className="flex items-center justify-between text-xs text-slate-600 dark:text-slate-400">
                   <span>{formatTime(currentTime)}</span>
@@ -778,7 +778,7 @@ Rules:
                 />
                 
                 {/* Visual Timeline with Thumbnails */}
-                <div className="space-y-3 pt-2">
+                <div className="space-y-2 pt-2 max-w-full">
                 <div className="flex items-center justify-between text-xs text-slate-600 dark:text-slate-400">
                   <div className="flex items-center gap-2">
                     <Scissors className="w-3 h-3" />
@@ -945,7 +945,7 @@ Rules:
                   </div>
                   
                   {/* Timeline Controls */}
-                  <div className="flex gap-2 mt-2">
+                  <div className="flex gap-2">
                     <Button
                       variant="outline"
                       size="sm"
@@ -956,7 +956,7 @@ Rules:
                         saveToHistory();
                         toast.success('Section marked for removal');
                       }}
-                      className="flex-1"
+                      className="flex-1 text-xs"
                     >
                       <Scissors className="w-3 h-3 mr-1" />
                       Cut Here
@@ -970,14 +970,14 @@ Rules:
                         toast.success('Cleared all cuts');
                       }}
                       disabled={cutRanges.length === 0}
-                      className="flex-1"
+                      className="flex-1 text-xs"
                     >
                       Clear Cuts
                     </Button>
                   </div>
                   
                   {/* Fade Controls */}
-                  <div className="grid grid-cols-2 gap-3 mt-3 pt-3 border-t border-slate-200 dark:border-slate-800">
+                  <div className="grid grid-cols-2 gap-3 pt-2 border-t border-slate-200 dark:border-slate-800">
                     <div className="space-y-1">
                       <label className="text-xs font-medium text-slate-700 dark:text-slate-300">
                         Fade In: {fadeIn.toFixed(1)}s

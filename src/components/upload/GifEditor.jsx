@@ -453,15 +453,24 @@ export default function GifEditor({ isOpen, onClose, gifData, onSave }) {
             <div className="flex-1 flex flex-col bg-slate-100 dark:bg-slate-900 overflow-auto">
               <div className="flex-1 flex items-center justify-center p-4">
                 {canvasDimensions.width > 0 && canvasDimensions.height > 0 ? (
-                  <canvas
-                    ref={canvasRef}
-                    width={canvasDimensions.width}
-                    height={canvasDimensions.height}
-                    className="max-w-full max-h-full bg-white dark:bg-slate-800 rounded-lg shadow-lg"
-                    style={{ 
-                      imageRendering: 'auto'
-                    }}
-                  />
+                  <div className="relative flex items-center justify-center">
+                    <canvas
+                      ref={(el) => {
+                        if (el && !canvasRef.current) {
+                          canvasRef.current = el;
+                          el.width = canvasDimensions.width;
+                          el.height = canvasDimensions.height;
+                        }
+                      }}
+                      width={canvasDimensions.width}
+                      height={canvasDimensions.height}
+                      className="max-w-full max-h-full bg-white dark:bg-slate-800 rounded-lg shadow-lg"
+                      style={{ 
+                        imageRendering: 'auto',
+                        display: 'block'
+                      }}
+                    />
+                  </div>
                 ) : (
                   <div className="text-slate-400 text-sm">Loading frames...</div>
                 )}
