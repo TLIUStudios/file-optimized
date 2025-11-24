@@ -681,14 +681,14 @@ Rules:
           </Button>
         </div>
 
-        <div className="flex flex-col lg:flex-row h-[calc(95vh-80px)] overflow-hidden">
+        <div className="flex flex-col lg:flex-row max-h-[calc(95vh-80px)]">
           {/* Video Preview */}
-          <div className="flex-1 bg-slate-100 dark:bg-slate-900 p-4 flex flex-col overflow-auto">
-            <div className="flex-1 flex items-center justify-center mb-4 min-h-[300px]">
-              <div className="relative w-full h-full flex items-center justify-center">
+          <div className="flex-1 bg-slate-100 dark:bg-slate-900 p-4 flex items-center justify-center overflow-auto">
+            <div className="flex flex-col items-center justify-center w-full">
+              <div className="relative max-w-full max-h-[60vh] mb-4">
                 <video
                   ref={videoRef}
-                  className="max-w-full max-h-[500px] rounded bg-black shadow-lg"
+                  className="max-w-full max-h-[60vh] rounded bg-black"
                   onEnded={() => setIsPlaying(false)}
                   preload="auto"
                   playsInline
@@ -696,8 +696,7 @@ Rules:
                   volume={volume / 100}
                   style={{
                     filter: `brightness(${brightness}%) contrast(${contrast}%) saturate(${saturation}%) blur(${blur}px)`,
-                    imageRendering: 'high-quality',
-                    display: 'block'
+                    imageRendering: 'high-quality'
                   }}
                 >
                   <source src={videoData} type="video/mp4" />
@@ -763,7 +762,7 @@ Rules:
               </div>
 
               {/* Timeline with Thumbnails */}
-              <div className="w-full space-y-2 max-w-full flex-shrink-0 pb-4">
+              <div className="w-full mt-4 space-y-2 px-4">
                 {/* Playback position */}
                 <div className="flex items-center justify-between text-xs text-slate-600 dark:text-slate-400">
                   <span>{formatTime(currentTime)}</span>

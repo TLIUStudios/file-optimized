@@ -171,26 +171,26 @@ export default function GifEditor({ isOpen, onClose, gifData, onSave }) {
         });
       }
 
-      // Store references first
+      // Store frame canvases
       frameCanvasesRef.current = canvasesForFrames;
 
-      // Set dimensions - this will trigger canvas creation
-      setCanvasDimensions({ width: canvasWidth, height: canvasHeight });
-      
-      // Update frames state
+      // Update state in correct order
       setFrames(loadedFrames);
       setGlobalDelay(loadedFrames[0]?.delay || 100);
-      setCurrentFrame(0);
+      setCanvasDimensions({ width: canvasWidth, height: canvasHeight });
       
-      // Draw after a brief delay to ensure canvas is ready
-      setTimeout(() => {
-        if (canvasRef.current) {
-          const ctx = canvasRef.current.getContext('2d', { alpha: true });
-          ctx.clearRect(0, 0, canvasWidth, canvasHeight);
-          ctx.drawImage(canvasesForFrames[0], 0, 0);
-          console.log('✅ Initial frame drawn');
-        }
-      }, 50);
+      // Wait for state update and canvas mounting
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          if (canvasRef.current) {
+            const ctx = canvasRef.current.getContext('2d', { alpha: true });
+            ctx.clearRect(0, 0, canvasWidth, canvasHeight);
+            ctx.drawImage(canvasesForFrames[0], 0, 0);
+            console.log('✅ Initial frame drawn');
+          }
+          setCurrentFrame(0);
+        });
+      });
 
       toast.success(`Loaded ${loadedFrames.length} frames`);
     } catch (error) {
@@ -450,19 +450,9 @@ export default function GifEditor({ isOpen, onClose, gifData, onSave }) {
               <div className="flex-1 flex items-center justify-center p-4">
                 {canvasDimensions.width > 0 && canvasDimensions.height > 0 ? (
                   <canvas
-                    ref={(el) => {
-                      if (el) {
-                        canvasRef.current = el;
-                        el.width = canvasDimensions.width;
-                        el.height = canvasDimensions.height;
-                        // Immediate draw if we have frames
-                        if (frameCanvasesRef.current.length > 0) {
-                          const ctx = el.getContext('2d', { alpha: true });
-                          ctx.clearRect(0, 0, el.width, el.height);
-                          ctx.drawImage(frameCanvasesRef.current[currentFrame] || frameCanvasesRef.current[0], 0, 0);
-                        }
-                      }
-                    }}
+                    ref={canvasRef}
+                    width={canvasDimensions.width}
+                    height={canvasDimensions.height}
                     className="max-w-full max-h-full bg-white dark:bg-slate-800 rounded-lg shadow-lg"
                     style={{ 
                       imageRendering: 'auto',
