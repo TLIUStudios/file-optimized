@@ -704,14 +704,6 @@ Rules:
                   <source src={videoData} type="video/mp4" />
                   Your browser does not support the video tag.
                 </video>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="absolute inset-0 m-auto w-20 h-20 bg-black/60 hover:bg-black/80 text-white rounded-full backdrop-blur-sm transition-all"
-                  onClick={togglePlayPause}
-                >
-                  {isPlaying ? <Pause className="w-10 h-10" /> : <Play className="w-10 h-10 ml-1" />}
-                </Button>
                 
                 {/* Caption Preview */}
                 {showCaptions && captions.length > 0 && (() => {
@@ -765,10 +757,10 @@ Rules:
             </div>
 
             {/* Timeline Section */}
-            <div className="border-t border-slate-800 bg-slate-950 p-4 flex-shrink-0 overflow-y-auto max-h-[50vh]">
-              <div className="space-y-3 min-w-0">
+            <div className="border-t border-slate-800 bg-slate-950 p-4 flex-shrink-0">
+              <div className="space-y-2.5 min-w-0">
                 {/* Playback Controls */}
-                <div className="flex items-center justify-center gap-3">
+                <div className="flex items-center justify-center gap-2">
                   <Button
                     variant="outline"
                     size="icon"
@@ -807,7 +799,7 @@ Rules:
                     <ChevronRight className="w-5 h-5" />
                   </Button>
 
-                  <div className="flex items-center gap-2 ml-4 text-sm font-medium text-slate-300">
+                  <div className="flex items-center gap-2 ml-2 text-sm font-medium text-slate-300">
                     <span>{formatTime(currentTime)}</span>
                     <span className="text-slate-600">/</span>
                     <span>{formatTime(duration)}</span>
@@ -815,7 +807,7 @@ Rules:
                 </div>
                 
                 {/* Visual Timeline */}
-                <div className="space-y-2">
+                <div className="space-y-1.5">
                   <div className="flex items-center justify-between text-xs text-slate-400">
                     <div className="flex items-center gap-2">
                       <Scissors className="w-3.5 h-3.5" />
@@ -833,18 +825,18 @@ Rules:
                         {thumbnails.map((thumb, idx) => (
                           <div
                             key={idx}
-                            className="flex-1 h-full border-r border-slate-700"
+                            className="flex-1 h-full border-r border-slate-700/50"
                             style={{ 
                               backgroundImage: `url(${thumb.dataUrl})`,
                               backgroundSize: 'cover',
                               backgroundPosition: 'center',
-                              opacity: 0.5
+                              opacity: 0.8
                             }}
                           />
                         ))}
                       </div>
                     ) : generatingThumbnails ? (
-                      <div className="absolute inset-0 flex items-center justify-center text-sm text-slate-500">
+                      <div className="absolute inset-0 flex items-center justify-center text-xs text-slate-500">
                         Generating preview...
                       </div>
                     ) : null}
@@ -982,8 +974,8 @@ Rules:
                     </div>
                   </div>
                   
-                  {/* Timeline Controls */}
-                  <div className="flex gap-2 w-full">
+                  {/* Fade Controls and Timeline Actions */}
+                  <div className="grid grid-cols-4 gap-2 w-full">
                     <Button
                       variant="outline"
                       size="sm"
@@ -994,10 +986,10 @@ Rules:
                         saveToHistory();
                         toast.success('Section marked for removal');
                       }}
-                      className="flex-1 text-xs border-slate-700 hover:bg-slate-800"
+                      className="text-xs border-slate-700 hover:bg-slate-800 h-8"
                     >
                       <Scissors className="w-3 h-3 mr-1" />
-                      Cut Here
+                      Cut
                     </Button>
                     <Button
                       variant="outline"
@@ -1008,16 +1000,12 @@ Rules:
                         toast.success('Cleared all cuts');
                       }}
                       disabled={cutRanges.length === 0}
-                      className="flex-1 text-xs border-slate-700 hover:bg-slate-800"
+                      className="text-xs border-slate-700 hover:bg-slate-800 h-8"
                     >
-                      Clear Cuts
+                      Clear
                     </Button>
-                  </div>
-                  
-                  {/* Fade Controls */}
-                  <div className="grid grid-cols-2 gap-3 pt-2 border-t border-slate-800 w-full">
-                    <div className="space-y-1 min-w-0">
-                      <label className="text-xs font-medium text-slate-300">
+                    <div className="space-y-0.5 min-w-0">
+                      <label className="text-[10px] font-medium text-slate-400 block">
                         Fade In: {fadeIn.toFixed(1)}s
                       </label>
                       <Slider
@@ -1029,8 +1017,8 @@ Rules:
                         className="w-full"
                       />
                     </div>
-                    <div className="space-y-1 min-w-0">
-                      <label className="text-xs font-medium text-slate-300">
+                    <div className="space-y-0.5 min-w-0">
+                      <label className="text-[10px] font-medium text-slate-400 block">
                         Fade Out: {fadeOut.toFixed(1)}s
                       </label>
                       <Slider
