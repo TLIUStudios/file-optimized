@@ -353,6 +353,9 @@ Rules:
       setMusicVolume(state.musicVolume || 50);
       setNoiseReduction(state.noiseReduction || false);
       setAudioNormalization(state.audioNormalization || false);
+      setCutRanges(state.cutRanges || []);
+      setFadeIn(state.fadeIn || 0);
+      setFadeOut(state.fadeOut || 0);
       setHistoryIndex(newIndex);
       
       toast.success('Undo applied');
@@ -938,6 +941,68 @@ Rules:
                       style={{ left: `${(currentTime / duration) * 100}%` }}
                     >
                       <div className="absolute -top-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-white rounded-full" />
+                    </div>
+                  </div>
+                  
+                  {/* Timeline Controls */}
+                  <div className="flex gap-2 mt-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        const start = currentTime;
+                        const end = Math.min(currentTime + 1, trimEnd);
+                        setCutRanges(prev => [...prev, { start, end }].sort((a, b) => a.start - b.start));
+                        saveToHistory();
+                        toast.success('Section marked for removal');
+                      }}
+                      className="flex-1"
+                    >
+                      <Scissors className="w-3 h-3 mr-1" />
+                      Cut Here
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        setCutRanges([]);
+                        saveToHistory();
+                        toast.success('Cleared all cuts');
+                      }}
+                      disabled={cutRanges.length === 0}
+                      className="flex-1"
+                    >
+                      Clear Cuts
+                    </Button>
+                  </div>
+                  
+                  {/* Fade Controls */}
+                  <div className="grid grid-cols-2 gap-3 mt-3 pt-3 border-t border-slate-200 dark:border-slate-800">
+                    <div className="space-y-1">
+                      <label className="text-xs font-medium text-slate-700 dark:text-slate-300">
+                        Fade In: {fadeIn.toFixed(1)}s
+                      </label>
+                      <Slider
+                        value={[fadeIn]}
+                        onValueChange={(v) => setFadeIn(v[0])}
+                        onValueCommit={saveToHistory}
+                        max={Math.min(3, (trimEnd - trimStart) / 2)}
+                        step={0.1}
+                        className="w-full"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-xs font-medium text-slate-700 dark:text-slate-300">
+                        Fade Out: {fadeOut.toFixed(1)}s
+                      </label>
+                      <Slider
+                        value={[fadeOut]}
+                        onValueChange={(v) => setFadeOut(v[0])}
+                        onValueCommit={saveToHistory}
+                        max={Math.min(3, (trimEnd - trimStart) / 2)}
+                        step={0.1}
+                        className="w-full"
+                      />
                     </div>
                   </div>
                 </div>
