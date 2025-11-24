@@ -912,11 +912,12 @@ Rules:
                         e.preventDefault();
                         const startX = e.clientX;
                         const startTrim = trimStart;
+                        const parentRect = e.currentTarget.parentElement?.getBoundingClientRect();
+                        if (!parentRect) return;
                         
                         const handleMouseMove = (moveEvent) => {
                           const deltaX = moveEvent.clientX - startX;
-                          const rect = e.currentTarget.parentElement.getBoundingClientRect();
-                          const deltaTime = (deltaX / rect.width) * duration;
+                          const deltaTime = (deltaX / parentRect.width) * duration;
                           const newTrimStart = Math.max(0, Math.min(trimEnd - 0.1, startTrim + deltaTime));
                           setTrimStart(newTrimStart);
                         };
@@ -942,11 +943,12 @@ Rules:
                         e.preventDefault();
                         const startX = e.clientX;
                         const startTrim = trimEnd;
+                        const parentRect = e.currentTarget.parentElement?.getBoundingClientRect();
+                        if (!parentRect) return;
                         
                         const handleMouseMove = (moveEvent) => {
                           const deltaX = moveEvent.clientX - startX;
-                          const rect = e.currentTarget.parentElement.getBoundingClientRect();
-                          const deltaTime = (deltaX / rect.width) * duration;
+                          const deltaTime = (deltaX / parentRect.width) * duration;
                           const newTrimEnd = Math.max(trimStart + 0.1, Math.min(duration, startTrim + deltaTime));
                           setTrimEnd(newTrimEnd);
                         };
