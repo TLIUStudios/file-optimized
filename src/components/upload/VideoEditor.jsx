@@ -864,21 +864,25 @@ Rules:
                     ) : null}
                     
                     {/* Dimmed regions (trimmed out) */}
-                    <div
-                      className="absolute top-0 bottom-0 left-0 bg-slate-950/95 backdrop-blur-sm"
-                      style={{
-                        width: `${(trimStart / duration) * 100}%`,
-                      }}
-                    />
-                    <div
-                      className="absolute top-0 bottom-0 right-0 bg-slate-950/95 backdrop-blur-sm"
-                      style={{
-                        width: `${((duration - trimEnd) / duration) * 100}%`,
-                      }}
-                    />
+                    {duration > 0 && (
+                      <>
+                        <div
+                          className="absolute top-0 bottom-0 left-0 bg-slate-950/95 backdrop-blur-sm"
+                          style={{
+                            width: `${(trimStart / duration) * 100}%`,
+                          }}
+                        />
+                        <div
+                          className="absolute top-0 bottom-0 right-0 bg-slate-950/95 backdrop-blur-sm"
+                          style={{
+                            width: `${((duration - trimEnd) / duration) * 100}%`,
+                          }}
+                        />
+                      </>
+                    )}
                     
                     {/* Cut ranges (removed sections) */}
-                    {cutRanges.map((range, idx) => (
+                    {duration > 0 && cutRanges.map((range, idx) => (
                       <div
                         key={idx}
                         className="absolute top-0 bottom-0 bg-red-900/70 border-x border-red-500 group cursor-pointer hover:bg-red-900/90"
@@ -898,7 +902,7 @@ Rules:
                     ))}
                     
                     {/* Fade indicators */}
-                    {fadeIn > 0 && (
+                    {duration > 0 && fadeIn > 0 && (
                       <div
                         className="absolute top-0 bottom-0 bg-gradient-to-r from-blue-500/30 to-transparent pointer-events-none"
                         style={{
@@ -907,7 +911,7 @@ Rules:
                         }}
                       />
                     )}
-                    {fadeOut > 0 && (
+                    {duration > 0 && fadeOut > 0 && (
                       <div
                         className="absolute top-0 bottom-0 bg-gradient-to-l from-blue-500/30 to-transparent pointer-events-none"
                         style={{
@@ -918,19 +922,22 @@ Rules:
                     )}
                     
                     {/* Active region highlight */}
-                    <div
-                      className="absolute top-0 bottom-0 border-x-2 border-emerald-500 bg-emerald-500/5 pointer-events-none"
-                      style={{
-                        left: `${(trimStart / duration) * 100}%`,
-                        width: `${((trimEnd - trimStart) / duration) * 100}%`,
-                      }}
-                    />
+                    {duration > 0 && (
+                      <div
+                        className="absolute top-0 bottom-0 border-x-2 border-emerald-500 bg-emerald-500/5 pointer-events-none"
+                        style={{
+                          left: `${(trimStart / duration) * 100}%`,
+                          width: `${((trimEnd - trimStart) / duration) * 100}%`,
+                        }}
+                      />
+                    )}
                     
                     {/* Start handle */}
-                    <div
-                      className="absolute top-0 bottom-0 w-3 bg-emerald-600 cursor-ew-resize hover:bg-emerald-500 transition-all z-10 flex items-center justify-center group"
-                      style={{ left: `${(trimStart / duration) * 100}%` }}
-                      onMouseDown={(e) => {
+                    {duration > 0 && (
+                      <div
+                        className="absolute top-0 bottom-0 w-3 bg-emerald-600 cursor-ew-resize hover:bg-emerald-500 transition-all z-10 flex items-center justify-center group"
+                        style={{ left: `${(trimStart / duration) * 100}%` }}
+                        onMouseDown={(e) => {
                         e.preventDefault();
                         const startX = e.clientX;
                         const startTrim = trimStart;
@@ -953,15 +960,17 @@ Rules:
                         document.addEventListener('mousemove', handleMouseMove);
                         document.addEventListener('mouseup', handleMouseUp);
                       }}
-                    >
-                      <div className="w-0.5 h-8 bg-white rounded-full opacity-80 group-hover:opacity-100" />
-                    </div>
+                      >
+                        <div className="w-0.5 h-8 bg-white rounded-full opacity-80 group-hover:opacity-100" />
+                      </div>
+                    )}
                     
                     {/* End handle */}
-                    <div
-                      className="absolute top-0 bottom-0 w-3 bg-emerald-600 cursor-ew-resize hover:bg-emerald-500 transition-all z-10 flex items-center justify-center group"
-                      style={{ left: `calc(${(trimEnd / duration) * 100}% - 12px)` }}
-                      onMouseDown={(e) => {
+                    {duration > 0 && (
+                      <div
+                        className="absolute top-0 bottom-0 w-3 bg-emerald-600 cursor-ew-resize hover:bg-emerald-500 transition-all z-10 flex items-center justify-center group"
+                        style={{ left: `calc(${(trimEnd / duration) * 100}% - 12px)` }}
+                        onMouseDown={(e) => {
                         e.preventDefault();
                         const startX = e.clientX;
                         const startTrim = trimEnd;
@@ -984,18 +993,21 @@ Rules:
                         document.addEventListener('mousemove', handleMouseMove);
                         document.addEventListener('mouseup', handleMouseUp);
                       }}
-                    >
-                      <div className="w-0.5 h-8 bg-white rounded-full opacity-80 group-hover:opacity-100" />
-                    </div>
+                      >
+                        <div className="w-0.5 h-8 bg-white rounded-full opacity-80 group-hover:opacity-100" />
+                      </div>
+                    )}
                     
                     {/* Playhead */}
-                    <div
-                      className="absolute top-0 bottom-0 w-0.5 bg-white shadow-lg pointer-events-none z-20"
-                      style={{ left: `${(currentTime / duration) * 100}%` }}
-                    >
-                      <div className="absolute -top-1 left-1/2 -translate-x-1/2 w-3 h-3 bg-white rounded-full shadow-lg" />
-                      <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-3 h-3 bg-white rounded-full shadow-lg" />
-                    </div>
+                    {duration > 0 && (
+                      <div
+                        className="absolute top-0 bottom-0 w-0.5 bg-white shadow-lg pointer-events-none z-20"
+                        style={{ left: `${(currentTime / duration) * 100}%` }}
+                      >
+                        <div className="absolute -top-1 left-1/2 -translate-x-1/2 w-3 h-3 bg-white rounded-full shadow-lg" />
+                        <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-3 h-3 bg-white rounded-full shadow-lg" />
+                      </div>
+                    )}
                   </div>
                   
                   {/* Fade Controls and Timeline Actions */}
@@ -1036,9 +1048,10 @@ Rules:
                         value={[fadeIn]}
                         onValueChange={(v) => setFadeIn(v[0])}
                         onValueCommit={saveToHistory}
-                        max={Math.min(3, (trimEnd - trimStart) / 2)}
+                        max={duration > 0 ? Math.min(3, (trimEnd - trimStart) / 2) : 3}
                         step={0.1}
                         className="w-full"
+                        disabled={!duration}
                       />
                     </div>
                     <div className="space-y-0.5 min-w-0">
@@ -1049,9 +1062,10 @@ Rules:
                         value={[fadeOut]}
                         onValueChange={(v) => setFadeOut(v[0])}
                         onValueCommit={saveToHistory}
-                        max={Math.min(3, (trimEnd - trimStart) / 2)}
+                        max={duration > 0 ? Math.min(3, (trimEnd - trimStart) / 2) : 3}
                         step={0.1}
                         className="w-full"
+                        disabled={!duration}
                       />
                     </div>
                   </div>
