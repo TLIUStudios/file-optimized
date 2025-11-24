@@ -88,7 +88,7 @@ export default function GifEditor({ isOpen, onClose, gifData, onSave }) {
         drawFrame(currentFrame);
       });
     }
-  }, [currentFrame, drawFrame]);
+  }, [currentFrame, drawFrame, frames, canvasDimensions]);
 
   const loadGifFrames = async () => {
     try {
