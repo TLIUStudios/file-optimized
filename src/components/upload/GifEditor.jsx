@@ -437,7 +437,12 @@ export default function GifEditor({ isOpen, onClose, gifData, onSave }) {
                 <Download className="w-4 h-4 mr-2" />
                 Save GIF
               </Button>
-              <Button variant="ghost" size="icon" onClick={onClose}>
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                onClick={onClose}
+                className="hover:bg-red-100 dark:hover:bg-red-950 hover:text-red-600 dark:hover:text-red-400 transition-colors"
+              >
                 <X className="w-5 h-5" />
               </Button>
             </div>
