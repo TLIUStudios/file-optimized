@@ -1,7 +1,6 @@
-
 import { useState, useRef, useEffect } from "react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
-import { X, RotateCw, Crop, ZoomIn, ZoomOut, Sun, Contrast, Droplet, Sparkles, Undo, Redo, Scissors } from "lucide-react";
+import { X, RotateCw, Crop, Sun, Contrast, Droplet, Sparkles, Undo, Redo, Scissors } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
 import { toast } from "sonner";
