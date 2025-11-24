@@ -772,7 +772,11 @@ Rules:
                   <Button
                     variant="outline"
                     size="icon"
-                    onClick={() => setCurrentFrame(prev => Math.max(0, prev - 1))}
+                    onClick={() => {
+                      if (videoRef.current) {
+                        videoRef.current.currentTime = Math.max(0, currentTime - 0.1);
+                      }
+                    }}
                     disabled={!duration}
                     className="h-9 w-9 border-slate-700 hover:bg-slate-800"
                   >
@@ -792,7 +796,11 @@ Rules:
                   <Button
                     variant="outline"
                     size="icon"
-                    onClick={() => setCurrentFrame(prev => Math.min(duration, prev + 1))}
+                    onClick={() => {
+                      if (videoRef.current) {
+                        videoRef.current.currentTime = Math.min(duration, currentTime + 0.1);
+                      }
+                    }}
                     disabled={!duration}
                     className="h-9 w-9 border-slate-700 hover:bg-slate-800"
                   >
