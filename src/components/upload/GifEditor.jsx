@@ -109,15 +109,6 @@ export default function GifEditor({ isOpen, onClose, gifData, onSave }) {
       const canvasWidth = decompressed[0].dims.width;
       const canvasHeight = decompressed[0].dims.height;
 
-      // Set dimensions immediately
-      setCanvasDimensions({ width: canvasWidth, height: canvasHeight });
-
-      // Setup main canvas
-      if (canvasRef.current) {
-        canvasRef.current.width = canvasWidth;
-        canvasRef.current.height = canvasHeight;
-      }
-
       // Background accumulation canvas
       const bgCanvas = document.createElement('canvas');
       bgCanvas.width = canvasWidth;
@@ -180,24 +171,26 @@ export default function GifEditor({ isOpen, onClose, gifData, onSave }) {
         });
       }
 
-      // Store references
+      // Store references first
       frameCanvasesRef.current = canvasesForFrames;
 
-      // Update state
+      // Set dimensions - this will trigger canvas creation
+      setCanvasDimensions({ width: canvasWidth, height: canvasHeight });
+      
+      // Update frames state
       setFrames(loadedFrames);
       setGlobalDelay(loadedFrames[0]?.delay || 100);
-      
-      // Draw first frame BEFORE setting current frame
-      if (canvasRef.current) {
-        canvasRef.current.width = canvasWidth;
-        canvasRef.current.height = canvasHeight;
-        const ctx = canvasRef.current.getContext('2d', { alpha: true });
-        ctx.clearRect(0, 0, canvasWidth, canvasHeight);
-        ctx.drawImage(canvasesForFrames[0], 0, 0);
-        console.log('✅ Initial frame drawn');
-      }
-      
       setCurrentFrame(0);
+      
+      // Draw after a brief delay to ensure canvas is ready
+      setTimeout(() => {
+        if (canvasRef.current) {
+          const ctx = canvasRef.current.getContext('2d', { alpha: true });
+          ctx.clearRect(0, 0, canvasWidth, canvasHeight);
+          ctx.drawImage(canvasesForFrames[0], 0, 0);
+          console.log('✅ Initial frame drawn');
+        }
+      }, 50);
 
       toast.success(`Loaded ${loadedFrames.length} frames`);
     } catch (error) {
@@ -456,24 +449,26 @@ export default function GifEditor({ isOpen, onClose, gifData, onSave }) {
             <div className="flex-1 flex flex-col bg-slate-100 dark:bg-slate-900 overflow-auto">
               <div className="flex-1 flex items-center justify-center p-4">
                 {canvasDimensions.width > 0 && canvasDimensions.height > 0 ? (
-                  <div className="relative flex items-center justify-center">
-                    <canvas
-                      ref={(el) => {
-                        if (el && !canvasRef.current) {
-                          canvasRef.current = el;
-                          el.width = canvasDimensions.width;
-                          el.height = canvasDimensions.height;
+                  <canvas
+                    ref={(el) => {
+                      if (el) {
+                        canvasRef.current = el;
+                        el.width = canvasDimensions.width;
+                        el.height = canvasDimensions.height;
+                        // Immediate draw if we have frames
+                        if (frameCanvasesRef.current.length > 0) {
+                          const ctx = el.getContext('2d', { alpha: true });
+                          ctx.clearRect(0, 0, el.width, el.height);
+                          ctx.drawImage(frameCanvasesRef.current[currentFrame] || frameCanvasesRef.current[0], 0, 0);
                         }
-                      }}
-                      width={canvasDimensions.width}
-                      height={canvasDimensions.height}
-                      className="max-w-full max-h-full bg-white dark:bg-slate-800 rounded-lg shadow-lg"
-                      style={{ 
-                        imageRendering: 'auto',
-                        display: 'block'
-                      }}
-                    />
-                  </div>
+                      }
+                    }}
+                    className="max-w-full max-h-full bg-white dark:bg-slate-800 rounded-lg shadow-lg"
+                    style={{ 
+                      imageRendering: 'auto',
+                      display: 'block'
+                    }}
+                  />
                 ) : (
                   <div className="text-slate-400 text-sm">Loading frames...</div>
                 )}

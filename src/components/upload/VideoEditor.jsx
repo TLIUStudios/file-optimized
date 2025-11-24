@@ -683,12 +683,12 @@ Rules:
 
         <div className="flex flex-col lg:flex-row h-[calc(95vh-80px)] overflow-hidden">
           {/* Video Preview */}
-          <div className="flex-1 bg-slate-100 dark:bg-slate-900 p-4 flex flex-col overflow-hidden">
-            <div className="flex-1 flex items-center justify-center min-h-0">
-              <div className="relative max-w-full max-h-full">
+          <div className="flex-1 bg-slate-100 dark:bg-slate-900 p-4 flex flex-col overflow-auto">
+            <div className="flex-1 flex items-center justify-center mb-4 min-h-[300px]">
+              <div className="relative w-full h-full flex items-center justify-center">
                 <video
                   ref={videoRef}
-                  className="max-w-full max-h-full rounded bg-black"
+                  className="max-w-full max-h-[500px] rounded bg-black shadow-lg"
                   onEnded={() => setIsPlaying(false)}
                   preload="auto"
                   playsInline
@@ -696,7 +696,8 @@ Rules:
                   volume={volume / 100}
                   style={{
                     filter: `brightness(${brightness}%) contrast(${contrast}%) saturate(${saturation}%) blur(${blur}px)`,
-                    imageRendering: 'high-quality'
+                    imageRendering: 'high-quality',
+                    display: 'block'
                   }}
                 >
                   <source src={videoData} type="video/mp4" />
@@ -762,7 +763,7 @@ Rules:
               </div>
 
               {/* Timeline with Thumbnails */}
-              <div className="w-full mt-4 space-y-2 max-w-full flex-shrink-0 overflow-y-auto max-h-[40vh]">
+              <div className="w-full space-y-2 max-w-full flex-shrink-0 pb-4">
                 {/* Playback position */}
                 <div className="flex items-center justify-between text-xs text-slate-600 dark:text-slate-400">
                   <span>{formatTime(currentTime)}</span>
