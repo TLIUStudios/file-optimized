@@ -54,28 +54,22 @@ export default function GifEditor({ isOpen, onClose, gifData, onSave }) {
   }, [isPlaying, frames, currentFrame, globalDelay]);
 
   const drawFrame = useCallback((frameIndex) => {
-    const canvas = canvasRef.current;
-    const frameCanvas = frameCanvasesRef.current[frameIndex];
-    
-    if (!canvas || !frameCanvas) {
-      console.log('Missing canvas or frameCanvas:', { canvas: !!canvas, frameCanvas: !!frameCanvas });
+    if (!canvasRef.current || !frameCanvasesRef.current[frameIndex]) {
       return;
     }
     
     try {
-      const ctx = canvas.getContext('2d', { alpha: true });
-      if (!ctx) {
-        console.log('No context');
-        return;
-      }
+      const canvas = canvasRef.current;
+      const frameCanvas = frameCanvasesRef.current[frameIndex];
+      const ctx = canvas.getContext('2d', { alpha: true, willReadFrequently: false });
       
-      console.log('Drawing frame', frameIndex);
+      if (!ctx) return;
       
-      // Draw frame
+      // Clear and draw
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       ctx.drawImage(frameCanvas, 0, 0);
 
-      // Draw text overlays for this frame
+      // Draw text overlays
       textOverlays.filter(t => t.frameIndex === frameIndex).forEach(overlay => {
         ctx.font = `${overlay.fontSize}px ${overlay.fontFamily}`;
         ctx.fillStyle = overlay.color;
@@ -88,10 +82,11 @@ export default function GifEditor({ isOpen, onClose, gifData, onSave }) {
   }, [textOverlays]);
 
   useEffect(() => {
-    if (frames.length > 0 && frameCanvasesRef.current.length > 0 && canvasDimensions.width > 0) {
-      requestAnimationFrame(() => {
+    if (frames.length > 0 && frameCanvasesRef.current.length > 0 && canvasRef.current && canvasDimensions.width > 0) {
+      const timeoutId = setTimeout(() => {
         drawFrame(currentFrame);
-      });
+      }, 0);
+      return () => clearTimeout(timeoutId);
     }
   }, [currentFrame, frames, textOverlays, drawFrame, canvasDimensions]);
 
