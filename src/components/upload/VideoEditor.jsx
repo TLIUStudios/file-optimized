@@ -681,14 +681,14 @@ Rules:
           </Button>
         </div>
 
-        <div className="flex flex-col lg:flex-row max-h-[calc(95vh-80px)]">
+        <div className="flex flex-col lg:flex-row h-[calc(95vh-80px)] overflow-hidden">
           {/* Video Preview */}
-          <div className="flex-1 bg-slate-100 dark:bg-slate-900 p-4 flex items-center justify-center overflow-auto">
-            <div className="flex flex-col items-center justify-center w-full h-full">
-              <div className="relative max-w-full max-h-[70vh]">
+          <div className="flex-1 bg-slate-100 dark:bg-slate-900 p-4 flex flex-col overflow-hidden">
+            <div className="flex-1 flex items-center justify-center min-h-0">
+              <div className="relative max-w-full max-h-full">
                 <video
                   ref={videoRef}
-                  className="max-w-full max-h-[70vh] rounded bg-black"
+                  className="max-w-full max-h-full rounded bg-black"
                   onEnded={() => setIsPlaying(false)}
                   preload="auto"
                   playsInline
@@ -762,7 +762,7 @@ Rules:
               </div>
 
               {/* Timeline with Thumbnails */}
-              <div className="w-full mt-4 space-y-2 px-4 pb-4 max-w-full overflow-hidden">
+              <div className="w-full mt-4 space-y-2 max-w-full flex-shrink-0 overflow-y-auto max-h-[40vh]">
                 {/* Playback position */}
                 <div className="flex items-center justify-between text-xs text-slate-600 dark:text-slate-400">
                   <span>{formatTime(currentTime)}</span>
@@ -1011,7 +1011,7 @@ Rules:
           </div>
 
           {/* Controls Sidebar */}
-          <div className="w-full lg:w-80 border-l border-slate-200 dark:border-slate-800 overflow-y-auto">
+          <div className="w-full lg:w-80 border-l border-slate-200 dark:border-slate-800 overflow-y-auto flex-shrink-0">
             <Tabs defaultValue="adjust" className="w-full">
               <TabsList className="w-full grid grid-cols-3 text-xs">
                 <TabsTrigger value="adjust">Visual</TabsTrigger>
