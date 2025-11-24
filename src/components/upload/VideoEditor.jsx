@@ -129,7 +129,7 @@ export default function VideoEditor({ isOpen, onClose, videoData, onSave }) {
       video.removeEventListener('error', handleError);
       clearTimeout(timeoutId);
     };
-  }, [videoData, isOpen, duration]);
+  }, [videoData, isOpen]);
 
   const addCaption = () => {
     const newCaption = {
