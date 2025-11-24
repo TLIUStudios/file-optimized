@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Scissors, Type, Sun, Contrast, Droplet, X, Play, Pause, Undo, Redo, Subtitles, Wand2, Volume2, Music, Upload } from "lucide-react";
+import { Scissors, Type, Sun, Contrast, Droplet, X, Play, Pause, Undo, Redo, Subtitles, Wand2, Volume2, Music, Upload, ChevronLeft, ChevronRight } from "lucide-react";
 import { toast } from "sonner";
 import { base44 } from "@/api/base44Client";
 
@@ -762,6 +762,7 @@ Rules:
                   </div>
                 )}
               </div>
+            </div>
 
             {/* Timeline Section */}
             <div className="border-t border-slate-800 bg-slate-950 p-4">
@@ -1006,9 +1007,9 @@ Rules:
                   </div>
                   
                   {/* Fade Controls */}
-                  <div className="grid grid-cols-2 gap-3 pt-2 border-t border-slate-200 dark:border-slate-800">
+                  <div className="grid grid-cols-2 gap-3 pt-2 border-t border-slate-800">
                     <div className="space-y-1">
-                      <label className="text-xs font-medium text-slate-700 dark:text-slate-300">
+                      <label className="text-xs font-medium text-slate-300">
                         Fade In: {fadeIn.toFixed(1)}s
                       </label>
                       <Slider
@@ -1021,7 +1022,7 @@ Rules:
                       />
                     </div>
                     <div className="space-y-1">
-                      <label className="text-xs font-medium text-slate-700 dark:text-slate-300">
+                      <label className="text-xs font-medium text-slate-300">
                         Fade Out: {fadeOut.toFixed(1)}s
                       </label>
                       <Slider
@@ -1034,23 +1035,23 @@ Rules:
                       />
                     </div>
                   </div>
-                </div>
-              </div>
-            </div>
-          </div>
+                  </div>
+                  </div>
+                  </div>
+                  </div>
 
-          {/* Controls Sidebar */}
-          <div className="w-full lg:w-80 border-l border-slate-200 dark:border-slate-800 overflow-y-auto flex-shrink-0">
-            <Tabs defaultValue="adjust" className="w-full">
-              <TabsList className="w-full grid grid-cols-3 text-xs">
-                <TabsTrigger value="adjust">Visual</TabsTrigger>
-                <TabsTrigger value="audio">Audio</TabsTrigger>
-                <TabsTrigger value="captions">
-                  <Subtitles className="w-3 h-3" />
-                </TabsTrigger>
-              </TabsList>
+                  {/* Right Sidebar - Controls */}
+                  <div className="w-80 border-l border-slate-800 bg-slate-950 overflow-y-auto flex-shrink-0">
+                  <Tabs defaultValue="adjust" className="w-full h-full flex flex-col">
+                  <TabsList className="w-full grid grid-cols-3 bg-slate-900 border-b border-slate-800">
+                  <TabsTrigger value="adjust" className="data-[state=active]:bg-slate-800">Adjust</TabsTrigger>
+                  <TabsTrigger value="audio" className="data-[state=active]:bg-slate-800">Audio</TabsTrigger>
+                  <TabsTrigger value="captions" className="data-[state=active]:bg-slate-800">
+                  <Subtitles className="w-3.5 h-3.5" />
+                  </TabsTrigger>
+                  </TabsList>
 
-              <div className="p-4 space-y-4">
+                  <div className="p-4 space-y-4 flex-1 overflow-y-auto">
 
                 <TabsContent value="adjust" className="space-y-4 mt-0">
                   <div className="space-y-2">
