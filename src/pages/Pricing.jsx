@@ -15,11 +15,13 @@ const features = [
   { name: "Format conversion", free: true, pro: true },
   { name: "AI-powered upscaling", free: true, pro: true },
   { name: "Video editor with captions", free: true, pro: true },
-  { name: "Batch processing", free: "10 files", pro: "30 files" },
+  { name: "Visual themes", free: true, pro: true },
   { name: "Maximum file size", free: "50 MB", pro: "500 MB" },
+  { name: "Batch processing", free: "9 files", pro: "30 files" },
+  { name: "Processing speed", free: "Standard", pro: "Priority" },
+  { name: "No watermark", free: true, pro: true },
   { name: "Ad-free experience", free: false, pro: true },
-  { name: "Visual themes", free: false, pro: true },
-  { name: "Priority support", free: false, pro: true },
+  { name: "Supports future TLIU projects", free: false, pro: true },
 ];
 
 export default function Pricing() {

@@ -17,6 +17,8 @@ import Accessibility from './pages/Accessibility';
 import Admin from './pages/Admin';
 import Security from './pages/Security';
 import Tutorials from './pages/Tutorials';
+import Glossary from './pages/Glossary';
+import Comparisons from './pages/Comparisons';
 import __Layout from './Layout.jsx';
 
 
@@ -40,6 +42,8 @@ export const PAGES = {
     "Admin": Admin,
     "Security": Security,
     "Tutorials": Tutorials,
+    "Glossary": Glossary,
+    "Comparisons": Comparisons,
 }
 
 export const pagesConfig = {
