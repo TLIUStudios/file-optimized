@@ -62,17 +62,31 @@ export default function Admin() {
     checkAdmin();
   }, []);
 
-  const { data: articles = [], isLoading: articlesLoading } = useQuery({
+  const { data: articles = [], isLoading: articlesLoading, error: articlesError } = useQuery({
     queryKey: ['admin-articles'],
-    queryFn: () => base44.entities.Article.list('-created_date', 100),
+    queryFn: async () => {
+      console.log("Fetching articles as admin...");
+      const result = await base44.entities.Article.list('-created_date', 100);
+      console.log("Articles fetched:", result?.length);
+      return result;
+    },
     enabled: user?.role === 'admin'
   });
 
-  const { data: faqs = [], isLoading: faqsLoading } = useQuery({
+  const { data: faqs = [], isLoading: faqsLoading, error: faqsError } = useQuery({
     queryKey: ['admin-faqs'],
-    queryFn: () => base44.entities.FAQItem.list('category', 100),
+    queryFn: async () => {
+      console.log("Fetching FAQs as admin...");
+      const result = await base44.entities.FAQItem.list('category', 100);
+      console.log("FAQs fetched:", result?.length);
+      return result;
+    },
     enabled: user?.role === 'admin'
   });
+
+  // Log any errors
+  if (articlesError) console.error("Articles error:", articlesError);
+  if (faqsError) console.error("FAQs error:", faqsError);
 
   const articleMutation = useMutation({
     mutationFn: async (data) => {

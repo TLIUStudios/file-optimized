@@ -1,6 +1,7 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Search, BookOpen } from "lucide-react";
 import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import SEOHead from "../components/SEOHead";
 
@@ -329,11 +330,15 @@ const glossaryTerms = [
 
 export default function Glossary() {
   const [searchQuery, setSearchQuery] = useState("");
+  const [displayCount, setDisplayCount] = useState(30);
 
   const filteredTerms = glossaryTerms.filter(item =>
     item.term.toLowerCase().includes(searchQuery.toLowerCase()) ||
     item.definition.toLowerCase().includes(searchQuery.toLowerCase())
   );
+
+  const displayedTerms = filteredTerms.slice(0, displayCount);
+  const hasMore = filteredTerms.length > displayCount;
 
   const alphabet = [...new Set(glossaryTerms.map(t => t.term[0].toUpperCase()))].sort();
 
@@ -385,7 +390,7 @@ export default function Glossary() {
         {/* Terms List */}
         <div className="space-y-6">
           {alphabet.map(letter => {
-            const letterTerms = filteredTerms.filter(t => t.term[0].toUpperCase() === letter);
+            const letterTerms = displayedTerms.filter(t => t.term[0].toUpperCase() === letter);
             if (letterTerms.length === 0) return null;
 
             return (
@@ -413,11 +418,27 @@ export default function Glossary() {
           })}
         </div>
 
+        {hasMore && !searchQuery && (
+          <div className="text-center mt-10">
+            <Button
+              onClick={() => setDisplayCount(prev => prev + 30)}
+              className="bg-emerald-600 hover:bg-emerald-700 text-white px-8"
+            >
+              Load More Terms ({filteredTerms.length - displayCount} remaining)
+            </Button>
+          </div>
+        )}
+
         {filteredTerms.length === 0 && (
           <div className="text-center py-12">
             <p className="text-slate-500 dark:text-slate-400">No terms found matching "{searchQuery}"</p>
           </div>
         )}
+
+        {/* Total count */}
+        <div className="text-center mt-8 text-sm text-slate-500 dark:text-slate-400">
+          {glossaryTerms.length} terms in glossary
+        </div>
       </div>
     </>
   );
