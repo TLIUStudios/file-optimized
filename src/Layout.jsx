@@ -294,43 +294,76 @@ export default function Layout({ children }) {
       </main>
       
       <footer className="border-t border-slate-200 dark:border-slate-800 mt-12 sm:mt-16 md:mt-20">
-        <div className="container mx-auto px-3 sm:px-4 py-6 sm:py-8 text-center space-y-3 sm:space-y-4">
-          <img 
-            src="https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/69100dedd17537e37249237a/cd98bb516_image.png" 
-            alt="TLIU Studios Logo" 
-            className="w-12 h-12 sm:w-16 sm:h-16 mx-auto"
-            loading="lazy"
-          />
-
-          {/* Social Media Icons */}
-          <div className="flex items-center justify-center gap-3 sm:gap-4 md:gap-5 flex-wrap">
-            <a href="https://discord.gg/gRJesCUYz9" target="_blank" rel="noopener noreferrer" className="text-slate-500 dark:text-slate-500 hover:text-[#5865F2] dark:hover:text-[#5865F2] transition-colors" aria-label="Discord">
-              <DiscordIcon />
-            </a>
-            <a href="https://www.google.com/maps/place//data=!4m3!3m2!1s0x65e4dd3088ab3acb:0x47b7719db967d156!12e1?source=g.page.m.kd._&laa=lu-desktop-review-solicitation" target="_blank" rel="noopener noreferrer" className="transition-colors group" aria-label="Google Reviews">
-              <GoogleIcon />
-            </a>
-            <a href="https://www.facebook.com/profile.php?id=61577274854116&sk=reviews" target="_blank" rel="noopener noreferrer" className="text-slate-500 dark:text-slate-500 hover:text-[#1877F2] dark:hover:text-[#1877F2] transition-colors" aria-label="Facebook">
-              <FacebookIcon />
-            </a>
-            <a href="https://www.youtube.com/@TLIUStudios" target="_blank" rel="noopener noreferrer" className="text-slate-500 dark:text-slate-500 hover:text-[#FF0000] dark:hover:text-[#FF0000] transition-colors" aria-label="YouTube">
-              <YouTubeIcon />
-            </a>
-            <a href="https://www.tiktok.com/@TLIUStudios" target="_blank" rel="noopener noreferrer" className="text-slate-500 dark:text-slate-500 hover:text-[#00f2ea] dark:hover:text-[#00f2ea] transition-colors" aria-label="TikTok">
-              <TikTokIcon />
-            </a>
-            <a href="https://www.instagram.com/TLIUStudios/" target="_blank" rel="noopener noreferrer" className="text-slate-500 dark:text-slate-500 hover:text-[#E4405F] dark:hover:text-[#E4405F] transition-colors" aria-label="Instagram">
-              <InstagramIcon />
-            </a>
-            <a href="https://x.com/TLIUStudios" target="_blank" rel="noopener noreferrer" className="text-slate-500 dark:text-slate-500 hover:text-slate-900 dark:hover:text-slate-200 transition-colors" aria-label="X (Twitter)">
-              <XIcon />
-            </a>
+        <div className="container mx-auto px-3 sm:px-4 py-8 sm:py-12">
+          {/* Footer Links */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-8 mb-8">
+            <div>
+              <h4 className="font-semibold text-slate-900 dark:text-white mb-4 text-sm">Product</h4>
+              <ul className="space-y-2">
+                <li><Link to={createPageUrl('Home')} className="text-sm text-slate-500 dark:text-slate-400 hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors">File Optimizer</Link></li>
+                <li><Link to={createPageUrl('HowItWorks')} className="text-sm text-slate-500 dark:text-slate-400 hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors">How It Works</Link></li>
+              </ul>
+            </div>
+            <div>
+              <h4 className="font-semibold text-slate-900 dark:text-white mb-4 text-sm">Company</h4>
+              <ul className="space-y-2">
+                <li><Link to={createPageUrl('About')} className="text-sm text-slate-500 dark:text-slate-400 hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors">About Us</Link></li>
+                <li><a href="https://www.tliu.co/" target="_blank" rel="noopener noreferrer" className="text-sm text-slate-500 dark:text-slate-400 hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors">TLIU Studios</a></li>
+              </ul>
+            </div>
+            <div>
+              <h4 className="font-semibold text-slate-900 dark:text-white mb-4 text-sm">Legal</h4>
+              <ul className="space-y-2">
+                <li><Link to={createPageUrl('PrivacyPolicy')} className="text-sm text-slate-500 dark:text-slate-400 hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors">Privacy Policy</Link></li>
+                <li><Link to={createPageUrl('TermsOfService')} className="text-sm text-slate-500 dark:text-slate-400 hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors">Terms of Service</Link></li>
+              </ul>
+            </div>
+            <div>
+              <h4 className="font-semibold text-slate-900 dark:text-white mb-4 text-sm">Support</h4>
+              <ul className="space-y-2">
+                <li><a href="https://discord.gg/gRJesCUYz9" target="_blank" rel="noopener noreferrer" className="text-sm text-slate-500 dark:text-slate-400 hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors">Discord Community</a></li>
+                <li><Link to={createPageUrl('Profile')} className="text-sm text-slate-500 dark:text-slate-400 hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors">Account</Link></li>
+              </ul>
+            </div>
           </div>
-          
-          <div className="w-24 sm:w-32 h-px bg-gradient-to-r from-transparent via-slate-300 dark:via-slate-700 to-transparent mx-auto" />
-          <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400">
-            © <a href="https://www.tliu.co/" target="_blank" rel="noopener noreferrer" className="hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors">TLIU Studios</a> 2025, All Rights Reserved.
-          </p>
+
+          <div className="border-t border-slate-200 dark:border-slate-800 pt-8 text-center space-y-4">
+            <img 
+              src="https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/69100dedd17537e37249237a/cd98bb516_image.png" 
+              alt="TLIU Studios Logo" 
+              className="w-12 h-12 sm:w-14 sm:h-14 mx-auto"
+              loading="lazy"
+            />
+
+            {/* Social Media Icons */}
+            <div className="flex items-center justify-center gap-3 sm:gap-4 md:gap-5 flex-wrap">
+              <a href="https://discord.gg/gRJesCUYz9" target="_blank" rel="noopener noreferrer" className="text-slate-500 dark:text-slate-500 hover:text-[#5865F2] dark:hover:text-[#5865F2] transition-colors" aria-label="Discord">
+                <DiscordIcon />
+              </a>
+              <a href="https://www.google.com/maps/place//data=!4m3!3m2!1s0x65e4dd3088ab3acb:0x47b7719db967d156!12e1?source=g.page.m.kd._&laa=lu-desktop-review-solicitation" target="_blank" rel="noopener noreferrer" className="transition-colors group" aria-label="Google Reviews">
+                <GoogleIcon />
+              </a>
+              <a href="https://www.facebook.com/profile.php?id=61577274854116&sk=reviews" target="_blank" rel="noopener noreferrer" className="text-slate-500 dark:text-slate-500 hover:text-[#1877F2] dark:hover:text-[#1877F2] transition-colors" aria-label="Facebook">
+                <FacebookIcon />
+              </a>
+              <a href="https://www.youtube.com/@TLIUStudios" target="_blank" rel="noopener noreferrer" className="text-slate-500 dark:text-slate-500 hover:text-[#FF0000] dark:hover:text-[#FF0000] transition-colors" aria-label="YouTube">
+                <YouTubeIcon />
+              </a>
+              <a href="https://www.tiktok.com/@TLIUStudios" target="_blank" rel="noopener noreferrer" className="text-slate-500 dark:text-slate-500 hover:text-[#00f2ea] dark:hover:text-[#00f2ea] transition-colors" aria-label="TikTok">
+                <TikTokIcon />
+              </a>
+              <a href="https://www.instagram.com/TLIUStudios/" target="_blank" rel="noopener noreferrer" className="text-slate-500 dark:text-slate-500 hover:text-[#E4405F] dark:hover:text-[#E4405F] transition-colors" aria-label="Instagram">
+                <InstagramIcon />
+              </a>
+              <a href="https://x.com/TLIUStudios" target="_blank" rel="noopener noreferrer" className="text-slate-500 dark:text-slate-500 hover:text-slate-900 dark:hover:text-slate-200 transition-colors" aria-label="X (Twitter)">
+                <XIcon />
+              </a>
+            </div>
+
+            <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400">
+              © <a href="https://www.tliu.co/" target="_blank" rel="noopener noreferrer" className="hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors">TLIU Studios</a> 2025, All Rights Reserved.
+            </p>
+          </div>
         </div>
       </footer>
 
