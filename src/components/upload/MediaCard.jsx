@@ -1427,21 +1427,40 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
     // Standard compression for other formats
     const mimeType = format === 'jpg' ? 'image/jpeg' : `image/${format}`;
     let baseQuality = quality / 100;
-    if (compressionMode === 'aggressive') baseQuality = Math.max(0.5, baseQuality - 0.15);
-    else if (compressionMode === 'maximum') baseQuality = Math.max(0.3, baseQuality - 0.3);
+    
+    // AVIF needs more aggressive quality reduction for better compression
+    if (format === 'avif') {
+      baseQuality = Math.min(baseQuality, 0.7); // Cap AVIF at 70% for better compression
+    }
+    
+    if (compressionMode === 'aggressive') baseQuality = Math.max(0.3, baseQuality - 0.15);
+    else if (compressionMode === 'maximum') baseQuality = Math.max(0.2, baseQuality - 0.3);
+    
     let qualityValue = baseQuality;
     let blob = null;
     let attempts = 0;
-    const maxAttempts = compressionMode === 'aggressive' || compressionMode === 'maximum' ? 8 : 5;
+    const maxAttempts = format === 'avif' ? 12 : (compressionMode === 'aggressive' || compressionMode === 'maximum' ? 8 : 5);
+    
     while (attempts < maxAttempts) {
       blob = await new Promise((resolve) => canvas.toBlob((b) => resolve(b), mimeType, qualityValue));
       setProcessingProgress(40 + ((attempts + 1) / maxAttempts) * 55);
+      
+      // For AVIF, be more aggressive about achieving smaller file size
       if (enableUpscale || (blob && blob.size < image.size) || attempts === maxAttempts - 1) break;
-      qualityValue -= compressionMode === 'maximum' ? 0.2 : 0.15;
+      
+      // AVIF can handle lower quality without visible degradation
+      if (format === 'avif') {
+        qualityValue -= 0.08; // Smaller steps for AVIF to find optimal
+      } else {
+        qualityValue -= compressionMode === 'maximum' ? 0.2 : 0.15;
+      }
+      qualityValue = Math.max(0.1, qualityValue); // Don't go below 10%
       attempts++;
     }
     
     setProcessingProgress(100);
+    
+    // If compressed file is larger than original (and not upscaling), use original
     if (!enableUpscale && blob && blob.size >= image.size) {
       const compressedUrl = URL.createObjectURL(image);
       setCompressedPreview(compressedUrl);

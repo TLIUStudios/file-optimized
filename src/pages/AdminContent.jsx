@@ -9,7 +9,7 @@ import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Card } from "@/components/ui/card";
-import { Plus, Pencil, Trash2, BookOpen, HelpCircle, Shield, Loader2 } from "lucide-react";
+import { Plus, Pencil, Trash2, BookOpen, HelpCircle, Shield, Loader2, X } from "lucide-react";
 import { toast } from "sonner";
 import SEOHead from "../components/SEOHead";
 
@@ -238,7 +238,17 @@ export default function Admin() {
 
         {/* Article Dialog */}
         <Dialog open={showArticleDialog} onOpenChange={setShowArticleDialog}>
-          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto [&>button]:hidden">
+            <div className="absolute top-4 right-4 z-50">
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setShowArticleDialog(false)}
+                className="bg-slate-900/90 dark:bg-slate-900/90 hover:bg-red-600 dark:hover:bg-red-600 text-white rounded-lg transition-colors shadow-lg h-8 w-8"
+              >
+                <X className="w-4 h-4" />
+              </Button>
+            </div>
             <DialogHeader>
               <DialogTitle>{editingArticle?.id ? "Edit Article" : "New Article"}</DialogTitle>
             </DialogHeader>
@@ -252,7 +262,17 @@ export default function Admin() {
 
         {/* FAQ Dialog */}
         <Dialog open={showFaqDialog} onOpenChange={setShowFaqDialog}>
-          <DialogContent className="max-w-xl">
+          <DialogContent className="max-w-xl [&>button]:hidden">
+            <div className="absolute top-4 right-4 z-50">
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setShowFaqDialog(false)}
+                className="bg-slate-900/90 dark:bg-slate-900/90 hover:bg-red-600 dark:hover:bg-red-600 text-white rounded-lg transition-colors shadow-lg h-8 w-8"
+              >
+                <X className="w-4 h-4" />
+              </Button>
+            </div>
             <DialogHeader>
               <DialogTitle>{editingFaq?.id ? "Edit FAQ" : "New FAQ"}</DialogTitle>
             </DialogHeader>
