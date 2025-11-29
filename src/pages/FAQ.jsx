@@ -338,6 +338,135 @@ const defaultFaqs = [
         a: "Pro users can enable visual themes that add animated effects to the interface - snow, fireworks, hearts, sakura blossoms, and more. Find them in your Profile settings."
       }
     ]
+  },
+  {
+    category: "Performance & Speed",
+    questions: [
+      {
+        q: "Why does processing take longer for some files?",
+        a: "Processing time depends on file size, format, and your device's hardware. Large videos take longer than small images. 4K video may take several minutes while a small JPEG processes in under a second."
+      },
+      {
+        q: "How can I speed up batch processing?",
+        a: "Close other browser tabs, ensure your device is plugged in (battery saver mode slows processing), and use Chrome for best WebAssembly performance. Pro users get priority processing."
+      },
+      {
+        q: "Does internet speed affect processing?",
+        a: "No! All processing happens locally on your device. Internet speed only affects the initial page load. Once loaded, you can even work offline."
+      },
+      {
+        q: "Why is my browser freezing during processing?",
+        a: "Very large files or batch processing many files can temporarily slow your browser. Processing runs in Web Workers to minimize this, but complex operations may still cause brief delays."
+      },
+      {
+        q: "What's the fastest format to convert to?",
+        a: "JPEG is typically fastest for photos. WebP offers a good balance of speed and compression. AVIF provides best compression but takes longer to encode."
+      }
+    ]
+  },
+  {
+    category: "File Management",
+    questions: [
+      {
+        q: "Can I save my compression settings?",
+        a: "Your last used settings are automatically remembered for each file type. Pro users get additional preset options for frequently used configurations."
+      },
+      {
+        q: "How do I download all processed files at once?",
+        a: "Click the 'Download All' button in the stats bar above your files. This creates a ZIP file containing all your processed images with a single click."
+      },
+      {
+        q: "Can I rename files before downloading?",
+        a: "Yes! Click on the filename in any processed file card to edit it. The new name will be used when you download the file."
+      },
+      {
+        q: "What happens if I refresh the page?",
+        a: "All uploaded and processed files will be cleared since nothing is stored on servers. Make sure to download your files before navigating away or refreshing."
+      },
+      {
+        q: "Can I reorder my uploaded files?",
+        a: "Yes! Simply drag and drop files to reorder them. This is helpful when you want to process or download them in a specific sequence."
+      },
+      {
+        q: "Is there a way to undo compression?",
+        a: "You can always re-process a file with different settings by clicking the settings button. The original file is kept in memory until you remove it or refresh the page."
+      }
+    ]
+  },
+  {
+    category: "Browser Compatibility",
+    questions: [
+      {
+        q: "Which browser works best?",
+        a: "Chrome and Edge offer the best performance due to superior WebAssembly support. Firefox works well but may be slightly slower. Safari works but has some format limitations."
+      },
+      {
+        q: "Why doesn't AVIF work in my browser?",
+        a: "AVIF encoding requires modern browser features. It works in Chrome 85+, Firefox 93+, and Edge 121+. Safari support is limited. We'll show a warning if your browser doesn't support it."
+      },
+      {
+        q: "Does it work in Incognito/Private mode?",
+        a: "Yes! File Optimized works in private browsing mode. However, your settings won't be saved between sessions in this mode."
+      },
+      {
+        q: "Why am I seeing different results in different browsers?",
+        a: "Different browsers have varying implementations of image/video codecs. Results should be similar, but slight variations in output size or quality can occur."
+      },
+      {
+        q: "Can I use browser extensions with File Optimized?",
+        a: "Yes, but some ad blockers or privacy extensions might interfere with certain features. If you experience issues, try disabling extensions temporarily."
+      }
+    ]
+  },
+  {
+    category: "Quality & Output",
+    questions: [
+      {
+        q: "Why is my compressed file larger than the original?",
+        a: "This can happen when: converting to a less efficient format (JPEG to PNG), the original was already heavily compressed, or upscaling an image. Try a lower quality setting or different format."
+      },
+      {
+        q: "How do I get the smallest possible file size?",
+        a: "Use WebP or AVIF format, set quality to 60-70%, resize to the actual display size you need, and remove metadata. The comparison tool helps you find the right balance."
+      },
+      {
+        q: "Will compression remove my photo metadata?",
+        a: "By default, EXIF data (camera info, GPS, etc.) is preserved. You can choose to strip metadata in the settings for smaller files and better privacy."
+      },
+      {
+        q: "What quality setting should I use for printing?",
+        a: "For print, use 90-100% quality and avoid aggressive compression. PNG or high-quality JPEG at 300 DPI is recommended. For web-only use, 75-85% is usually sufficient."
+      },
+      {
+        q: "Can I compress a file multiple times?",
+        a: "While possible, each lossy compression degrades quality slightly. It's best to compress from the original source file. Lossless formats (PNG) can be recompressed without degradation."
+      }
+    ]
+  },
+  {
+    category: "Integration & Workflow",
+    questions: [
+      {
+        q: "Can I use File Optimized with my CMS?",
+        a: "Absolutely! Optimize your images before uploading to WordPress, Shopify, Squarespace, Wix, or any other CMS. This ensures fast loading without relying on CMS compression."
+      },
+      {
+        q: "Is there an API for automated compression?",
+        a: "Currently, File Optimized is a browser-based tool without a public API. For automation needs, we recommend our browser tool for manual optimization or exploring server-side alternatives."
+      },
+      {
+        q: "Can I integrate this into my development workflow?",
+        a: "You can use File Optimized to optimize assets before adding them to your project. For CI/CD pipelines, consider build-time optimization tools that complement our manual optimization."
+      },
+      {
+        q: "Does it work with cloud storage?",
+        a: "Files must be on your device to process. You can download files from Google Drive, Dropbox, etc., optimize them, then re-upload. We don't directly integrate with cloud storage."
+      },
+      {
+        q: "Can I share compressed files directly?",
+        a: "After processing, use the share button to generate a shareable preview. For the actual file, download it first and share through your preferred method."
+      }
+    ]
   }
 ];
 
