@@ -880,6 +880,15 @@ Rules:
                       <div className="absolute inset-0 flex items-center justify-center text-xs text-slate-500">
                         Generating preview...
                       </div>
+                    ) : duration > 0 ? (
+                      <div className="absolute inset-0 flex items-center justify-center text-xs text-slate-500">
+                        <button 
+                          onClick={() => videoRef.current && generateThumbnails(videoRef.current)}
+                          className="px-3 py-1.5 bg-slate-700 hover:bg-slate-600 rounded text-slate-300 transition-colors"
+                        >
+                          Generate Preview
+                        </button>
+                      </div>
                     ) : null}
                     
                     {/* Dimmed regions (trimmed out) */}
