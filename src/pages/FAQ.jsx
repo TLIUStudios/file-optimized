@@ -1,8 +1,9 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
 import { ChevronDown, HelpCircle, Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import SEOHead from "../components/SEOHead";
@@ -366,6 +367,7 @@ export default function FAQ() {
   const [openItems, setOpenItems] = useState({});
   const [searchQuery, setSearchQuery] = useState("");
   const [activeCategory, setActiveCategory] = useState("all");
+  const [displayCount, setDisplayCount] = useState(5);
 
   // Fetch FAQs from database
   const { data: dbFaqs = [], isLoading } = useQuery({
@@ -468,7 +470,7 @@ export default function FAQ() {
 
         {/* FAQ List */}
         <div className="space-y-8">
-          {filteredFaqs.map((category, categoryIndex) => (
+          {filteredFaqs.slice(0, displayCount).map((category, categoryIndex) => (
             <div key={category.category} className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 overflow-hidden">
               <div className="bg-slate-50 dark:bg-slate-800/50 px-6 py-3 border-b border-slate-200 dark:border-slate-800">
                 <h2 className="font-semibold text-slate-900 dark:text-white">{category.category}</h2>
@@ -487,6 +489,17 @@ export default function FAQ() {
             </div>
           ))}
         </div>
+
+        {filteredFaqs.length > displayCount && (
+          <div className="text-center mt-8">
+            <Button 
+              onClick={() => setDisplayCount(prev => prev + 5)}
+              className="bg-emerald-600 hover:bg-emerald-700"
+            >
+              Load More Categories ({filteredFaqs.length - displayCount} remaining)
+            </Button>
+          </div>
+        )}
 
         {filteredFaqs.length === 0 && (
           <div className="text-center py-12">
