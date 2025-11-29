@@ -393,18 +393,15 @@ export default function Home() {
 
       {/* Upload Zone */}
       {images.length === 0 &&
-      <motion.div
-        initial={{ opacity: 0, scale: 0.95 }}
-        animate={{ opacity: 1, scale: 1 }}
-        transition={{ delay: 0.2 }}>
-
-          <UploadZone
-          onFilesSelected={handleFilesSelected}
-          isDragActive={isDragActive}
-          onDragStateChange={setIsDragActive}
-          userPlan={userPlan} />
-
-        </motion.div>
+      <div>
+          <Suspense fallback={<div className="h-64 bg-slate-100 dark:bg-slate-800 rounded-2xl animate-pulse" />}>
+            <UploadZone
+            onFilesSelected={handleFilesSelected}
+            isDragActive={isDragActive}
+            onDragStateChange={setIsDragActive}
+            userPlan={userPlan} />
+          </Suspense>
+        </div>
       }
 
       {/* Images Grid */}
