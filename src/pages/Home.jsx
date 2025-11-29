@@ -92,36 +92,21 @@ export default function Home() {
     });
   }, []);
 
-  const handleImageProcessed = (id, data) => {
+  const handleImageProcessed = useCallback((id, data) => {
     setProcessedImages((prev) => {
       const newProcessed = {
         ...prev,
         [id]: data
       };
-
-      // Update time estimation
-      if (processingStartTime && Object.keys(newProcessed).length < images.length) {
-        const elapsed = Date.now() - processingStartTime;
-        const processedCount = Object.keys(newProcessed).length;
-        const avgTimePerImage = processedCount > 0 ? elapsed / processedCount : 0;
-        const remainingImages = images.length - processedCount;
-        const remaining = remainingImages * avgTimePerImage;
-        setEstimatedTimeRemaining(Math.max(0, Math.ceil(remaining / 1000))); // Ensure non-negative
-      } else {
-        // All images processed or processing not active
-        setEstimatedTimeRemaining(null);
-        setProcessingStartTime(null);
-      }
-
       return newProcessed;
     });
-  };
+  }, []);
 
-  const handleCompare = (data) => {
+  const handleCompare = useCallback((data) => {
     setComparisonData(data);
-  };
+  }, []);
   
-  const handleFilenameUpdate = (imageId, newFilename) => {
+  const handleFilenameUpdate = useCallback((imageId, newFilename) => {
     setProcessedImages((prev) => {
       const existingData = prev[imageId];
       if (!existingData) return prev;
@@ -133,7 +118,7 @@ export default function Home() {
         }
       };
     });
-  };
+  }, []);
 
   const clearAll = () => {
     setImages([]);
