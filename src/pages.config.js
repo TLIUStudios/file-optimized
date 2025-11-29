@@ -4,6 +4,7 @@ import About from './pages/About';
 import PrivacyPolicy from './pages/PrivacyPolicy';
 import TermsOfService from './pages/TermsOfService';
 import HowItWorks from './pages/HowItWorks';
+import Contact from './pages/Contact';
 import __Layout from './Layout.jsx';
 
 
@@ -14,6 +15,7 @@ export const PAGES = {
     "PrivacyPolicy": PrivacyPolicy,
     "TermsOfService": TermsOfService,
     "HowItWorks": HowItWorks,
+    "Contact": Contact,
 }
 
 export const pagesConfig = {

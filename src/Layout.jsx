@@ -1,4 +1,5 @@
 import { useEffect, useState, lazy, Suspense } from "react";
+import { useLocation } from "react-router-dom";
 import { Moon, Sun, User, LogIn, LogOut } from "lucide-react";
 import AnimatedMediaIcon from "./components/AnimatedMediaIcon";
 import { Button } from "@/components/ui/button";
@@ -29,12 +30,18 @@ const ConfettiEffect = lazy(() => import("./components/themes/ConfettiEffect"));
 const BubblesEffect = lazy(() => import("./components/themes/BubblesEffect"));
 
 export default function Layout({ children }) {
-  const [theme, setTheme] = useState(() => {
-    if (typeof window !== 'undefined') {
-      return localStorage.getItem('theme') || 'dark';
-    }
-    return 'dark';
-  });
+    const location = useLocation();
+    const [theme, setTheme] = useState(() => {
+      if (typeof window !== 'undefined') {
+        return localStorage.getItem('theme') || 'dark';
+      }
+      return 'dark';
+    });
+
+    // Scroll to top on route change
+    useEffect(() => {
+      window.scrollTo(0, 0);
+    }, [location.pathname]);
   const [user, setUser] = useState(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [authLoading, setAuthLoading] = useState(true);
@@ -321,8 +328,9 @@ export default function Layout({ children }) {
             <div>
               <h4 className="font-semibold text-slate-900 dark:text-white mb-4 text-sm">Support</h4>
               <ul className="space-y-2">
+                <li><Link to={createPageUrl('Contact')} className="text-sm text-slate-500 dark:text-slate-400 hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors">Contact Us</Link></li>
+                <li><a href="https://support.tliu.co/" target="_blank" rel="noopener noreferrer" className="text-sm text-slate-500 dark:text-slate-400 hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors">Support Portal</a></li>
                 <li><a href="https://discord.gg/gRJesCUYz9" target="_blank" rel="noopener noreferrer" className="text-sm text-slate-500 dark:text-slate-400 hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors">Discord Community</a></li>
-                <li><Link to={createPageUrl('Profile')} className="text-sm text-slate-500 dark:text-slate-400 hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors">Account</Link></li>
               </ul>
             </div>
           </div>

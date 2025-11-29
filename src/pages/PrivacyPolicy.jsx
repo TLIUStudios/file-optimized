@@ -190,7 +190,8 @@ export default function PrivacyPolicy() {
             </p>
             <p className="text-slate-600 dark:text-slate-400 mt-2 mb-0">
               <strong>TLIU Studios</strong><br />
-              Website: <a href="https://www.tliu.co/" target="_blank" rel="noopener noreferrer" className="text-emerald-600 hover:text-emerald-700">www.tliu.co</a>
+              Website: <a href="https://www.tliu.co/" target="_blank" rel="noopener noreferrer" className="text-emerald-600 hover:text-emerald-700">www.tliu.co</a><br />
+              Support & Feedback: <a href="https://support.tliu.co/" target="_blank" rel="noopener noreferrer" className="text-emerald-600 hover:text-emerald-700">support.tliu.co</a>
             </p>
           </section>
         </div>
