@@ -2,7 +2,9 @@ import { useQuery } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
 import { Link } from "react-router-dom";
 import { createPageUrl } from "../utils";
-import { ArrowLeft, Clock, Calendar, Tag } from "lucide-react";
+import { ArrowLeft, Clock, Calendar, Tag, ArrowRight } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import ReactMarkdown from "react-markdown";
 import SEOHead from "../components/SEOHead";
@@ -17,41 +19,458 @@ const categoryLabels = {
   "tips-tricks": "Tips & Tricks"
 };
 
+// Built-in article content
+const builtInArticleContent = {
+  "ultimate-guide-image-compression-web": {
+    title: "The Ultimate Guide to Image Compression for Web",
+    content: `## Why Image Compression Matters for the Web
+
+Images typically account for 50-75% of a webpage's total weight. Optimizing them is the single most impactful thing you can do to speed up your site and improve user experience.
+
+## Understanding Image Compression
+
+Image compression reduces file size by removing redundant or less important data. There are two main types:
+
+### Lossy Compression
+Permanently removes some image data to achieve smaller files. Best for photographs where minor quality loss is acceptable. JPEG uses lossy compression.
+
+### Lossless Compression
+Reduces file size without losing any data. The original can be perfectly reconstructed. PNG uses lossless compression for graphics.
+
+## Choosing the Right Format
+
+| Format | Best For | Compression | Transparency |
+|--------|----------|-------------|--------------|
+| JPEG | Photos | Lossy | No |
+| PNG | Graphics, Screenshots | Lossless | Yes |
+| WebP | Web images | Both | Yes |
+| AVIF | Maximum compression | Both | Yes |
+
+## Quality Settings Explained
+
+The quality slider (1-100) controls the compression level:
+
+- **90-100%**: Near-lossless, minimal savings
+- **75-85%**: Optimal balance for web (recommended)
+- **50-70%**: Noticeable quality loss, significant savings
+- **Below 50%**: Only for thumbnails or previews
+
+## Best Practices
+
+1. **Resize before compressing** - Don't compress a 4000px image for a 800px display
+2. **Use WebP when possible** - 25-35% smaller than JPEG
+3. **Strip metadata** - Remove EXIF data for smaller files
+4. **Lazy load images** - Only load images when needed
+5. **Serve responsive images** - Use srcset for different screen sizes
+
+## Tools and Implementation
+
+File Optimized makes compression easy with browser-based processing. Your files never leave your device, ensuring complete privacy while achieving excellent compression ratios.
+
+## Conclusion
+
+Effective image compression is essential for modern web development. By understanding formats, quality settings, and best practices, you can dramatically reduce page load times while maintaining visual quality.`,
+    category: "image-compression",
+    read_time: 12,
+    tags: ["web performance", "SEO", "compression"]
+  },
+  "jpeg-png-webp-avif-comparison": {
+    title: "JPEG vs PNG vs WebP vs AVIF: Complete Format Comparison",
+    content: `## The Image Format Landscape
+
+Choosing the right image format can make a significant difference in both file size and quality. Let's compare the four most important formats for the web.
+
+## JPEG: The Universal Standard
+
+**Best for:** Photographs, complex images with gradients
+
+**Pros:**
+- Excellent compression for photos (typically 10:1)
+- Universal browser and software support
+- Adjustable quality levels
+
+**Cons:**
+- No transparency support
+- Lossy only - quality degrades with each edit
+- Compression artifacts on sharp edges
+
+**When to use:** Photos for web, social media, email attachments
+
+## PNG: Perfect for Graphics
+
+**Best for:** Logos, graphics, screenshots, images with transparency
+
+**Pros:**
+- Lossless compression preserves quality
+- Full alpha channel transparency
+- Perfect for sharp edges and text
+
+**Cons:**
+- Larger file sizes than JPEG for photos
+- No native animation (use APNG or GIF)
+
+**When to use:** Logos, icons, screenshots, graphics with text
+
+## WebP: The Modern Choice
+
+**Best for:** Web images where size matters
+
+**Pros:**
+- 25-35% smaller than JPEG at equal quality
+- Supports both lossy and lossless compression
+- Transparency and animation support
+
+**Cons:**
+- Not supported in very old browsers
+- Less editing software support than JPEG/PNG
+
+**When to use:** Primary format for modern websites
+
+## AVIF: The Future
+
+**Best for:** Maximum compression with excellent quality
+
+**Pros:**
+- 50% smaller than JPEG
+- Superior color accuracy (HDR, wide gamut)
+- Supports both lossy and lossless
+
+**Cons:**
+- Limited browser support (growing)
+- Slower encoding/decoding
+- Newer - less tool support
+
+**When to use:** When targeting modern browsers and maximum performance
+
+## File Size Comparison
+
+For the same 1920x1080 photograph at similar quality:
+
+| Format | File Size | Reduction |
+|--------|-----------|-----------|
+| JPEG | 350 KB | Baseline |
+| PNG | 2.5 MB | +614% |
+| WebP | 250 KB | -29% |
+| AVIF | 175 KB | -50% |
+
+## Recommendation
+
+For most web projects in 2024:
+1. **Primary:** WebP for all images
+2. **Fallback:** JPEG for photos, PNG for graphics
+3. **Future-proof:** AVIF where supported`,
+    category: "file-formats",
+    read_time: 10,
+    tags: ["JPEG", "PNG", "WebP", "AVIF", "formats"]
+  },
+  "compress-videos-without-losing-quality": {
+    title: "How to Compress Videos Without Losing Quality",
+    content: `## The Video Compression Challenge
+
+Video files are massive. A single minute of 4K footage can exceed 500MB. Compression is essential, but how do you shrink files without ruining quality?
+
+## Understanding Video Compression
+
+Videos are compressed using **codecs** (compressor-decompressor algorithms). The codec determines:
+- How much the file can be compressed
+- Quality at a given file size
+- Compatibility with devices/platforms
+
+## Popular Video Codecs
+
+### H.264 (AVC)
+The most widely supported codec. Works on virtually everything.
+- **Efficiency:** Good
+- **Compatibility:** Excellent
+- **Best for:** Maximum compatibility
+
+### H.265 (HEVC)
+50% more efficient than H.264, but with licensing costs.
+- **Efficiency:** Very Good
+- **Compatibility:** Good (modern devices)
+- **Best for:** High quality at smaller sizes
+
+### VP9
+Google's open-source alternative to H.265.
+- **Efficiency:** Very Good
+- **Compatibility:** Good (web-focused)
+- **Best for:** YouTube, web video
+
+### AV1
+The newest, most efficient codec.
+- **Efficiency:** Excellent
+- **Compatibility:** Growing
+- **Best for:** Future-proof, streaming
+
+## Key Compression Settings
+
+### Bitrate
+Controls data per second. Higher = better quality, larger file.
+
+| Use Case | Recommended Bitrate |
+|----------|---------------------|
+| Web/Social | 5-8 Mbps |
+| YouTube 1080p | 8-12 Mbps |
+| High Quality | 15-25 Mbps |
+| Archive | 30+ Mbps |
+
+### Resolution
+Don't compress at higher resolution than needed:
+- **Mobile:** 720p often sufficient
+- **Web:** 1080p standard
+- **Quality:** 4K only when necessary
+
+### Frame Rate
+- 24fps: Cinematic
+- 30fps: Standard video
+- 60fps: Smooth motion, gaming
+
+## Tips for Quality Preservation
+
+1. **Use 2-pass encoding** for better quality distribution
+2. **Match source resolution** - don't upscale
+3. **Keep original frame rate** - don't convert 24fps to 30fps
+4. **Use CRF mode** instead of fixed bitrate when possible
+5. **Avoid re-compression** - always compress from original
+
+## Conclusion
+
+For most uses, H.264 in MP4 container at 8-12 Mbps provides excellent quality with broad compatibility. Use File Optimized to compress videos easily in your browser.`,
+    category: "video-compression",
+    read_time: 9,
+    tags: ["video", "H.264", "compression", "quality"]
+  },
+  "lossy-vs-lossless-compression-explained": {
+    title: "Understanding Lossy vs Lossless Compression",
+    content: `## The Two Fundamental Approaches
+
+All file compression falls into two categories: lossy and lossless. Understanding the difference is crucial for choosing the right method.
+
+## Lossless Compression
+
+**Definition:** Reduces file size without losing any data. The original file can be perfectly reconstructed.
+
+### How It Works
+Lossless compression finds patterns in data and represents them more efficiently. For example, "AAAAAABBBB" could be stored as "6A4B".
+
+### Examples
+- **Images:** PNG, GIF (palette), TIFF
+- **Audio:** FLAC, ALAC, WAV (uncompressed)
+- **Archives:** ZIP, 7z, RAR
+- **Documents:** PDF (text), DOCX
+
+### Best For
+- Source files for editing
+- Text and code
+- Medical/scientific images
+- Archives and backups
+- Graphics with sharp edges
+
+## Lossy Compression
+
+**Definition:** Achieves smaller files by permanently removing some data, typically data less perceptible to humans.
+
+### How It Works
+Lossy compression analyzes content and removes information humans are less likely to notice. In images, this might be subtle color variations. In audio, frequencies outside normal hearing range.
+
+### Examples
+- **Images:** JPEG, WebP (lossy mode), AVIF
+- **Audio:** MP3, AAC, OGG
+- **Video:** H.264, H.265, VP9
+
+### Best For
+- Web images and media
+- Streaming content
+- Social media sharing
+- Email attachments
+- Storage-constrained devices
+
+## Comparison
+
+| Aspect | Lossless | Lossy |
+|--------|----------|-------|
+| Quality | Perfect | Near-perfect to visible |
+| File Size | Larger | Much smaller |
+| Re-editing | Safe | Quality degrades |
+| Best Use | Editing, archives | Distribution |
+
+## The Quality-Size Tradeoff
+
+With lossy compression, you control the tradeoff:
+- **High quality (85-95%):** Minimal loss, moderate savings
+- **Medium quality (70-84%):** Balanced, good for web
+- **Low quality (<70%):** Significant loss, maximum savings
+
+## When to Use Each
+
+**Use Lossless:**
+- You'll edit the file again
+- Quality is critical (medical, legal)
+- File has text or sharp edges
+- You have storage space
+
+**Use Lossy:**
+- Final delivery (web, social)
+- Storage/bandwidth is limited
+- Slight quality loss is acceptable
+- Photos and video content
+
+## Conclusion
+
+Neither method is "better" - each serves different purposes. For web delivery, lossy compression at 75-85% quality typically provides the best balance.`,
+    category: "tutorials",
+    read_time: 6,
+    tags: ["compression", "lossy", "lossless", "fundamentals"]
+  },
+  "optimize-images-social-media-2024": {
+    title: "Optimizing Images for Social Media in 2024",
+    content: `## Why Social Media Image Optimization Matters
+
+Each platform has specific image requirements. Using wrong dimensions results in cropping, quality loss, or slow loading. Here's your complete guide for 2024.
+
+## Instagram
+
+### Feed Posts
+- **Square:** 1080 x 1080 px (1:1)
+- **Portrait:** 1080 x 1350 px (4:5) - Best engagement
+- **Landscape:** 1080 x 566 px (1.91:1)
+
+### Stories & Reels
+- **Size:** 1080 x 1920 px (9:16)
+- **Safe zone:** Keep text 250px from edges
+
+### Profile Photo
+- **Size:** 320 x 320 px (displays as circle)
+
+### Format Tips
+- Use JPEG for photos at 80-85% quality
+- Avoid heavy text overlays (impacts reach)
+
+## Facebook
+
+### Feed Images
+- **Recommended:** 1200 x 630 px
+- **Square posts:** 1200 x 1200 px
+
+### Cover Photo
+- **Desktop:** 820 x 312 px
+- **Mobile:** 640 x 360 px (center important content)
+
+### Profile Photo
+- **Size:** 180 x 180 px
+
+### Event Cover
+- **Size:** 1920 x 1005 px
+
+## Twitter/X
+
+### In-Stream Images
+- **Recommended:** 1200 x 675 px (16:9)
+- **Max:** 1200 x 1200 px for square
+
+### Header Photo
+- **Size:** 1500 x 500 px
+
+### Profile Photo
+- **Size:** 400 x 400 px
+
+## LinkedIn
+
+### Feed Images
+- **Recommended:** 1200 x 627 px
+- **Square:** 1200 x 1200 px
+
+### Cover Photo
+- **Personal:** 1584 x 396 px
+- **Company:** 1128 x 191 px
+
+### Profile Photo
+- **Size:** 400 x 400 px
+
+## TikTok
+
+### Video Thumbnails
+- **Size:** 1080 x 1920 px (9:16)
+
+### Profile Photo
+- **Size:** 200 x 200 px
+
+## YouTube
+
+### Thumbnails
+- **Size:** 1280 x 720 px (16:9)
+- **Min width:** 640 px
+
+### Channel Banner
+- **Safe area:** 1546 x 423 px (center)
+- **Full size:** 2560 x 1440 px
+
+## General Tips
+
+1. **Always upload highest quality** - platforms compress anyway
+2. **Use PNG for graphics with text**
+3. **Keep file sizes under 1MB** for faster uploads
+4. **Test on mobile** - most users view on phones
+5. **Use templates** for consistent branding
+
+## Quick Reference Table
+
+| Platform | Feed Image | Profile |
+|----------|------------|---------|
+| Instagram | 1080x1350 | 320x320 |
+| Facebook | 1200x630 | 180x180 |
+| Twitter | 1200x675 | 400x400 |
+| LinkedIn | 1200x627 | 400x400 |
+| TikTok | 1080x1920 | 200x200 |`,
+    category: "web-optimization",
+    read_time: 8,
+    tags: ["social media", "Instagram", "Facebook", "optimization"]
+  }
+};
+
+// Add more default content for other slugs
+const defaultContent = {
+  title: "Article",
+  content: `## Coming Soon
+
+This article is being written. Check back soon for comprehensive, helpful content about this topic.
+
+In the meantime, try out File Optimized to compress your images, videos, and audio files for free!`,
+  category: "tutorials",
+  read_time: 5,
+  tags: []
+};
+
 export default function BlogArticle() {
   const urlParams = new URLSearchParams(window.location.search);
   const slug = urlParams.get('slug');
 
-  const { data: articles = [], isLoading } = useQuery({
+  const { data: dbArticle, isLoading } = useQuery({
     queryKey: ['article', slug],
-    queryFn: () => base44.entities.Article.filter({ slug, published: true }),
-    enabled: !!slug,
+    queryFn: async () => {
+      const articles = await base44.entities.Article.filter({ slug, published: true }, '-created_date', 1);
+      return articles[0] || null;
+    },
+    enabled: !!slug
   });
 
-  const article = articles[0];
+  // Check built-in content if no database article
+  const builtInContent = builtInArticleContent[slug];
+  const article = dbArticle || (builtInContent ? { ...builtInContent, slug } : null);
 
+  // Fetch related articles
   const { data: relatedArticles = [] } = useQuery({
     queryKey: ['related-articles', article?.category],
-    queryFn: () => base44.entities.Article.filter({ 
-      category: article.category, 
-      published: true 
-    }, '-created_date', 4),
-    enabled: !!article?.category,
+    queryFn: () => base44.entities.Article.filter({ category: article?.category, published: true }, '-created_date', 4),
+    enabled: !!article?.category
   });
-
-  const filteredRelated = relatedArticles.filter(a => a.slug !== slug).slice(0, 3);
 
   if (isLoading) {
     return (
       <div className="max-w-4xl mx-auto py-8 px-4">
-        <Skeleton className="h-8 w-32 mb-8" />
-        <Skeleton className="h-12 w-full mb-4" />
-        <Skeleton className="h-6 w-2/3 mb-8" />
-        <Skeleton className="aspect-video w-full mb-8" />
-        <div className="space-y-4">
-          <Skeleton className="h-4 w-full" />
-          <Skeleton className="h-4 w-full" />
-          <Skeleton className="h-4 w-3/4" />
-        </div>
+        <Skeleton className="h-8 w-3/4 mb-4" />
+        <Skeleton className="h-4 w-1/4 mb-8" />
+        <Skeleton className="h-64 w-full" />
       </div>
     );
   }
@@ -60,83 +479,81 @@ export default function BlogArticle() {
     return (
       <div className="max-w-4xl mx-auto py-16 px-4 text-center">
         <h1 className="text-2xl font-bold text-slate-900 dark:text-white mb-4">Article Not Found</h1>
-        <p className="text-slate-600 dark:text-slate-400 mb-6">The article you're looking for doesn't exist or has been removed.</p>
-        <Link 
-          to={createPageUrl('Blog')}
-          className="inline-flex items-center gap-2 text-emerald-600 hover:text-emerald-700 font-medium"
-        >
-          <ArrowLeft className="w-4 h-4" />
-          Back to Blog
+        <p className="text-slate-600 dark:text-slate-400 mb-8">The article you're looking for doesn't exist.</p>
+        <Link to={createPageUrl('Blog')}>
+          <Button>
+            <ArrowLeft className="w-4 h-4 mr-2" />
+            Back to Blog
+          </Button>
         </Link>
       </div>
     );
   }
 
+  const filtered = relatedArticles.filter(a => a.slug !== slug).slice(0, 3);
+
   return (
     <>
       <SEOHead 
         title={`${article.title} - File Optimized Blog`}
-        description={article.excerpt || article.title}
-        image={article.featured_image}
+        description={article.excerpt || article.content?.substring(0, 160)}
       />
       <article className="max-w-4xl mx-auto py-8 px-4">
         {/* Back Link */}
         <Link 
           to={createPageUrl('Blog')}
-          className="inline-flex items-center gap-2 text-slate-600 dark:text-slate-400 hover:text-emerald-600 dark:hover:text-emerald-400 mb-8 transition-colors"
+          className="inline-flex items-center text-sm text-slate-500 dark:text-slate-400 hover:text-emerald-600 dark:hover:text-emerald-400 mb-8"
         >
-          <ArrowLeft className="w-4 h-4" />
+          <ArrowLeft className="w-4 h-4 mr-1" />
           Back to Blog
         </Link>
 
         {/* Header */}
         <header className="mb-8">
-          <div className="flex flex-wrap items-center gap-3 mb-4">
-            <span className="px-3 py-1 bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-400 rounded-full text-sm font-medium">
-              {categoryLabels[article.category]}
-            </span>
+          <div className="flex items-center gap-3 mb-4">
+            <Badge className="bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-400">
+              {categoryLabels[article.category] || article.category}
+            </Badge>
             {article.read_time && (
               <span className="flex items-center gap-1 text-sm text-slate-500 dark:text-slate-400">
                 <Clock className="w-4 h-4" />
                 {article.read_time} min read
               </span>
             )}
-            {article.created_date && (
-              <span className="flex items-center gap-1 text-sm text-slate-500 dark:text-slate-400">
-                <Calendar className="w-4 h-4" />
-                {new Date(article.created_date).toLocaleDateString('en-US', { 
-                  year: 'numeric', 
-                  month: 'long', 
-                  day: 'numeric' 
-                })}
-              </span>
-            )}
           </div>
           
-          <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold text-slate-900 dark:text-white mb-4 leading-tight">
+          <h1 className="text-3xl md:text-4xl font-bold text-slate-900 dark:text-white mb-4">
             {article.title}
           </h1>
-          
+
           {article.excerpt && (
             <p className="text-xl text-slate-600 dark:text-slate-400">
               {article.excerpt}
             </p>
           )}
+
+          {article.tags && article.tags.length > 0 && (
+            <div className="flex flex-wrap gap-2 mt-4">
+              {article.tags.map((tag, i) => (
+                <span key={i} className="text-xs px-2 py-1 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 rounded">
+                  {tag}
+                </span>
+              ))}
+            </div>
+          )}
         </header>
 
         {/* Featured Image */}
         {article.featured_image && (
-          <div className="aspect-video bg-slate-100 dark:bg-slate-800 rounded-xl overflow-hidden mb-8">
-            <img 
-              src={article.featured_image} 
-              alt={article.title}
-              className="w-full h-full object-cover"
-            />
-          </div>
+          <img 
+            src={article.featured_image} 
+            alt={article.title}
+            className="w-full rounded-xl mb-8 object-cover max-h-96"
+          />
         )}
 
         {/* Content */}
-        <div className="prose prose-lg prose-slate dark:prose-invert max-w-none mb-12">
+        <div className="prose prose-lg prose-slate dark:prose-invert max-w-none">
           <ReactMarkdown
             components={{
               h2: ({ children }) => <h2 className="text-2xl font-bold mt-8 mb-4">{children}</h2>,
@@ -145,85 +562,55 @@ export default function BlogArticle() {
               ul: ({ children }) => <ul className="list-disc pl-6 mb-4 space-y-2">{children}</ul>,
               ol: ({ children }) => <ol className="list-decimal pl-6 mb-4 space-y-2">{children}</ol>,
               li: ({ children }) => <li className="leading-relaxed">{children}</li>,
-              blockquote: ({ children }) => (
-                <blockquote className="border-l-4 border-emerald-500 pl-4 italic text-slate-600 dark:text-slate-400 my-6">
-                  {children}
-                </blockquote>
-              ),
+              strong: ({ children }) => <strong className="font-semibold">{children}</strong>,
+              table: ({ children }) => <div className="overflow-x-auto my-6"><table className="min-w-full border-collapse border border-slate-200 dark:border-slate-700">{children}</table></div>,
+              th: ({ children }) => <th className="border border-slate-200 dark:border-slate-700 px-4 py-2 bg-slate-100 dark:bg-slate-800 text-left font-semibold">{children}</th>,
+              td: ({ children }) => <td className="border border-slate-200 dark:border-slate-700 px-4 py-2">{children}</td>,
               code: ({ inline, children }) => inline ? (
-                <code className="px-1.5 py-0.5 bg-slate-100 dark:bg-slate-800 rounded text-sm">
-                  {children}
-                </code>
+                <code className="px-1.5 py-0.5 bg-slate-100 dark:bg-slate-800 rounded text-sm">{children}</code>
               ) : (
-                <pre className="bg-slate-900 text-slate-100 rounded-lg p-4 overflow-x-auto my-4">
-                  <code>{children}</code>
-                </pre>
+                <pre className="bg-slate-900 text-slate-100 p-4 rounded-lg overflow-x-auto my-4"><code>{children}</code></pre>
               ),
-              a: ({ href, children }) => (
-                <a href={href} className="text-emerald-600 hover:text-emerald-700 underline" target="_blank" rel="noopener noreferrer">
-                  {children}
-                </a>
-              ),
-              img: ({ src, alt }) => (
-                <img src={src} alt={alt} className="rounded-lg my-6" />
-              ),
+              blockquote: ({ children }) => <blockquote className="border-l-4 border-emerald-500 pl-4 italic my-4">{children}</blockquote>,
             }}
           >
             {article.content}
           </ReactMarkdown>
         </div>
 
-        {/* Tags */}
-        {article.tags && article.tags.length > 0 && (
-          <div className="flex flex-wrap items-center gap-2 mb-12 pb-8 border-b border-slate-200 dark:border-slate-800">
-            <Tag className="w-4 h-4 text-slate-400" />
-            {article.tags.map(tag => (
-              <span 
-                key={tag}
-                className="px-3 py-1 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 rounded-full text-sm"
-              >
-                {tag}
-              </span>
-            ))}
-          </div>
-        )}
-
         {/* Related Articles */}
-        {filteredRelated.length > 0 && (
-          <section>
+        {filtered.length > 0 && (
+          <div className="mt-16 pt-8 border-t border-slate-200 dark:border-slate-800">
             <h2 className="text-2xl font-bold text-slate-900 dark:text-white mb-6">Related Articles</h2>
             <div className="grid md:grid-cols-3 gap-6">
-              {filteredRelated.map(related => (
-                <Link
+              {filtered.map(related => (
+                <Link 
                   key={related.id}
                   to={createPageUrl(`BlogArticle?slug=${related.slug}`)}
-                  className="group bg-white dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-800 p-4 hover:border-emerald-500 dark:hover:border-emerald-500 transition-colors"
+                  className="group bg-white dark:bg-slate-900 rounded-lg p-4 border border-slate-200 dark:border-slate-800 hover:border-emerald-500 transition-colors"
                 >
-                  <h3 className="font-semibold text-slate-900 dark:text-white mb-2 group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors line-clamp-2">
+                  <h3 className="font-semibold text-slate-900 dark:text-white group-hover:text-emerald-600 line-clamp-2 mb-2">
                     {related.title}
                   </h3>
-                  <p className="text-sm text-slate-600 dark:text-slate-400 line-clamp-2">
-                    {related.excerpt}
-                  </p>
+                  <span className="text-sm text-emerald-600 flex items-center">
+                    Read more <ArrowRight className="w-3 h-3 ml-1" />
+                  </span>
                 </Link>
               ))}
             </div>
-          </section>
+          </div>
         )}
 
         {/* CTA */}
-        <div className="mt-12 bg-gradient-to-br from-emerald-50 to-teal-50 dark:from-emerald-950/30 dark:to-teal-950/30 rounded-xl p-8 text-center border border-emerald-200 dark:border-emerald-800">
-          <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-2">
-            Ready to Optimize Your Files?
-          </h3>
-          <p className="text-slate-600 dark:text-slate-400 mb-4">
-            Try File Optimized free - no signup required.
+        <div className="mt-16 bg-gradient-to-r from-emerald-600 to-teal-600 rounded-2xl p-8 text-center">
+          <h2 className="text-2xl font-bold text-white mb-4">Ready to optimize your files?</h2>
+          <p className="text-emerald-100 mb-6">
+            Try File Optimized free - compress images, videos, and audio without uploading to any server.
           </p>
-          <Link
-            to={createPageUrl('Home')}
-            className="inline-flex items-center gap-2 px-6 py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold rounded-lg transition-colors"
-          >
-            Start Compressing Now
+          <Link to={createPageUrl('Home')}>
+            <Button className="bg-white text-emerald-700 hover:bg-emerald-50">
+              Start Optimizing Free
+            </Button>
           </Link>
         </div>
       </article>
