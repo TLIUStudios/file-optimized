@@ -1170,11 +1170,14 @@ export default function ImageComparisonModal({
                     <p className="text-slate-500 dark:text-slate-400 text-[10px] font-semibold uppercase tracking-wider mb-3">Available Formats</p>
                     {!formatsGenerated && !loadingFormatSizes ? (
                       <div className="text-center py-4">
-                        <p className="text-xs text-slate-500 dark:text-slate-400 mb-3">Generate all format conversions to compare sizes</p>
+                        <p className="text-xs text-slate-500 dark:text-slate-400 mb-2">Generate all format conversions to compare sizes</p>
+                        <Badge variant="outline" className="border-blue-300 text-blue-700 dark:border-blue-700 dark:text-blue-400 mb-3">
+                          ~3-5s estimated
+                        </Badge>
                         <Button
                           onClick={generateAllFormats}
                           size="sm"
-                          className="bg-emerald-600 hover:bg-emerald-700 text-white"
+                          className="bg-emerald-600 hover:bg-emerald-700 text-white w-full"
                         >
                           <RefreshCw className="w-3 h-3 mr-2" />
                           Generate Formats
@@ -1395,10 +1398,10 @@ export default function ImageComparisonModal({
 
                     {isGenerating ? (
                       <div className="bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg p-6 text-center">
-                        <RefreshCw className="w-6 h-6 animate-spin mx-auto mb-2 text-slate-400" />
+                        <RefreshCw className="w-6 h-6 animate-spin mx-auto mb-2 text-emerald-500" />
                         <p className="text-xs text-slate-500 dark:text-slate-400 mb-2">Analyzing image with AI...</p>
                         <Badge variant="outline" className="border-blue-300 text-blue-700 dark:border-blue-700 dark:text-blue-400">
-                          ~{seoGenerationTime}s
+                          ~5-8s estimated
                         </Badge>
                       </div>
                     ) : hasAnyMetadata ? (
@@ -1662,11 +1665,14 @@ export default function ImageComparisonModal({
                       </div>
                     ) : (
                       <div className="bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg p-4 text-center">
-                        <p className="text-xs text-slate-500 dark:text-slate-400 mb-3">Generate AI-powered metadata for this image</p>
+                        <p className="text-xs text-slate-500 dark:text-slate-400 mb-2">Generate AI-powered metadata for this image</p>
+                        <Badge variant="outline" className="border-blue-300 text-blue-700 dark:border-blue-700 dark:text-blue-400 mb-3">
+                          ~5-8s estimated
+                        </Badge>
                         <Button
                           size="sm"
                           onClick={generateMetadata}
-                          className="bg-slate-700 hover:bg-slate-800 text-white text-xs h-8"
+                          className="bg-slate-700 hover:bg-slate-800 text-white text-xs h-8 w-full"
                         >
                           <RefreshCw className="w-3 h-3 mr-1" />
                           Generate Metadata

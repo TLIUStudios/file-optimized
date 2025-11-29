@@ -1,10 +1,14 @@
 import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { base44 } from "@/api/base44Client";
 import { ChevronDown, HelpCircle, Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
+import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import SEOHead from "../components/SEOHead";
 
-const faqs = [
+// Default FAQs as fallback
+const defaultFaqs = [
   {
     category: "General",
     questions: [
@@ -180,6 +184,29 @@ export default function FAQ() {
   const [openItems, setOpenItems] = useState({});
   const [searchQuery, setSearchQuery] = useState("");
   const [activeCategory, setActiveCategory] = useState("all");
+
+  // Fetch FAQs from database
+  const { data: dbFaqs = [], isLoading } = useQuery({
+    queryKey: ['faqs'],
+    queryFn: () => base44.entities.FAQItem.filter({ published: true }, 'order', 100),
+  });
+
+  // Combine database FAQs with defaults, grouped by category
+  const faqs = (() => {
+    // If we have database FAQs, group them by category
+    if (dbFaqs.length > 0) {
+      const grouped = {};
+      dbFaqs.forEach(faq => {
+        if (!grouped[faq.category]) {
+          grouped[faq.category] = { category: faq.category, questions: [] };
+        }
+        grouped[faq.category].questions.push({ q: faq.question, a: faq.answer });
+      });
+      return Object.values(grouped);
+    }
+    // Otherwise use defaults
+    return defaultFaqs;
+  })();
 
   const toggleItem = (categoryIndex, questionIndex) => {
     const key = `${categoryIndex}-${questionIndex}`;
