@@ -47,11 +47,13 @@ export default function Admin() {
     const checkAdmin = async () => {
       try {
         const currentUser = await base44.auth.me();
+        console.log("Admin check - user role:", currentUser?.role);
         setUser(currentUser);
         if (currentUser?.role !== 'admin') {
-          toast.error("Access denied. Admin only.");
+          toast.error("Access denied. Admin only. Your role: " + (currentUser?.role || 'none'));
         }
       } catch (e) {
+        console.error("Admin check error:", e);
         toast.error("Please sign in");
       } finally {
         setLoading(false);

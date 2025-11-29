@@ -63,8 +63,8 @@ const builtInArticles = [
   },
   {
     id: "builtin-5",
-    title: "Optimizing Images for Social Media in 2024",
-    slug: "optimize-images-social-media-2024",
+    title: "Optimizing Images for Social Media in 2025",
+    slug: "optimize-images-social-media-2025",
     excerpt: "Get the perfect image sizes and formats for Instagram, Facebook, Twitter, LinkedIn, and TikTok.",
     category: "web-optimization",
     tags: ["social media", "Instagram", "Facebook", "optimization"],
@@ -270,6 +270,256 @@ const builtInArticles = [
     tags: ["privacy", "security", "local processing"],
     read_time: 7,
     published: true
+  },
+  {
+    id: "builtin-26",
+    title: "Understanding Color Profiles: sRGB, Adobe RGB, and Display P3",
+    slug: "understanding-color-profiles",
+    excerpt: "Learn about color spaces and when to use each for web, print, and professional work.",
+    category: "tutorials",
+    tags: ["color", "sRGB", "Adobe RGB", "Display P3"],
+    read_time: 8,
+    published: true
+  },
+  {
+    id: "builtin-27",
+    title: "How to Reduce Video File Size for YouTube",
+    slug: "reduce-video-size-youtube",
+    excerpt: "Optimal settings for uploading videos to YouTube without quality loss or long processing times.",
+    category: "video-compression",
+    tags: ["YouTube", "upload", "video settings"],
+    read_time: 7,
+    published: true
+  },
+  {
+    id: "builtin-28",
+    title: "Image Optimization for WordPress Sites",
+    slug: "image-optimization-wordpress",
+    excerpt: "Complete guide to optimizing images on WordPress for better performance and SEO.",
+    category: "web-optimization",
+    tags: ["WordPress", "CMS", "plugins"],
+    read_time: 10,
+    published: true
+  },
+  {
+    id: "builtin-29",
+    title: "What is Bit Depth and Why Does It Matter?",
+    slug: "bit-depth-explained",
+    excerpt: "Understanding 8-bit vs 16-bit images and when higher bit depth is worth the larger file size.",
+    category: "tutorials",
+    tags: ["bit depth", "color", "quality"],
+    read_time: 6,
+    published: true
+  },
+  {
+    id: "builtin-30",
+    title: "Mobile Image Optimization: Best Practices",
+    slug: "mobile-image-optimization",
+    excerpt: "Optimize images specifically for mobile devices to improve load times and user experience.",
+    category: "web-optimization",
+    tags: ["mobile", "responsive", "performance"],
+    read_time: 7,
+    published: true
+  },
+  {
+    id: "builtin-31",
+    title: "Lossless vs Lossy Audio: When to Use Each",
+    slug: "lossless-vs-lossy-audio",
+    excerpt: "Detailed comparison of audio compression methods and their ideal use cases.",
+    category: "audio-compression",
+    tags: ["lossless", "lossy", "FLAC", "MP3"],
+    read_time: 8,
+    published: true
+  },
+  {
+    id: "builtin-32",
+    title: "How to Compress 4K Video Without Losing Quality",
+    slug: "compress-4k-video",
+    excerpt: "Tips for handling high-resolution video files while maintaining stunning visual quality.",
+    category: "video-compression",
+    tags: ["4K", "UHD", "high resolution"],
+    read_time: 9,
+    published: true
+  },
+  {
+    id: "builtin-33",
+    title: "Understanding EXIF Data: What It Is and How to Remove It",
+    slug: "exif-data-explained",
+    excerpt: "Learn what metadata your photos contain and why you might want to strip it for privacy.",
+    category: "tips-tricks",
+    tags: ["EXIF", "metadata", "privacy"],
+    read_time: 6,
+    published: true
+  },
+  {
+    id: "builtin-34",
+    title: "SVG vs PNG: When to Use Vector Graphics",
+    slug: "svg-vs-png-comparison",
+    excerpt: "Compare vector and raster formats to choose the best option for logos, icons, and graphics.",
+    category: "file-formats",
+    tags: ["SVG", "PNG", "vector", "graphics"],
+    read_time: 7,
+    published: true
+  },
+  {
+    id: "builtin-35",
+    title: "How WebAssembly Enables Browser-Based Compression",
+    slug: "webassembly-browser-compression",
+    excerpt: "The technology behind fast, private file processing directly in your web browser.",
+    category: "tutorials",
+    tags: ["WebAssembly", "browser", "technology"],
+    read_time: 8,
+    published: true
+  },
+  {
+    id: "builtin-36",
+    title: "Optimizing Product Photos for Amazon and eBay",
+    slug: "product-photos-amazon-ebay",
+    excerpt: "Requirements and best practices for e-commerce marketplace product images.",
+    category: "web-optimization",
+    tags: ["Amazon", "eBay", "e-commerce", "marketplace"],
+    read_time: 8,
+    published: true
+  },
+  {
+    id: "builtin-37",
+    title: "Video Bitrate Guide: Finding the Right Settings",
+    slug: "video-bitrate-guide",
+    excerpt: "How to choose the optimal bitrate for different video resolutions and use cases.",
+    category: "video-compression",
+    tags: ["bitrate", "settings", "quality"],
+    read_time: 7,
+    published: true
+  },
+  {
+    id: "builtin-38",
+    title: "Image Compression for Email: Size Limits by Provider",
+    slug: "image-compression-email",
+    excerpt: "Navigate attachment size limits for Gmail, Outlook, Yahoo, and other email providers.",
+    category: "tips-tricks",
+    tags: ["email", "attachments", "size limits"],
+    read_time: 5,
+    published: true
+  },
+  {
+    id: "builtin-39",
+    title: "HDR Images: What They Are and How to Optimize Them",
+    slug: "hdr-images-optimization",
+    excerpt: "Everything you need to know about High Dynamic Range images and their compression.",
+    category: "image-compression",
+    tags: ["HDR", "dynamic range", "modern formats"],
+    read_time: 9,
+    published: true
+  },
+  {
+    id: "builtin-40",
+    title: "Audio Normalization: Consistent Volume Across Files",
+    slug: "audio-normalization-guide",
+    excerpt: "How to ensure consistent audio levels when compressing multiple audio files.",
+    category: "audio-compression",
+    tags: ["normalization", "volume", "consistency"],
+    read_time: 6,
+    published: true
+  },
+  {
+    id: "builtin-41",
+    title: "Lazy Loading Images: Implementation Guide",
+    slug: "lazy-loading-images-guide",
+    excerpt: "Step-by-step guide to implementing lazy loading for better page performance.",
+    category: "web-optimization",
+    tags: ["lazy loading", "performance", "JavaScript"],
+    read_time: 8,
+    published: true
+  },
+  {
+    id: "builtin-42",
+    title: "Converting GIF to MP4: Why and How",
+    slug: "converting-gif-to-mp4",
+    excerpt: "Reduce file sizes by up to 90% by converting animated GIFs to video format.",
+    category: "file-formats",
+    tags: ["GIF", "MP4", "conversion", "animation"],
+    read_time: 6,
+    published: true
+  },
+  {
+    id: "builtin-43",
+    title: "Image Sprites: Combining Multiple Images",
+    slug: "image-sprites-guide",
+    excerpt: "Reduce HTTP requests by combining multiple images into a single sprite sheet.",
+    category: "web-optimization",
+    tags: ["sprites", "CSS", "HTTP requests"],
+    read_time: 7,
+    published: true
+  },
+  {
+    id: "builtin-44",
+    title: "Compression Artifacts: Types and How to Avoid Them",
+    slug: "compression-artifacts-guide",
+    excerpt: "Identify and prevent common compression artifacts like blocking, ringing, and banding.",
+    category: "tips-tricks",
+    tags: ["artifacts", "quality", "troubleshooting"],
+    read_time: 7,
+    published: true
+  },
+  {
+    id: "builtin-45",
+    title: "HEIF Format: Apple's Modern Image Format",
+    slug: "heif-format-explained",
+    excerpt: "Understanding HEIF/HEIC files from iPhones and how to convert them for wider use.",
+    category: "file-formats",
+    tags: ["HEIF", "HEIC", "Apple", "iPhone"],
+    read_time: 6,
+    published: true
+  },
+  {
+    id: "builtin-46",
+    title: "Optimizing Images for Retina Displays",
+    slug: "retina-display-optimization",
+    excerpt: "Best practices for serving crisp images on high-DPI screens without huge file sizes.",
+    category: "web-optimization",
+    tags: ["Retina", "HiDPI", "responsive"],
+    read_time: 7,
+    published: true
+  },
+  {
+    id: "builtin-47",
+    title: "Audio Sample Rate: 44.1kHz vs 48kHz vs 96kHz",
+    slug: "audio-sample-rate-comparison",
+    excerpt: "When to use different sample rates and their impact on quality and file size.",
+    category: "audio-compression",
+    tags: ["sample rate", "audio quality", "settings"],
+    read_time: 6,
+    published: true
+  },
+  {
+    id: "builtin-48",
+    title: "Thumbnail Generation: Best Practices",
+    slug: "thumbnail-generation-guide",
+    excerpt: "Create optimized thumbnails for galleries, videos, and content previews.",
+    category: "image-compression",
+    tags: ["thumbnails", "galleries", "preview"],
+    read_time: 5,
+    published: true
+  },
+  {
+    id: "builtin-49",
+    title: "Progressive JPEG vs Baseline JPEG",
+    slug: "progressive-vs-baseline-jpeg",
+    excerpt: "Compare loading behaviors and when to use each JPEG encoding method.",
+    category: "file-formats",
+    tags: ["JPEG", "progressive", "encoding"],
+    read_time: 5,
+    published: true
+  },
+  {
+    id: "builtin-50",
+    title: "Complete Guide to Video Container Formats",
+    slug: "video-container-formats-guide",
+    excerpt: "MP4, MKV, WebM, AVI: Understanding the differences between video containers.",
+    category: "file-formats",
+    tags: ["containers", "MP4", "MKV", "WebM"],
+    read_time: 9,
+    published: true
   }
 ];
 
@@ -341,6 +591,7 @@ function ArticleCardSkeleton() {
 export default function Blog() {
   const [searchQuery, setSearchQuery] = useState("");
   const [activeCategory, setActiveCategory] = useState("all");
+  const [displayCount, setDisplayCount] = useState(12);
 
   const { data: dbArticles = [], isLoading } = useQuery({
     queryKey: ['articles'],
@@ -357,6 +608,9 @@ export default function Blog() {
       article.excerpt?.toLowerCase().includes(searchQuery.toLowerCase());
     return matchesCategory && matchesSearch;
   });
+
+  const displayedArticles = filteredArticles.slice(0, displayCount);
+  const hasMore = filteredArticles.length > displayCount;
 
   const categories = ["all", ...Object.keys(categoryLabels)];
 
@@ -415,12 +669,24 @@ export default function Blog() {
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
             {[...Array(6)].map((_, i) => <ArticleCardSkeleton key={i} />)}
           </div>
-        ) : filteredArticles.length > 0 ? (
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filteredArticles.map(article => (
-              <ArticleCard key={article.id} article={article} />
-            ))}
-          </div>
+        ) : displayedArticles.length > 0 ? (
+          <>
+            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {displayedArticles.map(article => (
+                <ArticleCard key={article.id} article={article} />
+              ))}
+            </div>
+            {hasMore && (
+              <div className="text-center mt-10">
+                <button
+                  onClick={() => setDisplayCount(prev => prev + 12)}
+                  className="px-8 py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold rounded-lg transition-colors"
+                >
+                  Load More Articles ({filteredArticles.length - displayCount} remaining)
+                </button>
+              </div>
+            )}
+          </>
         ) : (
           <div className="text-center py-16">
             <BookOpen className="w-12 h-12 text-slate-300 dark:text-slate-600 mx-auto mb-4" />
