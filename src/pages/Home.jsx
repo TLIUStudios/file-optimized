@@ -64,15 +64,15 @@ export default function Home() {
     loadUser();
   }, []);
 
-  const handleFilesSelected = (files) => {
+  const handleFilesSelected = useCallback((files) => {
     const newFiles = Array.from(files).map((file) => ({
       id: `${file.name}-${Date.now()}-${Math.random()}`,
       file
     }));
     setImages((prev) => [...prev, ...newFiles]);
-  };
+  }, []);
 
-  const handleDragEnd = (result) => {
+  const handleDragEnd = useCallback((result) => {
     if (!result.destination) return;
 
     const items = Array.from(images);
@@ -81,16 +81,16 @@ export default function Home() {
 
     setImages(items);
     toast.success('Images reordered!');
-  };
+  }, [images]);
 
-  const removeImage = (id) => {
+  const removeImage = useCallback((id) => {
     setImages((prev) => prev.filter((img) => img.id !== id));
     setProcessedImages((prev) => {
       const newProcessed = { ...prev };
       delete newProcessed[id];
       return newProcessed;
     });
-  };
+  }, []);
 
   const handleImageProcessed = (id, data) => {
     setProcessedImages((prev) => {
