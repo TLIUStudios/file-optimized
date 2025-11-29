@@ -157,8 +157,9 @@ export default function ImageComparisonModal({
   const [isConverting, setIsConverting] = useState(false);
   const [convertedBlob, setConvertedBlob] = useState(null);
   const [allFormatSizes, setAllFormatSizes] = useState({});
-  const [loadingFormatSizes, setLoadingFormatSizes] = useState(true);
+  const [loadingFormatSizes, setLoadingFormatSizes] = useState(false);
   const [cachedFormatBlobs, setCachedFormatBlobs] = useState({}); // Cache all format blobs
+  const [formatsGenerated, setFormatsGenerated] = useState(false); // Track if formats have been generated
 
   // Check if we're displaying animated variations
   const isAnimationVariations = generatedAnimations && generatedAnimations.length > 0;
