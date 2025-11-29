@@ -7,7 +7,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import SEOHead from "../components/SEOHead";
 
-// Default FAQs as fallback
+// Comprehensive FAQ database
 const defaultFaqs = [
   {
     category: "General",

@@ -328,6 +328,8 @@ export default function Layout({ children }) {
                 <li><Link to={createPageUrl('FAQ')} className="text-sm text-slate-500 dark:text-slate-400 hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors">FAQ</Link></li>
                 <li><Link to={createPageUrl('Blog')} className="text-sm text-slate-500 dark:text-slate-400 hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors">Blog</Link></li>
                 <li><Link to={createPageUrl('Tutorials')} className="text-sm text-slate-500 dark:text-slate-400 hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors">Tutorials</Link></li>
+                <li><Link to={createPageUrl('Glossary')} className="text-sm text-slate-500 dark:text-slate-400 hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors">Glossary</Link></li>
+                <li><Link to={createPageUrl('Comparisons')} className="text-sm text-slate-500 dark:text-slate-400 hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors">Compare Tools</Link></li>
               </ul>
             </div>
             <div>
