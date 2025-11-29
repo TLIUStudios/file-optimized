@@ -48,97 +48,99 @@ export default function VideoEditor({ isOpen, onClose, videoData, onSave }) {
   const historyTimeoutRef = useRef(null);
 
   useEffect(() => {
-    if (!videoRef.current || !videoData || !isOpen) return;
+    if (!isOpen || !videoData) return;
     
-    const video = videoRef.current;
-    let hasSetDuration = false;
+    // Reset state when opening
+    setThumbnails([]);
+    setDuration(0);
+    setCurrentTime(0);
+    setTrimStart(0);
+    setTrimEnd(100);
     
-    const initializeVideo = () => {
-      if (hasSetDuration) return;
-      if (!video.duration || isNaN(video.duration) || video.duration <= 0) {
-        console.warn('Invalid duration:', video.duration);
-        return;
-      }
+    // Wait for video element to be mounted
+    const initTimer = setTimeout(() => {
+      const video = videoRef.current;
+      if (!video) return;
       
-      hasSetDuration = true;
-      console.log('Video loaded:', video.duration, 'seconds');
+      let hasSetDuration = false;
       
-      const videoDuration = video.duration;
-      setDuration(videoDuration);
-      setTrimEnd(videoDuration);
-      
-      // Save initial state
-      const initialState = {
-        trimStart: 0,
-        trimEnd: videoDuration,
-        textOverlay: "",
-        textPosition: { x: 50, y: 50 },
-        textColor: "#ffffff",
-        textSize: 32,
-        brightness: 100,
-        contrast: 100,
-        saturation: 100,
-        blur: 0,
-        captions: [],
-        captionStyle: "modern",
-        showCaptions: false,
-        volume: 100,
-        backgroundMusic: null,
-        musicVolume: 50,
-        noiseReduction: false,
-        audioNormalization: false,
-        cutRanges: [],
-        fadeIn: 0,
-        fadeOut: 0,
-      };
-      setHistory([initialState]);
-      setHistoryIndex(0);
-      
-      // Delay thumbnail generation to ensure video is fully ready
-      setTimeout(() => {
-        if (video.readyState >= 2) {
-          generateThumbnails(video);
+      const initializeVideo = () => {
+        if (hasSetDuration) return;
+        if (!video.duration || isNaN(video.duration) || video.duration <= 0) {
+          return;
         }
-      }, 100);
-    };
+        
+        hasSetDuration = true;
+        console.log('Video loaded:', video.duration, 'seconds');
+        
+        const videoDuration = video.duration;
+        setDuration(videoDuration);
+        setTrimEnd(videoDuration);
+        
+        // Save initial state
+        const initialState = {
+          trimStart: 0,
+          trimEnd: videoDuration,
+          textOverlay: "",
+          textPosition: { x: 50, y: 50 },
+          textColor: "#ffffff",
+          textSize: 32,
+          brightness: 100,
+          contrast: 100,
+          saturation: 100,
+          blur: 0,
+          captions: [],
+          captionStyle: "modern",
+          showCaptions: false,
+          volume: 100,
+          backgroundMusic: null,
+          musicVolume: 50,
+          noiseReduction: false,
+          audioNormalization: false,
+          cutRanges: [],
+          fadeIn: 0,
+          fadeOut: 0,
+        };
+        setHistory([initialState]);
+        setHistoryIndex(0);
+        
+        // Generate thumbnails after video is ready
+        setTimeout(() => generateThumbnails(video), 200);
+      };
+      
+      const handleTimeUpdate = () => {
+        setCurrentTime(video.currentTime);
+      };
+      
+      video.addEventListener('loadedmetadata', initializeVideo);
+      video.addEventListener('loadeddata', initializeVideo);
+      video.addEventListener('canplay', initializeVideo);
+      video.addEventListener('timeupdate', handleTimeUpdate);
+      
+      // Force reload the video
+      video.src = videoData;
+      video.load();
+      
+      // Fallback checks
+      const fallback1 = setTimeout(() => {
+        if (video.readyState >= 1 && !hasSetDuration) initializeVideo();
+      }, 500);
+      
+      const fallback2 = setTimeout(() => {
+        if (video.readyState >= 1 && !hasSetDuration) initializeVideo();
+      }, 1500);
+      
+      return () => {
+        video.removeEventListener('loadedmetadata', initializeVideo);
+        video.removeEventListener('loadeddata', initializeVideo);
+        video.removeEventListener('canplay', initializeVideo);
+        video.removeEventListener('timeupdate', handleTimeUpdate);
+        clearTimeout(fallback1);
+        clearTimeout(fallback2);
+      };
+    }, 50);
     
-    const handleTimeUpdate = () => {
-      setCurrentTime(video.currentTime);
-    };
-    
-    const handleError = (e) => {
-      console.error('Video load error:', e);
-      toast.error('Failed to load video');
-    };
-    
-    video.addEventListener('loadedmetadata', initializeVideo);
-    video.addEventListener('loadeddata', initializeVideo);
-    video.addEventListener('canplay', initializeVideo);
-    video.addEventListener('timeupdate', handleTimeUpdate);
-    video.addEventListener('error', handleError);
-    
-    // Set source and load
-    video.src = videoData;
-    video.load();
-    
-    // Multiple fallback checks
-    const timeoutId1 = setTimeout(() => {
-      if (video.readyState >= 1) initializeVideo();
-    }, 500);
-    
-    const timeoutId2 = setTimeout(() => {
-      if (video.readyState >= 1) initializeVideo();
-    }, 1500);
-    
-    return () => {
-      video.removeEventListener('loadedmetadata', initializeVideo);
-      video.removeEventListener('loadeddata', initializeVideo);
-      video.removeEventListener('canplay', initializeVideo);
-      video.removeEventListener('timeupdate', handleTimeUpdate);
-      video.removeEventListener('error', handleError);
-      clearTimeout(timeoutId1);
-      clearTimeout(timeoutId2);
-    };
+    return () => clearTimeout(initTimer);
   }, [videoData, isOpen]);
 
   const addCaption = () => {
