@@ -444,8 +444,10 @@ Rules:
   };
 
   const generateThumbnails = async (video) => {
+    if (!video || !video.duration || video.duration <= 0) return;
+    
     setGeneratingThumbnails(true);
-    const thumbCount = 20;
+    const thumbCount = 10;
     const interval = video.duration / thumbCount;
     const thumbs = [];
     
@@ -454,22 +456,34 @@ Rules:
     canvas.height = 90;
     const ctx = canvas.getContext('2d');
     
-    for (let i = 0; i < thumbCount; i++) {
-      const time = i * interval;
-      video.currentTime = time;
+    try {
+      for (let i = 0; i < thumbCount; i++) {
+        const time = i * interval;
+        video.currentTime = time;
+        
+        await new Promise((resolve, reject) => {
+          const timeout = setTimeout(() => resolve(), 500);
+          video.onseeked = () => {
+            clearTimeout(timeout);
+            resolve();
+          };
+        });
+        
+        // Wait a frame for the video to render
+        await new Promise(r => requestAnimationFrame(r));
+        
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+        const dataUrl = canvas.toDataURL('image/jpeg', 0.5);
+        thumbs.push({ time, dataUrl });
+      }
       
-      await new Promise(resolve => {
-        video.onseeked = resolve;
-      });
-      
-      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-      const dataUrl = canvas.toDataURL('image/jpeg', 0.6);
-      thumbs.push({ time, dataUrl });
+      setThumbnails(thumbs);
+      video.currentTime = 0;
+    } catch (error) {
+      console.error('Thumbnail generation error:', error);
+    } finally {
+      setGeneratingThumbnails(false);
     }
-    
-    setThumbnails(thumbs);
-    setGeneratingThumbnails(false);
-    video.currentTime = 0;
   };
 
   const applyEdits = async () => {
