@@ -66,6 +66,16 @@ const builtInArticles = [
   { id: "builtin-48", title: "Thumbnail Generation: Best Practices", slug: "thumbnail-generation-guide", category: "image-compression", published: true, isBuiltIn: true },
   { id: "builtin-49", title: "Progressive JPEG vs Baseline JPEG", slug: "progressive-vs-baseline-jpeg", category: "file-formats", published: true, isBuiltIn: true },
   { id: "builtin-50", title: "Complete Guide to Video Container Formats", slug: "video-container-formats-guide", category: "file-formats", published: true, isBuiltIn: true },
+  { id: "builtin-51", title: "Image Optimization for Shopify Stores", slug: "image-optimization-shopify", category: "web-optimization", published: true, isBuiltIn: true },
+  { id: "builtin-52", title: "Understanding Video Resolution: 720p to 8K", slug: "video-resolution-guide", category: "video-compression", published: true, isBuiltIn: true },
+  { id: "builtin-53", title: "Opus Audio Format: The Ultimate Guide", slug: "opus-audio-format-guide", category: "audio-compression", published: true, isBuiltIn: true },
+  { id: "builtin-54", title: "Image Optimization for Next.js Applications", slug: "image-optimization-nextjs", category: "web-optimization", published: true, isBuiltIn: true },
+  { id: "builtin-55", title: "Color Banding: Causes and Solutions", slug: "color-banding-solutions", category: "tips-tricks", published: true, isBuiltIn: true },
+  { id: "builtin-56", title: "Screen Recording Compression Tips", slug: "screen-recording-compression", category: "video-compression", published: true, isBuiltIn: true },
+  { id: "builtin-57", title: "Instagram Reels: Optimal Video Settings", slug: "instagram-reels-video-settings", category: "video-compression", published: true, isBuiltIn: true },
+  { id: "builtin-58", title: "Bulk Image Resizing Strategies", slug: "bulk-image-resizing-strategies", category: "tips-tricks", published: true, isBuiltIn: true },
+  { id: "builtin-59", title: "WebM vs MP4: Which Format Should You Choose?", slug: "webm-vs-mp4-comparison", category: "file-formats", published: true, isBuiltIn: true },
+  { id: "builtin-60", title: "Image CDN Best Practices", slug: "image-cdn-best-practices", category: "web-optimization", published: true, isBuiltIn: true },
 ];
 
 // Built-in FAQs count (updated)
@@ -88,7 +98,12 @@ const faqCategories = [
   { value: "Privacy & Security", label: "Privacy & Security" },
   { value: "Features", label: "Features" },
   { value: "Pro Plan", label: "Pro Plan" },
-  { value: "Troubleshooting", label: "Troubleshooting" }
+  { value: "Troubleshooting", label: "Troubleshooting" },
+  { value: "Formats & Best Practices", label: "Formats & Best Practices" },
+  { value: "Account & Billing", label: "Account & Billing" },
+  { value: "Technical", label: "Technical" },
+  { value: "Mobile & Devices", label: "Mobile & Devices" },
+  { value: "Advanced Features", label: "Advanced Features" }
 ];
 
 export default function Admin() {
