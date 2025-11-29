@@ -9,9 +9,67 @@ import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Card } from "@/components/ui/card";
-import { Plus, Pencil, Trash2, BookOpen, HelpCircle, Shield, Loader2, X } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Plus, Pencil, Trash2, BookOpen, HelpCircle, Shield, Loader2, X, Database, FileText } from "lucide-react";
 import { toast } from "sonner";
 import SEOHead from "../components/SEOHead";
+
+// Import built-in articles from Blog page
+const builtInArticles = [
+  { id: "builtin-1", title: "The Ultimate Guide to Image Compression for Web", slug: "ultimate-guide-image-compression-web", category: "image-compression", published: true, isBuiltIn: true },
+  { id: "builtin-2", title: "JPEG vs PNG vs WebP vs AVIF: Complete Format Comparison", slug: "jpeg-png-webp-avif-comparison", category: "file-formats", published: true, isBuiltIn: true },
+  { id: "builtin-3", title: "How to Compress Videos Without Losing Quality", slug: "compress-videos-without-losing-quality", category: "video-compression", published: true, isBuiltIn: true },
+  { id: "builtin-4", title: "Understanding Lossy vs Lossless Compression", slug: "lossy-vs-lossless-compression-explained", category: "tutorials", published: true, isBuiltIn: true },
+  { id: "builtin-5", title: "Optimizing Images for Social Media in 2025", slug: "optimize-images-social-media-2025", category: "web-optimization", published: true, isBuiltIn: true },
+  { id: "builtin-6", title: "Audio Compression: MP3 vs WAV vs AAC", slug: "audio-compression-mp3-wav-aac", category: "audio-compression", published: true, isBuiltIn: true },
+  { id: "builtin-7", title: "10 Website Speed Tips Using Image Optimization", slug: "website-speed-image-optimization-tips", category: "web-optimization", published: true, isBuiltIn: true },
+  { id: "builtin-8", title: "GIF Optimization: Reduce Size Without Losing Animation", slug: "gif-optimization-reduce-size", category: "image-compression", published: true, isBuiltIn: true },
+  { id: "builtin-9", title: "What is WebP and Why Should You Use It?", slug: "what-is-webp-why-use-it", category: "file-formats", published: true, isBuiltIn: true },
+  { id: "builtin-10", title: "Video Codec Explained: H.264, H.265, VP9, AV1", slug: "video-codecs-explained", category: "video-compression", published: true, isBuiltIn: true },
+  { id: "builtin-11", title: "Browser-Based vs Server-Side Compression", slug: "browser-vs-server-compression", category: "tutorials", published: true, isBuiltIn: true },
+  { id: "builtin-12", title: "How to Choose the Right Compression Quality", slug: "choose-right-compression-quality", category: "tips-tricks", published: true, isBuiltIn: true },
+  { id: "builtin-13", title: "PNG Compression: Best Practices for Transparency", slug: "png-compression-transparency", category: "image-compression", published: true, isBuiltIn: true },
+  { id: "builtin-14", title: "AVIF: The Next Generation Image Format", slug: "avif-next-generation-format", category: "file-formats", published: true, isBuiltIn: true },
+  { id: "builtin-15", title: "Batch Processing: Compress Multiple Files Efficiently", slug: "batch-processing-multiple-files", category: "tutorials", published: true, isBuiltIn: true },
+  { id: "builtin-16", title: "Image SEO: Alt Text, File Names, and Optimization", slug: "image-seo-alt-text-optimization", category: "web-optimization", published: true, isBuiltIn: true },
+  { id: "builtin-17", title: "How AI Upscaling Works", slug: "how-ai-upscaling-works", category: "tutorials", published: true, isBuiltIn: true },
+  { id: "builtin-18", title: "Compressing Screenshots: Best Formats and Settings", slug: "compressing-screenshots-best-formats", category: "tips-tricks", published: true, isBuiltIn: true },
+  { id: "builtin-19", title: "E-commerce Image Optimization Guide", slug: "ecommerce-image-optimization", category: "web-optimization", published: true, isBuiltIn: true },
+  { id: "builtin-20", title: "Audio for Podcasts: Compression and Quality", slug: "audio-podcasts-compression-quality", category: "audio-compression", published: true, isBuiltIn: true },
+  { id: "builtin-21", title: "Video for Email: Size Limits and Best Practices", slug: "video-for-email-size-limits", category: "video-compression", published: true, isBuiltIn: true },
+  { id: "builtin-22", title: "Core Web Vitals and Image Optimization", slug: "core-web-vitals-image-optimization", category: "web-optimization", published: true, isBuiltIn: true },
+  { id: "builtin-23", title: "Responsive Images: srcset and sizes Explained", slug: "responsive-images-srcset-sizes", category: "tutorials", published: true, isBuiltIn: true },
+  { id: "builtin-24", title: "Converting Between Audio Formats", slug: "converting-audio-formats", category: "audio-compression", published: true, isBuiltIn: true },
+  { id: "builtin-25", title: "Privacy-First File Processing: Why It Matters", slug: "privacy-first-file-processing", category: "tutorials", published: true, isBuiltIn: true },
+  { id: "builtin-26", title: "Understanding Color Profiles: sRGB, Adobe RGB, and Display P3", slug: "understanding-color-profiles", category: "tutorials", published: true, isBuiltIn: true },
+  { id: "builtin-27", title: "How to Reduce Video File Size for YouTube", slug: "reduce-video-size-youtube", category: "video-compression", published: true, isBuiltIn: true },
+  { id: "builtin-28", title: "Image Optimization for WordPress Sites", slug: "image-optimization-wordpress", category: "web-optimization", published: true, isBuiltIn: true },
+  { id: "builtin-29", title: "What is Bit Depth and Why Does It Matter?", slug: "bit-depth-explained", category: "tutorials", published: true, isBuiltIn: true },
+  { id: "builtin-30", title: "Mobile Image Optimization: Best Practices", slug: "mobile-image-optimization", category: "web-optimization", published: true, isBuiltIn: true },
+  { id: "builtin-31", title: "Lossless vs Lossy Audio: When to Use Each", slug: "lossless-vs-lossy-audio", category: "audio-compression", published: true, isBuiltIn: true },
+  { id: "builtin-32", title: "How to Compress 4K Video Without Losing Quality", slug: "compress-4k-video", category: "video-compression", published: true, isBuiltIn: true },
+  { id: "builtin-33", title: "Understanding EXIF Data: What It Is and How to Remove It", slug: "exif-data-explained", category: "tips-tricks", published: true, isBuiltIn: true },
+  { id: "builtin-34", title: "SVG vs PNG: When to Use Vector Graphics", slug: "svg-vs-png-comparison", category: "file-formats", published: true, isBuiltIn: true },
+  { id: "builtin-35", title: "How WebAssembly Enables Browser-Based Compression", slug: "webassembly-browser-compression", category: "tutorials", published: true, isBuiltIn: true },
+  { id: "builtin-36", title: "Optimizing Product Photos for Amazon and eBay", slug: "product-photos-amazon-ebay", category: "web-optimization", published: true, isBuiltIn: true },
+  { id: "builtin-37", title: "Video Bitrate Guide: Finding the Right Settings", slug: "video-bitrate-guide", category: "video-compression", published: true, isBuiltIn: true },
+  { id: "builtin-38", title: "Image Compression for Email: Size Limits by Provider", slug: "image-compression-email", category: "tips-tricks", published: true, isBuiltIn: true },
+  { id: "builtin-39", title: "HDR Images: What They Are and How to Optimize Them", slug: "hdr-images-optimization", category: "image-compression", published: true, isBuiltIn: true },
+  { id: "builtin-40", title: "Audio Normalization: Consistent Volume Across Files", slug: "audio-normalization-guide", category: "audio-compression", published: true, isBuiltIn: true },
+  { id: "builtin-41", title: "Lazy Loading Images: Implementation Guide", slug: "lazy-loading-images-guide", category: "web-optimization", published: true, isBuiltIn: true },
+  { id: "builtin-42", title: "Converting GIF to MP4: Why and How", slug: "converting-gif-to-mp4", category: "file-formats", published: true, isBuiltIn: true },
+  { id: "builtin-43", title: "Image Sprites: Combining Multiple Images", slug: "image-sprites-guide", category: "web-optimization", published: true, isBuiltIn: true },
+  { id: "builtin-44", title: "Compression Artifacts: Types and How to Avoid Them", slug: "compression-artifacts-guide", category: "tips-tricks", published: true, isBuiltIn: true },
+  { id: "builtin-45", title: "HEIF Format: Apple's Modern Image Format", slug: "heif-format-explained", category: "file-formats", published: true, isBuiltIn: true },
+  { id: "builtin-46", title: "Optimizing Images for Retina Displays", slug: "retina-display-optimization", category: "web-optimization", published: true, isBuiltIn: true },
+  { id: "builtin-47", title: "Audio Sample Rate: 44.1kHz vs 48kHz vs 96kHz", slug: "audio-sample-rate-comparison", category: "audio-compression", published: true, isBuiltIn: true },
+  { id: "builtin-48", title: "Thumbnail Generation: Best Practices", slug: "thumbnail-generation-guide", category: "image-compression", published: true, isBuiltIn: true },
+  { id: "builtin-49", title: "Progressive JPEG vs Baseline JPEG", slug: "progressive-vs-baseline-jpeg", category: "file-formats", published: true, isBuiltIn: true },
+  { id: "builtin-50", title: "Complete Guide to Video Container Formats", slug: "video-container-formats-guide", category: "file-formats", published: true, isBuiltIn: true },
+];
+
+// Built-in FAQs count
+const builtInFaqsCount = 55;
 
 const articleCategories = [
   { value: "image-compression", label: "Image Compression" },
@@ -165,18 +223,69 @@ export default function Admin() {
           </div>
         </div>
 
+        {/* Summary Cards */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+          <Card className="p-4">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-emerald-100 dark:bg-emerald-900 rounded-lg">
+                <FileText className="w-5 h-5 text-emerald-600" />
+              </div>
+              <div>
+                <p className="text-2xl font-bold text-slate-900 dark:text-white">{builtInArticles.length}</p>
+                <p className="text-xs text-slate-500">Built-in Articles</p>
+              </div>
+            </div>
+          </Card>
+          <Card className="p-4">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-blue-100 dark:bg-blue-900 rounded-lg">
+                <Database className="w-5 h-5 text-blue-600" />
+              </div>
+              <div>
+                <p className="text-2xl font-bold text-slate-900 dark:text-white">{articles.length}</p>
+                <p className="text-xs text-slate-500">Custom Articles</p>
+              </div>
+            </div>
+          </Card>
+          <Card className="p-4">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-purple-100 dark:bg-purple-900 rounded-lg">
+                <HelpCircle className="w-5 h-5 text-purple-600" />
+              </div>
+              <div>
+                <p className="text-2xl font-bold text-slate-900 dark:text-white">{builtInFaqsCount}</p>
+                <p className="text-xs text-slate-500">Built-in FAQs</p>
+              </div>
+            </div>
+          </Card>
+          <Card className="p-4">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-amber-100 dark:bg-amber-900 rounded-lg">
+                <Database className="w-5 h-5 text-amber-600" />
+              </div>
+              <div>
+                <p className="text-2xl font-bold text-slate-900 dark:text-white">{faqs.length}</p>
+                <p className="text-xs text-slate-500">Custom FAQs</p>
+              </div>
+            </div>
+          </Card>
+        </div>
+
         <Tabs value={activeTab} onValueChange={setActiveTab}>
           <TabsList className="mb-6">
             <TabsTrigger value="articles" className="gap-2">
-              <BookOpen className="w-4 h-4" /> Articles ({articles.length})
+              <BookOpen className="w-4 h-4" /> All Articles ({builtInArticles.length + articles.length})
             </TabsTrigger>
             <TabsTrigger value="faqs" className="gap-2">
-              <HelpCircle className="w-4 h-4" /> FAQs ({faqs.length})
+              <HelpCircle className="w-4 h-4" /> All FAQs ({builtInFaqsCount + faqs.length})
             </TabsTrigger>
           </TabsList>
 
           <TabsContent value="articles">
-            <div className="flex justify-end mb-4">
+            <div className="flex justify-between items-center mb-4">
+              <p className="text-sm text-slate-500">
+                Showing {builtInArticles.length} built-in + {articles.length} custom articles
+              </p>
               <Button onClick={() => { setEditingArticle({}); setShowArticleDialog(true); }} className="bg-emerald-600 hover:bg-emerald-700">
                 <Plus className="w-4 h-4 mr-2" /> New Article
               </Button>
@@ -186,35 +295,69 @@ export default function Admin() {
               <div className="text-center py-8"><Loader2 className="w-6 h-6 animate-spin mx-auto" /></div>
             ) : (
               <div className="space-y-3">
-                {articles.map(article => (
-                  <Card key={article.id} className="p-4 flex items-center justify-between">
-                    <div className="flex-1 min-w-0">
-                      <h3 className="font-medium text-slate-900 dark:text-white truncate">{article.title}</h3>
-                      <p className="text-sm text-slate-500 dark:text-slate-400">
-                        {article.category} • {article.published ? "Published" : "Draft"}
-                      </p>
+                {/* Built-in Articles */}
+                <div className="mb-6">
+                  <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-3 flex items-center gap-2">
+                    <FileText className="w-4 h-4" /> Built-in Articles ({builtInArticles.length})
+                    <Badge variant="outline" className="text-xs">Read-only</Badge>
+                  </h3>
+                  <div className="space-y-2 max-h-[400px] overflow-y-auto pr-2">
+                    {builtInArticles.map(article => (
+                      <Card key={article.id} className="p-3 flex items-center justify-between bg-slate-50 dark:bg-slate-800/50">
+                        <div className="flex-1 min-w-0">
+                          <h4 className="font-medium text-slate-900 dark:text-white truncate text-sm">{article.title}</h4>
+                          <p className="text-xs text-slate-500 dark:text-slate-400">
+                            {article.category} • <span className="text-emerald-600">Published</span>
+                          </p>
+                        </div>
+                        <Badge variant="secondary" className="text-xs">Built-in</Badge>
+                      </Card>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Custom Articles */}
+                <div>
+                  <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-3 flex items-center gap-2">
+                    <Database className="w-4 h-4" /> Custom Articles ({articles.length})
+                    <Badge className="text-xs bg-blue-100 text-blue-700">Editable</Badge>
+                  </h3>
+                  {articles.length > 0 ? (
+                    <div className="space-y-2">
+                      {articles.map(article => (
+                        <Card key={article.id} className="p-3 flex items-center justify-between">
+                          <div className="flex-1 min-w-0">
+                            <h4 className="font-medium text-slate-900 dark:text-white truncate text-sm">{article.title}</h4>
+                            <p className="text-xs text-slate-500 dark:text-slate-400">
+                              {article.category} • {article.published ? <span className="text-emerald-600">Published</span> : <span className="text-amber-600">Draft</span>}
+                            </p>
+                          </div>
+                          <div className="flex gap-2 ml-4">
+                            <Button size="sm" variant="outline" onClick={() => { setEditingArticle(article); setShowArticleDialog(true); }}>
+                              <Pencil className="w-4 h-4" />
+                            </Button>
+                            <Button size="sm" variant="outline" className="text-red-600 hover:text-red-700" onClick={() => {
+                              if (confirm("Delete this article?")) deleteArticleMutation.mutate(article.id);
+                            }}>
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                          </div>
+                        </Card>
+                      ))}
                     </div>
-                    <div className="flex gap-2 ml-4">
-                      <Button size="sm" variant="outline" onClick={() => { setEditingArticle(article); setShowArticleDialog(true); }}>
-                        <Pencil className="w-4 h-4" />
-                      </Button>
-                      <Button size="sm" variant="outline" className="text-red-600 hover:text-red-700" onClick={() => {
-                        if (confirm("Delete this article?")) deleteArticleMutation.mutate(article.id);
-                      }}>
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
-                    </div>
-                  </Card>
-                ))}
-                {articles.length === 0 && (
-                  <p className="text-center py-8 text-slate-500">No articles yet</p>
-                )}
+                  ) : (
+                    <p className="text-center py-4 text-slate-500 text-sm">No custom articles yet. Click "New Article" to create one.</p>
+                  )}
+                </div>
               </div>
             )}
           </TabsContent>
 
           <TabsContent value="faqs">
-            <div className="flex justify-end mb-4">
+            <div className="flex justify-between items-center mb-4">
+              <p className="text-sm text-slate-500">
+                Showing {builtInFaqsCount} built-in + {faqs.length} custom FAQs
+              </p>
               <Button onClick={() => { setEditingFaq({}); setShowFaqDialog(true); }} className="bg-emerald-600 hover:bg-emerald-700">
                 <Plus className="w-4 h-4 mr-2" /> New FAQ
               </Button>
@@ -224,29 +367,52 @@ export default function Admin() {
               <div className="text-center py-8"><Loader2 className="w-6 h-6 animate-spin mx-auto" /></div>
             ) : (
               <div className="space-y-3">
-                {faqs.map(faq => (
-                  <Card key={faq.id} className="p-4 flex items-center justify-between">
-                    <div className="flex-1 min-w-0">
-                      <h3 className="font-medium text-slate-900 dark:text-white truncate">{faq.question}</h3>
+                {/* Built-in FAQs Info */}
+                <Card className="p-4 bg-slate-50 dark:bg-slate-800/50 mb-6">
+                  <div className="flex items-start gap-3">
+                    <HelpCircle className="w-5 h-5 text-purple-600 mt-0.5" />
+                    <div>
+                      <h3 className="font-medium text-slate-900 dark:text-white mb-1">Built-in FAQs ({builtInFaqsCount})</h3>
                       <p className="text-sm text-slate-500 dark:text-slate-400">
-                        {faq.category} • {faq.published ? "Published" : "Draft"}
+                        There are {builtInFaqsCount} built-in FAQ questions across 11 categories (General, File Support, Compression & Quality, Privacy & Security, Features, Pro Plan, Troubleshooting, Formats & Conversion, Technical, Formats & Best Practices, Account & Billing). These are hardcoded and always available on the FAQ page.
                       </p>
                     </div>
-                    <div className="flex gap-2 ml-4">
-                      <Button size="sm" variant="outline" onClick={() => { setEditingFaq(faq); setShowFaqDialog(true); }}>
-                        <Pencil className="w-4 h-4" />
-                      </Button>
-                      <Button size="sm" variant="outline" className="text-red-600 hover:text-red-700" onClick={() => {
-                        if (confirm("Delete this FAQ?")) deleteFaqMutation.mutate(faq.id);
-                      }}>
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
+                  </div>
+                </Card>
+
+                {/* Custom FAQs */}
+                <div>
+                  <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-3 flex items-center gap-2">
+                    <Database className="w-4 h-4" /> Custom FAQs ({faqs.length})
+                    <Badge className="text-xs bg-blue-100 text-blue-700">Editable</Badge>
+                  </h3>
+                  {faqs.length > 0 ? (
+                    <div className="space-y-2">
+                      {faqs.map(faq => (
+                        <Card key={faq.id} className="p-3 flex items-center justify-between">
+                          <div className="flex-1 min-w-0">
+                            <h4 className="font-medium text-slate-900 dark:text-white truncate text-sm">{faq.question}</h4>
+                            <p className="text-xs text-slate-500 dark:text-slate-400">
+                              {faq.category} • {faq.published ? <span className="text-emerald-600">Published</span> : <span className="text-amber-600">Draft</span>}
+                            </p>
+                          </div>
+                          <div className="flex gap-2 ml-4">
+                            <Button size="sm" variant="outline" onClick={() => { setEditingFaq(faq); setShowFaqDialog(true); }}>
+                              <Pencil className="w-4 h-4" />
+                            </Button>
+                            <Button size="sm" variant="outline" className="text-red-600 hover:text-red-700" onClick={() => {
+                              if (confirm("Delete this FAQ?")) deleteFaqMutation.mutate(faq.id);
+                            }}>
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                          </div>
+                        </Card>
+                      ))}
                     </div>
-                  </Card>
-                ))}
-                {faqs.length === 0 && (
-                  <p className="text-center py-8 text-slate-500">No FAQ items yet</p>
-                )}
+                  ) : (
+                    <p className="text-center py-4 text-slate-500 text-sm">No custom FAQs yet. Click "New FAQ" to create one.</p>
+                  )}
+                </div>
               </div>
             )}
           </TabsContent>
