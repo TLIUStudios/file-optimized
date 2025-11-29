@@ -508,49 +508,51 @@ export default function Home() {
           </div>
 
           {/* Images Grid with Drag & Drop */}
-          <DragDropContext onDragEnd={handleDragEnd}>
-            <Droppable droppableId="images" direction="horizontal">
-              {(provided) =>
-            <div
-              {...provided.droppableProps}
-              ref={provided.innerRef}
-              className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-8">
+          <Suspense fallback={<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-8">{images.map((_, i) => <ImageCardSkeleton key={i} />)}</div>}>
+            <DragDropContext onDragEnd={handleDragEnd}>
+              <Droppable droppableId="images" direction="horizontal">
+                {(provided) =>
+              <div
+                {...provided.droppableProps}
+                ref={provided.innerRef}
+                className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-8">
 
-                  {images.map((image, index) =>
-              <Draggable key={image.id} draggableId={image.id} index={index}>
-                      {(provided, snapshot) =>
-                <div
-                  ref={provided.innerRef}
-                  {...provided.draggableProps}
-                  {...provided.dragHandleProps}
-                  style={{
-                    ...provided.draggableProps.style,
-                    opacity: snapshot.isDragging ? 0.8 : 1,
-                    transform: snapshot.isDragging ?
-                    `${provided.draggableProps.style?.transform} scale(1.05)` :
-                    provided.draggableProps.style?.transform
-                  }}>
+                    {images.map((image, index) =>
+                <Draggable key={image.id} draggableId={image.id} index={index}>
+                        {(provided, snapshot) =>
+                  <div
+                    ref={provided.innerRef}
+                    {...provided.draggableProps}
+                    {...provided.dragHandleProps}
+                    style={{
+                      ...provided.draggableProps.style,
+                      opacity: snapshot.isDragging ? 0.8 : 1,
+                      transform: snapshot.isDragging ?
+                      `${provided.draggableProps.style?.transform} scale(1.05)` :
+                      provided.draggableProps.style?.transform
+                    }}>
 
-                          <Suspense fallback={<ImageCardSkeleton />}>
-                            <MediaCard
-                      image={image.file}
-                      onRemove={() => removeImage(image.id)}
-                      onProcessed={(data) => handleImageProcessed(image.id, data)}
-                      onCompare={handleCompare}
-                      autoProcess={!processedImages[image.id] && autoProcessTrigger}
-                      isPro={isPro}
-                      onFilenameUpdate={(newFilename) => handleFilenameUpdate(image.id, newFilename)} />
+                            <Suspense fallback={<ImageCardSkeleton />}>
+                              <MediaCard
+                        image={image.file}
+                        onRemove={() => removeImage(image.id)}
+                        onProcessed={(data) => handleImageProcessed(image.id, data)}
+                        onCompare={handleCompare}
+                        autoProcess={!processedImages[image.id] && autoProcessTrigger}
+                        isPro={isPro}
+                        onFilenameUpdate={(newFilename) => handleFilenameUpdate(image.id, newFilename)} />
 
-                          </Suspense>
-                        </div>
-                }
-                    </Draggable>
-              )}
-                  {provided.placeholder}
-                </div>
-            }
-            </Droppable>
-          </DragDropContext>
+                            </Suspense>
+                          </div>
+                  }
+                      </Draggable>
+                )}
+                    {provided.placeholder}
+                  </div>
+              }
+              </Droppable>
+            </DragDropContext>
+          </Suspense>
         </motion.div>
       }
 
