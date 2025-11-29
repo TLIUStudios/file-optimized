@@ -38,22 +38,6 @@ const competitors = [
     }
   },
   {
-    name: "Squoosh",
-    highlight: false,
-    features: {
-      browserProcessing: true,
-      noUpload: true,
-      freeToUse: true,
-      batchProcessing: false,
-      videoSupport: false,
-      audioSupport: false,
-      aiUpscaling: false,
-      formatConversion: true,
-      noWatermark: true,
-      offlineCapable: true,
-    }
-  },
-  {
     name: "Compressor.io",
     highlight: false,
     features: {
@@ -67,6 +51,22 @@ const competitors = [
       formatConversion: "Limited",
       noWatermark: true,
       offlineCapable: false,
+    }
+  },
+  {
+    name: "Squoosh",
+    highlight: false,
+    features: {
+      browserProcessing: true,
+      noUpload: true,
+      freeToUse: true,
+      batchProcessing: false,
+      videoSupport: false,
+      audioSupport: false,
+      aiUpscaling: false,
+      formatConversion: true,
+      noWatermark: true,
+      offlineCapable: true,
     }
   }
 ];

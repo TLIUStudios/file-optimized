@@ -11,22 +11,32 @@ export default function HeartsEffect() {
     const frameInterval = 1000 / targetFPS;
 
     const createHeart = (x, y, burst = false) => {
-      const count = burst ? 4 : 1;
-      const hearts = ['💕', '💗', '💖', '❤️'];
+      const count = burst ? 5 : 1;
+      const hearts = ['💕', '💗', '💖', '❤️', '💝', '💓'];
       
       for (let i = 0; i < count; i++) {
         heartsRef.current.push({
-          x, y,
-          vx: burst ? (Math.random() - 0.5) * 2 : (Math.random() - 0.5) * 0.3,
-          vy: burst ? -2 - Math.random() * 1.5 : -1 - Math.random() * 0.5,
+          x: x + (burst ? (Math.random() - 0.5) * 40 : 0),
+          y: y,
+          vx: burst ? (Math.random() - 0.5) * 3 : (Math.random() - 0.5) * 0.5,
+          vy: burst ? -3 - Math.random() * 2 : -0.8 - Math.random() * 0.4,
           rotation: Math.random() * 360,
-          rotationSpeed: (Math.random() - 0.5) * 3,
+          rotationSpeed: (Math.random() - 0.5) * 4,
           life: 1,
           heart: hearts[Math.floor(Math.random() * hearts.length)],
-          size: 16 + Math.random() * 10,
+          size: 18 + Math.random() * 14,
+          wobble: Math.random() * Math.PI * 2,
+          wobbleSpeed: 0.05 + Math.random() * 0.05,
         });
       }
     };
+
+    // Create initial hearts
+    for (let i = 0; i < 8; i++) {
+      setTimeout(() => {
+        createHeart(Math.random() * window.innerWidth, window.innerHeight * Math.random());
+      }, i * 200);
+    }
 
     const animate = (currentTime) => {
       const deltaTime = currentTime - lastTime;
@@ -35,22 +45,23 @@ export default function HeartsEffect() {
         lastTime = currentTime - (deltaTime % frameInterval);
 
         heartsRef.current = heartsRef.current.filter(h => {
-          h.x += h.vx;
+          h.wobble += h.wobbleSpeed;
+          h.x += h.vx + Math.sin(h.wobble) * 0.5;
           h.y += h.vy;
-          h.vy += 0.02; // light gravity
+          h.vy += 0.015; // lighter gravity so they float up more
           h.rotation += h.rotationSpeed;
-          h.life -= 0.008;
-          return h.life > 0;
+          h.life -= 0.006;
+          return h.life > 0 && h.y > -50;
         });
 
-        // Keep max 50 hearts for performance
-        if (heartsRef.current.length > 50) {
-          heartsRef.current = heartsRef.current.slice(-50);
+        // Keep max 60 hearts for performance
+        if (heartsRef.current.length > 60) {
+          heartsRef.current = heartsRef.current.slice(-60);
         }
 
         if (containerRef.current) {
           containerRef.current.innerHTML = heartsRef.current.map(h =>
-            `<div style="position:absolute;left:${h.x}px;top:${h.y}px;transform:rotate(${h.rotation}deg);font-size:${h.size}px;opacity:${h.life};filter:drop-shadow(0 0 6px #ff69b4)">${h.heart}</div>`
+            `<div style="position:absolute;left:${h.x}px;top:${h.y}px;transform:rotate(${h.rotation}deg) scale(${0.8 + h.life * 0.2});font-size:${h.size}px;opacity:${h.life};filter:drop-shadow(0 0 8px rgba(255,105,180,0.7));will-change:transform">${h.heart}</div>`
           ).join('');
         }
       }
@@ -60,10 +71,11 @@ export default function HeartsEffect() {
 
     const handleClick = (e) => createHeart(e.clientX, e.clientY, true);
     
-    // Auto spawn hearts
+    // Auto spawn hearts from bottom - more frequent
     const autoHeart = setInterval(() => {
-      createHeart(Math.random() * window.innerWidth, window.innerHeight + 20);
-    }, 1500);
+      const x = Math.random() * window.innerWidth;
+      createHeart(x, window.innerHeight + 30);
+    }, 800);
 
     window.addEventListener('click', handleClick, { passive: true });
     frameRef.current = requestAnimationFrame(animate);
