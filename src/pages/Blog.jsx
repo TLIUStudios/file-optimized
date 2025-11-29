@@ -520,6 +520,106 @@ const builtInArticles = [
     tags: ["containers", "MP4", "MKV", "WebM"],
     read_time: 9,
     published: true
+  },
+  {
+    id: "builtin-51",
+    title: "Image Optimization for Shopify Stores",
+    slug: "image-optimization-shopify",
+    excerpt: "Complete guide to optimizing product images for Shopify to improve loading speed and conversions.",
+    category: "web-optimization",
+    tags: ["Shopify", "e-commerce", "product images"],
+    read_time: 8,
+    published: true
+  },
+  {
+    id: "builtin-52",
+    title: "Understanding Video Resolution: 720p to 8K",
+    slug: "video-resolution-guide",
+    excerpt: "Everything you need to know about video resolutions and when to use each.",
+    category: "video-compression",
+    tags: ["resolution", "720p", "1080p", "4K", "8K"],
+    read_time: 7,
+    published: true
+  },
+  {
+    id: "builtin-53",
+    title: "Opus Audio Format: The Ultimate Guide",
+    slug: "opus-audio-format-guide",
+    excerpt: "Learn about the Opus codec that outperforms MP3 and AAC for voice and music.",
+    category: "audio-compression",
+    tags: ["Opus", "codec", "voice", "music"],
+    read_time: 6,
+    published: true
+  },
+  {
+    id: "builtin-54",
+    title: "Image Optimization for Next.js Applications",
+    slug: "image-optimization-nextjs",
+    excerpt: "Best practices for handling images in Next.js with automatic optimization.",
+    category: "web-optimization",
+    tags: ["Next.js", "React", "web development"],
+    read_time: 9,
+    published: true
+  },
+  {
+    id: "builtin-55",
+    title: "Color Banding: Causes and Solutions",
+    slug: "color-banding-solutions",
+    excerpt: "How to identify and fix color banding issues in compressed images and videos.",
+    category: "tips-tricks",
+    tags: ["banding", "gradients", "quality"],
+    read_time: 6,
+    published: true
+  },
+  {
+    id: "builtin-56",
+    title: "Screen Recording Compression Tips",
+    slug: "screen-recording-compression",
+    excerpt: "Optimize screen recordings for tutorials and presentations without losing clarity.",
+    category: "video-compression",
+    tags: ["screen recording", "tutorials", "presentations"],
+    read_time: 7,
+    published: true
+  },
+  {
+    id: "builtin-57",
+    title: "Instagram Reels: Optimal Video Settings",
+    slug: "instagram-reels-video-settings",
+    excerpt: "Get the best quality for your Instagram Reels with optimal compression settings.",
+    category: "video-compression",
+    tags: ["Instagram", "Reels", "social media"],
+    read_time: 5,
+    published: true
+  },
+  {
+    id: "builtin-58",
+    title: "Bulk Image Resizing Strategies",
+    slug: "bulk-image-resizing-strategies",
+    excerpt: "Efficient methods for resizing hundreds of images while maintaining quality.",
+    category: "tips-tricks",
+    tags: ["batch", "resize", "workflow"],
+    read_time: 6,
+    published: true
+  },
+  {
+    id: "builtin-59",
+    title: "WebM vs MP4: Which Format Should You Choose?",
+    slug: "webm-vs-mp4-comparison",
+    excerpt: "Compare WebM and MP4 video formats for web delivery and browser compatibility.",
+    category: "file-formats",
+    tags: ["WebM", "MP4", "video formats"],
+    read_time: 7,
+    published: true
+  },
+  {
+    id: "builtin-60",
+    title: "Image CDN Best Practices",
+    slug: "image-cdn-best-practices",
+    excerpt: "How to use CDNs effectively for image delivery and optimization.",
+    category: "web-optimization",
+    tags: ["CDN", "delivery", "performance"],
+    read_time: 8,
+    published: true
   }
 ];
 

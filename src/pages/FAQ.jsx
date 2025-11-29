@@ -273,6 +273,68 @@ const defaultFaqs = [
       {
         q: "What happens to my files if I cancel Pro?",
         a: "Nothing happens to your files - they're processed locally and never stored on our servers. After cancellation, you'll revert to free plan limits (50MB file size, 9 files at once)."
+      },
+      {
+        q: "Do you offer discounts for annual billing?",
+        a: "Yes! Annual billing is $100/year compared to $10/month, saving you $20 (17% discount). Select 'Annual' on the pricing page to get this discount."
+      },
+      {
+        q: "Can I switch between monthly and annual billing?",
+        a: "Yes, you can change your billing cycle from the subscription management portal. Changes take effect at the next billing date."
+      }
+    ]
+  },
+  {
+    category: "Mobile & Devices",
+    questions: [
+      {
+        q: "Does File Optimized work on iPhone and iPad?",
+        a: "Yes! File Optimized is fully responsive and works on Safari for iOS. Processing happens in your browser, though larger files may be slower on mobile devices due to hardware limitations."
+      },
+      {
+        q: "Does it work on Android devices?",
+        a: "Yes! File Optimized works on Chrome for Android and other mobile browsers. For best performance, use Chrome browser."
+      },
+      {
+        q: "Why is processing slower on my phone?",
+        a: "Mobile devices have less processing power than desktop computers. For large files or batch processing, we recommend using a laptop or desktop. Closing other apps can also help."
+      },
+      {
+        q: "Can I use File Optimized on a tablet?",
+        a: "Absolutely! Tablets like iPad and Android tablets work great with File Optimized. The interface adapts to your screen size automatically."
+      },
+      {
+        q: "Is there a mobile app?",
+        a: "File Optimized is a web app that works in any browser - no app download needed. You can add it to your home screen for quick access (works like an app!)."
+      }
+    ]
+  },
+  {
+    category: "Advanced Features",
+    questions: [
+      {
+        q: "What is AI upscaling and how does it work?",
+        a: "AI upscaling uses machine learning algorithms to intelligently increase image resolution. Unlike traditional resizing that just interpolates pixels, AI adds realistic detail to create sharper, higher-resolution images."
+      },
+      {
+        q: "How do I create animations from images?",
+        a: "Upload an image, click on settings, and select 'Create Animation'. You can generate effects like zoom, pan, pulse, or rotate. These work best with still images and create engaging motion graphics."
+      },
+      {
+        q: "Can I add captions to videos?",
+        a: "Yes! Our video editor includes AI-powered caption generation. Upload a video, open the editor, and use the caption feature. Captions are burned into the video for universal playback."
+      },
+      {
+        q: "How do I compare original vs compressed?",
+        a: "After processing any file, click the 'Compare' button on the media card. This opens a side-by-side comparison with a slider to examine quality differences in detail."
+      },
+      {
+        q: "Can I edit images before compressing?",
+        a: "Yes! Click the edit button on any image card to access our built-in editor. You can crop, rotate, adjust brightness/contrast, add filters, and more before compression."
+      },
+      {
+        q: "What are visual themes?",
+        a: "Pro users can enable visual themes that add animated effects to the interface - snow, fireworks, hearts, sakura blossoms, and more. Find them in your Profile settings."
       }
     ]
   }

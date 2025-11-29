@@ -68,8 +68,8 @@ const builtInArticles = [
   { id: "builtin-50", title: "Complete Guide to Video Container Formats", slug: "video-container-formats-guide", category: "file-formats", published: true, isBuiltIn: true },
 ];
 
-// Built-in FAQs count
-const builtInFaqsCount = 55;
+// Built-in FAQs count (updated)
+const builtInFaqsCount = 68;
 
 const articleCategories = [
   { value: "image-compression", label: "Image Compression" },
