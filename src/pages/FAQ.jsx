@@ -153,6 +153,64 @@ const defaultFaqs = [
       {
         q: "How do I report a bug or request a feature?",
         a: "Visit our support portal at support.tliu.co to submit bug reports or feature requests. You can also join our Discord community for real-time help and discussions."
+      },
+      {
+        q: "Why does my compressed file look different?",
+        a: "Lossy compression removes some data to achieve smaller file sizes. At quality settings below 70%, you may notice artifacts especially around sharp edges. Try increasing the quality slider (75-85% is usually optimal) or use lossless formats like PNG for critical images."
+      },
+      {
+        q: "Can I recover my original file after compression?",
+        a: "No, compression is a one-way process. File Optimized processes files locally without storing anything, so always keep your original files backed up before compressing if you need them."
+      },
+      {
+        q: "Why is the output file larger than the original?",
+        a: "This can happen when:\n• Converting to a less efficient format (e.g., JPEG to PNG)\n• The original was already heavily optimized\n• Quality setting is higher than the original\n• Adding transparency to non-transparent images\nTry a different format or lower quality setting."
+      }
+    ]
+  },
+  {
+    category: "Formats & Conversion",
+    questions: [
+      {
+        q: "What's the difference between lossy and lossless compression?",
+        a: "Lossy compression (JPEG, MP3) permanently removes some data to achieve smaller files - the original cannot be perfectly reconstructed. Lossless compression (PNG, FLAC) preserves all original data but achieves smaller size reductions. Choose based on whether quality or file size is your priority."
+      },
+      {
+        q: "When should I use WebP vs JPEG?",
+        a: "Use WebP when:\n• Your audience uses modern browsers\n• You want 25-35% smaller files than JPEG\n• You need both photos and transparency\n\nUse JPEG when:\n• Maximum compatibility is needed\n• Editing software requires it\n• Sharing via email or older platforms"
+      },
+      {
+        q: "What is AVIF and should I use it?",
+        a: "AVIF is a next-generation image format offering 50% better compression than JPEG. It supports HDR, wide color gamut, and transparency. Use it for maximum compression when your audience has modern browsers (Chrome, Firefox, Safari 16+). Provide WebP or JPEG fallbacks for older browsers."
+      },
+      {
+        q: "Can I convert GIFs to video?",
+        a: "Yes! Converting GIF to MP4 typically reduces file size by 80-90% while maintaining quality. Use this for longer animations or when embedding in websites. MP4 videos also play more smoothly than GIFs."
+      },
+      {
+        q: "What quality setting should I use?",
+        a: "For most purposes:\n• 75-85%: Best balance of size and quality for web\n• 85-95%: High quality for portfolios/professional work\n• Below 70%: Only when file size is critical\n\nAlways use the Compare feature to check quality before saving."
+      }
+    ]
+  },
+  {
+    category: "Technical",
+    questions: [
+      {
+        q: "How does browser-based processing work?",
+        a: "File Optimized uses WebAssembly and JavaScript APIs to process files directly in your browser. When you upload a file, it's loaded into your browser's memory, processed using optimized algorithms, and the result is kept locally. No data is sent to external servers."
+      },
+      {
+        q: "What browsers are supported?",
+        a: "File Optimized works best on:\n• Chrome 80+ (recommended)\n• Firefox 75+\n• Safari 14+\n• Edge 80+\n\nSome features like AVIF encoding require newer browsers. For best performance, keep your browser updated."
+      },
+      {
+        q: "Why do I need a fast computer for large files?",
+        a: "Browser-based processing uses your device's CPU. Large files (especially 4K videos) require significant processing power. If processing is slow, try:\n• Closing other applications\n• Using a desktop instead of mobile\n• Processing fewer files at once\n• Reducing resolution before compression"
+      },
+      {
+        q: "Is there a file size limit?",
+        a: "Free users can process files up to 50MB each, with 9 files at once. Pro users get 500MB per file and 30 files batch processing. These limits ensure stable performance across different devices."
       }
     ]
   }
