@@ -269,27 +269,28 @@ export default function Home() {
     base44.auth.redirectToLogin(window.location.href);
   };
 
-  const totalOriginalSize = images.reduce((sum, img) => sum + img.file.size, 0);
-  const totalCompressedSize = Object.values(processedImages).reduce(
-    (sum, img) => sum + img.compressedSize, 0
-  );
+  const totalOriginalSize = useMemo(() => 
+    images.reduce((sum, img) => sum + img.file.size, 0), [images]);
+  
+  const totalCompressedSize = useMemo(() => 
+    Object.values(processedImages).reduce((sum, img) => sum + img.compressedSize, 0), [processedImages]);
+  
   const totalSavings = totalOriginalSize - totalCompressedSize;
 
-  // Calculate absolute percentage for display
-  const savingsPercent = totalOriginalSize > 0 ?
-  Math.abs(totalSavings / totalOriginalSize * 100).toFixed(1) :
-  '0';
+  const savingsPercent = useMemo(() => 
+    totalOriginalSize > 0 ? Math.abs(totalSavings / totalOriginalSize * 100).toFixed(1) : '0', 
+    [totalOriginalSize, totalSavings]);
 
-  const unprocessedCount = images.filter((img) => !processedImages[img.id]).length;
+  const unprocessedCount = useMemo(() => 
+    images.filter((img) => !processedImages[img.id]).length, [images, processedImages]);
 
-  // Check if compression actually increased total size
   const sizeIncreased = totalCompressedSize > totalOriginalSize;
 
-  const formatFileSize = (bytes) => {
+  const formatFileSize = useCallback((bytes) => {
     if (bytes < 1024) return bytes + ' B';
     if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
     return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
-  };
+  }, []);
 
   const isPro = userPlan === 'pro';
 
