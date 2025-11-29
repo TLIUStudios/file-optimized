@@ -17,8 +17,6 @@ const motion = { div: memo(({ children, className, initial, animate, transition,
 
 const LoginPromptModal = lazy(() => import("../components/LoginPromptModal"));
 const ProUpgradeModal = lazy(() => import("../components/ProUpgradeModal"));
-
-// Lazy load heavy components for better performance
 const MediaCard = lazy(() => import("../components/upload/MediaCard"));
 const ImageComparisonModal = lazy(() => import("../components/comparison/ImageComparisonModal"));
 
