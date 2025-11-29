@@ -120,14 +120,14 @@ export default function Home() {
     });
   }, []);
 
-  const clearAll = () => {
+  const clearAll = useCallback(() => {
     setImages([]);
     setProcessedImages({});
     setProcessingStartTime(null);
     setEstimatedTimeRemaining(null);
-  };
+  }, []);
 
-  const processAllImages = async () => {
+  const processAllImages = useCallback(async () => {
     const unprocessedImages = images.filter((img) => !processedImages[img.id]);
 
     if (unprocessedImages.length === 0) {
@@ -136,13 +136,12 @@ export default function Home() {
     }
 
     setProcessingStartTime(Date.now());
-    // Initial estimate: 3 seconds per image (can be adjusted)
     setEstimatedTimeRemaining(unprocessedImages.length * 3);
     toast.info(`Processing ${unprocessedImages.length} images...`);
     setAutoProcessTrigger((prev) => prev + 1);
-  };
+  }, [images, processedImages]);
 
-  const downloadAll = async () => {
+  const downloadAll = useCallback(async () => {
     if (Object.keys(processedImages).length === 0) {
       toast.error('No processed images to download');
       return;
@@ -164,7 +163,7 @@ export default function Home() {
     link.click();
 
     toast.success('Zip file downloaded!');
-  };
+  }, [processedImages]);
 
   const handleUpgradeToPro = async () => {
     console.log('🚀 Upgrade clicked from Home page');
