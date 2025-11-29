@@ -620,6 +620,456 @@ const builtInArticles = [
     tags: ["CDN", "delivery", "performance"],
     read_time: 8,
     published: true
+  },
+  {
+    id: "builtin-61",
+    title: "RAW Image Processing for Beginners",
+    slug: "raw-image-processing-beginners",
+    excerpt: "Understanding RAW files and how to convert them to web-friendly formats.",
+    category: "image-compression",
+    tags: ["RAW", "photography", "conversion"],
+    read_time: 9,
+    published: true
+  },
+  {
+    id: "builtin-62",
+    title: "Audio Bitrate Guide: From 128kbps to Lossless",
+    slug: "audio-bitrate-guide",
+    excerpt: "Choose the right audio bitrate for music, podcasts, and voice recordings.",
+    category: "audio-compression",
+    tags: ["bitrate", "quality", "MP3"],
+    read_time: 7,
+    published: true
+  },
+  {
+    id: "builtin-63",
+    title: "Video Streaming Optimization Tips",
+    slug: "video-streaming-optimization",
+    excerpt: "Prepare videos for smooth streaming on websites and platforms.",
+    category: "video-compression",
+    tags: ["streaming", "buffering", "adaptive"],
+    read_time: 8,
+    published: true
+  },
+  {
+    id: "builtin-64",
+    title: "TIFF vs PNG: When to Use Each Format",
+    slug: "tiff-vs-png-comparison",
+    excerpt: "Compare TIFF and PNG for professional and web use cases.",
+    category: "file-formats",
+    tags: ["TIFF", "PNG", "professional"],
+    read_time: 6,
+    published: true
+  },
+  {
+    id: "builtin-65",
+    title: "Optimizing Background Videos for Websites",
+    slug: "background-videos-optimization",
+    excerpt: "Create lightweight background videos that don't slow down your site.",
+    category: "video-compression",
+    tags: ["background", "hero", "web design"],
+    read_time: 7,
+    published: true
+  },
+  {
+    id: "builtin-66",
+    title: "Image Compression for Game Development",
+    slug: "image-compression-game-development",
+    excerpt: "Optimize textures and sprites for faster game loading and performance.",
+    category: "image-compression",
+    tags: ["gaming", "textures", "sprites"],
+    read_time: 10,
+    published: true
+  },
+  {
+    id: "builtin-67",
+    title: "Understanding DPI and PPI for Digital Images",
+    slug: "dpi-ppi-digital-images",
+    excerpt: "Learn the difference between DPI and PPI and when each matters.",
+    category: "tutorials",
+    tags: ["DPI", "PPI", "resolution", "print"],
+    read_time: 6,
+    published: true
+  },
+  {
+    id: "builtin-68",
+    title: "Compressing Medical Images: Best Practices",
+    slug: "compressing-medical-images",
+    excerpt: "Special considerations for compressing DICOM and medical imaging files.",
+    category: "image-compression",
+    tags: ["medical", "DICOM", "healthcare"],
+    read_time: 8,
+    published: true
+  },
+  {
+    id: "builtin-69",
+    title: "Audio for Video: Syncing and Compression",
+    slug: "audio-video-syncing-compression",
+    excerpt: "Best practices for audio tracks in video files to maintain sync and quality.",
+    category: "audio-compression",
+    tags: ["video", "sync", "AAC"],
+    read_time: 7,
+    published: true
+  },
+  {
+    id: "builtin-70",
+    title: "Creating Optimized Favicons and App Icons",
+    slug: "optimized-favicons-app-icons",
+    excerpt: "Generate properly sized and compressed icons for all platforms.",
+    category: "web-optimization",
+    tags: ["favicon", "icons", "PWA"],
+    read_time: 5,
+    published: true
+  },
+  {
+    id: "builtin-71",
+    title: "Video Compression for Discord",
+    slug: "video-compression-discord",
+    excerpt: "Compress videos to meet Discord's 25MB file limit while keeping quality.",
+    category: "video-compression",
+    tags: ["Discord", "sharing", "file limit"],
+    read_time: 5,
+    published: true
+  },
+  {
+    id: "builtin-72",
+    title: "Understanding Image Histograms",
+    slug: "understanding-image-histograms",
+    excerpt: "Read histograms to analyze and improve image exposure before compression.",
+    category: "tutorials",
+    tags: ["histogram", "exposure", "analysis"],
+    read_time: 6,
+    published: true
+  },
+  {
+    id: "builtin-73",
+    title: "Podcast Audio: Recording to Publishing",
+    slug: "podcast-audio-recording-publishing",
+    excerpt: "Complete workflow for podcast audio from recording to optimized distribution.",
+    category: "audio-compression",
+    tags: ["podcast", "recording", "publishing"],
+    read_time: 11,
+    published: true
+  },
+  {
+    id: "builtin-74",
+    title: "Image Optimization for Email Marketing",
+    slug: "image-optimization-email-marketing",
+    excerpt: "Create fast-loading images that display correctly across email clients.",
+    category: "web-optimization",
+    tags: ["email", "marketing", "newsletters"],
+    read_time: 7,
+    published: true
+  },
+  {
+    id: "builtin-75",
+    title: "H.266/VVC: The Next Video Codec",
+    slug: "h266-vvc-next-video-codec",
+    excerpt: "Preview the upcoming H.266 codec and what it means for video compression.",
+    category: "file-formats",
+    tags: ["H.266", "VVC", "future"],
+    read_time: 8,
+    published: true
+  },
+  {
+    id: "builtin-76",
+    title: "Compressing Animated Stickers and Emojis",
+    slug: "compressing-animated-stickers",
+    excerpt: "Optimize animated stickers for messaging apps and social platforms.",
+    category: "image-compression",
+    tags: ["stickers", "emoji", "animation"],
+    read_time: 5,
+    published: true
+  },
+  {
+    id: "builtin-77",
+    title: "Video SEO: Optimizing for Search Engines",
+    slug: "video-seo-optimization",
+    excerpt: "Make your videos discoverable with proper metadata and compression.",
+    category: "web-optimization",
+    tags: ["SEO", "video", "metadata"],
+    read_time: 8,
+    published: true
+  },
+  {
+    id: "builtin-78",
+    title: "Audio Restoration Before Compression",
+    slug: "audio-restoration-before-compression",
+    excerpt: "Clean up audio files before compression for better final quality.",
+    category: "audio-compression",
+    tags: ["restoration", "noise", "cleanup"],
+    read_time: 7,
+    published: true
+  },
+  {
+    id: "builtin-79",
+    title: "Print vs Web Image Optimization",
+    slug: "print-vs-web-image-optimization",
+    excerpt: "Different requirements and best practices for print and web images.",
+    category: "tutorials",
+    tags: ["print", "web", "CMYK", "RGB"],
+    read_time: 8,
+    published: true
+  },
+  {
+    id: "builtin-80",
+    title: "Compressing 360° and VR Videos",
+    slug: "compressing-360-vr-videos",
+    excerpt: "Special considerations for immersive video formats.",
+    category: "video-compression",
+    tags: ["360", "VR", "immersive"],
+    read_time: 9,
+    published: true
+  },
+  {
+    id: "builtin-81",
+    title: "Image Compression for Photographers",
+    slug: "image-compression-photographers",
+    excerpt: "Professional workflow for photographers delivering optimized images.",
+    category: "image-compression",
+    tags: ["photography", "professional", "workflow"],
+    read_time: 10,
+    published: true
+  },
+  {
+    id: "builtin-82",
+    title: "Understanding Audio Channels: Mono, Stereo, Surround",
+    slug: "audio-channels-mono-stereo-surround",
+    excerpt: "When to use different audio channel configurations and their file size impact.",
+    category: "audio-compression",
+    tags: ["stereo", "mono", "surround", "5.1"],
+    read_time: 6,
+    published: true
+  },
+  {
+    id: "builtin-83",
+    title: "Optimizing Product 360° Spin Images",
+    slug: "product-360-spin-images",
+    excerpt: "Create smooth, fast-loading 360° product views for e-commerce.",
+    category: "web-optimization",
+    tags: ["e-commerce", "360", "product"],
+    read_time: 7,
+    published: true
+  },
+  {
+    id: "builtin-84",
+    title: "FLAC vs ALAC: Lossless Audio Showdown",
+    slug: "flac-vs-alac-comparison",
+    excerpt: "Compare the two major lossless audio formats for quality and compatibility.",
+    category: "file-formats",
+    tags: ["FLAC", "ALAC", "lossless"],
+    read_time: 6,
+    published: true
+  },
+  {
+    id: "builtin-85",
+    title: "Optimizing Images for Dark Mode",
+    slug: "optimizing-images-dark-mode",
+    excerpt: "Ensure your images look great in both light and dark modes.",
+    category: "web-optimization",
+    tags: ["dark mode", "design", "accessibility"],
+    read_time: 6,
+    published: true
+  },
+  {
+    id: "builtin-86",
+    title: "Video Compression for Online Courses",
+    slug: "video-compression-online-courses",
+    excerpt: "Optimize educational videos for LMS platforms and online learning.",
+    category: "video-compression",
+    tags: ["education", "LMS", "courses"],
+    read_time: 8,
+    published: true
+  },
+  {
+    id: "builtin-87",
+    title: "Understanding JPEG Quality Levels",
+    slug: "jpeg-quality-levels-explained",
+    excerpt: "What actually happens at each JPEG quality setting from 1-100.",
+    category: "tutorials",
+    tags: ["JPEG", "quality", "compression"],
+    read_time: 7,
+    published: true
+  },
+  {
+    id: "builtin-88",
+    title: "Audio Compression for Mobile Games",
+    slug: "audio-compression-mobile-games",
+    excerpt: "Balance audio quality and file size for mobile game development.",
+    category: "audio-compression",
+    tags: ["gaming", "mobile", "sound effects"],
+    read_time: 7,
+    published: true
+  },
+  {
+    id: "builtin-89",
+    title: "Creating Web-Optimized Infographics",
+    slug: "web-optimized-infographics",
+    excerpt: "Design and export infographics that load fast without losing clarity.",
+    category: "image-compression",
+    tags: ["infographics", "design", "graphics"],
+    read_time: 7,
+    published: true
+  },
+  {
+    id: "builtin-90",
+    title: "Video Encoding Presets Explained",
+    slug: "video-encoding-presets-explained",
+    excerpt: "Understand ultrafast, medium, slow presets and when to use each.",
+    category: "tutorials",
+    tags: ["encoding", "presets", "speed"],
+    read_time: 6,
+    published: true
+  },
+  {
+    id: "builtin-91",
+    title: "Optimizing OG Images for Social Sharing",
+    slug: "og-images-social-sharing",
+    excerpt: "Create perfect Open Graph images that display correctly everywhere.",
+    category: "web-optimization",
+    tags: ["Open Graph", "social", "meta"],
+    read_time: 6,
+    published: true
+  },
+  {
+    id: "builtin-92",
+    title: "Lossless Image Rotation and Cropping",
+    slug: "lossless-rotation-cropping",
+    excerpt: "Edit JPEG images without recompression quality loss.",
+    category: "tips-tricks",
+    tags: ["lossless", "editing", "JPEG"],
+    read_time: 5,
+    published: true
+  },
+  {
+    id: "builtin-93",
+    title: "Audio Formats for Audiobooks",
+    slug: "audio-formats-audiobooks",
+    excerpt: "Best formats and settings for distributing audiobook content.",
+    category: "audio-compression",
+    tags: ["audiobooks", "M4B", "chapters"],
+    read_time: 6,
+    published: true
+  },
+  {
+    id: "builtin-94",
+    title: "Optimizing Images for Notion and Docs",
+    slug: "images-notion-google-docs",
+    excerpt: "Best practices for embedding images in documentation tools.",
+    category: "web-optimization",
+    tags: ["Notion", "Google Docs", "documentation"],
+    read_time: 5,
+    published: true
+  },
+  {
+    id: "builtin-95",
+    title: "Video Compression for Webinars",
+    slug: "video-compression-webinars",
+    excerpt: "Optimize recorded webinars for sharing and archiving.",
+    category: "video-compression",
+    tags: ["webinar", "recording", "sharing"],
+    read_time: 6,
+    published: true
+  },
+  {
+    id: "builtin-96",
+    title: "Understanding PNG Compression Levels",
+    slug: "png-compression-levels",
+    excerpt: "How PNG compression works and optimal settings for different use cases.",
+    category: "tutorials",
+    tags: ["PNG", "compression", "levels"],
+    read_time: 6,
+    published: true
+  },
+  {
+    id: "builtin-97",
+    title: "Audio Compression for Voice Assistants",
+    slug: "audio-compression-voice-assistants",
+    excerpt: "Optimize audio for Alexa Skills, Google Actions, and voice apps.",
+    category: "audio-compression",
+    tags: ["Alexa", "Google", "voice"],
+    read_time: 6,
+    published: true
+  },
+  {
+    id: "builtin-98",
+    title: "Creating Lightweight Hero Images",
+    slug: "lightweight-hero-images",
+    excerpt: "Design impactful hero sections without sacrificing page speed.",
+    category: "web-optimization",
+    tags: ["hero", "landing page", "performance"],
+    read_time: 7,
+    published: true
+  },
+  {
+    id: "builtin-99",
+    title: "Video Thumbnails: Creation and Optimization",
+    slug: "video-thumbnails-creation-optimization",
+    excerpt: "Create eye-catching thumbnails that are optimized for all platforms.",
+    category: "video-compression",
+    tags: ["thumbnails", "YouTube", "click-through"],
+    read_time: 6,
+    published: true
+  },
+  {
+    id: "builtin-100",
+    title: "Batch Converting Image Formats",
+    slug: "batch-converting-image-formats",
+    excerpt: "Efficiently convert hundreds of images between formats at once.",
+    category: "tips-tricks",
+    tags: ["batch", "conversion", "workflow"],
+    read_time: 5,
+    published: true
+  },
+  {
+    id: "builtin-101",
+    title: "Audio Loudness Standards: LUFS Explained",
+    slug: "audio-loudness-lufs-explained",
+    excerpt: "Meet platform loudness requirements for Spotify, YouTube, and more.",
+    category: "audio-compression",
+    tags: ["LUFS", "loudness", "standards"],
+    read_time: 7,
+    published: true
+  },
+  {
+    id: "builtin-102",
+    title: "Image Optimization for AR Filters",
+    slug: "image-optimization-ar-filters",
+    excerpt: "Create lightweight assets for Instagram, Snapchat, and TikTok AR effects.",
+    category: "image-compression",
+    tags: ["AR", "filters", "social media"],
+    read_time: 7,
+    published: true
+  },
+  {
+    id: "builtin-103",
+    title: "Understanding Video Timecodes",
+    slug: "understanding-video-timecodes",
+    excerpt: "How timecodes work and why they matter for video editing and compression.",
+    category: "tutorials",
+    tags: ["timecode", "editing", "professional"],
+    read_time: 6,
+    published: true
+  },
+  {
+    id: "builtin-104",
+    title: "Optimizing Images for Pinterest",
+    slug: "optimizing-images-pinterest",
+    excerpt: "Pinterest-specific image optimization for maximum engagement.",
+    category: "web-optimization",
+    tags: ["Pinterest", "social media", "pins"],
+    read_time: 6,
+    published: true
+  },
+  {
+    id: "builtin-105",
+    title: "Video Compression Myths Debunked",
+    slug: "video-compression-myths-debunked",
+    excerpt: "Common misconceptions about video compression and the truth behind them.",
+    category: "tips-tricks",
+    tags: ["myths", "facts", "video"],
+    read_time: 7,
+    published: true
   }
 ];
 
