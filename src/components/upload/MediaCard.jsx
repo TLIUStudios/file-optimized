@@ -1116,16 +1116,35 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
         return;
       }
 
-      const targetWidth = gifSettings.width;
-      const targetHeight = gifSettings.height;
+      // Calculate target dimensions based on quality setting
+      // Lower quality = smaller dimensions for significant file size reduction
+      let targetWidth = gifSettings.width;
+      let targetHeight = gifSettings.height;
+      
+      // Apply lossy compression via dimension reduction for lower quality settings
+      // Quality 85+ = no resize, 70-84 = 90% size, 50-69 = 75% size, <50 = 60% size
+      let scaleFactor = 1;
+      if (quality < 50) scaleFactor = 0.6;
+      else if (quality < 70) scaleFactor = 0.75;
+      else if (quality < 85) scaleFactor = 0.9;
+      
+      if (scaleFactor < 1) {
+        targetWidth = Math.round(gifSettings.width * scaleFactor);
+        targetHeight = Math.round(gifSettings.height * scaleFactor);
+        // Ensure even dimensions
+        targetWidth = targetWidth % 2 === 0 ? targetWidth : targetWidth - 1;
+        targetHeight = targetHeight % 2 === 0 ? targetHeight : targetHeight - 1;
+      }
+
       const framesToProcess = gifSettings.frames;
       const maxFrames = Math.min(framesToProcess.length, 500);
       const backgroundCanvas = document.createElement('canvas');
-      backgroundCanvas.width = targetWidth;
-      backgroundCanvas.height = targetHeight;
+      backgroundCanvas.width = gifSettings.width;
+      backgroundCanvas.height = gifSettings.height;
       const backgroundCtx = backgroundCanvas.getContext('2d', { alpha: true });
-      backgroundCtx.clearRect(0, 0, targetWidth, targetHeight);
+      backgroundCtx.clearRect(0, 0, gifSettings.width, gifSettings.height);
       const processedFrames = [];
+      
       for (let i = 0; i < maxFrames; i++) {
         const frame = framesToProcess[i];
         if (!frame || !frame.patch || !frame.dims) continue;
@@ -1149,11 +1168,16 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
           backgroundCtx.imageSmoothingEnabled = true;
           backgroundCtx.imageSmoothingQuality = 'high';
           backgroundCtx.drawImage(tempCanvas, frame.dims.left || 0, frame.dims.top || 0);
+          
+          // Create output canvas at target dimensions (may be scaled down)
           const outputCanvas = document.createElement('canvas');
           outputCanvas.width = targetWidth;
           outputCanvas.height = targetHeight;
           const outputCtx = outputCanvas.getContext('2d', { alpha: true });
-          outputCtx.drawImage(backgroundCanvas, 0, 0);
+          outputCtx.imageSmoothingEnabled = true;
+          outputCtx.imageSmoothingQuality = 'high';
+          outputCtx.drawImage(backgroundCanvas, 0, 0, gifSettings.width, gifSettings.height, 0, 0, targetWidth, targetHeight);
+          
           // Preserve original frame timing exactly
           const originalDelay = frame.delay || 10;
           const delayMs = Math.max(20, originalDelay * 10); // Minimum 20ms for smooth playback
@@ -1163,11 +1187,12 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
         }
       }
       if (processedFrames.length === 0) throw new Error('No frames processed');
+      
       const GIF = window.GIF;
-      // Map user quality to gif.js quality (1=best/largest, 10=worst/smallest)
-      // Default 85% -> gif.js 7 for good compression
-      // Lower user quality = higher gif.js number = more compression
-      const gifQuality = Math.max(1, Math.min(10, Math.round((100 - quality) / 10)));
+      // Map user quality to gif.js quality (1=best/largest, 20=worst/smallest)
+      // More aggressive mapping for better compression
+      // quality 100 -> gifQuality 1, quality 50 -> gifQuality 10, quality 0 -> gifQuality 20
+      const gifQuality = Math.max(1, Math.min(20, Math.round(1 + (100 - quality) * 0.19)));
 
       const gif = new GIF({
         workers: 4,
@@ -1176,9 +1201,10 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
         height: targetHeight,
         workerScript: workerBlobUrl,
         repeat: 0,
-        dither: false,
+        dither: quality >= 70 ? false : 'FloydSteinberg', // Use dithering for lower quality to reduce banding
         transparent: null
       });
+      
       for (let i = 0; i < processedFrames.length; i++) {
         const { canvas, delay } = processedFrames[i];
         gif.addFrame(canvas, { delay: delay, copy: true, dispose: 2 });
@@ -1244,7 +1270,8 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
         originalFileFormat: originalFormat
       });
       const savings = ((1 - gifBlob.size / image.size) * 100).toFixed(1);
-      toast.success(`✨ GIF optimized! ${processedFrames.length} frames • Saved ${savings}%`);
+      const resizeNote = scaleFactor < 1 ? ` (${Math.round(scaleFactor * 100)}% size)` : '';
+      toast.success(`✨ GIF optimized! ${processedFrames.length} frames${resizeNote} • Saved ${savings}%`);
     } catch (error) {
       console.error('❌ GIF failed:', error);
       try {
