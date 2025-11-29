@@ -11,6 +11,9 @@ import Blog from './pages/Blog';
 import BlogArticle from './pages/BlogArticle';
 import Features from './pages/Features';
 import Formats from './pages/Formats';
+import AdminContent from './pages/AdminContent';
+import Changelog from './pages/Changelog';
+import Accessibility from './pages/Accessibility';
 import __Layout from './Layout.jsx';
 
 
@@ -28,6 +31,9 @@ export const PAGES = {
     "BlogArticle": BlogArticle,
     "Features": Features,
     "Formats": Formats,
+    "AdminContent": AdminContent,
+    "Changelog": Changelog,
+    "Accessibility": Accessibility,
 }
 
 export const pagesConfig = {
