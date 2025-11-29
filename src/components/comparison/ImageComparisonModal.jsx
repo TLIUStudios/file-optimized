@@ -1168,9 +1168,22 @@ export default function ImageComparisonModal({
                 {!isAnimationVariations && mediaType === 'image' && (
                   <div className="bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg p-4">
                     <p className="text-slate-500 dark:text-slate-400 text-[10px] font-semibold uppercase tracking-wider mb-3">Available Formats</p>
-                    {loadingFormatSizes ? (
+                    {!formatsGenerated && !loadingFormatSizes ? (
+                      <div className="text-center py-4">
+                        <p className="text-xs text-slate-500 dark:text-slate-400 mb-3">Generate all format conversions to compare sizes</p>
+                        <Button
+                          onClick={generateAllFormats}
+                          size="sm"
+                          className="bg-emerald-600 hover:bg-emerald-700 text-white"
+                        >
+                          <RefreshCw className="w-3 h-3 mr-2" />
+                          Generate Formats
+                        </Button>
+                      </div>
+                    ) : loadingFormatSizes ? (
                       <div className="flex items-center justify-center py-4">
                         <RefreshCw className="w-5 h-5 animate-spin text-slate-400" />
+                        <span className="ml-2 text-xs text-slate-500">Generating formats...</span>
                       </div>
                     ) : (
                       <div className="grid grid-cols-2 gap-2">
