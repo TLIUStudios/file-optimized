@@ -1116,7 +1116,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
         return;
       }
 
-      // Keep original dimensions - don't resize
+      // Keep original dimensions
       const targetWidth = gifSettings.width;
       const targetHeight = gifSettings.height;
 
@@ -1128,13 +1128,12 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
       const backgroundCtx = backgroundCanvas.getContext('2d', { alpha: true });
       backgroundCtx.clearRect(0, 0, gifSettings.width, gifSettings.height);
       const processedFrames = [];
-      let prevFrameData = null;
       
       for (let i = 0; i < maxFrames; i++) {
         const frame = framesToProcess[i];
         if (!frame || !frame.patch || !frame.dims) continue;
         
-        setProcessingProgress(5 + (i / maxFrames) * 40);
+        setProcessingProgress(5 + (i / maxFrames) * 45);
         
         try {
           if (i > 0) {
@@ -1150,52 +1149,14 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
           if (!tempCtx) continue;
           const imageData = new ImageData(new Uint8ClampedArray(frame.patch), frame.dims.width, frame.dims.height);
           tempCtx.putImageData(imageData, 0, 0);
-          backgroundCtx.imageSmoothingEnabled = true;
-          backgroundCtx.imageSmoothingQuality = 'high';
           backgroundCtx.drawImage(tempCanvas, frame.dims.left || 0, frame.dims.top || 0);
           
-          // Create output canvas
+          // Create output canvas - just copy the frame as-is
           const outputCanvas = document.createElement('canvas');
           outputCanvas.width = targetWidth;
           outputCanvas.height = targetHeight;
           const outputCtx = outputCanvas.getContext('2d', { alpha: true });
           outputCtx.drawImage(backgroundCanvas, 0, 0);
-          
-          // Apply color quantization for better compression
-          // Reduce colors while maintaining visual quality
-          const outputImageData = outputCtx.getImageData(0, 0, targetWidth, targetHeight);
-          const data = outputImageData.data;
-          
-          // Quantize colors to reduce unique color count (improves LZW compression)
-          // This is similar to what lossy GIF compressors do
-          for (let p = 0; p < data.length; p += 4) {
-            // Round RGB values to reduce color palette (lossy but visually similar)
-            // Rounding to nearest 4 gives good compression with minimal quality loss
-            data[p] = Math.round(data[p] / 4) * 4;     // R
-            data[p + 1] = Math.round(data[p + 1] / 4) * 4; // G
-            data[p + 2] = Math.round(data[p + 2] / 4) * 4; // B
-          }
-          
-          // Transparency optimization: make unchanged pixels transparent
-          // This significantly reduces file size for GIFs with static backgrounds
-          if (prevFrameData && i > 0) {
-            for (let p = 0; p < data.length; p += 4) {
-              // If pixel is very similar to previous frame, make it transparent
-              const dr = Math.abs(data[p] - prevFrameData[p]);
-              const dg = Math.abs(data[p + 1] - prevFrameData[p + 1]);
-              const db = Math.abs(data[p + 2] - prevFrameData[p + 2]);
-              
-              // Threshold of 8 catches near-identical pixels
-              if (dr < 8 && dg < 8 && db < 8) {
-                data[p + 3] = 0; // Make transparent
-              }
-            }
-          }
-          
-          // Store current frame data for next comparison
-          prevFrameData = new Uint8ClampedArray(outputCtx.getImageData(0, 0, targetWidth, targetHeight).data);
-          
-          outputCtx.putImageData(outputImageData, 0, 0);
           
           // Preserve original frame timing
           const originalDelay = frame.delay || 10;
@@ -1207,11 +1168,12 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
       }
       if (processedFrames.length === 0) throw new Error('No frames processed');
       
-      setProcessingProgress(50);
+      setProcessingProgress(55);
       
       const GIF = window.GIF;
       
-      // Quality 10 with 256 colors - good balance
+      // Re-encode with optimized settings
+      // Quality 10 = good color matching, dithering smooths gradients
       const gif = new GIF({
         workers: 4,
         quality: 10,
@@ -1220,22 +1182,21 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
         workerScript: workerBlobUrl,
         repeat: 0,
         dither: 'FloydSteinberg',
-        transparent: 'rgba(0,0,0,0)'
+        transparent: null
       });
       
       for (let i = 0; i < processedFrames.length; i++) {
         const { canvas, delay } = processedFrames[i];
-        // Use dispose: 1 (do not dispose) to work with transparency optimization
-        gif.addFrame(canvas, { delay: delay, copy: true, dispose: i === 0 ? 2 : 1 });
+        gif.addFrame(canvas, { delay: delay, copy: true, dispose: 2 });
       }
       
-      setProcessingProgress(55);
+      setProcessingProgress(60);
       
       const gifBlob = await new Promise((resolve, reject) => {
         const timeout = setTimeout(() => reject(new Error('Timeout')), 300000);
         gif.on('finished', (blob) => { clearTimeout(timeout); resolve(blob); });
         gif.on('error', (error) => { clearTimeout(timeout); reject(error); });
-        gif.on('progress', (p) => setProcessingProgress(55 + p * 40));
+        gif.on('progress', (p) => setProcessingProgress(60 + p * 35));
         gif.render();
       });
       
@@ -1252,7 +1213,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
       setCompressedBlob(finalBlob);
       setProcessed(true);
       setOutputFormat('gif');
-      setOutputGifFrameCount(useCompressed ? processedFrames.length : gifFrameCount);
+      setOutputGifFrameCount(processedFrames.length);
       onProcessed({
         id: image.name,
         originalFile: image,
