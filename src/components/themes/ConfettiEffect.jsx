@@ -3,85 +3,93 @@ import { useEffect, useRef } from "react";
 export default function ConfettiEffect() {
   const containerRef = useRef(null);
   const piecesRef = useRef([]);
+  const frameRef = useRef(0);
 
   useEffect(() => {
-    let frameId;
+    let lastTime = 0;
+    const targetFPS = 30;
+    const frameInterval = 1000 / targetFPS;
+    const colors = ['#ff0844', '#ffd23f', '#00d9ff', '#b337ff', '#00ff88', '#ff3d9e'];
 
+    const createConfetti = (x, y, count = 15) => {
+      for (let i = 0; i < count; i++) {
+        piecesRef.current.push({
+          x, y,
+          color: colors[Math.floor(Math.random() * colors.length)],
+          shape: Math.random() > 0.5 ? 'circle' : 'rect',
+          size: 5 + Math.random() * 5,
+          vx: (Math.random() - 0.5) * 2,
+          vy: -1 - Math.random() * 2,
+          rotation: Math.random() * 360,
+          rv: (Math.random() - 0.5) * 10,
+          life: 1,
+        });
+      }
+    };
+
+    const animate = (currentTime) => {
+      const deltaTime = currentTime - lastTime;
+      
+      if (deltaTime >= frameInterval) {
+        lastTime = currentTime - (deltaTime % frameInterval);
+
+        piecesRef.current = piecesRef.current.filter(p => {
+          p.x += p.vx;
+          p.y += p.vy;
+          p.vy += 0.03; // gravity
+          p.rotation += p.rv;
+          p.life -= 0.008;
+          return p.life > 0 && p.y < 110;
+        });
+
+        // Keep max 100 pieces for performance
+        if (piecesRef.current.length > 100) {
+          piecesRef.current = piecesRef.current.slice(-100);
+        }
+
+        if (containerRef.current) {
+          containerRef.current.innerHTML = piecesRef.current.map(p => {
+            const style = p.shape === 'circle' 
+              ? `width:${p.size}px;height:${p.size}px;border-radius:50%`
+              : `width:${p.size}px;height:${p.size * 0.6}px`;
+            return `<div style="position:absolute;left:${p.x}%;top:${p.y}%;transform:rotate(${p.rotation}deg);${style};background:${p.color};opacity:${p.life};box-shadow:0 0 4px ${p.color}"></div>`;
+          }).join('');
+        }
+      }
+
+      frameRef.current = requestAnimationFrame(animate);
+    };
+
+    // Auto confetti bursts
+    const autoInterval = setInterval(() => {
+      createConfetti(30 + Math.random() * 40, -5, 10);
+    }, 3000);
+
+    // Click to create confetti
     const handleClick = (e) => {
       const x = (e.clientX / window.innerWidth) * 100;
       const y = (e.clientY / window.innerHeight) * 100;
-      const colors = ['#ff0844', '#ffd23f', '#00d9ff', '#b337ff', '#00ff88', '#ff3d9e'];
-      
-      for (let i = 0; i < 22; i++) {
-        const id = Date.now() + Math.random() + i;
-        piecesRef.current.push({
-          id, x, y,
-          color: colors[Math.floor(Math.random() * colors.length)],
-          shape: Math.random() > 0.5 ? 'circle' : 'rect',
-          size: 6 + Math.random() * 6,
-          vx: (Math.random() - 0.5) * 3,
-          vy: -1.5 - Math.random() * 3,
-          rotation: Math.random() * 360,
-          rv: (Math.random() - 0.5) * 15,
-        });
-        setTimeout(() => {
-          const idx = piecesRef.current.findIndex(p => p.id === id);
-          if (idx !== -1) piecesRef.current.splice(idx, 1);
-        }, 2600);
-      }
+      createConfetti(x, y, 18);
     };
 
-    const autoInterval = setInterval(() => {
-      const colors = ['#ff0844', '#ffd23f', '#00d9ff', '#b337ff', '#00ff88', '#ff3d9e'];
-      for (let i = 0; i < 14; i++) {
-        const id = Date.now() + Math.random() + i;
-        piecesRef.current.push({
-          id, x: 40 + Math.random() * 20, y: -5,
-          color: colors[Math.floor(Math.random() * colors.length)],
-          shape: Math.random() > 0.5 ? 'circle' : 'rect',
-          size: 6 + Math.random() * 5,
-          vx: (Math.random() - 0.5) * 1.5,
-          vy: 0.7 + Math.random() * 1.5,
-          rotation: Math.random() * 360,
-          rv: (Math.random() - 0.5) * 12,
-        });
-        setTimeout(() => {
-          const idx = piecesRef.current.findIndex(p => p.id === id);
-          if (idx !== -1) piecesRef.current.splice(idx, 1);
-        }, 3200);
-      }
-    }, 2500);
-
-    const render = () => {
-      piecesRef.current.forEach(piece => {
-        piece.x += piece.vx * 0.07;
-        piece.y += piece.vy * 0.07;
-        piece.vy += 0.035;
-        piece.rotation += piece.rv;
-      });
-
-      if (containerRef.current) {
-        containerRef.current.innerHTML = piecesRef.current.map(p => {
-          const shapeHTML = p.shape === 'circle' 
-            ? `<div style="width:${p.size}px;height:${p.size}px;border-radius:50%;background:${p.color};box-shadow:0 0 6px ${p.color}"></div>`
-            : `<div style="width:${p.size}px;height:${p.size * 0.6}px;background:${p.color};box-shadow:0 0 5px ${p.color}"></div>`;
-          
-          return `<div class="absolute" style="transform:translate3d(${p.x}vw,${p.y}vh,0) rotate(${p.rotation}deg);opacity:${Math.max(0, 1 - p.y / 100)};will-change:transform;contain:layout style paint">${shapeHTML}</div>`;
-        }).join('');
-      }
-
-      frameId = requestAnimationFrame(render);
-    };
+    // Initial burst
+    setTimeout(() => createConfetti(50, 10, 12), 300);
 
     window.addEventListener('click', handleClick, { passive: true });
-    frameId = requestAnimationFrame(render);
+    frameRef.current = requestAnimationFrame(animate);
 
     return () => {
       clearInterval(autoInterval);
       window.removeEventListener('click', handleClick);
-      cancelAnimationFrame(frameId);
+      if (frameRef.current) cancelAnimationFrame(frameRef.current);
     };
   }, []);
 
-  return <div ref={containerRef} className="fixed inset-0 pointer-events-none z-50" style={{ contain: 'layout style paint' }} />;
+  return (
+    <div 
+      ref={containerRef} 
+      className="fixed inset-0 pointer-events-none z-50 overflow-hidden"
+      style={{ contain: 'strict' }}
+    />
+  );
 }
