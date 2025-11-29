@@ -211,6 +211,68 @@ const defaultFaqs = [
       {
         q: "Is there a file size limit?",
         a: "Free users can process files up to 50MB each, with 9 files at once. Pro users get 500MB per file and 30 files batch processing. These limits ensure stable performance across different devices."
+      },
+      {
+        q: "What is WebAssembly and why does it matter?",
+        a: "WebAssembly (WASM) is a technology that allows near-native code execution in browsers. This enables File Optimized to run complex compression algorithms at high speed directly in your browser, without needing server uploads."
+      },
+      {
+        q: "Does File Optimized work on mobile devices?",
+        a: "Yes! File Optimized is fully responsive and works on smartphones and tablets. However, processing speed depends on your device's capabilities. For large files or batch processing, a desktop or laptop will be faster."
+      }
+    ]
+  },
+  {
+    category: "Formats & Best Practices",
+    questions: [
+      {
+        q: "What's the best format for website images?",
+        a: "For most websites in 2025, we recommend:\n• WebP as the primary format (best compression + quality balance)\n• AVIF for cutting-edge browsers (even better compression)\n• JPEG as fallback for older browsers\n• PNG only when you need transparency"
+      },
+      {
+        q: "What resolution should my images be?",
+        a: "For web use:\n• Hero/banner images: 1920px wide maximum\n• Blog/content images: 800-1200px wide\n• Thumbnails: 300-400px wide\n• Product images: 1000-1500px for zoom capability\n\nAlways consider your actual display size and serve appropriately sized images."
+      },
+      {
+        q: "How do I prepare images for printing?",
+        a: "For print, you need higher resolution than web:\n• Minimum 300 DPI at final print size\n• Use JPEG quality 90-100% or lossless PNG\n• Keep original files - don't compress for print\n• Color profile: CMYK for professional printing, sRGB for photo labs"
+      },
+      {
+        q: "What bitrate should I use for videos?",
+        a: "Recommended video bitrates:\n• 720p: 2-5 Mbps\n• 1080p: 5-10 Mbps\n• 4K: 20-40 Mbps\n\nHigher bitrates for fast action content, lower for talking heads or static scenes."
+      },
+      {
+        q: "What's the ideal audio quality for podcasts?",
+        a: "For podcasts and voice content:\n• Format: MP3 or AAC\n• Bitrate: 96-128 kbps (mono) or 128-192 kbps (stereo)\n• Sample rate: 44.1 kHz\n\nHigher bitrates are unnecessary for speech and waste bandwidth."
+      },
+      {
+        q: "Should I strip metadata from my files?",
+        a: "It depends on your use case:\n• Strip for privacy: Removes location, camera info, timestamps\n• Strip for smaller files: Can save a few KB per image\n• Keep for archival: Preserves valuable information\n• Keep for SEO: Some metadata helps search engines"
+      }
+    ]
+  },
+  {
+    category: "Account & Billing",
+    questions: [
+      {
+        q: "How do I upgrade to Pro?",
+        a: "Click the 'Upgrade to Pro' button on the homepage or visit the Pricing page. You'll be taken to a secure Stripe checkout. After payment, your account is instantly upgraded."
+      },
+      {
+        q: "What payment methods do you accept?",
+        a: "We use Stripe for secure payments and accept:\n• Credit/debit cards (Visa, Mastercard, Amex)\n• Apple Pay and Google Pay\n• Many local payment methods depending on your country"
+      },
+      {
+        q: "Can I get a refund?",
+        a: "We offer refunds on a case-by-case basis within 7 days of purchase if you haven't extensively used Pro features. Contact support.tliu.co for refund requests."
+      },
+      {
+        q: "How do I manage my subscription?",
+        a: "Visit your Profile page and click 'Manage Subscription' to access the Stripe customer portal. There you can update payment methods, view invoices, or cancel your subscription."
+      },
+      {
+        q: "What happens to my files if I cancel Pro?",
+        a: "Nothing happens to your files - they're processed locally and never stored on our servers. After cancellation, you'll revert to free plan limits (50MB file size, 9 files at once)."
       }
     ]
   }
