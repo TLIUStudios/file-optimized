@@ -94,7 +94,12 @@ export default function VideoEditor({ isOpen, onClose, videoData, onSave }) {
       setHistory([initialState]);
       setHistoryIndex(0);
       
-      generateThumbnails(video);
+      // Delay thumbnail generation to ensure video is fully ready
+      setTimeout(() => {
+        if (video.readyState >= 2) {
+          generateThumbnails(video);
+        }
+      }, 100);
     };
     
     const handleTimeUpdate = () => {
