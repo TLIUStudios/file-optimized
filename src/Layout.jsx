@@ -308,14 +308,16 @@ export default function Layout({ children }) {
               <h4 className="font-semibold text-slate-900 dark:text-white mb-4 text-sm">Product</h4>
               <ul className="space-y-2">
                 <li><Link to={createPageUrl('Home')} className="text-sm text-slate-500 dark:text-slate-400 hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors">File Optimizer</Link></li>
+                <li><Link to={createPageUrl('Pricing')} className="text-sm text-slate-500 dark:text-slate-400 hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors">Pricing</Link></li>
                 <li><Link to={createPageUrl('HowItWorks')} className="text-sm text-slate-500 dark:text-slate-400 hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors">How It Works</Link></li>
               </ul>
             </div>
             <div>
-              <h4 className="font-semibold text-slate-900 dark:text-white mb-4 text-sm">Company</h4>
+              <h4 className="font-semibold text-slate-900 dark:text-white mb-4 text-sm">Resources</h4>
               <ul className="space-y-2">
+                <li><Link to={createPageUrl('Blog')} className="text-sm text-slate-500 dark:text-slate-400 hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors">Blog</Link></li>
+                <li><Link to={createPageUrl('FAQ')} className="text-sm text-slate-500 dark:text-slate-400 hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors">FAQ</Link></li>
                 <li><Link to={createPageUrl('About')} className="text-sm text-slate-500 dark:text-slate-400 hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors">About Us</Link></li>
-                <li><a href="https://www.tliu.co/" target="_blank" rel="noopener noreferrer" className="text-sm text-slate-500 dark:text-slate-400 hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors">TLIU Studios</a></li>
               </ul>
             </div>
             <div>
@@ -330,7 +332,7 @@ export default function Layout({ children }) {
               <ul className="space-y-2">
                 <li><Link to={createPageUrl('Contact')} className="text-sm text-slate-500 dark:text-slate-400 hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors">Contact Us</Link></li>
                 <li><a href="https://support.tliu.co/" target="_blank" rel="noopener noreferrer" className="text-sm text-slate-500 dark:text-slate-400 hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors">Support Portal</a></li>
-                <li><a href="https://discord.gg/gRJesCUYz9" target="_blank" rel="noopener noreferrer" className="text-sm text-slate-500 dark:text-slate-400 hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors">Discord Community</a></li>
+                <li><a href="https://discord.gg/gRJesCUYz9" target="_blank" rel="noopener noreferrer" className="text-sm text-slate-500 dark:text-slate-400 hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors">Discord</a></li>
               </ul>
             </div>
           </div>
