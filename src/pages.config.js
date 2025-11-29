@@ -9,6 +9,8 @@ import FAQ from './pages/FAQ';
 import Pricing from './pages/Pricing';
 import Blog from './pages/Blog';
 import BlogArticle from './pages/BlogArticle';
+import Features from './pages/Features';
+import Formats from './pages/Formats';
 import __Layout from './Layout.jsx';
 
 
@@ -24,6 +26,8 @@ export const PAGES = {
     "Pricing": Pricing,
     "Blog": Blog,
     "BlogArticle": BlogArticle,
+    "Features": Features,
+    "Formats": Formats,
 }
 
 export const pagesConfig = {
