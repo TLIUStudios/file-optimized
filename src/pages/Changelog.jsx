@@ -5,7 +5,7 @@ import SEOHead from "../components/SEOHead";
 const changelog = [
   {
     version: "2.5.0",
-    date: "November 2024",
+    date: "November 2025",
     type: "feature",
     changes: [
       "Added AVIF format support with aggressive compression",
@@ -18,7 +18,7 @@ const changelog = [
   },
   {
     version: "2.4.0",
-    date: "November 2024",
+    date: "November 2025",
     type: "feature",
     changes: [
       "Video editor with caption overlay support",
@@ -30,7 +30,7 @@ const changelog = [
   },
   {
     version: "2.3.0",
-    date: "October 2024",
+    date: "October 2025",
     type: "feature",
     changes: [
       "Pro Plan with Stripe integration",
@@ -42,7 +42,7 @@ const changelog = [
   },
   {
     version: "2.2.0",
-    date: "October 2024",
+    date: "October 2025",
     type: "improvement",
     changes: [
       "Improved PNG compression using browser-image-compression",
@@ -54,7 +54,7 @@ const changelog = [
   },
   {
     version: "2.1.0",
-    date: "September 2024",
+    date: "September 2025",
     type: "feature",
     changes: [
       "Image upscaling with resolution presets",
@@ -66,7 +66,7 @@ const changelog = [
   },
   {
     version: "2.0.0",
-    date: "September 2024",
+    date: "September 2025",
     type: "feature",
     changes: [
       "Complete UI redesign with modern look",
@@ -79,7 +79,7 @@ const changelog = [
   },
   {
     version: "1.5.0",
-    date: "August 2024",
+    date: "August 2025",
     type: "improvement",
     changes: [
       "WebP format support",
@@ -91,7 +91,7 @@ const changelog = [
   },
   {
     version: "1.0.0",
-    date: "July 2024",
+    date: "July 2025",
     type: "feature",
     changes: [
       "Initial release",
@@ -175,8 +175,8 @@ export default function Changelog() {
         </div>
 
         {/* Footer */}
-        <div className="mt-12 text-center text-slate-500 dark:text-slate-400">
-          <p>Want a feature? <a href="https://discord.gg/gRJesCUYz9" target="_blank" rel="noopener noreferrer" className="text-emerald-600 hover:underline">Join our Discord</a> and let us know!</p>
+        <div className="mt-12 text-center text-slate-500 dark:text-slate-400 space-y-2">
+          <p>Want a feature? <a href="https://support.tliu.co/" target="_blank" rel="noopener noreferrer" className="text-emerald-600 hover:underline">Submit a request</a> or <a href="https://discord.gg/gRJesCUYz9" target="_blank" rel="noopener noreferrer" className="text-emerald-600 hover:underline">join our Discord</a>!</p>
         </div>
       </div>
     </>

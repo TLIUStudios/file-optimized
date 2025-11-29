@@ -8,50 +8,58 @@ import SEOHead from "../components/SEOHead";
 const benchmarks = [
   {
     format: "JPEG → WebP",
-    originalSize: "2.4 MB",
-    compressedSize: "680 KB",
-    savings: 72,
-    time: "0.8s",
-    quality: "Visually Identical"
+    originalSize: "1.8 MB",
+    compressedSize: "520 KB",
+    savings: 71,
+    time: "~1s",
+    quality: "Visually Similar"
   },
   {
     format: "PNG → WebP",
-    originalSize: "4.1 MB",
-    compressedSize: "890 KB",
-    savings: 78,
-    time: "1.2s",
-    quality: "Lossless Option"
-  },
-  {
-    format: "JPEG → AVIF",
-    originalSize: "2.4 MB",
-    compressedSize: "420 KB",
-    savings: 83,
-    time: "2.1s",
+    originalSize: "3.2 MB",
+    compressedSize: "980 KB",
+    savings: 69,
+    time: "~1.5s",
     quality: "Near-Lossless"
   },
   {
+    format: "JPEG → AVIF",
+    originalSize: "1.8 MB",
+    compressedSize: "380 KB",
+    savings: 79,
+    time: "~3s",
+    quality: "Good Quality"
+  },
+  {
     format: "GIF Optimization",
-    originalSize: "8.2 MB",
-    compressedSize: "3.1 MB",
-    savings: 62,
-    time: "4.5s",
-    quality: "All Frames Preserved"
+    originalSize: "5 MB",
+    compressedSize: "2.5 MB",
+    savings: 50,
+    time: "~8s",
+    quality: "Frames Preserved"
   },
   {
     format: "MP4 Compression",
-    originalSize: "45 MB",
-    compressedSize: "12 MB",
-    savings: 73,
-    time: "15s",
-    quality: "1080p Maintained"
+    originalSize: "30 MB",
+    compressedSize: "10 MB",
+    savings: 67,
+    time: "~20s",
+    quality: "720p-1080p"
   },
   {
     format: "MP3 Optimization",
-    originalSize: "8.5 MB",
-    compressedSize: "3.2 MB",
-    savings: 62,
-    time: "2.8s",
+    originalSize: "6 MB",
+    compressedSize: "2.5 MB",
+    savings: 58,
+    time: "~3s",
+    quality: "128kbps Stereo"
+  },
+  {
+    format: "WAV → MP3",
+    originalSize: "40 MB",
+    compressedSize: "4 MB",
+    savings: 90,
+    time: "~4s",
     quality: "128kbps Stereo"
   }
 ];
@@ -80,10 +88,10 @@ const securityFeatures = [
 ];
 
 const speedMetrics = [
-  { label: "Average Image Processing", value: "< 1 second", detail: "For images under 5MB" },
-  { label: "Batch Processing (10 files)", value: "< 8 seconds", detail: "Parallel processing" },
-  { label: "Video Compression (1 min)", value: "< 30 seconds", detail: "Hardware accelerated" },
-  { label: "Initial App Load", value: "< 2 seconds", detail: "Lazy loading enabled" }
+  { label: "Average Image Processing", value: "1-3 seconds", detail: "For images under 5MB" },
+  { label: "Batch Processing (9 files)", value: "~10-15 seconds", detail: "Sequential processing" },
+  { label: "Video Compression (1 min)", value: "~30-60 seconds", detail: "Browser-based encoding" },
+  { label: "Initial App Load", value: "2-4 seconds", detail: "Lazy loading enabled" }
 ];
 
 export default function Performance() {
@@ -159,7 +167,7 @@ export default function Performance() {
               </table>
             </div>
             <div className="px-6 py-3 bg-slate-50 dark:bg-slate-800/50 text-xs text-slate-500 dark:text-slate-400">
-              * Benchmarks performed on M1 MacBook Pro. Results vary by device and file complexity.
+              * Results are estimates and vary significantly based on your device, browser, file complexity, and content type. Actual results may differ.
             </div>
           </div>
         </div>
