@@ -378,7 +378,9 @@ export default function Home() {
 
           <div className="p-6 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm">
             <div className="w-12 h-12 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-xl flex items-center justify-center mb-4 mx-auto">
-              <AnimatedMediaIcon className="w-6 h-6 text-white" />
+              <Suspense fallback={<ImageIcon className="w-6 h-6 text-white" />}>
+                <AnimatedMediaIcon className="w-6 h-6 text-white" />
+              </Suspense>
             </div>
             <h3 className="font-semibold text-slate-900 dark:text-white mb-2">Multiple Formats</h3>
             <p className="text-sm text-slate-600 dark:text-slate-400">
