@@ -193,14 +193,23 @@ export default function FAQ() {
 
   // Combine database FAQs with defaults, grouped by category
   const faqs = (() => {
-    // If we have database FAQs, group them by category
+    // If we have database FAQs, merge with defaults
     if (dbFaqs.length > 0) {
       const grouped = {};
+      // First add all default FAQs
+      defaultFaqs.forEach(cat => {
+        grouped[cat.category] = { category: cat.category, questions: [...cat.questions] };
+      });
+      // Then add/override with database FAQs
       dbFaqs.forEach(faq => {
         if (!grouped[faq.category]) {
           grouped[faq.category] = { category: faq.category, questions: [] };
         }
-        grouped[faq.category].questions.push({ q: faq.question, a: faq.answer });
+        // Add if not already present
+        const exists = grouped[faq.category].questions.some(q => q.q === faq.question);
+        if (!exists) {
+          grouped[faq.category].questions.push({ q: faq.question, a: faq.answer });
+        }
       });
       return Object.values(grouped);
     }
