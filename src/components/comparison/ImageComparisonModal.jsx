@@ -192,139 +192,136 @@ export default function ImageComparisonModal({
     }
   }, [cachedSeoMetadata]);
 
-  // Calculate sizes for all formats AND cache the blobs
+  // Load cached format data if available, otherwise wait for user to generate
   useEffect(() => {
-    const calculateAllFormatSizes = async () => {
-      if (mediaType !== 'image' || isAnimationVariations) {
-        setLoadingFormatSizes(false);
-        return;
-      }
+    if (mediaType !== 'image' || isAnimationVariations) {
+      return;
+    }
 
-      // Use cached data if available
-      if (cachedFormatData) {
-        setAllFormatSizes(cachedFormatData.sizes);
-        setCachedFormatBlobs(cachedFormatData.blobs);
-        setLoadingFormatSizes(false);
-        return;
-      }
+    // Use cached data if available
+    if (cachedFormatData) {
+      setAllFormatSizes(cachedFormatData.sizes);
+      setCachedFormatBlobs(cachedFormatData.blobs);
+      setFormatsGenerated(true);
+    }
+  }, [cachedFormatData, mediaType, isAnimationVariations]);
 
-      setLoadingFormatSizes(true);
-      const sizes = {};
-      const blobs = {};
+  // Generate all format sizes on demand
+  const generateAllFormats = async () => {
+    if (formatsGenerated || loadingFormatSizes) return;
+    
+    setLoadingFormatSizes(true);
+    const sizes = {};
+    const blobs = {};
 
-      try {
-        // Use the actual compressed blob for the current format
-        const currentBlob = await fetch(compressedImage).then(r => r.blob());
-        sizes[fileFormat] = compressedSize;
-        blobs[fileFormat] = currentBlob;
+    try {
+      // Use the actual compressed blob for the current format
+      const currentBlob = await fetch(compressedImage).then(r => r.blob());
+      sizes[fileFormat] = compressedSize;
+      blobs[fileFormat] = currentBlob;
 
-        const img = new Image();
-        img.src = compressedImage;
-        await new Promise((resolve, reject) => {
-          img.onload = resolve;
-          img.onerror = reject;
-        });
+      const img = new Image();
+      img.src = compressedImage;
+      await new Promise((resolve, reject) => {
+        img.onload = resolve;
+        img.onerror = reject;
+      });
 
-        const canvas = document.createElement('canvas');
-        canvas.width = img.width;
-        canvas.height = img.height;
-        const ctx = canvas.getContext('2d');
-        ctx.imageSmoothingEnabled = true;
-        ctx.imageSmoothingQuality = 'high';
-        ctx.drawImage(img, 0, 0);
+      const canvas = document.createElement('canvas');
+      canvas.width = img.width;
+      canvas.height = img.height;
+      const ctx = canvas.getContext('2d');
+      ctx.imageSmoothingEnabled = true;
+      ctx.imageSmoothingQuality = 'high';
+      ctx.drawImage(img, 0, 0);
 
-        // Generate and cache blobs for each format
-        for (const format of ['jpg', 'png', 'webp']) {
-          if (format === fileFormat) continue; // Already have current format
-          
-          try {
-            const mimeType = format === 'jpg' ? 'image/jpeg' : `image/${format}`;
-            
-            let blob;
-            if (format === 'png') {
-              // Use advanced PNG compression
-              try {
-                if (!window.imageCompression) {
-                  await new Promise((resolve, reject) => {
-                    const script = document.createElement('script');
-                    script.src = 'https://cdn.jsdelivr.net/npm/browser-image-compression@2.0.2/dist/browser-image-compression.js';
-                    script.onload = () => setTimeout(() => window.imageCompression ? resolve() : reject(new Error('Library not loaded')), 100);
-                    script.onerror = reject;
-                    document.head.appendChild(script);
-                  });
-                }
-
-                const canvasBlob = await new Promise((resolve) => canvas.toBlob(resolve, 'image/png'));
-                blob = await window.imageCompression(canvasBlob, {
-                  maxSizeMB: Math.max(0.1, (canvasBlob.size / 1024 / 1024) * 0.85),
-                  maxWidthOrHeight: Math.max(canvas.width, canvas.height),
-                  useWebWorker: true,
-                  fileType: 'image/png',
-                  initialQuality: 0.85
-                });
-              } catch (pngError) {
-                console.warn('PNG advanced compression failed, using standard:', pngError);
-                blob = await new Promise((resolve) => canvas.toBlob(resolve, 'image/png', 0.95));
-              }
-            } else {
-              // Standard compression for JPG and WEBP
-              const quality = format === 'jpg' ? 0.85 : 0.90;
-              blob = await new Promise((resolve) => canvas.toBlob(resolve, mimeType, quality));
-            }
-            
-            if (blob) {
-              sizes[format] = blob.size;
-              blobs[format] = blob;
-            }
-          } catch (err) {
-            console.warn(`Failed to generate ${format}:`, err);
-          }
-        }
-
-        // Generate and cache AVIF
-        try {
-          if (!window.imageCompression) {
-            await new Promise((resolve, reject) => {
-              const script = document.createElement('script');
-              script.src = 'https://cdn.jsdelivr.net/npm/browser-image-compression@2.0.2/dist/browser-image-compression.js';
-              script.onload = () => setTimeout(() => window.imageCompression ? resolve() : reject(new Error('Library not loaded')), 100);
-              script.onerror = reject;
-              document.head.appendChild(script);
-            });
-          }
-
-          const response = await fetch(compressedImage);
-          const sourceBlob = await response.blob();
-          
-          const avifBlob = await window.imageCompression(sourceBlob, {
-            maxSizeMB: 50,
-            fileType: 'image/avif',
-            useWebWorker: true,
-            initialQuality: 0.85
-          });
-          
-          sizes.avif = avifBlob.size;
-          blobs.avif = avifBlob;
-        } catch (err) {
-          console.warn('AVIF not supported:', err);
-        }
-
-        setAllFormatSizes(sizes);
-        setCachedFormatBlobs(blobs);
+      // Generate and cache blobs for each format
+      for (const format of ['jpg', 'png', 'webp']) {
+        if (format === fileFormat) continue;
         
-        // Cache the data for reuse
-        if (onFormatDataCached) {
-          onFormatDataCached({ sizes, blobs });
-        }
-      } catch (error) {
-        console.error('Error calculating format sizes:', error);
-      } finally {
-        setLoadingFormatSizes(false);
-      }
-    };
+        try {
+          const mimeType = format === 'jpg' ? 'image/jpeg' : `image/${format}`;
+          
+          let blob;
+          if (format === 'png') {
+            try {
+              if (!window.imageCompression) {
+                await new Promise((resolve, reject) => {
+                  const script = document.createElement('script');
+                  script.src = 'https://cdn.jsdelivr.net/npm/browser-image-compression@2.0.2/dist/browser-image-compression.js';
+                  script.onload = () => setTimeout(() => window.imageCompression ? resolve() : reject(new Error('Library not loaded')), 100);
+                  script.onerror = reject;
+                  document.head.appendChild(script);
+                });
+              }
 
-    calculateAllFormatSizes();
-  }, [compressedImage, mediaType, isAnimationVariations, fileFormat, compressedSize, cachedFormatData, onFormatDataCached]);
+              const canvasBlob = await new Promise((resolve) => canvas.toBlob(resolve, 'image/png'));
+              blob = await window.imageCompression(canvasBlob, {
+                maxSizeMB: Math.max(0.1, (canvasBlob.size / 1024 / 1024) * 0.85),
+                maxWidthOrHeight: Math.max(canvas.width, canvas.height),
+                useWebWorker: true,
+                fileType: 'image/png',
+                initialQuality: 0.85
+              });
+            } catch (pngError) {
+              blob = await new Promise((resolve) => canvas.toBlob(resolve, 'image/png', 0.95));
+            }
+          } else {
+            const quality = format === 'jpg' ? 0.85 : 0.90;
+            blob = await new Promise((resolve) => canvas.toBlob(resolve, mimeType, quality));
+          }
+          
+          if (blob) {
+            sizes[format] = blob.size;
+            blobs[format] = blob;
+          }
+        } catch (err) {
+          console.warn(`Failed to generate ${format}:`, err);
+        }
+      }
+
+      // Generate AVIF
+      try {
+        if (!window.imageCompression) {
+          await new Promise((resolve, reject) => {
+            const script = document.createElement('script');
+            script.src = 'https://cdn.jsdelivr.net/npm/browser-image-compression@2.0.2/dist/browser-image-compression.js';
+            script.onload = () => setTimeout(() => window.imageCompression ? resolve() : reject(new Error('Library not loaded')), 100);
+            script.onerror = reject;
+            document.head.appendChild(script);
+          });
+        }
+
+        const response = await fetch(compressedImage);
+        const sourceBlob = await response.blob();
+        
+        const avifBlob = await window.imageCompression(sourceBlob, {
+          maxSizeMB: 50,
+          fileType: 'image/avif',
+          useWebWorker: true,
+          initialQuality: 0.85
+        });
+        
+        sizes.avif = avifBlob.size;
+        blobs.avif = avifBlob;
+      } catch (err) {
+        console.warn('AVIF not supported:', err);
+      }
+
+      setAllFormatSizes(sizes);
+      setCachedFormatBlobs(blobs);
+      setFormatsGenerated(true);
+      
+      // Cache the data for reuse
+      if (onFormatDataCached) {
+        onFormatDataCached({ sizes, blobs });
+      }
+    } catch (error) {
+      console.error('Error calculating format sizes:', error);
+    } finally {
+      setLoadingFormatSizes(false);
+    }
+  };
 
   const generateMetadata = async () => {
     console.log('🚀 Starting AI metadata generation...');
