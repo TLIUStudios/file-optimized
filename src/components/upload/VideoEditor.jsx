@@ -709,9 +709,9 @@ Rules:
           </Button>
         </div>
 
-        <div className="flex h-[calc(98vh-65px)]">
+        <div className="flex h-[calc(98vh-65px)] overflow-hidden">
           {/* Main Content - Video + Timeline */}
-          <div className="flex-1 flex flex-col bg-slate-900 min-w-0">
+          <div className="flex-1 flex flex-col bg-slate-900 min-w-0 overflow-hidden">
             {/* Video Preview Area */}
             <div className="flex items-center justify-center p-4 h-[45vh]">
               <div className="relative max-w-full h-full flex items-center justify-center">
@@ -1068,7 +1068,7 @@ Rules:
                   </div>
 
                   {/* Right Sidebar - Controls */}
-                  <div className="w-80 border-l border-slate-800 bg-slate-950 overflow-y-auto flex-shrink-0">
+                  <div className="w-72 xl:w-80 border-l border-slate-800 bg-slate-950 overflow-y-auto flex-shrink-0">
                   <Tabs defaultValue="adjust" className="w-full h-full flex flex-col">
                   <TabsList className="w-full grid grid-cols-3 bg-slate-900 border-b border-slate-800">
                   <TabsTrigger value="adjust" className="data-[state=active]:bg-slate-800">Adjust</TabsTrigger>
