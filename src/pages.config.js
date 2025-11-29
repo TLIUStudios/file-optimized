@@ -19,6 +19,7 @@ import Security from './pages/Security';
 import Tutorials from './pages/Tutorials';
 import Glossary from './pages/Glossary';
 import Comparisons from './pages/Comparisons';
+import Performance from './pages/Performance';
 import __Layout from './Layout.jsx';
 
 
@@ -44,6 +45,7 @@ export const PAGES = {
     "Tutorials": Tutorials,
     "Glossary": Glossary,
     "Comparisons": Comparisons,
+    "Performance": Performance,
 }
 
 export const pagesConfig = {

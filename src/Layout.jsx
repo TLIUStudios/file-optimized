@@ -319,6 +319,8 @@ export default function Layout({ children }) {
                 <li><Link to={createPageUrl('HowItWorks')} className="text-sm text-slate-500 dark:text-slate-400 hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors">How It Works</Link></li>
                 <li><Link to={createPageUrl('Features')} className="text-sm text-slate-500 dark:text-slate-400 hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors">Features</Link></li>
                 <li><Link to={createPageUrl('Pricing')} className="text-sm text-slate-500 dark:text-slate-400 hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors">Pricing</Link></li>
+                <li><Link to={createPageUrl('Performance')} className="text-sm text-slate-500 dark:text-slate-400 hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors">Performance</Link></li>
+                <li><Link to={createPageUrl('Changelog')} className="text-sm text-slate-500 dark:text-slate-400 hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors">Changelog</Link></li>
               </ul>
             </div>
             <div>
