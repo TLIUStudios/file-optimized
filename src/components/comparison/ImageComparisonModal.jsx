@@ -1667,7 +1667,7 @@ export default function ImageComparisonModal({
                       <div className="bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg p-4 text-center">
                         <p className="text-xs text-slate-500 dark:text-slate-400 mb-2">Generate AI-powered metadata for this image</p>
                         <Badge variant="outline" className="border-blue-300 text-blue-700 dark:border-blue-700 dark:text-blue-400 mb-3">
-                          ~5-8s estimated
+                          ~5-10s estimated
                         </Badge>
                         <Button
                           size="sm"
