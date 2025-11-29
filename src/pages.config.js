@@ -14,6 +14,9 @@ import Formats from './pages/Formats';
 import AdminContent from './pages/AdminContent';
 import Changelog from './pages/Changelog';
 import Accessibility from './pages/Accessibility';
+import Admin from './pages/Admin';
+import Security from './pages/Security';
+import Tutorials from './pages/Tutorials';
 import __Layout from './Layout.jsx';
 
 
@@ -34,6 +37,9 @@ export const PAGES = {
     "AdminContent": AdminContent,
     "Changelog": Changelog,
     "Accessibility": Accessibility,
+    "Admin": Admin,
+    "Security": Security,
+    "Tutorials": Tutorials,
 }
 
 export const pagesConfig = {

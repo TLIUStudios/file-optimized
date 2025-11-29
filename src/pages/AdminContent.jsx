@@ -33,7 +33,7 @@ const faqCategories = [
   { value: "Troubleshooting", label: "Troubleshooting" }
 ];
 
-export default function AdminContent() {
+export default function Admin() {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("articles");
@@ -140,7 +140,7 @@ export default function AdminContent() {
 
   return (
     <>
-      <SEOHead title="Content Management - Admin" />
+      <SEOHead title="Admin Dashboard - File Optimized" />
       <div className="max-w-6xl mx-auto py-8 px-4">
         <div className="flex items-center justify-between mb-8">
           <div>
