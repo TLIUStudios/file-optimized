@@ -353,100 +353,100 @@ export default function Profile() {
 
               {/* Plan Comparison Grid */}
               <div className="grid grid-cols-2 gap-4 mb-4">
-                {/* Free Plan */}
-                <div className={`p-4 rounded-lg border-2 ${!isPro ? 'border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-950' : 'border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-950'} relative`}>
-                  {!isPro && (
-                    <Badge className="absolute -top-2 left-1/2 -translate-x-1/2 bg-emerald-600 text-white">
-                      Current Plan
-                    </Badge>
-                  )}
-                  <h4 className="text-base font-bold text-slate-900 dark:text-white mb-1 text-center">Free Plan</h4>
-                  <div className="text-center mb-3">
-                    <p className="text-2xl font-bold text-slate-600 dark:text-slate-400">$0</p>
-                    <div className="h-4 mt-1">
-                      <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">
-                        Limited Options
-                      </p>
-                    </div>
-                  </div>
-                  <div className="space-y-2">
-                    <div className="flex items-center gap-2 text-xs text-slate-900 dark:text-white font-medium">
-                      <CheckCircle2 className="w-3.5 h-3.5 text-slate-500 flex-shrink-0" />
-                      <span>50MB file limit</span>
-                    </div>
-                    <div className="flex items-center gap-2 text-xs text-slate-900 dark:text-white font-medium">
-                      <CheckCircle2 className="w-3.5 h-3.5 text-slate-500 flex-shrink-0" />
-                      <span>9 files batch</span>
-                    </div>
-                    <div className="flex items-center gap-2 text-xs text-slate-900 dark:text-white font-medium">
-                      <CheckCircle2 className="w-3.5 h-3.5 text-slate-500 flex-shrink-0" />
-                      <span>Standard processing speed</span>
-                    </div>
-                    <div className="flex items-center gap-2 text-xs text-slate-900 dark:text-white font-medium">
-                      <CheckCircle2 className="w-3.5 h-3.5 text-slate-500 flex-shrink-0" />
-                      <span>No Watermark</span>
-                    </div>
-                    <div className="flex items-center gap-2 text-xs text-slate-900 dark:text-white font-medium">
-                      <CheckCircle2 className="w-3.5 h-3.5 text-slate-500 flex-shrink-0" />
-                      <span>Displays Ads</span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Pro Plan */}
-                <div className={`p-4 rounded-lg border-2 ${isPro ? 'border-amber-500 dark:border-amber-600 bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-950/30 dark:to-orange-950/30' : 'border-amber-500 dark:border-amber-600 bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-950/30 dark:to-orange-950/30'} relative overflow-hidden`}>
-                  {isPro && (
-                    <Badge className="absolute -top-2 left-1/2 -translate-x-1/2 bg-emerald-600 text-white">
-                      Current Plan
-                    </Badge>
-                  )}
-                  {!isPro && (
-                    <div className="absolute top-0 right-0 bg-amber-500 text-white text-[10px] px-2 py-0.5 rounded-bl-lg font-bold">BEST</div>
-                  )}
-                  <h4 className="text-base font-bold text-slate-900 dark:text-white mb-1 text-center flex items-center justify-center gap-1">
-                    <Zap className="w-4 h-4 text-amber-600" />
-                    Pro Plan
-                  </h4>
-                  <div className="text-center mb-3">
-                    <p className="text-2xl font-bold text-amber-600 dark:text-amber-500">
-                      {billingFrequency === 'annual' ? '$100 USD' : '$10 USD'}
-                      <span className="text-sm">{billingFrequency === 'annual' ? '/yr' : '/mo'}</span>
+              {/* Free Plan */}
+              <div className={`p-4 rounded-lg border-2 ${!isPro ? 'border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-950' : 'border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-950'} relative`}>
+                {!isPro && (
+                  <Badge className="absolute -top-2 left-1/2 -translate-x-1/2 bg-emerald-600 text-white">
+                    Current Plan
+                  </Badge>
+                )}
+                <h4 className="text-base font-bold text-slate-900 dark:text-white mb-1 text-center">Free Plan</h4>
+                <div className="text-center mb-3">
+                  <p className="text-2xl font-bold text-slate-600 dark:text-slate-400">$0</p>
+                  <div className="h-4 mt-1">
+                    <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">
+                      Limited Options
                     </p>
-                    <div className="h-4 mt-1">
-                      {billingFrequency === 'annual' && (
-                        <p className="text-xs text-emerald-600 dark:text-emerald-400 font-medium">
-                          Save $20/year vs monthly
-                        </p>
-                      )}
-                    </div>
-                  </div>
-                  <div className="space-y-2">
-                    <div className="flex items-center gap-2 text-xs text-slate-900 dark:text-white font-medium">
-                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 flex-shrink-0" />
-                      <span>500MB files</span>
-                    </div>
-                    <div className="flex items-center gap-2 text-xs text-slate-900 dark:text-white font-medium">
-                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 flex-shrink-0" />
-                      <span>30 files batch</span>
-                    </div>
-                    <div className="flex items-center gap-2 text-xs text-slate-900 dark:text-white font-medium">
-                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 flex-shrink-0" />
-                      <span>Priority processing speed</span>
-                    </div>
-                    <div className="flex items-center gap-2 text-xs text-slate-900 dark:text-white font-medium">
-                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 flex-shrink-0" />
-                      <span>No Watermark</span>
-                    </div>
-                    <div className="flex items-center gap-2 text-xs text-slate-900 dark:text-white font-medium">
-                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 flex-shrink-0" />
-                      <span>No Ads</span>
-                    </div>
-                    <div className="flex items-center gap-2 text-xs text-slate-900 dark:text-white font-medium">
-                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 flex-shrink-0" />
-                      <span>Supports future TLIU projects</span>
-                    </div>
                   </div>
                 </div>
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2 text-xs text-slate-900 dark:text-white font-medium">
+                    <CheckCircle2 className="w-3.5 h-3.5 text-slate-500 flex-shrink-0" />
+                    <span>50MB file limit</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-xs text-slate-900 dark:text-white font-medium">
+                    <CheckCircle2 className="w-3.5 h-3.5 text-slate-500 flex-shrink-0" />
+                    <span>9 files batch</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-xs text-slate-900 dark:text-white font-medium">
+                    <CheckCircle2 className="w-3.5 h-3.5 text-slate-500 flex-shrink-0" />
+                    <span>Standard processing speed</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-xs text-slate-900 dark:text-white font-medium">
+                    <CheckCircle2 className="w-3.5 h-3.5 text-slate-500 flex-shrink-0" />
+                    <span>No Watermark</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-xs text-slate-900 dark:text-white font-medium">
+                    <CheckCircle2 className="w-3.5 h-3.5 text-slate-500 flex-shrink-0" />
+                    <span>Displays Ads</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Pro Plan */}
+              <div className={`p-4 rounded-lg border-2 ${isPro ? 'border-amber-500 dark:border-amber-600 bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-950/30 dark:to-orange-950/30' : 'border-amber-500 dark:border-amber-600 bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-950/30 dark:to-orange-950/30'} relative overflow-hidden`}>
+                {isPro && (
+                  <Badge className="absolute -top-2 left-1/2 -translate-x-1/2 bg-emerald-600 text-white">
+                    Current Plan
+                  </Badge>
+                )}
+                {!isPro && (
+                  <div className="absolute top-0 right-0 bg-amber-500 text-white text-[10px] px-2 py-0.5 rounded-bl-lg font-bold">BEST</div>
+                )}
+                <h4 className="text-base font-bold text-slate-900 dark:text-white mb-1 text-center flex items-center justify-center gap-1">
+                  <Zap className="w-4 h-4 text-amber-600" />
+                  Pro Plan
+                </h4>
+                <div className="text-center mb-3">
+                  <p className="text-2xl font-bold text-amber-600 dark:text-amber-500">
+                    {billingFrequency === 'annual' ? '$100 USD' : '$10 USD'}
+                    <span className="text-sm">{billingFrequency === 'annual' ? '/yr' : '/mo'}</span>
+                  </p>
+                  <div className="h-4 mt-1">
+                    {billingFrequency === 'annual' && (
+                      <p className="text-xs text-emerald-600 dark:text-emerald-400 font-medium">
+                        Save $20/year vs monthly
+                      </p>
+                    )}
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2 text-xs text-slate-900 dark:text-white font-medium">
+                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 flex-shrink-0" />
+                    <span>500MB files</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-xs text-slate-900 dark:text-white font-medium">
+                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 flex-shrink-0" />
+                    <span>30 files batch</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-xs text-slate-900 dark:text-white font-medium">
+                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 flex-shrink-0" />
+                    <span>Priority processing speed</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-xs text-slate-900 dark:text-white font-medium">
+                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 flex-shrink-0" />
+                    <span>No Watermark</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-xs text-slate-900 dark:text-white font-medium">
+                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 flex-shrink-0" />
+                    <span>No Ads</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-xs text-slate-900 dark:text-white font-medium">
+                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 flex-shrink-0" />
+                    <span>Supports future TLIU projects</span>
+                  </div>
+                </div>
+              </div>
               </div>
 
               {/* Pro subscription details */}
