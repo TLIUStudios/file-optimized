@@ -325,6 +325,130 @@ const glossaryTerms = [
   {
     term: "XMP",
     definition: "Extensible Metadata Platform - Adobe's standard for embedding metadata in files, including editing history, keywords, and rights information."
+  },
+  {
+    term: "YUV",
+    definition: "A color space that separates image luminance (Y) from chrominance (U and V). Used internally in most video codecs because it allows more efficient compression."
+  },
+  {
+    term: "Zero-Copy",
+    definition: "A technique where data is transferred without being copied between memory locations, improving performance in file processing operations."
+  },
+  {
+    term: "Aspect Ratio Correction",
+    definition: "Adjusting image dimensions to maintain proper proportions when converting between different aspect ratios, preventing stretching or squashing."
+  },
+  {
+    term: "Batch Encoding",
+    definition: "Processing multiple files through the same encoding settings sequentially or in parallel, saving time for bulk operations."
+  },
+  {
+    term: "Bicubic Interpolation",
+    definition: "A high-quality resampling algorithm that considers 16 surrounding pixels when calculating new pixel values during resizing."
+  },
+  {
+    term: "Chromatic Aberration",
+    definition: "Color fringing at the edges of high-contrast areas in images, caused by lens imperfections. Can be reduced through processing."
+  },
+  {
+    term: "Color Gamut",
+    definition: "The range of colors that can be represented in a particular color space or displayed by a device. Wider gamuts show more colors."
+  },
+  {
+    term: "Constant Rate Factor (CRF)",
+    definition: "A video encoding mode that targets a specific quality level rather than a specific bitrate, allowing variable bitrate to match content complexity."
+  },
+  {
+    term: "Delta Frame",
+    definition: "A video frame that only stores differences from a reference frame, enabling significant compression compared to storing complete frames."
+  },
+  {
+    term: "Entropy Coding",
+    definition: "A lossless compression technique that assigns shorter codes to more frequent patterns and longer codes to rare ones (e.g., Huffman coding)."
+  },
+  {
+    term: "File Header",
+    definition: "The initial portion of a file containing metadata about the file's format, dimensions, compression method, and other technical details."
+  },
+  {
+    term: "Gamma Correction",
+    definition: "Adjusting the brightness values in an image to compensate for non-linear display characteristics and human perception."
+  },
+  {
+    term: "Grayscale",
+    definition: "An image containing only shades of gray, no color information. Often smaller than color images and used for certain applications."
+  },
+  {
+    term: "Hardware Acceleration",
+    definition: "Using specialized hardware (GPU, dedicated encoders) to speed up encoding/decoding operations rather than relying solely on CPU."
+  },
+  {
+    term: "Interlacing",
+    definition: "A video technique displaying odd and even lines in alternating frames. Progressive (non-interlaced) is preferred for modern displays."
+  },
+  {
+    term: "Jitter",
+    definition: "Variation in delivery timing of video frames or audio samples, which can cause playback issues if not handled properly."
+  },
+  {
+    term: "Lanczos Resampling",
+    definition: "A high-quality interpolation algorithm for resizing images that produces sharper results than bicubic, at the cost of more processing."
+  },
+  {
+    term: "Level (Video)",
+    definition: "A set of constraints defining maximum resolution, frame rate, and bitrate for a video codec profile, ensuring compatibility."
+  },
+  {
+    term: "Macroblock",
+    definition: "A unit of video compression typically 16x16 pixels. Video codecs compress and process video in these blocks."
+  },
+  {
+    term: "Motion Compensation",
+    definition: "A video compression technique that describes how pixels move between frames rather than storing each frame completely."
+  },
+  {
+    term: "Motion Estimation",
+    definition: "The process of finding matching regions between video frames to enable efficient motion-compensated compression."
+  },
+  {
+    term: "Native Resolution",
+    definition: "The actual pixel dimensions of an image or video before any scaling. Displaying at native resolution provides the sharpest image."
+  },
+  {
+    term: "Pixel Aspect Ratio",
+    definition: "The shape of individual pixels. Square pixels (1:1) are standard, but some formats use non-square pixels requiring correction."
+  },
+  {
+    term: "Profile (Video)",
+    definition: "A subset of codec features defining compatibility. Higher profiles offer more features but require more capable decoders."
+  },
+  {
+    term: "SSIM",
+    definition: "Structural Similarity Index - A metric measuring perceived quality by comparing structural information between original and compressed images."
+  },
+  {
+    term: "Subpixel Rendering",
+    definition: "A technique using individual RGB subpixels to increase apparent resolution, commonly used for text rendering on LCD displays."
+  },
+  {
+    term: "Two-Pass Encoding",
+    definition: "A video encoding method where the first pass analyzes content and the second pass uses that information for optimal quality distribution."
+  },
+  {
+    term: "VBV Buffer",
+    definition: "Video Buffering Verifier - A model ensuring encoded video can be decoded smoothly without buffer overflow or underflow."
+  },
+  {
+    term: "Vorbis",
+    definition: "An open-source audio codec commonly used in WebM videos and Ogg containers. Royalty-free alternative to MP3 and AAC."
+  },
+  {
+    term: "Wavelet Compression",
+    definition: "A compression technique using mathematical wavelets to analyze and compress images. Used in JPEG 2000 and some scientific imaging."
+  },
+  {
+    term: "White Balance",
+    definition: "Adjusting color temperature in images to ensure white objects appear truly white under different lighting conditions."
   }
 ];
 

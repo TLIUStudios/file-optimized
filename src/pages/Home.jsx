@@ -1,4 +1,4 @@
-import { useState, lazy, Suspense, useEffect, useMemo, useCallback, memo } from "react";
+import { useState, lazy, Suspense, useEffect, useMemo, useCallback, memo, startTransition } from "react";
 import { Button } from "@/components/ui/button";
 import { Download, Trash2, Sparkles, Shield, Zap, Image as ImageIcon, FolderPlus } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -65,11 +65,13 @@ export default function Home() {
   }, []);
 
   const handleFilesSelected = useCallback((files) => {
-    const newFiles = Array.from(files).map((file) => ({
-      id: `${file.name}-${Date.now()}-${Math.random()}`,
-      file
-    }));
-    setImages((prev) => [...prev, ...newFiles]);
+    startTransition(() => {
+      const newFiles = Array.from(files).map((file) => ({
+        id: `${file.name}-${Date.now()}-${Math.random()}`,
+        file
+      }));
+      setImages((prev) => [...prev, ...newFiles]);
+    });
   }, []);
 
   const handleDragEnd = useCallback((result) => {
