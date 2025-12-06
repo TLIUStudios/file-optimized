@@ -4,13 +4,19 @@ import { MessageCircle, X, Send, Loader2, ExternalLink } from "lucide-react";
 import { base44 } from "@/api/base44Client";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 export default function ChatSupport() {
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState([
     {
       role: "assistant",
-      content: "Hi! I'm your AI assistant for File Optimized. I can help you with:\n\n• How to compress images, videos, and audio\n• Understanding file formats and conversions\n• Troubleshooting issues\n• Pro plan features and pricing\n\nWhat can I help you with today?"
+      content: "Hola! I'm your AI assistant for File Optimized. I can help you with:\n\n• How to compress images, videos, and audio.\n• Understanding file formats and conversions.\n• Troubleshooting issues.\n• Pro plan features and pricing.\n• ... And more!\n\nWhat can I help you with today?"
     }
   ]);
   const [input, setInput] = useState("");
@@ -87,7 +93,7 @@ Provide a helpful, accurate, and concise response. If the question is about tech
   };
 
   return (
-    <>
+    <TooltipProvider>
       {/* Floating Chat Button */}
       <AnimatePresence>
         {!isOpen && (
@@ -97,13 +103,22 @@ Provide a helpful, accurate, and concise response. If the question is about tech
             exit={{ scale: 0, opacity: 0 }}
             className="fixed bottom-6 right-6 z-50"
           >
-            <Button
-              onClick={() => setIsOpen(true)}
-              className="h-14 w-14 rounded-full bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 shadow-lg hover:shadow-xl transition-all"
-              size="icon"
-            >
-              <MessageCircle className="w-6 h-6 text-white" />
-            </Button>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  onClick={() => setIsOpen(true)}
+                  className="h-14 w-14 rounded-full bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 shadow-lg hover:shadow-xl transition-all relative"
+                  size="icon"
+                >
+                  <MessageCircle className="w-6 h-6 text-white" />
+                  {/* Pulse animation */}
+                  <span className="absolute inset-0 rounded-full bg-emerald-400 animate-ping opacity-20" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side="left" className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-lg">
+                <p className="text-sm font-medium">Need help? Ask me anything.</p>
+              </TooltipContent>
+            </Tooltip>
           </motion.div>
         )}
       </AnimatePresence>
@@ -124,8 +139,8 @@ Provide a helpful, accurate, and concise response. If the question is about tech
                   <MessageCircle className="w-5 h-5 text-white" />
                 </div>
                 <div>
-                  <h3 className="text-white font-semibold text-sm">AI Support</h3>
-                  <p className="text-emerald-100 text-xs">Always here to help</p>
+                  <h3 className="text-white font-semibold text-sm">TLIU AI Assistant</h3>
+                  <p className="text-emerald-100 text-xs">We're here for you!</p>
                 </div>
               </div>
               <Button
@@ -173,14 +188,18 @@ Provide a helpful, accurate, and concise response. If the question is about tech
 
             {/* Human Support Link */}
             <div className="px-4 pb-2">
-              <a
-                href="https://support.tliu.co"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="block text-center text-xs text-slate-500 dark:text-slate-400 hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors"
-              >
-                Need human support? Visit support.tliu.co <ExternalLink className="w-3 h-3 inline" />
-              </a>
+              <p className="text-center text-xs text-slate-500 dark:text-slate-400">
+                Need human support? Visit{' '}
+                <a
+                  href="https://support.tliu.co"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 dark:hover:text-emerald-300 underline transition-colors"
+                >
+                  support.tliu.co
+                </a>{' '}
+                <ExternalLink className="w-3 h-3 inline" />
+              </p>
             </div>
 
             {/* Input */}
@@ -213,6 +232,6 @@ Provide a helpful, accurate, and concise response. If the question is about tech
           </motion.div>
         )}
       </AnimatePresence>
-    </>
+    </TooltipProvider>
   );
 }
