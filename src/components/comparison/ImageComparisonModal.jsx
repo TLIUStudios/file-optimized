@@ -944,9 +944,9 @@ export default function ImageComparisonModal({
           </div>
         </div>
 
-        <div className="flex flex-col lg:flex-row h-full overflow-hidden pt-[60px]">
+        <div className="flex flex-col lg:flex-row h-full pt-[60px]">
           {/* Left Side - Media Display */}
-          <div className="flex-1 relative overflow-hidden flex flex-col min-h-0">
+          <div className="flex-1 relative flex flex-col">
             {isAnimationVariations ? (
               // Animation Variations Grid (2x2)
               <div className="relative w-full h-full bg-slate-100 dark:bg-slate-900 flex items-center justify-center p-4">
