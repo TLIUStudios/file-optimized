@@ -139,7 +139,7 @@ Provide a helpful, accurate, and concise response. If the question is about tech
                 sideOffset={16}
                 className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-lg"
               >
-                <p className="text-sm font-medium">Need help? Ask me anything.</p>
+                <p className="text-sm font-medium text-slate-900 dark:text-white">Need help? Ask me anything.</p>
               </TooltipContent>
             </Tooltip>
           </motion.div>
