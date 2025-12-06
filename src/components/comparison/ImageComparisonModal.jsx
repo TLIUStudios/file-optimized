@@ -964,11 +964,11 @@ export default function ImageComparisonModal({
               </div>
             ) : mediaType === 'image' ? (
               // Original image comparison view
-              <>
-                <div
-                  ref={containerRef}
-                  className="flex-1 relative w-full bg-slate-100 dark:bg-slate-900 select-none flex items-center justify-center overflow-hidden py-4"
-                >
+              <div
+                ref={containerRef}
+                className="flex-1 relative w-full bg-slate-100 dark:bg-slate-900 select-none flex items-center justify-center overflow-hidden"
+              >
+                <div className="relative w-full h-full flex items-center justify-center py-4">
                   <div
                     ref={imageContainerRef}
                     className="relative"
@@ -1027,6 +1027,7 @@ export default function ImageComparisonModal({
                     </div>
                   </div>
                 </div>
+              </div>
 
                 <div className="h-16 w-full flex items-center justify-between px-6 bg-slate-100/80 dark:bg-slate-900/80 backdrop-blur-sm border-t border-slate-200 dark:border-slate-800">
                   <div className="flex flex-col gap-1">
