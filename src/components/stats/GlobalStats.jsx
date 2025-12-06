@@ -46,11 +46,11 @@ export default function GlobalStats() {
 
           <div className="flex items-center gap-24">
             <div className="text-right">
-              <div className="text-base font-bold h-6 w-20 bg-white/20 rounded animate-pulse"></div>
+              <div className="text-base font-bold opacity-0">0</div>
               <div className="text-[10px] text-emerald-100">Space Saved</div>
             </div>
             <div className="text-right">
-              <div className="text-base font-bold h-6 w-16 bg-white/20 rounded animate-pulse"></div>
+              <div className="text-base font-bold opacity-0">0</div>
               <div className="text-[10px] text-emerald-100">Files</div>
             </div>
           </div>
