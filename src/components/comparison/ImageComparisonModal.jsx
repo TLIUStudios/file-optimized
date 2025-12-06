@@ -574,36 +574,56 @@ export default function ImageComparisonModal({
     if (format === selectedFormat && previewFormat === format) {
       return; // Already on this format
     }
-    
+
     setIsConverting(true);
     setSelectedFormat(format);
-    
+
     try {
       if (mediaType === 'image' && !isAnimationVariations) {
         // Use cached blob if available
         const cachedBlob = cachedFormatBlobs[format];
-        
+
         if (cachedBlob) {
           setConvertedBlob(cachedBlob);
           setPreviewSize(cachedBlob.size);
           setPreviewFormat(format);
-          
+
           const sizeDiff = cachedBlob.size - originalSize;
           const percentChange = ((sizeDiff / originalSize) * 100).toFixed(1);
-          
+
           if (cachedBlob.size > originalSize) {
             toast.info(`${format.toUpperCase()}: ${formatFileSize(cachedBlob.size)} (+${percentChange}% larger)`);
           } else {
             toast.success(`${format.toUpperCase()}: ${formatFileSize(cachedBlob.size)} (${Math.abs(percentChange)}% smaller)`);
           }
-          
+
           setIsConverting(false);
           return;
         }
-        
-        // If not cached, shouldn't happen but handle gracefully
-        toast.warning('Format not ready, please wait...');
-        setSelectedFormat(previewFormat);
+
+        // If not cached, auto-generate all formats
+        if (!formatsGenerated && !loadingFormatSizes) {
+          toast.info('Generating formats...');
+          await generateAllFormats();
+          // After generation, try again
+          const newCachedBlob = cachedFormatBlobs[format];
+          if (newCachedBlob) {
+            setConvertedBlob(newCachedBlob);
+            setPreviewSize(newCachedBlob.size);
+            setPreviewFormat(format);
+
+            const sizeDiff = newCachedBlob.size - originalSize;
+            const percentChange = ((sizeDiff / originalSize) * 100).toFixed(1);
+
+            if (newCachedBlob.size > originalSize) {
+              toast.info(`${format.toUpperCase()}: ${formatFileSize(newCachedBlob.size)} (+${percentChange}% larger)`);
+            } else {
+              toast.success(`${format.toUpperCase()}: ${formatFileSize(newCachedBlob.size)} (${Math.abs(percentChange)}% smaller)`);
+            }
+          }
+        } else {
+          setSelectedFormat(previewFormat);
+        }
       } else {
         setPreviewFormat(format);
       }
@@ -847,47 +867,47 @@ export default function ImageComparisonModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-[98vw] w-[98vw] h-[98vh] p-0 bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-800 [&>button]:hidden overflow-hidden">
+      <DialogContent className="max-w-[98vw] w-[98vw] h-[98vh] max-h-[98vh] p-0 bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-800 [&>button]:hidden overflow-hidden">
         {/* Top Bar */}
-        <div className="absolute top-0 left-0 right-0 z-[100] flex items-center justify-between px-4 py-3 bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm border-b border-slate-200 dark:border-slate-800">
-          <div className="flex items-center gap-3">
+        <div className="absolute top-0 left-0 right-0 z-[100] flex items-center justify-between px-2 sm:px-4 py-2 sm:py-3 bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm border-b border-slate-200 dark:border-slate-800">
+          <div className="flex items-center gap-1 sm:gap-3">
             {mediaType === 'image' && !isAnimationVariations && (
               <>
                 <Button
                   variant="secondary"
                   size="icon"
                   onClick={handleZoomIn}
-                  className="h-9 w-9 bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700"
+                  className="h-7 w-7 sm:h-9 sm:w-9 bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700"
                 >
-                  <ZoomIn className="w-4 h-4" />
+                  <ZoomIn className="w-3 h-3 sm:w-4 sm:h-4" />
                 </Button>
                 <Button
                   variant="secondary"
                   size="icon"
                   onClick={handleZoomOut}
-                  className="h-9 w-9 bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700"
+                  className="h-7 w-7 sm:h-9 sm:w-9 bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700"
                 >
-                  <ZoomOut className="w-4 h-4" />
+                  <ZoomOut className="w-3 h-3 sm:w-4 sm:h-4" />
                 </Button>
                 <Button
                   variant="secondary"
                   size="icon"
                   onClick={handleResetZoom}
-                  className="h-9 w-9 bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700"
+                  className="h-7 w-7 sm:h-9 sm:w-9 bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700"
                 >
-                  <Maximize2 className="w-4 h-4" />
+                  <Maximize2 className="w-3 h-3 sm:w-4 sm:h-4" />
                 </Button>
-                <div className="bg-white dark:bg-slate-800 rounded-md px-3 h-9 flex items-center text-xs text-slate-900 dark:text-white font-medium border border-slate-200 dark:border-slate-700">
+                <div className="bg-white dark:bg-slate-800 rounded-md px-2 sm:px-3 h-7 sm:h-9 flex items-center text-[10px] sm:text-xs text-slate-900 dark:text-white font-medium border border-slate-200 dark:border-slate-700">
                   {(zoom * 100).toFixed(0)}%
                 </div>
               </>
             )}
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1 sm:gap-2">
             {/* Format Selector Buttons */}
             {!isAnimationVariations && (
-              <div className="flex items-center gap-1 bg-white dark:bg-slate-800 rounded-md border border-slate-200 dark:border-slate-700 p-1">
+              <div className="flex items-center gap-0.5 sm:gap-1 bg-white dark:bg-slate-800 rounded-md border border-slate-200 dark:border-slate-700 p-0.5 sm:p-1">
                 {availableFormats.map((fmt) => (
                   <Button
                     key={fmt}
@@ -896,7 +916,7 @@ export default function ImageComparisonModal({
                     size="sm"
                     disabled={isConverting}
                     className={cn(
-                      "h-8 px-3 text-xs transition-all",
+                      "h-7 px-2 sm:h-8 sm:px-3 text-[10px] sm:text-xs transition-all",
                       selectedFormat === fmt 
                         ? "bg-emerald-600 hover:bg-emerald-700 text-white" 
                         : "hover:bg-slate-100 dark:hover:bg-slate-700"
@@ -911,40 +931,40 @@ export default function ImageComparisonModal({
                 ))}
               </div>
             )}
-            
+
             {/* Download Button */}
             <Button
               onClick={() => downloadMedia()}
-              className="bg-emerald-600 hover:bg-emerald-700 text-white h-8 px-4 text-xs font-semibold"
+              className="bg-emerald-600 hover:bg-emerald-700 text-white h-7 px-2 sm:h-8 sm:px-4 text-[10px] sm:text-xs font-semibold"
             >
-              <DownloadIcon className="w-3.5 h-3.5 mr-1.5" />
-              Download
+              <DownloadIcon className="w-3 h-3 sm:w-3.5 sm:h-3.5 sm:mr-1.5" />
+              <span className="hidden sm:inline">Download</span>
             </Button>
-            
+
             {/* Download All Formats as ZIP */}
             {mediaType === 'image' && !isAnimationVariations && (
               <Button
                 onClick={downloadAllImageFormatsAsZip}
                 variant="outline"
-                className="h-8 px-3 text-xs"
+                className="h-7 px-2 sm:h-8 sm:px-3 text-[10px] sm:text-xs"
               >
-                <DownloadIcon className="w-3 h-3 mr-1" />
-                .ZIP
+                <DownloadIcon className="w-3 h-3 sm:mr-1" />
+                <span className="hidden sm:inline">.ZIP</span>
               </Button>
             )}
-            
+
             <Button
               variant="ghost"
               size="icon"
               onClick={onClose}
-              className="h-9 w-9 hover:bg-red-600 hover:text-white rounded-lg transition-colors"
+              className="h-7 w-7 sm:h-9 sm:w-9 hover:bg-red-600 hover:text-white rounded-lg transition-colors"
             >
-              <X className="w-5 h-5" />
+              <X className="w-4 h-4 sm:w-5 sm:h-5" />
             </Button>
           </div>
         </div>
 
-        <div className="flex flex-col lg:flex-row h-full overflow-hidden pt-[60px]">
+        <div className="flex flex-col lg:flex-row h-full overflow-hidden pt-[52px] sm:pt-[60px]">
           {/* Left Side - Media Display */}
           <div className="flex-1 relative overflow-hidden flex flex-col min-h-0">
             {isAnimationVariations ? (
@@ -1137,13 +1157,13 @@ export default function ImageComparisonModal({
           </div>
 
           {/* Right Panel */}
-          <div className="w-full lg:w-[360px] xl:w-[400px] bg-white dark:bg-slate-900 border-t lg:border-t-0 lg:border-l border-slate-200 dark:border-slate-800 flex flex-col overflow-y-auto">
-            <div className="p-5 space-y-4">
+          <div className="w-full lg:w-[320px] xl:w-[360px] 2xl:w-[400px] bg-white dark:bg-slate-900 border-t lg:border-t-0 lg:border-l border-slate-200 dark:border-slate-800 flex flex-col overflow-y-auto">
+            <div className="p-3 sm:p-4 lg:p-5 space-y-3 sm:space-y-4">
               <div>
-                <h2 className="text-slate-900 dark:text-white text-sm font-bold mb-1 break-words line-clamp-2">
+                <h2 className="text-slate-900 dark:text-white text-xs sm:text-sm font-bold mb-1 break-words line-clamp-2">
                   {fileName}
                 </h2>
-                <p className="text-slate-500 dark:text-slate-400 text-xs">Compare quality and analyze compression efficiency</p>
+                <p className="text-slate-500 dark:text-slate-400 text-[10px] sm:text-xs">Compare quality and analyze compression efficiency</p>
               </div>
 
               <div className="space-y-3">
@@ -1158,10 +1178,10 @@ export default function ImageComparisonModal({
                   Share to Social Media
                 </Button>
               
-                <div className="bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg p-4">
-                  <p className="text-slate-500 dark:text-slate-400 text-[10px] font-semibold uppercase tracking-wider mb-1">Original Size</p>
-                  <p className="text-slate-900 dark:text-white text-2xl font-bold">{formatFileSize(originalSize)}</p>
-                  <p className="text-slate-500 dark:text-slate-400 text-xs mt-2">Format: {originalExt}</p>
+                <div className="bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg p-3 sm:p-4">
+                  <p className="text-slate-500 dark:text-slate-400 text-[9px] sm:text-[10px] font-semibold uppercase tracking-wider mb-1">Original Size</p>
+                  <p className="text-slate-900 dark:text-white text-xl sm:text-2xl font-bold">{formatFileSize(originalSize)}</p>
+                  <p className="text-slate-500 dark:text-slate-400 text-[10px] sm:text-xs mt-2">Format: {originalExt}</p>
                 </div>
 
                 {!isAnimationVariations && mediaType === 'image' && (
@@ -1228,21 +1248,21 @@ export default function ImageComparisonModal({
                 
                 {(isAnimationVariations || mediaType !== 'image') && (
                   <div className={cn(
-                    "rounded-lg p-4",
+                    "rounded-lg p-3 sm:p-4",
                     sizeIncreased
                       ? "bg-gradient-to-br from-red-600 to-red-700"
                       : "bg-gradient-to-br from-emerald-600 to-emerald-700"
                   )}>
                     <p className={cn(
-                      "text-[10px] font-semibold uppercase tracking-wider mb-1",
+                      "text-[9px] sm:text-[10px] font-semibold uppercase tracking-wider mb-1",
                       sizeIncreased ? "text-red-100" : "text-emerald-100"
                     )}>
                       {isAnimationVariations ? 'Total Generated Size' : 'Compressed Size'}
                     </p>
-                    <p className="text-white text-2xl font-bold mb-2">{formatFileSize(compressedSize)}</p>
+                    <p className="text-white text-xl sm:text-2xl font-bold mb-2">{formatFileSize(compressedSize)}</p>
                     {!isAnimationVariations && (
                       <Badge className={cn(
-                        "text-xs px-2 py-0.5 font-bold",
+                        "text-[10px] sm:text-xs px-2 py-0.5 font-bold",
                         sizeIncreased 
                           ? "bg-white/20 text-white"
                           : "bg-white/20 text-white"
