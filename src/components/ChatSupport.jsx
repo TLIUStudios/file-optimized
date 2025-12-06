@@ -32,21 +32,7 @@ export default function ChatSupport() {
     scrollToBottom();
   }, [messages]);
 
-  // Auto-show tooltip on initial load
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setShowTooltip(true);
-    }, 1000);
 
-    const hideTimer = setTimeout(() => {
-      setShowTooltip(false);
-    }, 5000);
-
-    return () => {
-      clearTimeout(timer);
-      clearTimeout(hideTimer);
-    };
-  }, []);
 
   const handleSend = async () => {
     if (!input.trim() || isLoading) return;
