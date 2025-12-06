@@ -17,8 +17,9 @@ const Draggable = lazy(() => import("@hello-pangea/dnd").then(m => ({ default: m
 const ErrorBoundary = lazy(() => import("../components/ErrorBoundary"));
 
 const LoginPromptModal = lazy(() => import("../components/LoginPromptModal"));
-const ProUpgradeModal = lazy(() => import("../components/ProUpgradeModal"));
 const MediaCard = lazy(() => import("../components/upload/MediaCardMemo"));
+
+import ProUpgradeModal from "../components/ProUpgradeModal";
 const ImageComparisonModal = lazy(() => import("../components/comparison/ImageComparisonModal"));
 const KeyboardShortcuts = lazy(() => import("../components/features/KeyboardShortcuts"));
 import GlobalStats from "../components/stats/GlobalStats";
