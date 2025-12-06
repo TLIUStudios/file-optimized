@@ -1012,8 +1012,8 @@ export default function ImageComparisonModal({
                 </div>
               </div>
             ) : mediaType === 'image' ? (
-              <div className="relative w-full h-full bg-slate-100 dark:bg-slate-900 select-none">
-                <div className="absolute inset-0 flex items-center justify-center p-4">
+              <div className="relative w-full h-full bg-slate-100 dark:bg-slate-900 flex flex-col">
+                <div className="flex-1 relative flex items-center justify-center overflow-hidden select-none">
                   <div
                     ref={imageContainerRef}
                     className="relative"
@@ -1041,7 +1041,7 @@ export default function ImageComparisonModal({
                     <img
                       src={compressedImage}
                       alt="Compressed"
-                      style={{ maxWidth: '85vw', maxHeight: 'calc(100vh - 200px)' }}
+                      style={{ maxWidth: '55vw', maxHeight: 'calc(100vh - 150px)' }}
                       className="w-auto h-auto object-contain"
                       draggable="false"
                     />
@@ -1052,7 +1052,7 @@ export default function ImageComparisonModal({
                       <img
                         src={originalImage}
                         alt="Original"
-                        style={{ maxWidth: '85vw', maxHeight: 'calc(100vh - 200px)' }}
+                        style={{ maxWidth: '55vw', maxHeight: 'calc(100vh - 150px)' }}
                         className="w-auto h-auto object-contain"
                         draggable="false"
                       />
@@ -1070,25 +1070,21 @@ export default function ImageComparisonModal({
                   </div>
                 </div>
 
-                <div className="absolute bottom-0 left-0 right-0 h-16 flex items-center justify-between px-6 bg-slate-100/80 dark:bg-slate-900/80 backdrop-blur-sm border-t border-slate-200 dark:border-slate-800">
-                  <div className="flex flex-col gap-1">
-                    <Badge className="bg-slate-700 dark:bg-slate-800 text-white text-sm px-3 py-1 font-semibold w-fit">
-                      Original
-                    </Badge>
-                    <Badge className="bg-slate-700 dark:bg-slate-800 text-white text-xs px-2 py-0.5 font-bold w-fit">
+                <div className="h-16 flex items-center justify-between px-6 bg-slate-950/80 backdrop-blur-sm border-t border-slate-800">
+                  <div className="flex items-center gap-2">
+                    <span className="text-white text-sm font-semibold">Original</span>
+                    <Badge className="bg-slate-700 text-white text-xs px-2 py-0.5 font-bold">
                       {originalExt}
                     </Badge>
                   </div>
                   {zoom === 1 && (
-                    <div className="px-4 py-2 bg-slate-600/80 dark:bg-slate-700/80 backdrop-blur-sm rounded-lg text-white text-sm font-medium animate-pulse">
+                    <div className="px-4 py-2 bg-slate-800/80 backdrop-blur-sm rounded-lg text-white text-sm font-medium">
                       ← Drag to compare →
                     </div>
                   )}
-                  <div className="flex flex-col gap-1 items-end">
-                    <Badge className="bg-emerald-600 text-white text-sm px-3 py-1 font-semibold w-fit">
-                      Compressed
-                    </Badge>
-                    <Badge className="bg-emerald-600 text-white text-xs px-2 py-0.5 font-bold w-fit">
+                  <div className="flex items-center gap-2">
+                    <span className="text-white text-sm font-semibold">Compressed</span>
+                    <Badge className="bg-emerald-600 text-white text-xs px-2 py-0.5 font-bold">
                       {previewFormat.toUpperCase()}
                     </Badge>
                   </div>
