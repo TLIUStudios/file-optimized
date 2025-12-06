@@ -1129,7 +1129,7 @@ export default function ImageComparisonModal({
           </div>
 
           {/* Right Panel */}
-          <div className="w-full lg:w-[360px] xl:w-[400px] bg-white dark:bg-slate-900 border-t lg:border-t-0 lg:border-l border-slate-200 dark:border-slate-800 flex flex-col overflow-y-auto">
+          <div className="w-[360px] xl:w-[400px] bg-white dark:bg-slate-900 border-l border-slate-200 dark:border-slate-800 flex flex-col overflow-y-auto flex-shrink-0">
             <div className="p-5 space-y-4">
               <div>
                 <h2 className="text-slate-900 dark:text-white text-sm font-bold mb-1 break-words line-clamp-2">
