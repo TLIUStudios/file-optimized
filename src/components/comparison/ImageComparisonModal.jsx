@@ -580,6 +580,30 @@ export default function ImageComparisonModal({
     
     try {
       if (mediaType === 'image' && !isAnimationVariations) {
+        // If formats not generated yet, generate them first
+        if (!formatsGenerated) {
+          toast.info('Generating formats...');
+          await generateAllFormats();
+          // After generation, the blob should be available
+          const cachedBlob = cachedFormatBlobs[format];
+          if (cachedBlob) {
+            setConvertedBlob(cachedBlob);
+            setPreviewSize(cachedBlob.size);
+            setPreviewFormat(format);
+            
+            const sizeDiff = cachedBlob.size - originalSize;
+            const percentChange = ((sizeDiff / originalSize) * 100).toFixed(1);
+            
+            if (cachedBlob.size > originalSize) {
+              toast.info(`${format.toUpperCase()}: ${formatFileSize(cachedBlob.size)} (+${percentChange}% larger)`);
+            } else {
+              toast.success(`${format.toUpperCase()}: ${formatFileSize(cachedBlob.size)} (${Math.abs(percentChange)}% smaller)`);
+            }
+          }
+          setIsConverting(false);
+          return;
+        }
+        
         // Use cached blob if available
         const cachedBlob = cachedFormatBlobs[format];
         
@@ -601,8 +625,8 @@ export default function ImageComparisonModal({
           return;
         }
         
-        // If not cached, shouldn't happen but handle gracefully
-        toast.warning('Format not ready, please wait...');
+        // If still not cached after generation attempt, show error
+        toast.error('Failed to generate format');
         setSelectedFormat(previewFormat);
       } else {
         setPreviewFormat(format);
