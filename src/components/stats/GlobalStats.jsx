@@ -32,13 +32,11 @@ export default function GlobalStats() {
 
   const showContent = !isLoading && totalSaved > 0;
 
-  if (!showContent) {
-    return <div className="h-[60px] max-w-md mx-auto" />;
-  }
-
   return (
-    <div className="relative bg-gradient-to-r from-emerald-500 to-teal-600 rounded-lg p-3 text-white shadow-lg max-w-md mx-auto transition-opacity duration-500 opacity-0 animate-in fade-in-0">
-      <div className="flex items-center justify-between gap-3 transition-all duration-500 opacity-0 scale-95 animate-in fade-in-0 zoom-in-95 delay-150">
+    <div className="h-[60px] max-w-md mx-auto">
+      {showContent && (
+        <div className="relative bg-gradient-to-r from-emerald-500 to-teal-600 rounded-lg p-3 text-white shadow-lg animate-in fade-in-0 duration-300">
+          <div className="flex items-center justify-between gap-3 animate-in fade-in-0 zoom-in-95 duration-500 delay-150">
         <div className="flex items-center gap-2">
           <div className="w-8 h-8 bg-white/20 backdrop-blur-sm rounded-lg flex items-center justify-center flex-shrink-0">
             <Globe className="w-4 h-4" />
@@ -58,8 +56,9 @@ export default function GlobalStats() {
             <div className="text-base font-bold">{totalCompressions.toLocaleString()}</div>
             <div className="text-[10px] text-emerald-100">Files</div>
           </div>
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }
