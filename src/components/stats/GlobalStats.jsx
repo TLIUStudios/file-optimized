@@ -59,8 +59,8 @@ export default function GlobalStats() {
               </div>
             </div>
           </div>
-        </div>
-      )}
+        )}
+      </div>
     </div>
   );
 }
