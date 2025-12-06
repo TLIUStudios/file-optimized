@@ -1054,7 +1054,6 @@ export default function ImageComparisonModal({
                     </Badge>
                   </div>
                 </div>
-              </>
             ) : (
               // Video or Audio player
               <div className="relative w-full h-full bg-slate-100 dark:bg-slate-900 flex flex-col items-center justify-center">
