@@ -372,7 +372,12 @@ export default function Home() {
         </p>
 
         {/* Global Stats */}
-        <div className="mt-8 max-w-md mx-auto px-4">
+        <motion.div
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.5, delay: 0.2 }}
+          className="mt-8 max-w-md mx-auto px-4"
+        >
           <div className="bg-gradient-to-br from-emerald-50 to-teal-50 dark:from-emerald-950/20 dark:to-teal-950/20 border border-emerald-200 dark:border-emerald-800 rounded-2xl p-6 shadow-lg">
             <div className="flex items-center justify-center gap-2 mb-4">
               <Globe className="w-5 h-5 text-emerald-600" />
@@ -390,7 +395,7 @@ export default function Home() {
               </p>
             </div>
           </div>
-        </div>
+        </motion.div>
 
         {/* Features */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-12 max-w-4xl mx-auto">
