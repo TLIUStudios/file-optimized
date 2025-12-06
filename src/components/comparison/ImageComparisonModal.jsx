@@ -1050,17 +1050,13 @@ export default function ImageComparisonModal({
                       draggable="false"
                     />
 
-                    <div
-                      className="absolute inset-0 pointer-events-none"
+                    <img
+                      src={originalImage}
+                      alt="Original"
+                      className="max-w-[85vw] lg:max-w-[60vw] max-h-[calc(100vh-200px)] w-auto h-auto object-contain block absolute top-0 left-0 pointer-events-none"
+                      draggable="false"
                       style={{ clipPath: `inset(0 ${100 - sliderPosition}% 0 0)` }}
-                    >
-                      <img
-                        src={originalImage}
-                        alt="Original"
-                        className="max-w-[85vw] lg:max-w-[60vw] max-h-[calc(100vh-200px)] w-auto h-auto object-contain block"
-                        draggable="false"
-                      />
-                    </div>
+                    />
 
                     {zoom === 1 && !isPanning && (
                       <div
