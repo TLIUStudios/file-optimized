@@ -1175,9 +1175,10 @@ export default function ImageComparisonModal({
                           ~3-5s estimated
                         </Badge>
                         <Button
-                          onClick={generateAllFormats}
+                          onClick={() => generateAllFormats()}
+                          disabled={loadingFormatSizes}
                           size="sm"
-                          className="bg-emerald-600 hover:bg-emerald-700 text-white w-full"
+                          className="bg-emerald-600 hover:bg-emerald-700 text-white w-full disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                           <RefreshCw className="w-3 h-3 mr-2" />
                           Generate Formats
@@ -1671,8 +1672,9 @@ export default function ImageComparisonModal({
                         </Badge>
                         <Button
                           size="sm"
-                          onClick={generateMetadata}
-                          className="bg-slate-700 hover:bg-slate-800 text-white text-xs h-8 w-full"
+                          onClick={() => generateMetadata()}
+                          disabled={isGenerating}
+                          className="bg-slate-700 hover:bg-slate-800 text-white text-xs h-8 w-full disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                           <RefreshCw className="w-3 h-3 mr-1" />
                           Generate Metadata
