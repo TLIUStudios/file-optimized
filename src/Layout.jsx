@@ -45,7 +45,7 @@ export default function Layout({ children }) {
     }, [location.pathname]);
   const [user, setUser] = useState(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [authLoading, setAuthLoading] = useState(true);
+  const [authLoading, setAuthLoading] = useState(false);
   const [showLoginPrompt, setShowLoginPrompt] = useState(false);
   const [userPlan, setUserPlan] = useState('free');
   const [userTheme, setUserTheme] = useState('none');
@@ -247,9 +247,7 @@ export default function Layout({ children }) {
           </Link>
           
           <div className="flex items-center gap-1.5 sm:gap-2 md:gap-3">
-            {!authLoading && (
-              <>
-                {isAuthenticated && user ? (
+            {isAuthenticated && user ? (
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                       <Button variant="ghost" className="gap-1.5 sm:gap-2 h-9 sm:h-10 px-2 sm:px-3">
@@ -317,10 +315,17 @@ export default function Layout({ children }) {
                     <LogIn className="w-4 h-4" />
                     <span className="hidden sm:inline">Sign In</span>
                   </Button>
-                )}
-                </>
-                )}
-                <Button
+                  ) : !authLoading && (
+                  <Button
+                    onClick={handleLoginClick}
+                    variant="ghost"
+                    className="gap-1.5 sm:gap-2 h-9 sm:h-10 px-2 sm:px-3 text-sm"
+                  >
+                    <LogIn className="w-4 h-4" />
+                    <span className="hidden sm:inline">Sign In</span>
+                  </Button>
+                  )}
+                  <Button
                 variant="ghost"
                 size="icon"
                 onClick={toggleTheme}
