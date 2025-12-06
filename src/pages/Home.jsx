@@ -21,6 +21,7 @@ const ProUpgradeModal = lazy(() => import("../components/ProUpgradeModal"));
 const MediaCard = lazy(() => import("../components/upload/MediaCardMemo"));
 const ImageComparisonModal = lazy(() => import("../components/comparison/ImageComparisonModal"));
 const KeyboardShortcuts = lazy(() => import("../components/features/KeyboardShortcuts"));
+const GlobalStats = lazy(() => import("../components/stats/GlobalStats"));
 
 // Loading fallback for image cards
 const ImageCardSkeleton = lazy(() => import("../components/upload/ImageCardSkeleton"));
@@ -388,6 +389,13 @@ export default function Home() {
               <span className="text-xs">Convert between any format instantly.</span>
             </p>
           </div>
+        </div>
+
+        {/* Global Stats */}
+        <div className="mt-8">
+          <Suspense fallback={null}>
+            <GlobalStats />
+          </Suspense>
         </div>
         </div>
 
