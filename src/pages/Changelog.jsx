@@ -4,101 +4,52 @@ import SEOHead from "../components/SEOHead";
 
 const changelog = [
   {
-    version: "2.5.0",
-    date: "November 2025",
-    type: "feature",
+    version: "0.0.3",
+    date: "January 12, 2025",
+    type: "fix",
     changes: [
-      "Added AVIF format support with aggressive compression",
-      "New visual themes: Snow, Fireworks, Halloween, Hearts, Sakura, Autumn, Confetti, Bubbles",
-      "Performance page with real benchmarks",
-      "Glossary of compression terms",
-      "Tool comparison page",
-      "25+ built-in SEO-optimized blog articles"
+      "Fixed video-to-GIF conversion getting stuck at 60%",
+      "Fixed time estimation - now only decreases, never increases",
+      "Added timeout protection for GIF encoding (120s limit)",
+      "Improved progress tracking for video-to-GIF conversion"
     ]
   },
   {
-    version: "2.4.0",
-    date: "November 2025",
-    type: "feature",
-    changes: [
-      "Video editor with caption overlay support",
-      "Audio editor with trim and fade effects",
-      "GIF editor for frame manipulation",
-      "Social media sharing integration",
-      "AI-powered SEO metadata generation"
-    ]
-  },
-  {
-    version: "2.3.0",
-    date: "October 2025",
-    type: "feature",
-    changes: [
-      "Pro Plan with Stripe integration",
-      "500MB file size limit for Pro users",
-      "Batch processing up to 30 files",
-      "Ad-free experience for Pro",
-      "Billing history and subscription management"
-    ]
-  },
-  {
-    version: "2.2.0",
-    date: "October 2025",
+    version: "0.0.2",
+    date: "January 12, 2025",
     type: "improvement",
     changes: [
-      "Improved PNG compression using browser-image-compression",
-      "Better GIF optimization preserving all frames",
-      "Enhanced video processing with WebCodecs API",
-      "Mobile-responsive design improvements",
-      "Dark mode enhancements"
+      "Increased chat support button size for better visibility",
+      "Enhanced chat widget appearance and accessibility"
     ]
   },
   {
-    version: "2.1.0",
-    date: "September 2025",
+    version: "0.0.1",
+    date: "January 12, 2025",
     type: "feature",
     changes: [
-      "Image upscaling with resolution presets",
-      "Animation generation from static images",
-      "Format conversion between all supported types",
-      "Drag-and-drop file reordering",
-      "Bulk download as ZIP"
-    ]
-  },
-  {
-    version: "2.0.0",
-    date: "September 2025",
-    type: "feature",
-    changes: [
-      "Complete UI redesign with modern look",
-      "Video compression support (MP4)",
-      "Audio compression support (MP3, WAV)",
+      "Initial release of File Optimized",
+      "Image compression (JPG, PNG, WebP, AVIF)",
+      "Video optimization (MP4)",
+      "Audio compression (MP3, WAV)",
       "GIF optimization and conversion",
-      "Real-time compression preview",
-      "Side-by-side comparison tool"
-    ]
-  },
-  {
-    version: "1.5.0",
-    date: "August 2025",
-    type: "improvement",
-    changes: [
-      "WebP format support",
-      "Quality slider with live preview",
-      "Metadata stripping option",
-      "Noise reduction filter",
-      "Improved compression algorithms"
-    ]
-  },
-  {
-    version: "1.0.0",
-    date: "July 2025",
-    type: "feature",
-    changes: [
-      "Initial release",
-      "JPEG and PNG compression",
-      "Client-side processing for privacy",
-      "Basic image resizing",
-      "Download optimized files"
+      "AI-powered image upscaling",
+      "Animation creator from static images",
+      "Format conversion between all supported types",
+      "Real-time compression statistics",
+      "100% client-side processing for privacy",
+      "Fully responsive mobile design",
+      "Dark mode support",
+      "Batch processing (9 files for Free, 30 for Pro)",
+      "Pro plan with larger file limits (500MB)",
+      "Advanced compression settings and presets",
+      "Visual themes (Snow, Fireworks, Halloween, Hearts, Sakura, Autumn, Confetti, Bubbles)",
+      "AI-powered SEO metadata generation",
+      "Social media sharing integration",
+      "Video/Audio/GIF editors",
+      "Performance benchmarks",
+      "Blog with 25+ SEO-optimized articles",
+      "Glossary and tool comparisons"
     ]
   }
 ];
