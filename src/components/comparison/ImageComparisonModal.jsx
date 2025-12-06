@@ -1019,14 +1019,13 @@ export default function ImageComparisonModal({
               >
                 <div className="flex-1 relative w-full flex items-center justify-center py-4">
                   <div
+                    ref={imageContainerRef}
                     className="relative"
                     style={{
                       transform: `scale(${zoom}) translate(${pan.x / zoom}px, ${pan.y / zoom}px)`,
                       transformOrigin: 'center',
                       transition: isDragging || isPanning ? 'none' : 'transform 0.2s ease-out',
-                      cursor: zoom > 1 ? (isPanning ? 'grabbing' : 'grab') : 'col-resize',
-                      maxWidth: '85vw',
-                      maxHeight: 'calc(100vh - 200px)'
+                      cursor: zoom > 1 ? (isPanning ? 'grabbing' : 'grab') : 'col-resize'
                     }}
                     onMouseDown={(e) => {
                       if (zoom > 1) {
@@ -1045,21 +1044,21 @@ export default function ImageComparisonModal({
                     }}
                   >
                     <img
-                      ref={imageContainerRef}
                       src={compressedImage}
                       alt="Compressed"
-                      className="block w-full h-full object-contain"
+                      className="max-w-[85vw] lg:max-w-[60vw] max-h-[calc(100vh-200px)] block"
                       draggable="false"
+                      style={{ width: 'auto', height: 'auto' }}
                     />
 
                     <div 
-                      className="absolute inset-0 overflow-hidden"
+                      className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none"
                       style={{ clipPath: `inset(0 ${100 - sliderPosition}% 0 0)` }}
                     >
                       <img
                         src={originalImage}
                         alt="Original"
-                        className="block w-full h-full object-contain pointer-events-none"
+                        className="w-full h-full object-cover"
                         draggable="false"
                       />
                     </div>
