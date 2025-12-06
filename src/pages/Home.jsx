@@ -7,6 +7,7 @@ import { cn } from "@/lib/utils";
 import { base44 } from "@/api/base44Client";
 import SEOHead from "../components/SEOHead";
 import { useQuery } from "@tanstack/react-query";
+import { motion } from "framer-motion";
 
 // Lazy load heavy components for better performance
 const UploadZone = lazy(() => import("../components/upload/UploadZone"));
@@ -14,7 +15,6 @@ const AnimatedMediaIcon = lazy(() => import("../components/AnimatedMediaIcon"));
 const DragDropContext = lazy(() => import("@hello-pangea/dnd").then(m => ({ default: m.DragDropContext })));
 const Droppable = lazy(() => import("@hello-pangea/dnd").then(m => ({ default: m.Droppable })));
 const Draggable = lazy(() => import("@hello-pangea/dnd").then(m => ({ default: m.Draggable })));
-const motion = { div: memo(({ children, className, initial, animate, transition, ...props }) => <div className={className} {...props}>{children}</div>) };
 
 const LoginPromptModal = lazy(() => import("../components/LoginPromptModal"));
 const ProUpgradeModal = lazy(() => import("../components/ProUpgradeModal"));
