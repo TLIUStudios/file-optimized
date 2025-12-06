@@ -506,10 +506,16 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
       // Setup audio encoder if video has audio
       let audioEncoder = null;
       let audioProcessingPromise = null;
+      let audioContext = null;
+      
       if (hasAudio && 'AudioEncoder' in window) {
+        console.log('✓ Video has audio - setting up audio encoder');
         audioEncoder = new AudioEncoder({
           output: (chunk, meta) => muxer.addAudioChunk(chunk, meta),
-          error: (e) => console.error('Audio encoder error:', e),
+          error: (e) => {
+            console.error('Audio encoder error:', e);
+            toast.warning('Audio encoding issue detected');
+          },
         });
         
         audioEncoder.configure({
@@ -521,7 +527,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
         
         // Setup audio processing
         video.muted = false;
-        const audioContext = new AudioContext({ sampleRate: 48000 });
+        audioContext = new AudioContext({ sampleRate: 48000 });
         const source = audioContext.createMediaElementSource(video);
         const dest = audioContext.createMediaStreamDestination();
         source.connect(dest);
@@ -548,6 +554,10 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
         }
       } else {
         video.muted = true;
+        if (hasAudio) {
+          console.warn('⚠️ Video has audio but AudioEncoder not supported');
+          toast.warning('Audio encoding not supported in this browser');
+        }
       }
       
       const duration = Math.min(video.duration, 120); // Max 120 seconds
@@ -601,12 +611,21 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
           await videoEncoder.flush();
         }
         
-        // Wait for audio processing to complete and flush
+        // CRITICAL: Wait for audio processing to complete and flush
         if (audioProcessingPromise) {
+          console.log('⏳ Waiting for audio processing to complete...');
           await audioProcessingPromise;
+          console.log('✓ Audio processing complete');
         }
         if (audioEncoder && audioEncoder.state === 'configured') {
+          console.log('⏳ Flushing audio encoder...');
           await audioEncoder.flush();
+          console.log('✓ Audio encoder flushed');
+        }
+        
+        // Close audio context
+        if (audioContext && audioContext.state !== 'closed') {
+          await audioContext.close();
         }
       } finally {
         // Always close encoders
