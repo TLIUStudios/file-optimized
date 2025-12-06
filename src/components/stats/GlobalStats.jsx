@@ -28,7 +28,7 @@ export default function GlobalStats() {
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      className="relative bg-gradient-to-r from-emerald-500 to-teal-600 rounded-lg p-3 text-white shadow-lg max-w-xl mx-auto overflow-hidden"
+      className="relative bg-gradient-to-r from-emerald-500 to-teal-600 rounded-lg p-3 text-white shadow-lg max-w-md mx-auto overflow-hidden"
     >
       {/* Animated Lightning Border Effect */}
       <div className="absolute inset-0 rounded-xl pointer-events-none">
@@ -139,7 +139,7 @@ export default function GlobalStats() {
           animation: zap 2s ease-in-out infinite;
         }
       `}</style>
-      <div className="relative z-10 flex items-center justify-between gap-4">
+      <div className="relative z-10 flex items-center justify-between gap-3">
         <div className="flex items-center gap-2">
           <div className="w-8 h-8 bg-white/20 backdrop-blur-sm rounded-lg flex items-center justify-center flex-shrink-0">
             <Globe className="w-4 h-4" />
@@ -150,13 +150,13 @@ export default function GlobalStats() {
           </div>
         </div>
 
-        <div className="flex items-center gap-8">
-          <div className="text-right min-w-[70px]">
-            <div className="text-lg font-bold">{formatBytes(totalSaved)}</div>
+        <div className="flex items-center gap-4">
+          <div className="text-right">
+            <div className="text-base font-bold">{formatBytes(totalSaved)}</div>
             <div className="text-[10px] text-emerald-100">Space Saved</div>
           </div>
-          <div className="text-right min-w-[50px]">
-            <div className="text-lg font-bold">{totalCompressions.toLocaleString()}</div>
+          <div className="text-right">
+            <div className="text-base font-bold">{totalCompressions.toLocaleString()}</div>
             <div className="text-[10px] text-emerald-100">Files</div>
           </div>
         </div>
