@@ -16,8 +16,6 @@ function DownloadWithOptionsModal({
   onDownloadAllFormatsZip,
   availableImageFormats,
   fileName,
-  // For future enhancements, AI metadata could be passed here to offer inclusion options
-  // aiTitle, aiDescription, aiAltText, aiTags,
 }) {
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -62,7 +60,6 @@ function DownloadWithOptionsModal({
             >
               <DownloadIcon className="h-4 w-4 mr-2" /> Download all formats (.zip)
             </Button>
-            {/* Future option for metadata inclusion could go here */}
           </div>
         </div>
       </DialogContent>
@@ -82,12 +79,12 @@ export default function ImageComparisonModal({
   mediaType = 'image',
   fileFormat = 'webp',
   originalFileFormat = null,
-  generatedAnimations = null, // Add this prop for animation variations
-  onFilenameChange = null, // Callback to sync filename changes back to parent
-  cachedFormatData = null, // Pre-cached format blobs and sizes
-  cachedSeoMetadata = null, // Pre-cached SEO metadata
-  onFormatDataCached = null, // Callback to cache format data
-  onSeoMetadataCached = null // Callback to cache SEO metadata
+  generatedAnimations = null,
+  onFilenameChange = null,
+  cachedFormatData = null,
+  cachedSeoMetadata = null,
+  onFormatDataCached = null,
+  onSeoMetadataCached = null
 }) {
   const [sliderPosition, setSliderPosition] = useState(50);
   const [isDragging, setIsDragging] = useState(false);
@@ -110,8 +107,6 @@ export default function ImageComparisonModal({
   const [originalResolution, setOriginalResolution] = useState(null);
   const [compressedResolution, setCompressedResolution] = useState(null);
   const [showSocialShare, setShowSocialShare] = useState(false);
-  const [seoGenerationTime, setSeoGenerationTime] = useState(6); // Estimated time for SEO generation
-
 
   const containerRef = useRef(null);
   const imageContainerRef = useRef(null);
@@ -158,8 +153,8 @@ export default function ImageComparisonModal({
   const [convertedBlob, setConvertedBlob] = useState(null);
   const [allFormatSizes, setAllFormatSizes] = useState({});
   const [loadingFormatSizes, setLoadingFormatSizes] = useState(false);
-  const [cachedFormatBlobs, setCachedFormatBlobs] = useState({}); // Cache all format blobs
-  const [formatsGenerated, setFormatsGenerated] = useState(false); // Track if formats have been generated
+  const [cachedFormatBlobs, setCachedFormatBlobs] = useState({});
+  const [formatsGenerated, setFormatsGenerated] = useState(false);
 
   // Check if we're displaying animated variations
   const isAnimationVariations = generatedAnimations && generatedAnimations.length > 0;
@@ -173,7 +168,6 @@ export default function ImageComparisonModal({
       };
       img.src = originalImage;
     } else if (mediaType !== 'image') {
-      // Reset image dimensions if not an image
       setImageDimensions({ width: 0, height: 0 });
     }
   }, [originalImage, mediaType]);
@@ -192,13 +186,12 @@ export default function ImageComparisonModal({
     }
   }, [cachedSeoMetadata]);
 
-  // Load cached format data if available, otherwise wait for user to generate
+  // Load cached format data if available
   useEffect(() => {
     if (mediaType !== 'image' || isAnimationVariations) {
       return;
     }
 
-    // Use cached data if available
     if (cachedFormatData) {
       setAllFormatSizes(cachedFormatData.sizes);
       setCachedFormatBlobs(cachedFormatData.blobs);
@@ -211,13 +204,11 @@ export default function ImageComparisonModal({
     if (loadingFormatSizes) return;
     
     setFormatsGenerated(false);
-    
     setLoadingFormatSizes(true);
     const sizes = {};
     const blobs = {};
 
     try {
-      // Use the actual compressed blob for the current format
       const currentBlob = await fetch(compressedImage).then(r => r.blob());
       sizes[fileFormat] = compressedSize;
       blobs[fileFormat] = currentBlob;
@@ -314,7 +305,6 @@ export default function ImageComparisonModal({
       setCachedFormatBlobs(blobs);
       setFormatsGenerated(true);
       
-      // Cache the data for reuse
       if (onFormatDataCached) {
         onFormatDataCached({ sizes, blobs });
       }
@@ -326,7 +316,6 @@ export default function ImageComparisonModal({
   };
 
   const generateMetadata = async () => {
-    console.log('🚀 Starting AI metadata generation...');
     setIsGenerating(true);
     setAiTitle("");
     setAiDescription("");
@@ -335,7 +324,6 @@ export default function ImageComparisonModal({
     setAiAltText("");
     setAiTags("");
 
-    // AI metadata generation only makes sense for images, and current prompt is image-specific.
     if (mediaType !== 'image') {
         toast.info('AI metadata generation is currently only supported for images.');
         setIsGenerating(false);
@@ -343,20 +331,11 @@ export default function ImageComparisonModal({
     }
 
     try {
-      // Convert compressed image blob
       const res = await fetch(compressedImage);
       const blob = await res.blob();
-      console.log('✅ Blob created:', blob.size, 'bytes');
-
-      // Create a simple file object
       const file = new File([blob], 'image.jpg', { type: blob.type });
-      console.log('📁 File created');
-
-      // Upload
       const uploadResult = await base44.integrations.Core.UploadFile({ file });
-      console.log('☁️ Upload complete:', uploadResult.file_url);
 
-      // Generate with AI - updated prompt for more fields
       const aiResult = await base44.integrations.Core.InvokeLLM({
         prompt: "Analyze this image and provide: a short title (under 60 chars), brief description (under 160 chars), category (1-2 words), mood (1-2 words describing the emotional tone), alt text for accessibility (descriptive, under 125 chars), 10 playful/fun social media tags (comma-separated, use casual slang, trendy words, vibes, aesthetic terms like 'aesthetic', 'vibes', 'iconic', 'slay', 'mood'), 10 professional SEO keywords (comma-separated, use formal descriptive language for search engines like 'digital illustration', 'high resolution image', 'professional artwork'), and 10 social media hashtags (format: #word, #anotherword, #thirdword with space after comma). IMPORTANT: Ensure tags, keywords, and hashtags are all completely different from each other with no overlap.",
         file_urls: [uploadResult.file_url],
@@ -375,8 +354,6 @@ export default function ImageComparisonModal({
         }
       });
 
-      console.log('🤖 AI Response:', aiResult);
-
       setAiTitle(aiResult.title || "Generated Title");
       setAiDescription(aiResult.description || "Generated description of the image.");
       setAiCategory(aiResult.category || "General");
@@ -386,7 +363,6 @@ export default function ImageComparisonModal({
       setAiKeywords(aiResult.keywords || "image, photo, digital");
       setAiHashtags(aiResult.hashtags || "#image #photo");
       
-      // Cache the SEO metadata for reuse
       if (onSeoMetadataCached) {
         onSeoMetadataCached({
           title: aiResult.title || "Generated Title",
@@ -411,8 +387,7 @@ export default function ImageComparisonModal({
   };
 
   const regenerateField = async (fieldName) => {
-    console.log(`🔄 Regenerating ${fieldName}...`);
-    setRegeneratingField(fieldName); // Set the field being regenerated
+    setRegeneratingField(fieldName);
 
     if (mediaType !== 'image') {
         toast.info('AI metadata regeneration is currently only supported for images.');
@@ -505,7 +480,6 @@ export default function ImageComparisonModal({
           break;
       }
 
-      // Update cached metadata after regeneration
       if (onSeoMetadataCached) {
         onSeoMetadataCached({
           title: aiTitle,
@@ -525,7 +499,7 @@ export default function ImageComparisonModal({
       console.error(`❌ Error regenerating ${fieldName}:`, error);
       toast.error(`Failed to regenerate ${fieldName}: ${error.message}`);
     } finally {
-      setRegeneratingField(null); // Reset the regenerating field state
+      setRegeneratingField(null);
     }
   };
 
@@ -534,13 +508,11 @@ export default function ImageComparisonModal({
     toast.success(`${label} copied!`);
   };
 
-  // Use cached blobs for downloads
   const performSingleMediaDownload = async (mediaUrl, format, mediaTypeOverride = mediaType) => {
     try {
       toast.info(`Preparing download as ${format.toUpperCase()}...`);
       
       if (mediaTypeOverride === 'image') {
-        // Use cached blob if available
         const cachedBlob = cachedFormatBlobs[format];
         
         if (cachedBlob) {
@@ -555,7 +527,6 @@ export default function ImageComparisonModal({
           return;
         }
         
-        // Fallback: generate if not cached (shouldn't happen)
         toast.warning('Generating format...');
       } else {
         const link = document.createElement('a');
@@ -571,10 +542,9 @@ export default function ImageComparisonModal({
     }
   };
   
-  // Use cached blobs for format conversion
   const convertToFormat = async (format) => {
     if (format === selectedFormat && previewFormat === format) {
-      return; // Already on this format
+      return;
     }
     
     setIsConverting(true);
@@ -582,7 +552,6 @@ export default function ImageComparisonModal({
     
     try {
       if (mediaType === 'image' && !isAnimationVariations) {
-        // Use cached blob if available
         const cachedBlob = cachedFormatBlobs[format];
         
         if (cachedBlob) {
@@ -603,7 +572,6 @@ export default function ImageComparisonModal({
           return;
         }
         
-        // If not cached, shouldn't happen but handle gracefully
         toast.warning('Format not ready, please wait...');
         setSelectedFormat(previewFormat);
       } else {
@@ -618,7 +586,6 @@ export default function ImageComparisonModal({
     }
   };
 
-  // Use cached blobs for ZIP download
   const downloadAllImageFormatsAsZip = async () => {
     toast.info('Creating multi-format ZIP...');
 
@@ -627,12 +594,10 @@ export default function ImageComparisonModal({
       const zip = new JSZip();
       const baseName = fileName.split('.')[0];
 
-      // Use cached blobs for all formats
       for (const format of ['jpg', 'png', 'webp', 'avif']) {
         const blob = cachedFormatBlobs[format];
         if (blob) {
           zip.file(`${baseName}.${format}`, blob);
-          console.log(`✓ Added ${format} to ZIP (${(blob.size / 1024).toFixed(1)}KB)`);
         }
       }
 
@@ -683,7 +648,6 @@ export default function ImageComparisonModal({
       return;
     }
 
-    // If we have a converted blob, download that directly
     if (convertedBlob) {
       const url = URL.createObjectURL(convertedBlob);
       const link = document.createElement('a');
@@ -694,7 +658,6 @@ export default function ImageComparisonModal({
       URL.revokeObjectURL(url);
       toast.success(`Downloaded as ${selectedFormat.toUpperCase()}!`);
     } else {
-      // Otherwise use the original compressed image
       performSingleMediaDownload(compressedImage, selectedFormat, mediaType);
     }
   };
@@ -715,7 +678,7 @@ export default function ImageComparisonModal({
     if (Math.abs(ratio - 21/9) < 0.01) return "21:9";
     if (Math.abs(ratio - 9/16) < 0.01) return "9:16";
 
-    if (ratioW > 100 || ratioH > 100) { // To prevent very large ratios for small differences
+    if (ratioW > 100 || ratioH > 100) {
       return `${ratio.toFixed(2)}:1`;
     }
     return `${ratioW}:${ratioH}`;
@@ -834,16 +797,11 @@ export default function ImageComparisonModal({
     return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
   };
 
-  // Use preview size for calculations when format is selected
   const displaySize = previewSize;
   const savingsPercent = originalSize ? ((1 - displaySize / originalSize) * 100).toFixed(1) : '0';
   const savingsAmount = originalSize - displaySize;
-  
-  // Check if file got larger
   const sizeIncreased = displaySize > originalSize;
-
   const hasAnyMetadata = aiTitle || aiDescription || aiCategory || aiMood || aiAltText || aiTags || aiKeywords || aiHashtags;
-
 
   if (!isOpen) return null;
 
@@ -887,7 +845,6 @@ export default function ImageComparisonModal({
           </div>
 
           <div className="flex items-center gap-2">
-            {/* Format Selector Buttons */}
             {!isAnimationVariations && (
               <div className="flex items-center gap-1 bg-white dark:bg-slate-800 rounded-md border border-slate-200 dark:border-slate-700 p-1">
                 {availableFormats.map((fmt) => (
@@ -914,7 +871,6 @@ export default function ImageComparisonModal({
               </div>
             )}
             
-            {/* Download Button */}
             <Button
               onClick={() => downloadMedia()}
               className="bg-emerald-600 hover:bg-emerald-700 text-white h-8 px-4 text-xs font-semibold"
@@ -923,7 +879,6 @@ export default function ImageComparisonModal({
               Download
             </Button>
             
-            {/* Download All Formats as ZIP */}
             {mediaType === 'image' && !isAnimationVariations && (
               <Button
                 onClick={downloadAllImageFormatsAsZip}
@@ -948,9 +903,9 @@ export default function ImageComparisonModal({
 
         <div className="flex flex-col lg:flex-row h-full overflow-hidden pt-[60px]">
           {/* Left Side - Media Display */}
-          <div className="flex-1 relative overflow-hidden flex flex-col min-h-0 bg-slate-100 dark:bg-slate-900">
+          <div className="flex-1 relative overflow-hidden flex flex-col min-h-0">
             {isAnimationVariations ? (
-              // Animation Variations Grid (2x2)
+              // Animation Variations Grid
               <div className="relative w-full h-full bg-slate-100 dark:bg-slate-900 flex items-center justify-center p-4">
                 <div className="grid grid-cols-2 gap-4 w-full max-w-5xl">
                   {generatedAnimations.map((anim, index) => (
@@ -972,31 +927,26 @@ export default function ImageComparisonModal({
                         className="w-full h-full object-contain"
                       />
 
-                      {/* Overlay */}
                       <div className="absolute inset-0 bg-gradient-to-t from-slate-900/80 via-slate-900/0 to-slate-900/0 opacity-0 group-hover:opacity-100 transition-opacity" />
 
-                      {/* Label */}
                       <div className="absolute top-3 left-3">
                         <Badge className="bg-emerald-600 text-white font-semibold">
                           {anim.name}
                         </Badge>
                       </div>
 
-                      {/* Size */}
                       <div className="absolute top-3 right-3">
                         <Badge className="bg-slate-900/80 text-white text-xs">
                           {formatFileSize(anim.size)}
                         </Badge>
                       </div>
 
-                      {/* Number Label */}
                       <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
                         <div className="text-white text-[120px] font-bold opacity-20 group-hover:opacity-10 transition-opacity">
                           {index + 1}
                         </div>
                       </div>
 
-                      {/* Download Icon on Hover */}
                       <div className="absolute bottom-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity">
                         <div className="bg-emerald-600 rounded-full p-2">
                           <DownloadIcon className="w-5 h-5 text-white" />
@@ -1006,7 +956,6 @@ export default function ImageComparisonModal({
                   ))}
                 </div>
 
-                {/* Bottom instruction bar */}
                 <div className="absolute bottom-0 left-0 right-0 h-16 bg-slate-100/80 dark:bg-slate-900/80 backdrop-blur-sm border-t border-slate-200 dark:border-slate-800 flex items-center justify-center">
                   <div className="px-4 py-2 bg-emerald-600/80 backdrop-blur-sm rounded-lg text-white text-sm font-medium">
                     Click any animation to download
@@ -1150,7 +1099,6 @@ export default function ImageComparisonModal({
               </div>
 
               <div className="space-y-3">
-                {/* Social Media Share */}
                 <Button
                   variant="outline"
                   className="w-full justify-center"
@@ -1381,7 +1329,6 @@ export default function ImageComparisonModal({
               {!isAnimationVariations && (
                 <>
                   <div className="h-px bg-slate-200 dark:bg-slate-800" />
-                  {/* SEO Generation Section */}
                   {mediaType === 'image' && (
                   <div className="space-y-3">
                     <div className="flex items-center justify-between">
@@ -1409,7 +1356,6 @@ export default function ImageComparisonModal({
                       </div>
                     ) : hasAnyMetadata ? (
                       <div className="space-y-2">
-                        {/* Title */}
                         <div className="bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg p-3">
                           <div className="flex items-center justify-between mb-2">
                             <label className="text-[10px] font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider">Title</label>
@@ -1441,7 +1387,6 @@ export default function ImageComparisonModal({
                           />
                         </div>
 
-                        {/* Description */}
                         <div className="bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg p-3">
                           <div className="flex items-center justify-between mb-2">
                             <label className="text-[10px] font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider">Description</label>
@@ -1473,7 +1418,6 @@ export default function ImageComparisonModal({
                           />
                         </div>
 
-                        {/* Category & Mood */}
                         <div className="grid grid-cols-2 gap-2">
                           <div className="bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg p-3">
                             <div className="flex items-center justify-between mb-2">
@@ -1538,7 +1482,6 @@ export default function ImageComparisonModal({
                           </div>
                         </div>
 
-                        {/* Alt Text */}
                         <div className="bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg p-3">
                           <div className="flex items-center justify-between mb-2">
                             <label className="text-[10px] font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider">Alt Text</label>
@@ -1570,7 +1513,6 @@ export default function ImageComparisonModal({
                           />
                         </div>
 
-                        {/* Tags */}
                         <div className="bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg p-3">
                           <div className="flex items-center justify-between mb-2">
                             <label className="text-[10px] font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider">Tags</label>
@@ -1602,7 +1544,6 @@ export default function ImageComparisonModal({
                           />
                         </div>
 
-                        {/* Keywords */}
                         <div className="bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg p-3">
                           <div className="flex items-center justify-between mb-2">
                             <label className="text-[10px] font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider">Keywords</label>
@@ -1634,7 +1575,6 @@ export default function ImageComparisonModal({
                           />
                         </div>
 
-                        {/* Hashtags */}
                         <div className="bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg p-3">
                           <div className="flex items-center justify-between mb-2">
                             <label className="text-[10px] font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider">Hashtags</label>
@@ -1689,7 +1629,6 @@ export default function ImageComparisonModal({
               )}
             </div>
 
-            {/* Privacy Notice */}
             <div className="mt-4 bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg px-4 py-3 mx-5 mb-5">
               <p className="text-xs text-slate-500 dark:text-slate-400 text-center">
                 🔒 All processing happens locally in your browser. Your images never leave your device.
@@ -1698,24 +1637,17 @@ export default function ImageComparisonModal({
           </div>
         </div>
 
-        {/* Download Options Modal for Images */}
         {mediaType === 'image' && !isAnimationVariations && (
           <DownloadWithOptionsModal
             isOpen={showDownloadModalForImage}
             onClose={() => setShowDownloadModalForImage(false)}
             onDownloadSpecificFormat={(format) => performSingleMediaDownload(compressedImage, format)}
             onDownloadAllFormatsZip={downloadAllImageFormatsAsZip}
-            availableImageFormats={['jpg', 'png', 'webp', 'avif']} // Pass image specific formats
+            availableImageFormats={['jpg', 'png', 'webp', 'avif']}
             fileName={fileName}
-            // For future AI metadata integration:
-            // aiTitle={aiTitle}
-            // aiDescription={aiDescription}
-            // aiAltText={aiAltText}
-            // aiTags={aiTags}
           />
         )}
 
-        {/* Social Share Modal */}
         <SocialShareModal
           isOpen={showSocialShare}
           onClose={() => setShowSocialShare(false)}
