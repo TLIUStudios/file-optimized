@@ -957,7 +957,7 @@ export default function ImageComparisonModal({
               variant="ghost"
               size="icon"
               onClick={onClose}
-              className="h-7 w-7 sm:h-9 sm:w-9 hover:bg-red-600 hover:text-white rounded-lg transition-colors"
+              className="h-7 w-7 sm:h-9 sm:w-9 bg-slate-900/90 dark:bg-slate-900/90 hover:bg-red-600 dark:hover:bg-red-600 text-white rounded-lg transition-colors shadow-lg"
             >
               <X className="w-4 h-4 sm:w-5 sm:h-5" />
             </Button>
