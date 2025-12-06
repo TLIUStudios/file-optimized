@@ -611,9 +611,9 @@ export default function Home() {
         </Suspense>
       )}
 
-      </div>
-        </ErrorBoundary>
-      </Suspense>
+    </div>
+    </ErrorBoundary>
+    </Suspense>
     </>
   );
 
