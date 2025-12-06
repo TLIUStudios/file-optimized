@@ -28,8 +28,10 @@ export default function GlobalStats() {
     retryDelay: 1000 // Wait 1 second between retries
   });
 
-  const totalSaved = stats.reduce((sum, s) => sum + s.saved_bytes, 0);
-  const totalCompressions = stats.length;
+  // Only count positive savings (when file size was actually reduced)
+  const statsWithSavings = stats.filter(s => s.saved_bytes > 0);
+  const totalSaved = statsWithSavings.reduce((sum, s) => sum + s.saved_bytes, 0);
+  const totalCompressions = statsWithSavings.length;
 
   // Show loading skeleton
   if (isLoading || totalSaved === 0) {
