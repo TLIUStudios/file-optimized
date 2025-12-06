@@ -55,13 +55,21 @@ export default function Layout({ children }) {
     localStorage.setItem('theme', theme);
   }, [theme]);
 
-  // Add AdSense meta tag for verification
+  // Add meta tags for verification and security
   useEffect(() => {
     if (!document.querySelector('meta[name="google-adsense-account"]')) {
       const meta = document.createElement('meta');
       meta.name = 'google-adsense-account';
       meta.content = 'ca-pub-9768118657510940';
       document.head.appendChild(meta);
+    }
+    
+    // Add CSP meta tag
+    if (!document.querySelector('meta[http-equiv="Content-Security-Policy"]')) {
+      const csp = document.createElement('meta');
+      csp.httpEquiv = 'Content-Security-Policy';
+      csp.content = "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://pagead2.googlesyndication.com https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline'; img-src 'self' data: https: blob:; font-src 'self' data:; connect-src 'self' https:; frame-src https://checkout.stripe.com;";
+      document.head.appendChild(csp);
     }
     
     // Load AdSense script only once

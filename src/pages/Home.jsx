@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { base44 } from "@/api/base44Client";
 import SEOHead from "../components/SEOHead";
+import { checkoutRateLimiter } from "../components/RateLimiter";
 
 // Lazy load heavy components for better performance
 const UploadZone = lazy(() => import("../components/upload/UploadZone"));
@@ -163,6 +164,12 @@ export default function Home() {
     setUpgradeError(null);
 
     try {
+      // Rate limiting check
+      if (!checkoutRateLimiter.canProceed('checkout')) {
+        toast.error('Too many checkout attempts. Please wait a few minutes and try again.');
+        return;
+      }
+
       // Try to get the user - this is more reliable than isAuthenticated()
       let currentUser;
       try {
