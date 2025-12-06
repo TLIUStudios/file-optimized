@@ -68,7 +68,7 @@ export default function Layout({ children }) {
     if (!document.querySelector('meta[http-equiv="Content-Security-Policy"]')) {
       const csp = document.createElement('meta');
       csp.httpEquiv = 'Content-Security-Policy';
-      csp.content = "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://pagead2.googlesyndication.com https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline'; img-src 'self' data: https: blob:; font-src 'self' data:; connect-src 'self' https:; frame-src https://checkout.stripe.com; object-src 'none'; base-uri 'self'; form-action 'self' https://checkout.stripe.com;";
+      csp.content = "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://pagead2.googlesyndication.com https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline'; img-src 'self' data: https: blob:; font-src 'self' data:; connect-src 'self' https:; frame-src https://checkout.stripe.com https://googleads.g.doubleclick.net https://tpc.googlesyndication.com; object-src 'none'; base-uri 'self'; form-action 'self' https://checkout.stripe.com;";
       document.head.appendChild(csp);
     }
     
