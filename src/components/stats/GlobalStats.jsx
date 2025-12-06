@@ -57,10 +57,18 @@ export default function GlobalStats() {
         </svg>
         
         {/* Corner lightning bolts */}
-        <div className="absolute top-0 left-0 w-4 h-4 bg-emerald-300 rounded-full animate-ping" style={{ animationDuration: '2s' }} />
-        <div className="absolute top-0 right-0 w-4 h-4 bg-emerald-300 rounded-full animate-ping" style={{ animationDuration: '2.5s' }} />
-        <div className="absolute bottom-0 left-0 w-4 h-4 bg-emerald-300 rounded-full animate-ping" style={{ animationDuration: '2.2s' }} />
-        <div className="absolute bottom-0 right-0 w-4 h-4 bg-emerald-300 rounded-full animate-ping" style={{ animationDuration: '1.8s' }} />
+        <svg className="absolute top-2 left-2 w-4 h-4 text-emerald-300 animate-pulse" viewBox="0 0 24 24" fill="currentColor" style={{ animationDuration: '1.5s', filter: 'drop-shadow(0 0 4px currentColor)' }}>
+          <path d="M13 2L3 14h8l-1 8 10-12h-8l1-8z" />
+        </svg>
+        <svg className="absolute top-2 right-2 w-4 h-4 text-emerald-300 animate-pulse" viewBox="0 0 24 24" fill="currentColor" style={{ animationDuration: '2s', filter: 'drop-shadow(0 0 4px currentColor)' }}>
+          <path d="M13 2L3 14h8l-1 8 10-12h-8l1-8z" />
+        </svg>
+        <svg className="absolute bottom-2 left-2 w-4 h-4 text-emerald-300 animate-pulse" viewBox="0 0 24 24" fill="currentColor" style={{ animationDuration: '1.8s', filter: 'drop-shadow(0 0 4px currentColor)' }}>
+          <path d="M13 2L3 14h8l-1 8 10-12h-8l1-8z" />
+        </svg>
+        <svg className="absolute bottom-2 right-2 w-4 h-4 text-emerald-300 animate-pulse" viewBox="0 0 24 24" fill="currentColor" style={{ animationDuration: '1.6s', filter: 'drop-shadow(0 0 4px currentColor)' }}>
+          <path d="M13 2L3 14h8l-1 8 10-12h-8l1-8z" />
+        </svg>
       </div>
       
       <style>{`
@@ -83,12 +91,12 @@ export default function GlobalStats() {
           </div>
         </div>
 
-        <div className="flex items-center gap-12">
-          <div className="text-right">
+        <div className="flex items-center gap-16">
+          <div className="text-right min-w-[100px]">
             <div className="text-2xl font-bold">{formatBytes(totalSaved)}</div>
             <div className="text-xs text-emerald-100">Space Saved</div>
           </div>
-          <div className="text-right">
+          <div className="text-right min-w-[80px]">
             <div className="text-2xl font-bold">{totalCompressions.toLocaleString()}</div>
             <div className="text-xs text-emerald-100">Files</div>
           </div>
