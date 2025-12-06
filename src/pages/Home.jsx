@@ -353,15 +353,8 @@ export default function Home() {
           while maintaining quality. All processing happens in your browser.
         </p>
 
-        {/* Global Stats */}
-        <div className="mt-8">
-          <Suspense fallback={null}>
-            <GlobalStats />
-          </Suspense>
-        </div>
-
-          {/* Features */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-12 max-w-4xl mx-auto">
+        {/* Features */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-12 max-w-4xl mx-auto">
           <div className="p-6 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm">
             <div className="w-12 h-12 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-xl flex items-center justify-center mb-4 mx-auto">
               <Zap className="w-6 h-6 text-white" />
@@ -396,6 +389,13 @@ export default function Home() {
               <span className="text-xs">Convert between any format instantly.</span>
             </p>
           </div>
+        </div>
+
+        {/* Global Stats */}
+        <div className="mt-8">
+          <Suspense fallback={null}>
+            <GlobalStats />
+          </Suspense>
         </div>
         </div>
 
