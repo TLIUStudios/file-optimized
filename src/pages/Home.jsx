@@ -372,32 +372,30 @@ export default function Home() {
         </p>
 
         {/* Global Stats */}
-        {!statsLoading && (
-          <motion.div
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.5, ease: "easeOut" }}
-            className="mt-8 max-w-md mx-auto px-4"
-          >
-            <div className="bg-gradient-to-br from-emerald-50 to-teal-50 dark:from-emerald-950/20 dark:to-teal-950/20 border border-emerald-200 dark:border-emerald-800 rounded-2xl p-6 shadow-lg">
-              <div className="flex items-center justify-center gap-2 mb-4">
-                <Globe className="w-5 h-5 text-emerald-600" />
-                <h3 className="text-sm font-semibold text-slate-900 dark:text-white">Global Impact</h3>
-              </div>
-              <div className="text-center">
-                <div className="flex items-center justify-center gap-2 mb-2">
-                  <TrendingDown className="w-6 h-6 text-emerald-600" />
-                  <p className="text-3xl sm:text-4xl font-bold text-emerald-600 dark:text-emerald-400">
-                    {globalStats.length > 0 ? formatFileSize(globalSavings) : '0 KB'}
-                  </p>
-                </div>
-                <p className="text-sm text-slate-600 dark:text-slate-400">
-                  saved across <span className="font-semibold text-slate-900 dark:text-white">{globalStats.length > 0 ? globalStats.length.toLocaleString() : '0'}</span> files optimized
+        <motion.div
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: statsLoading ? 0 : 1, scale: statsLoading ? 0.95 : 1 }}
+          transition={{ duration: 0.5, ease: "easeOut" }}
+          className="mt-8 max-w-md mx-auto px-4"
+        >
+          <div className="bg-gradient-to-br from-emerald-50 to-teal-50 dark:from-emerald-950/20 dark:to-teal-950/20 border border-emerald-200 dark:border-emerald-800 rounded-2xl p-6 shadow-lg">
+            <div className="flex items-center justify-center gap-2 mb-4">
+              <Globe className="w-5 h-5 text-emerald-600" />
+              <h3 className="text-sm font-semibold text-slate-900 dark:text-white">Global Impact</h3>
+            </div>
+            <div className="text-center">
+              <div className="flex items-center justify-center gap-2 mb-2">
+                <TrendingDown className="w-6 h-6 text-emerald-600" />
+                <p className="text-3xl sm:text-4xl font-bold text-emerald-600 dark:text-emerald-400">
+                  {globalStats.length > 0 ? formatFileSize(globalSavings) : '0 KB'}
                 </p>
               </div>
+              <p className="text-sm text-slate-600 dark:text-slate-400">
+                saved across <span className="font-semibold text-slate-900 dark:text-white">{globalStats.length > 0 ? globalStats.length.toLocaleString() : '0'}</span> files optimized
+              </p>
             </div>
-          </motion.div>
-        )}
+          </div>
+        </motion.div>
 
         {/* Features */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-12 max-w-4xl mx-auto">
