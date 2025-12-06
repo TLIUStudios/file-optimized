@@ -150,7 +150,7 @@ export default function GlobalStats() {
           </div>
         </div>
 
-        <div className="flex items-center gap-16">
+        <div className="flex items-center gap-24">
           <div className="text-right">
             <div className="text-base font-bold">{formatBytes(totalSaved)}</div>
             <div className="text-[10px] text-emerald-100">Space Saved</div>
