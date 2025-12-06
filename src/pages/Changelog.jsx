@@ -5,7 +5,7 @@ import SEOHead from "../components/SEOHead";
 const changelog = [
   {
     version: "0.0.3",
-    date: "January 12, 2025",
+    date: "December 6, 2025",
     type: "fix",
     changes: [
       "Fixed video-to-GIF conversion getting stuck at 60%",
@@ -16,7 +16,7 @@ const changelog = [
   },
   {
     version: "0.0.2",
-    date: "January 12, 2025",
+    date: "December 6, 2025",
     type: "improvement",
     changes: [
       "Increased chat support button size for better visibility",
@@ -25,7 +25,7 @@ const changelog = [
   },
   {
     version: "0.0.1",
-    date: "January 12, 2025",
+    date: "December 6, 2025",
     type: "feature",
     changes: [
       "Initial release of File Optimized",
