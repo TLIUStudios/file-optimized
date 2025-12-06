@@ -33,13 +33,9 @@ export default function GlobalStats() {
 
   const showContent = !isLoading && totalSaved > 0;
 
-  if (!showContent) {
-    return <div className="h-[60px] max-w-md mx-auto" />;
-  }
-
   return (
     <div className="h-[60px] max-w-md mx-auto">
-      <div className="relative bg-gradient-to-r from-emerald-500 to-teal-600 rounded-lg p-3 text-white shadow-lg transition-opacity duration-500">
+      <div className={`relative bg-gradient-to-r from-emerald-500 to-teal-600 rounded-lg p-3 text-white shadow-lg transition-all duration-500 ${showContent ? 'opacity-100 scale-100' : 'opacity-0 scale-95 pointer-events-none'}`}>
         <div className="flex items-center justify-between gap-3">
           <div className="flex items-center gap-2">
             <div className="w-8 h-8 bg-white/20 backdrop-blur-sm rounded-lg flex items-center justify-center flex-shrink-0">
