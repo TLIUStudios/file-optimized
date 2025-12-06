@@ -147,9 +147,9 @@ Provide a helpful, accurate, and concise response. If the question is about tech
                 onClick={() => setIsOpen(false)}
                 variant="ghost"
                 size="icon"
-                className="h-8 w-8 text-white hover:bg-white/20 rounded-full"
+                className="h-8 w-8 bg-slate-900/90 hover:bg-red-600 text-white rounded-lg transition-colors shadow-lg"
               >
-                <X className="w-5 h-5" />
+                <X className="w-4 h-4" />
               </Button>
             </div>
 
