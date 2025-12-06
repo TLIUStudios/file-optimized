@@ -21,8 +21,6 @@ import Glossary from './pages/Glossary';
 import Comparisons from './pages/Comparisons';
 import Performance from './pages/Performance';
 import ReportBug from './pages/ReportBug';
-import CheckoutSuccess from './pages/CheckoutSuccess';
-import CheckoutCanceled from './pages/CheckoutCanceled';
 import __Layout from './Layout.jsx';
 
 
@@ -50,8 +48,6 @@ export const PAGES = {
     "Comparisons": Comparisons,
     "Performance": Performance,
     "ReportBug": ReportBug,
-    "CheckoutSuccess": CheckoutSuccess,
-    "CheckoutCanceled": CheckoutCanceled,
 }
 
 export const pagesConfig = {

@@ -2,7 +2,6 @@ import { useState, useEffect, lazy, Suspense } from "react";
 import { base44 } from "@/api/base44Client";
 import SEOHead from "../components/SEOHead";
 import { useQuery } from "@tanstack/react-query";
-import CompressionStats from "../components/stats/CompressionStats";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -63,7 +62,21 @@ export default function Profile() {
     loadUser();
   }, []);
 
-  // No longer needed - redirects to dedicated pages
+  // Check for success/canceled in URL
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.hash.split('?')[1]);
+    if (params.get('success') === 'true') {
+      toast.success('🎉 Welcome to Pro! Your subscription is now active.');
+      // Reload user data after a short delay to ensure subscription status is updated
+      setTimeout(async () => {
+        const updatedUser = await base44.auth.me();
+        setUser(updatedUser);
+      }, 2000);
+    }
+    if (params.get('canceled') === 'true') {
+      toast.info('Checkout canceled. You can upgrade anytime!');
+    }
+  }, []);
 
   // Load billing history
   const { data: billingHistory = [], isLoading: billingLoading } = useQuery({
@@ -242,7 +255,7 @@ export default function Profile() {
   }
 
   const isPro = user.plan === 'pro';
-  const planExpires = user.plan_expires_at ? new Date(user.plan_expires_at) : null;
+  const planExpires = user.plan_expires ? new Date(user.plan_expires) : null;
   const isExpired = planExpires && planExpires < new Date();
   const daysRemaining = planExpires ? Math.ceil((planExpires - new Date()) / (1000 * 60 * 60 * 24)) : null;
 
@@ -300,15 +313,6 @@ export default function Profile() {
                 </div>
               </div>
             </Card>
-          </motion.div>
-
-          {/* Compression Stats */}
-          <motion.div
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: 0.15 }}
-          >
-            <CompressionStats userEmail={user?.email} />
           </motion.div>
 
           {/* Plan Comparison Card */}

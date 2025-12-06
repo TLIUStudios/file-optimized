@@ -1,4 +1,4 @@
-import { useEffect, useState, lazy, Suspense, memo } from "react";
+import { useEffect, useState, lazy, Suspense } from "react";
 import { useLocation } from "react-router-dom";
 import { Moon, Sun, User, LogIn, LogOut } from "lucide-react";
 import AnimatedMediaIcon from "./components/AnimatedMediaIcon";
@@ -19,7 +19,6 @@ import {
 import GoogleAds from "./components/GoogleAds";
 
 const LoginPromptModal = lazy(() => import("./components/LoginPromptModal"));
-const ErrorBoundary = lazy(() => import("./components/ErrorBoundary"));
 
 const SnowEffect = lazy(() => import("./components/themes/SnowEffect"));
 const FireworksEffect = lazy(() => import("./components/themes/FireworksEffect"));
@@ -55,21 +54,13 @@ export default function Layout({ children }) {
     localStorage.setItem('theme', theme);
   }, [theme]);
 
-  // Add meta tags for verification and security
+  // Add AdSense meta tag for verification
   useEffect(() => {
     if (!document.querySelector('meta[name="google-adsense-account"]')) {
       const meta = document.createElement('meta');
       meta.name = 'google-adsense-account';
       meta.content = 'ca-pub-9768118657510940';
       document.head.appendChild(meta);
-    }
-    
-    // Add CSP meta tag
-    if (!document.querySelector('meta[http-equiv="Content-Security-Policy"]')) {
-      const csp = document.createElement('meta');
-      csp.httpEquiv = 'Content-Security-Policy';
-      csp.content = "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://pagead2.googlesyndication.com https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline'; img-src 'self' data: https: blob:; font-src 'self' data:; connect-src 'self' https:; frame-src https://checkout.stripe.com;";
-      document.head.appendChild(csp);
     }
     
     // Load AdSense script only once
@@ -84,60 +75,30 @@ export default function Layout({ children }) {
   }, []);
 
   useEffect(() => {
-    let mounted = true;
     const loadUser = async () => {
       try {
         const isAuth = await base44.auth.isAuthenticated();
-        if (!mounted) return;
         setIsAuthenticated(isAuth);
         
         if (isAuth) {
           const currentUser = await base44.auth.me();
-          if (!mounted) return;
-          
-          // Auto-downgrade if Pro plan has expired
-          if (currentUser?.plan === 'pro' && currentUser?.plan_expires_at) {
-            const expiryDate = new Date(currentUser.plan_expires_at);
-            const now = new Date();
-            
-            if (expiryDate < now) {
-              // Expired - update to free
-              try {
-                await base44.auth.updateMe({ plan: 'free', plan_expires_at: null });
-                if (mounted) {
-                  currentUser.plan = 'free';
-                  currentUser.plan_expires_at = null;
-                }
-              } catch (e) {
-                console.error('Failed to auto-downgrade:', e);
-              }
-            }
-          }
-          
-          if (mounted) {
-            setUser(currentUser);
-            setUserPlan(currentUser?.plan || 'free');
-            setUserTheme(currentUser?.theme || 'none');
-          }
+          setUser(currentUser);
+          setUserPlan(currentUser?.plan || 'free');
+          setUserTheme(currentUser?.theme || 'none');
         } else {
-          if (mounted) {
-            setUser(null);
-            setUserPlan('free');
-            setUserTheme('none');
-          }
+          setUser(null);
+          setUserPlan('free');
+          setUserTheme('none');
         }
       } catch (error) {
         console.log('Auth check:', error);
-        if (mounted) {
-          setIsAuthenticated(false);
-          setUser(null);
-        }
+        setIsAuthenticated(false);
+        setUser(null);
       } finally {
-        if (mounted) setAuthLoading(false);
+        setAuthLoading(false);
       }
     };
     loadUser();
-    return () => { mounted = false; };
 
     const handleThemeChange = (event) => {
       setUserTheme(event.detail.theme);
@@ -337,19 +298,15 @@ export default function Layout({ children }) {
       </header>
       
       <main className="container mx-auto px-3 sm:px-4 py-4 sm:py-6 md:py-8">
-        <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><div className="w-8 h-8 border-4 border-emerald-600 border-t-transparent rounded-full animate-spin"></div></div>}>
-          <ErrorBoundary>
-            {children}
-          </ErrorBoundary>
-        </Suspense>
+        {children}
         
-          {/* Show Google Ads only for Free users */}
-          {!authLoading && (!isAuthenticated || userPlan === 'free') && (
-            <div className="mt-12">
-              <GoogleAds adSlot="1234567890" />
-            </div>
-          )}
-        </main>
+        {/* Show Google Ads only for Free users */}
+        {!authLoading && (!isAuthenticated || userPlan === 'free') && (
+          <div className="mt-12">
+            <GoogleAds adSlot="1234567890" />
+          </div>
+        )}
+      </main>
       
       <footer className="border-t border-slate-200 dark:border-slate-800 mt-12 sm:mt-16 md:mt-20">
         <div className="container mx-auto px-3 sm:px-4 py-8 sm:py-12">

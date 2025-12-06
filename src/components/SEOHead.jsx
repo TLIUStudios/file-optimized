@@ -46,37 +46,6 @@ export default function SEOHead({
     // Additional SEO tags
     updateMeta('robots', 'index, follow');
     updateMeta('viewport', 'width=device-width, initial-scale=1, maximum-scale=5');
-    
-    // Structured data for SEO
-    const structuredData = {
-      "@context": "https://schema.org",
-      "@type": "WebApplication",
-      "name": "File Optimized",
-      "url": "https://fileoptimized.com",
-      "description": "Professional file optimization tool. Compress images up to 90%, upscale photos with AI, convert between formats.",
-      "applicationCategory": "MultimediaApplication",
-      "operatingSystem": "Web Browser",
-      "offers": {
-        "@type": "Offer",
-        "price": "0",
-        "priceCurrency": "USD"
-      },
-      "aggregateRating": {
-        "@type": "AggregateRating",
-        "ratingValue": "5",
-        "ratingCount": "100",
-        "bestRating": "5"
-      }
-    };
-    
-    let scriptTag = document.getElementById('structured-data');
-    if (!scriptTag) {
-      scriptTag = document.createElement('script');
-      scriptTag.id = 'structured-data';
-      scriptTag.type = 'application/ld+json';
-      document.head.appendChild(scriptTag);
-    }
-    scriptTag.textContent = JSON.stringify(structuredData);
   }, [title, description, image, url]);
   
   return null;

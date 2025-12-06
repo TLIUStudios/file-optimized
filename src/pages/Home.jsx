@@ -6,7 +6,6 @@ import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { base44 } from "@/api/base44Client";
 import SEOHead from "../components/SEOHead";
-import { checkoutRateLimiter } from "../components/RateLimiter";
 
 // Lazy load heavy components for better performance
 const UploadZone = lazy(() => import("../components/upload/UploadZone"));
@@ -14,17 +13,26 @@ const AnimatedMediaIcon = lazy(() => import("../components/AnimatedMediaIcon"));
 const DragDropContext = lazy(() => import("@hello-pangea/dnd").then(m => ({ default: m.DragDropContext })));
 const Droppable = lazy(() => import("@hello-pangea/dnd").then(m => ({ default: m.Droppable })));
 const Draggable = lazy(() => import("@hello-pangea/dnd").then(m => ({ default: m.Draggable })));
-const ErrorBoundary = lazy(() => import("../components/ErrorBoundary"));
+const motion = { div: memo(({ children, className, initial, animate, transition, ...props }) => <div className={className} {...props}>{children}</div>) };
 
 const LoginPromptModal = lazy(() => import("../components/LoginPromptModal"));
 const ProUpgradeModal = lazy(() => import("../components/ProUpgradeModal"));
-const MediaCard = lazy(() => import("../components/upload/MediaCardMemo"));
+const MediaCard = lazy(() => import("../components/upload/MediaCard"));
 const ImageComparisonModal = lazy(() => import("../components/comparison/ImageComparisonModal"));
-const KeyboardShortcuts = lazy(() => import("../components/features/KeyboardShortcuts"));
-const GlobalStats = lazy(() => import("../components/stats/GlobalStats"));
 
 // Loading fallback for image cards
-const ImageCardSkeleton = lazy(() => import("../components/upload/ImageCardSkeleton"));
+function ImageCardSkeleton() {
+  return (
+    <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg p-4 space-y-4">
+      <div className="grid grid-cols-2 gap-2">
+        <Skeleton className="aspect-square rounded-lg" />
+        <Skeleton className="aspect-square rounded-lg" />
+      </div>
+      <Skeleton className="h-4 w-3/4" />
+      <Skeleton className="h-10 w-full" />
+    </div>);
+
+}
 
 export default function Home() {
   const [images, setImages] = useState([]);
@@ -57,11 +65,11 @@ export default function Home() {
   }, []);
 
   const handleFilesSelected = useCallback((files) => {
-    const newFiles = Array.from(files).map((file) => ({
-      id: `${file.name}-${Date.now()}-${Math.random()}`,
-      file
-    }));
     startTransition(() => {
+      const newFiles = Array.from(files).map((file) => ({
+        id: `${file.name}-${Date.now()}-${Math.random()}`,
+        file
+      }));
       setImages((prev) => [...prev, ...newFiles]);
     });
   }, []);
@@ -165,12 +173,6 @@ export default function Home() {
     setUpgradeError(null);
 
     try {
-      // Rate limiting check
-      if (!checkoutRateLimiter.canProceed('checkout')) {
-        toast.error('Too many checkout attempts. Please wait a few minutes and try again.');
-        return;
-      }
-
       // Try to get the user - this is more reliable than isAuthenticated()
       let currentUser;
       try {
@@ -300,11 +302,12 @@ export default function Home() {
         title="File Optimized - Compress, Upscale & Convert Media Files"
         description="Professional file optimization tool. Compress images up to 90%, upscale photos with AI, convert between formats. Fast, secure, and privacy-focused. Free & Pro plans available."
       />
-      <Suspense fallback={null}>
-        <ErrorBoundary>
-          <div className="max-w-7xl mx-auto">
+      <div className="max-w-7xl mx-auto">
       {/* Hero Section */}
-      <div className="text-center mb-12">
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="text-center mb-12">
 
         <div className="flex flex-wrap items-center justify-center gap-2 sm:gap-3 mb-6">
           <div className="inline-flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-1.5 sm:py-2 rounded-full bg-emerald-100 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-400 text-xs sm:text-sm font-medium">
@@ -390,14 +393,7 @@ export default function Home() {
             </p>
           </div>
         </div>
-
-        {/* Global Stats */}
-        <div className="mt-8">
-          <Suspense fallback={null}>
-            <GlobalStats />
-          </Suspense>
-        </div>
-        </div>
+      </motion.div>
 
       {/* Upload Zone */}
       {images.length === 0 &&
@@ -414,7 +410,10 @@ export default function Home() {
 
       {/* Images Grid */}
       {images.length > 0 &&
-      <div className="space-y-6">
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        className="space-y-6">
 
           {/* Stats Bar */}
           <div className="bg-white dark:bg-slate-900 rounded-2xl p-6 border border-slate-200 dark:border-slate-800 shadow-lg">
@@ -558,7 +557,7 @@ export default function Home() {
               </Droppable>
             </DragDropContext>
           </Suspense>
-        </div>
+        </motion.div>
       }
 
       {/* Comparison Modal */}
@@ -616,20 +615,7 @@ export default function Home() {
         </Suspense>
       )}
 
-      {/* Keyboard Shortcuts */}
-      <Suspense fallback={null}>
-        <KeyboardShortcuts
-          onProcessAll={processAllImages}
-          onDownloadAll={downloadAll}
-          onClearAll={clearAll}
-          hasImages={images.length > 0}
-          hasProcessed={Object.keys(processedImages).length > 0}
-        />
-      </Suspense>
-
     </div>
-    </ErrorBoundary>
-    </Suspense>
     </>
   );
 

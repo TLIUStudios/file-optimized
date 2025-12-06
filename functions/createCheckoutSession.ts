@@ -46,8 +46,12 @@ Deno.serve(async (req) => {
     // Select the correct price ID based on billing frequency
     const stripePriceId = billingFrequency === 'annual' ? stripeAnnualPriceId : stripeMonthlyPriceId;
 
-    console.log('🔑 Stripe configured:', !!stripeSecretKey);
-    console.log('💰 Price configured:', !!stripePriceId);
+    console.log('🔑 Stripe Secret Key exists:', !!stripeSecretKey);
+    console.log('🔑 Stripe Secret Key length:', stripeSecretKey?.length || 0);
+    console.log('🔑 Stripe Secret Key prefix:', stripeSecretKey?.substring(0, 10));
+    console.log('💰 Stripe Monthly Price ID:', stripeMonthlyPriceId);
+    console.log('💰 Stripe Annual Price ID:', stripeAnnualPriceId);
+    console.log('✅ Selected Price ID:', stripePriceId);
 
     if (!stripeSecretKey) {
       console.error('❌ STRIPE_SECRET_KEY not set');
@@ -92,8 +96,8 @@ Deno.serve(async (req) => {
         quantity: 1,
       }],
       mode: 'subscription',
-      success_url: `${origin}/#/CheckoutSuccess`,
-      cancel_url: `${origin}/#/CheckoutCanceled`,
+      success_url: `${origin}/#/Profile?success=true`,
+      cancel_url: `${origin}/#/Profile?canceled=true`,
       metadata: {
         user_id: user.id,
         user_email: user.email,
@@ -101,7 +105,7 @@ Deno.serve(async (req) => {
       allow_promotion_codes: true,
     };
 
-    console.log('Creating checkout session for user:', user.id);
+    console.log('Creating checkout session with params:', JSON.stringify(sessionParams, null, 2));
 
     // Create Checkout Session
     let session;
@@ -125,9 +129,13 @@ Deno.serve(async (req) => {
   } catch (error) {
     console.error('❌ FULL ERROR:', error);
     
-    // Return generic error to frontend (don't expose internal details)
+    // Return detailed error info to frontend for debugging
     return Response.json({ 
-      error: 'Failed to create checkout session. Please try again or contact support.'
+      error: error.message || 'Failed to create checkout session',
+      errorType: error.type || 'unknown_error',
+      errorCode: error.code || 'unknown',
+      errorDetails: error.raw?.message || error.toString(),
+      stripeError: error.raw || null
     }, { status: 500 });
   }
 });

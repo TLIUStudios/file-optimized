@@ -121,8 +121,8 @@ export default function Features() {
               <tbody className="divide-y divide-slate-200 dark:divide-slate-800">
                 <tr>
                   <td className="px-6 py-4 text-sm font-medium text-slate-900 dark:text-white">Images</td>
-                  <td className="px-6 py-4 text-sm text-slate-600 dark:text-slate-400">JPEG, PNG, WEBP, AVIF, GIF</td>
-                  <td className="px-6 py-4 text-sm text-slate-600 dark:text-slate-400">JPEG, PNG, WEBP, AVIF, GIF</td>
+                  <td className="px-6 py-4 text-sm text-slate-600 dark:text-slate-400">JPEG, PNG, WebP, AVIF, GIF</td>
+                  <td className="px-6 py-4 text-sm text-slate-600 dark:text-slate-400">JPEG, PNG, WebP, AVIF, GIF</td>
                 </tr>
                 <tr>
                   <td className="px-6 py-4 text-sm font-medium text-slate-900 dark:text-white">Videos</td>

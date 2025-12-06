@@ -638,20 +638,6 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
         originalFileFormat: originalFormat
       });
       
-      // Save compression stat (no await - fire and forget)
-      try {
-        const savedBytes = image.size - blob.size;
-        base44.entities.CompressionStat.create({
-          original_size: image.size,
-          compressed_size: blob.size,
-          saved_bytes: savedBytes > 0 ? savedBytes : 0,
-          file_type: 'video',
-          format: 'mp4'
-        }).catch(() => {}); // Silently fail if not authenticated
-      } catch (e) {
-        // Ignore stat save errors
-      }
-      
       const savings = image.size > blob.size ? ((1 - blob.size / image.size) * 100).toFixed(1) : 0;
       toast.success(`Video processed to MP4! ${savings > 0 ? `Saved ${savings}%` : ''}`);
       
@@ -807,20 +793,6 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
         originalFileFormat: originalFormat
       });
       
-      // Save compression stat (no await - fire and forget)
-      try {
-        const savedBytes = image.size - blob.size;
-        base44.entities.CompressionStat.create({
-          original_size: image.size,
-          compressed_size: blob.size,
-          saved_bytes: savedBytes > 0 ? savedBytes : 0,
-          file_type: 'audio',
-          format: outputExt
-        }).catch(() => {}); // Silently fail if not authenticated
-      } catch (e) {
-        // Ignore stat save errors
-      }
-      
       const savings = ((1 - blob.size / image.size) * 100).toFixed(1);
       if (blob.size < image.size) {
         toast.success(`Audio ${outputExt.toUpperCase()} processed! Saved ${savings}%`);
@@ -888,7 +860,6 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
       }
       
       const GIF = window.GIF;
-      const gifQuality = 10; // Default quality for video to GIF conversion
       const gif = new GIF({
         workers: 2,
         quality: gifQuality,
@@ -1456,7 +1427,6 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
     // Standard compression for other formats
     const mimeType = format === 'jpg' ? 'image/jpeg' : `image/${format}`;
     let baseQuality = quality / 100;
-    const outputFilenameForStat = `${image.name.split('.').slice(0, -1).join('.')}.${format}`;
     
     // AVIF needs more aggressive quality reduction for better compression
     if (format === 'avif') {
@@ -1533,20 +1503,6 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
       fileFormat: format,
       originalFileFormat: originalFormat
     });
-
-    // Save compression stat (no await - fire and forget)
-    try {
-      const savedBytes = image.size - blob.size;
-      base44.entities.CompressionStat.create({
-        original_size: image.size,
-        compressed_size: blob.size,
-        saved_bytes: savedBytes > 0 ? savedBytes : 0,
-        file_type: 'image',
-        format: format
-      }).catch(() => {}); // Silently fail if not authenticated
-    } catch (e) {
-      // Ignore stat save errors
-    }
   };
 
   const processImageToAnimation = async () => {
@@ -1654,11 +1610,11 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
       const GIF = window.GIF;
       
       // Apply user's quality setting (1-10 scale for GIF, lower is better quality but larger file)
-      const gifQualityValue = Math.round((100 - quality) / 10); // Convert 0-100 to 10-0 scale
+      const gifQuality = Math.round((100 - quality) / 10); // Convert 0-100 to 10-0 scale
       
       const gif = new GIF({
         workers: 4,
-        quality: Math.max(1, Math.min(10, gifQualityValue)), // Clamp between 1-10
+        quality: Math.max(1, Math.min(10, gifQuality)), // Clamp between 1-10
         width,
         height,
         workerScript: workerBlobUrl,
