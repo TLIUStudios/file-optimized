@@ -695,8 +695,8 @@ export default function ImageComparisonModal({
   useEffect(() => {
     const handleMouseMove = (e) => {
       if (isDragging && !isPanning) {
-        if (imageContainerRef.current) {
-          const rect = imageContainerRef.current.getBoundingClientRect();
+        if (containerRef.current) {
+          const rect = containerRef.current.getBoundingClientRect();
           const x = e.clientX - rect.left;
           const percentage = (x / rect.width) * 100;
           setSliderPosition(Math.max(0, Math.min(100, percentage)));
@@ -713,8 +713,8 @@ export default function ImageComparisonModal({
 
     const handleTouchMove = (e) => {
       if (e.touches.length === 1) {
-        if (isDragging && !isPanning && imageContainerRef.current) {
-          const rect = imageContainerRef.current.getBoundingClientRect();
+        if (isDragging && !isPanning && containerRef.current) {
+          const rect = containerRef.current.getBoundingClientRect();
           const x = e.touches[0].clientX - rect.left;
           const percentage = (x / rect.width) * 100;
           setSliderPosition(Math.max(0, Math.min(100, percentage)));
