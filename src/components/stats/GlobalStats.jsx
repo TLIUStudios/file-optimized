@@ -35,8 +35,8 @@ export default function GlobalStats() {
   return (
     <div className="h-[60px] max-w-md mx-auto">
       {showContent && (
-        <div className="relative bg-gradient-to-r from-emerald-500 to-teal-600 rounded-lg p-3 text-white shadow-lg animate-in fade-in-0 duration-300">
-          <div className="flex items-center justify-between gap-3 animate-in fade-in-0 zoom-in-95 duration-500 delay-150">
+        <div className="relative bg-gradient-to-r from-emerald-500 to-teal-600 rounded-lg p-3 text-white shadow-lg animate-in fade-in-0 zoom-in-95 duration-500">
+          <div className="flex items-center justify-between gap-3">
             <div className="flex items-center gap-2">
               <div className="w-8 h-8 bg-white/20 backdrop-blur-sm rounded-lg flex items-center justify-center flex-shrink-0">
                 <Globe className="w-4 h-4" />
