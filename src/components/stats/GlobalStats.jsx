@@ -14,11 +14,18 @@ export default function GlobalStats() {
   const { data: stats = [], isLoading } = useQuery({
     queryKey: ['globalCompressionStats'],
     queryFn: async () => {
-      return await base44.entities.CompressionStat.list('-created_date', 10000);
+      try {
+        return await base44.entities.CompressionStat.list('-created_date', 10000);
+      } catch (error) {
+        console.error('Failed to fetch global stats:', error);
+        return [];
+      }
     },
     refetchInterval: 60000, // Refresh every minute
     staleTime: 30000, // Consider data fresh for 30 seconds
-    placeholderData: [] // Show empty array immediately
+    placeholderData: [], // Show empty array immediately
+    retry: 2, // Retry failed requests twice
+    retryDelay: 1000 // Wait 1 second between retries
   });
 
   const totalSaved = stats.reduce((sum, s) => sum + s.saved_bytes, 0);
