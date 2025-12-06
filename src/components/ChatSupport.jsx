@@ -21,6 +21,7 @@ export default function ChatSupport() {
   ]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [showTooltip, setShowTooltip] = useState(false);
   const messagesEndRef = useRef(null);
 
   const scrollToBottom = () => {
@@ -30,6 +31,22 @@ export default function ChatSupport() {
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
+
+  // Auto-show tooltip on initial load
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setShowTooltip(true);
+    }, 1000);
+
+    const hideTimer = setTimeout(() => {
+      setShowTooltip(false);
+    }, 5000);
+
+    return () => {
+      clearTimeout(timer);
+      clearTimeout(hideTimer);
+    };
+  }, []);
 
   const handleSend = async () => {
     if (!input.trim() || isLoading) return;
@@ -103,10 +120,12 @@ Provide a helpful, accurate, and concise response. If the question is about tech
             exit={{ scale: 0, opacity: 0 }}
             className="fixed bottom-6 right-6 z-50"
           >
-            <Tooltip>
+            <Tooltip open={showTooltip} onOpenChange={setShowTooltip}>
               <TooltipTrigger asChild>
                 <Button
                   onClick={() => setIsOpen(true)}
+                  onMouseEnter={() => setShowTooltip(true)}
+                  onMouseLeave={() => setShowTooltip(false)}
                   className="h-14 w-14 rounded-full bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 shadow-lg hover:shadow-xl transition-all relative"
                   size="icon"
                 >
@@ -115,7 +134,11 @@ Provide a helpful, accurate, and concise response. If the question is about tech
                   <span className="absolute inset-0 rounded-full bg-emerald-400 animate-ping opacity-20" />
                 </Button>
               </TooltipTrigger>
-              <TooltipContent side="left" className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-lg">
+              <TooltipContent 
+                side="left" 
+                sideOffset={16}
+                className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-lg"
+              >
                 <p className="text-sm font-medium">Need help? Ask me anything.</p>
               </TooltipContent>
             </Tooltip>
