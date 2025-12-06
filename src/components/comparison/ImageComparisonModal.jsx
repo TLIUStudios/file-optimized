@@ -964,66 +964,68 @@ export default function ImageComparisonModal({
               </div>
             ) : mediaType === 'image' ? (
               // Original image comparison view
-              <div
-                ref={containerRef}
-                className="flex-1 relative w-full bg-slate-100 dark:bg-slate-900 select-none flex flex-col overflow-hidden"
-              >
-                <div className="flex-1 relative w-full flex items-center justify-center py-4">
-                  <div
-                    ref={imageContainerRef}
-                    className="relative"
-                    style={{
-                      transform: `scale(${zoom}) translate(${pan.x / zoom}px, ${pan.y / zoom}px)`,
-                      transformOrigin: 'center',
-                      transition: isDragging || isPanning ? 'none' : 'transform 0.2s ease-out',
-                      cursor: zoom > 1 ? (isPanning ? 'grabbing' : 'grab') : 'col-resize'
-                    }}
-                    onMouseDown={(e) => {
-                      if (zoom > 1) {
-                        handlePanStart(e);
-                      } else {
-                        setIsDragging(true);
-                      }
-                    }}
-                    onTouchStart={(e) => {
-                      if (zoom > 1 && e.touches.length === 1) {
-                        setIsPanning(true);
-                        setPanStart({ x: e.touches[0].clientX, y: e.touches[0].clientY });
-                      } else if (e.touches.length === 1) {
-                        setIsDragging(true);
-                      }
-                    }}
-                  >
-                    <div className="relative">
-                      <img
-                        src={compressedImage}
-                        alt="Compressed"
-                        className="max-w-[85vw] lg:max-w-[60vw] max-h-[calc(100vh-200px)] w-auto h-auto object-contain"
-                        draggable="false"
-                      />
-
-                      <div
-                        className="absolute inset-0 overflow-hidden"
-                        style={{ clipPath: `inset(0 ${100 - sliderPosition}% 0 0)` }}
-                      >
+              <>
+                <div
+                  ref={containerRef}
+                  className="flex-1 relative w-full bg-slate-100 dark:bg-slate-900 select-none flex items-center justify-center overflow-hidden"
+                >
+                  <div className="relative w-full h-full flex items-center justify-center py-4">
+                    <div
+                      ref={imageContainerRef}
+                      className="relative"
+                      style={{
+                        transform: `scale(${zoom}) translate(${pan.x / zoom}px, ${pan.y / zoom}px)`,
+                        transformOrigin: 'center',
+                        transition: isDragging || isPanning ? 'none' : 'transform 0.2s ease-out',
+                        cursor: zoom > 1 ? (isPanning ? 'grabbing' : 'grab') : 'col-resize'
+                      }}
+                      onMouseDown={(e) => {
+                        if (zoom > 1) {
+                          handlePanStart(e);
+                        } else {
+                          setIsDragging(true);
+                        }
+                      }}
+                      onTouchStart={(e) => {
+                        if (zoom > 1 && e.touches.length === 1) {
+                          setIsPanning(true);
+                          setPanStart({ x: e.touches[0].clientX, y: e.touches[0].clientY });
+                        } else if (e.touches.length === 1) {
+                          setIsDragging(true);
+                        }
+                      }}
+                    >
+                      <div className="relative">
                         <img
-                          src={originalImage}
-                          alt="Original"
+                          src={compressedImage}
+                          alt="Compressed"
                           className="max-w-[85vw] lg:max-w-[60vw] max-h-[calc(100vh-200px)] w-auto h-auto object-contain"
                           draggable="false"
                         />
-                      </div>
 
-                      {zoom === 1 && !isPanning && (
                         <div
-                          className="absolute top-0 bottom-0 w-0.5 bg-white shadow-2xl z-10 pointer-events-none"
-                          style={{ left: `${sliderPosition}%`, transform: 'translateX(-50%)' }}
+                          className="absolute inset-0 overflow-hidden"
+                          style={{ clipPath: `inset(0 ${100 - sliderPosition}% 0 0)` }}
                         >
-                          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-12 h-12 bg-white dark:bg-slate-700 rounded-full shadow-2xl flex items-center justify-center cursor-col-resize border-2 border-slate-300 dark:border-slate-600 pointer-events-auto">
-                            <MoveHorizontal className="w-5 h-5 text-slate-700 dark:text-white" />
-                          </div>
+                          <img
+                            src={originalImage}
+                            alt="Original"
+                            className="max-w-[85vw] lg:max-w-[60vw] max-h-[calc(100vh-200px)] w-auto h-auto object-contain"
+                            draggable="false"
+                          />
                         </div>
-                      )}
+
+                        {zoom === 1 && !isPanning && (
+                          <div
+                            className="absolute top-0 bottom-0 w-0.5 bg-white shadow-2xl z-10 pointer-events-none"
+                            style={{ left: `${sliderPosition}%`, transform: 'translateX(-50%)' }}
+                          >
+                            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-12 h-12 bg-white dark:bg-slate-700 rounded-full shadow-2xl flex items-center justify-center cursor-col-resize border-2 border-slate-300 dark:border-slate-600 pointer-events-auto">
+                              <MoveHorizontal className="w-5 h-5 text-slate-700 dark:text-white" />
+                            </div>
+                          </div>
+                        )}
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -1053,7 +1055,7 @@ export default function ImageComparisonModal({
                     </Badge>
                   </div>
                 </div>
-              </div>
+              </>
             ) : (
               // Video or Audio player
               <div className="relative w-full h-full bg-slate-100 dark:bg-slate-900 flex flex-col items-center justify-center">
