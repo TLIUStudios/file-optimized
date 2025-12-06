@@ -37,25 +37,26 @@ export default function GlobalStats() {
       {showContent && (
         <div className="relative bg-gradient-to-r from-emerald-500 to-teal-600 rounded-lg p-3 text-white shadow-lg animate-in fade-in-0 duration-300">
           <div className="flex items-center justify-between gap-3 animate-in fade-in-0 zoom-in-95 duration-500 delay-150">
-        <div className="flex items-center gap-2">
-          <div className="w-8 h-8 bg-white/20 backdrop-blur-sm rounded-lg flex items-center justify-center flex-shrink-0">
-            <Globe className="w-4 h-4" />
-          </div>
-          <div className="flex flex-col items-start">
-            <h3 className="text-xs font-bold leading-tight">Global Impact</h3>
-            <p className="text-[10px] text-emerald-100 leading-tight">Combined from all users</p>
-          </div>
-        </div>
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 bg-white/20 backdrop-blur-sm rounded-lg flex items-center justify-center flex-shrink-0">
+                <Globe className="w-4 h-4" />
+              </div>
+              <div className="flex flex-col items-start">
+                <h3 className="text-xs font-bold leading-tight">Global Impact</h3>
+                <p className="text-[10px] text-emerald-100 leading-tight">Combined from all users</p>
+              </div>
+            </div>
 
-        <div className="flex items-center gap-24">
-          <div className="text-right">
-            <div className="text-base font-bold">{formatBytes(totalSaved)}</div>
-            <div className="text-[10px] text-emerald-100">Space Saved</div>
-          </div>
-          <div className="text-right">
-            <div className="text-base font-bold">{totalCompressions.toLocaleString()}</div>
-            <div className="text-[10px] text-emerald-100">Files</div>
-          </div>
+            <div className="flex items-center gap-24">
+              <div className="text-right">
+                <div className="text-base font-bold">{formatBytes(totalSaved)}</div>
+                <div className="text-[10px] text-emerald-100">Space Saved</div>
+              </div>
+              <div className="text-right">
+                <div className="text-base font-bold">{totalCompressions.toLocaleString()}</div>
+                <div className="text-[10px] text-emerald-100">Files</div>
+              </div>
+            </div>
           </div>
         </div>
       )}
