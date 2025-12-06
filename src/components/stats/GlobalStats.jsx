@@ -28,7 +28,7 @@ export default function GlobalStats() {
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      className="relative bg-gradient-to-r from-emerald-500 to-teal-600 rounded-lg p-3 text-white shadow-lg max-w-xs mx-auto overflow-hidden"
+      className="relative bg-gradient-to-r from-emerald-500 to-teal-600 rounded-lg p-3 text-white shadow-lg max-w-md mx-auto overflow-hidden"
     >
       {/* Animated Lightning Border Effect */}
       <div className="absolute inset-0 rounded-xl pointer-events-none">
