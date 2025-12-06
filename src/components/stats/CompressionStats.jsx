@@ -18,14 +18,14 @@ const calculateStats = (stats, hours) => {
   return filtered.reduce((sum, s) => sum + s.saved_bytes, 0);
 };
 
-export default function CompressionStats({ userId }) {
+export default function CompressionStats({ userEmail }) {
   const { data: stats = [], isLoading } = useQuery({
-    queryKey: ['compressionStats', userId],
+    queryKey: ['compressionStats', userEmail],
     queryFn: async () => {
-      if (!userId) return [];
-      return await base44.entities.CompressionStat.filter({ created_by: userId }, '-created_date', 1000);
+      if (!userEmail) return [];
+      return await base44.entities.CompressionStat.filter({ created_by: userEmail }, '-created_date', 1000);
     },
-    enabled: !!userId
+    enabled: !!userEmail
   });
 
   if (isLoading) {

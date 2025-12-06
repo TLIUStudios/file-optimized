@@ -28,27 +28,28 @@ export default function GlobalStats() {
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      className="bg-gradient-to-r from-emerald-500 to-teal-600 rounded-2xl p-6 text-white shadow-xl"
+      className="bg-gradient-to-r from-emerald-500 to-teal-600 rounded-xl p-4 text-white shadow-lg max-w-2xl mx-auto"
     >
-      <div className="flex items-center gap-3 mb-4">
-        <div className="w-12 h-12 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center">
-          <Globe className="w-6 h-6" />
+      <div className="flex items-center justify-between gap-4">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 bg-white/20 backdrop-blur-sm rounded-lg flex items-center justify-center flex-shrink-0">
+            <Globe className="w-5 h-5" />
+          </div>
+          <div>
+            <h3 className="text-sm font-bold">Global Impact</h3>
+            <p className="text-xs text-emerald-100">Combined from all users</p>
+          </div>
         </div>
-        <div>
-          <h3 className="text-lg font-bold">Global Impact</h3>
-          <p className="text-sm text-emerald-100">Combined savings from all users</p>
-        </div>
-      </div>
 
-      <div className="grid grid-cols-2 gap-4">
-        <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4">
-          <TrendingDown className="w-5 h-5 mb-2 text-emerald-100" />
-          <div className="text-3xl font-bold">{formatBytes(totalSaved)}</div>
-          <div className="text-xs text-emerald-100 mt-1">Total Space Saved</div>
-        </div>
-        <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4">
-          <div className="text-3xl font-bold">{totalCompressions.toLocaleString()}</div>
-          <div className="text-xs text-emerald-100 mt-1">Files Optimized</div>
+        <div className="flex items-center gap-4">
+          <div className="text-right">
+            <div className="text-2xl font-bold">{formatBytes(totalSaved)}</div>
+            <div className="text-xs text-emerald-100">Space Saved</div>
+          </div>
+          <div className="text-right">
+            <div className="text-2xl font-bold">{totalCompressions.toLocaleString()}</div>
+            <div className="text-xs text-emerald-100">Files</div>
+          </div>
         </div>
       </div>
     </motion.div>
