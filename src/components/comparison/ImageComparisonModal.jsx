@@ -1041,7 +1041,7 @@ export default function ImageComparisonModal({
                     <img
                       src={compressedImage}
                       alt="Compressed"
-                      style={{ maxWidth: '55vw', maxHeight: 'calc(100vh - 150px)' }}
+                      style={{ maxWidth: '100%', maxHeight: 'calc(100vh - 180px)' }}
                       className="w-auto h-auto object-contain"
                       draggable="false"
                     />
@@ -1052,7 +1052,7 @@ export default function ImageComparisonModal({
                       <img
                         src={originalImage}
                         alt="Original"
-                        style={{ maxWidth: '55vw', maxHeight: 'calc(100vh - 150px)' }}
+                        style={{ maxWidth: '100%', maxHeight: 'calc(100vh - 180px)' }}
                         className="w-auto h-auto object-contain"
                         draggable="false"
                       />
