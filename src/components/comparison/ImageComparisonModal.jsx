@@ -966,7 +966,7 @@ export default function ImageComparisonModal({
                   }}
                 >
                   <div 
-                    className="relative inline-block"
+                    className="relative"
                     style={{
                       transform: `scale(${zoom}) translate(${pan.x / zoom}px, ${pan.y / zoom}px)`,
                       transformOrigin: 'center',
@@ -977,20 +977,16 @@ export default function ImageComparisonModal({
                     <img
                       src={compressedImage}
                       alt="Compressed"
-                      className="max-w-[85vw] lg:max-w-[60vw] max-h-[calc(100vh-200px)] w-auto h-auto object-contain block"
+                      className="max-w-[85vw] lg:max-w-[60vw] max-h-[calc(100vh-200px)] w-auto h-auto object-contain"
                       draggable="false"
                     />
-                    <div 
-                      className="absolute top-0 left-0 w-full h-full overflow-hidden" 
+                    <img
+                      src={originalImage}
+                      alt="Original"
+                      className="absolute top-0 left-0 max-w-[85vw] lg:max-w-[60vw] max-h-[calc(100vh-200px)] w-auto h-auto object-contain"
+                      draggable="false"
                       style={{ clipPath: `inset(0 ${100 - sliderPosition}% 0 0)` }}
-                    >
-                      <img
-                        src={originalImage}
-                        alt="Original"
-                        className="w-full h-full object-contain block"
-                        draggable="false"
-                      />
-                    </div>
+                    />
                     {zoom === 1 && !isPanning && (
                       <div className="absolute top-0 bottom-0 w-0.5 bg-white shadow-2xl z-10 pointer-events-none" style={{ left: `${sliderPosition}%`, transform: 'translateX(-50%)' }}>
                         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-12 h-12 bg-white dark:bg-slate-700 rounded-full shadow-2xl flex items-center justify-center cursor-col-resize border-2 border-slate-300 dark:border-slate-600 pointer-events-auto">
