@@ -1046,7 +1046,7 @@ export default function ImageComparisonModal({
                       <img
                         src={compressedImage}
                         alt="Compressed"
-                        className="w-full h-full object-contain"
+                        className="max-h-[calc(100vh-180px)] w-auto object-contain"
                         draggable="false"
                       />
                       <div
@@ -1056,7 +1056,7 @@ export default function ImageComparisonModal({
                         <img
                           src={originalImage}
                           alt="Original"
-                          className="w-full h-full object-contain"
+                          className="max-h-[calc(100vh-180px)] w-auto object-contain"
                           draggable="false"
                         />
                       </div>
