@@ -1,8 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
-import { Globe, TrendingDown } from "lucide-react";
+import { Globe } from "lucide-react";
 import { motion } from "framer-motion";
-import { useState, useEffect } from "react";
 
 const formatBytes = (bytes) => {
   if (bytes === 0) return '0 B';
@@ -12,17 +11,6 @@ const formatBytes = (bytes) => {
 };
 
 export default function GlobalStats() {
-  const [glitchText, setGlitchText] = useState([]);
-  
-  useEffect(() => {
-    const chars = '01アイウエオカキクケコサシスセソタチツテトナニヌネノハヒフヘホマミムメモヤユヨラリルレロワヲン!@#$%^&*()_+-=[]{}|;:,.<>?/~`ﾊﾐﾋｰｳｼﾅﾓﾆｻﾜﾂｵﾘｱﾎﾃﾏｹﾒｴｶｷﾑﾕﾗｾﾈｽﾀﾇﾍ';
-    const interval = setInterval(() => {
-      setGlitchText(Array.from({ length: 25 }, () => 
-        Array.from({ length: 20 }, () => chars[Math.floor(Math.random() * chars.length)]).join('')
-      ));
-    }, 50);
-    return () => clearInterval(interval);
-  }, []);
 
   const { data: stats = [], isLoading } = useQuery({
     queryKey: ['globalCompressionStats'],
