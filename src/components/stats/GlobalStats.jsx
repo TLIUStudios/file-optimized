@@ -28,9 +28,42 @@ export default function GlobalStats() {
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      className="bg-gradient-to-r from-emerald-500 to-teal-600 rounded-xl p-4 text-white shadow-lg max-w-2xl mx-auto"
+      className="relative bg-gradient-to-r from-emerald-500 to-teal-600 rounded-xl p-4 text-white shadow-lg max-w-2xl mx-auto overflow-hidden"
     >
-      <div className="flex items-center justify-between gap-4">
+      {/* Animated Lightning Border Effect */}
+      <div className="absolute inset-0 rounded-xl pointer-events-none">
+        <div className="absolute inset-0 rounded-xl animate-pulse" style={{ 
+          boxShadow: '0 0 20px rgba(16, 185, 129, 0.6), inset 0 0 20px rgba(16, 185, 129, 0.3)',
+          animationDuration: '2s'
+        }} />
+        <svg className="absolute inset-0 w-full h-full" style={{ filter: 'blur(1px)' }}>
+          <rect x="0" y="0" width="100%" height="100%" fill="none" stroke="url(#lightning-gradient)" strokeWidth="2" rx="12" className="animate-dash" strokeDasharray="400" strokeDashoffset="0" />
+          <defs>
+            <linearGradient id="lightning-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" style={{ stopColor: '#10b981', stopOpacity: 0.8 }}>
+                <animate attributeName="stop-color" values="#10b981;#34d399;#10b981" dur="3s" repeatCount="indefinite" />
+              </stop>
+              <stop offset="50%" style={{ stopColor: '#34d399', stopOpacity: 1 }}>
+                <animate attributeName="stop-color" values="#34d399;#6ee7b7;#34d399" dur="3s" repeatCount="indefinite" />
+              </stop>
+              <stop offset="100%" style={{ stopColor: '#10b981', stopOpacity: 0.8 }}>
+                <animate attributeName="stop-color" values="#10b981;#34d399;#10b981" dur="3s" repeatCount="indefinite" />
+              </stop>
+            </linearGradient>
+          </defs>
+        </svg>
+      </div>
+      
+      <style>{`
+        @keyframes dash {
+          0% { stroke-dashoffset: 0; }
+          100% { stroke-dashoffset: -800; }
+        }
+        .animate-dash {
+          animation: dash 4s linear infinite;
+        }
+      `}</style>
+      <div className="relative z-10 flex items-center justify-between gap-4">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 bg-white/20 backdrop-blur-sm rounded-lg flex items-center justify-center flex-shrink-0">
             <Globe className="w-5 h-5" />

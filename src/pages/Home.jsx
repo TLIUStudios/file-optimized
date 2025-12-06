@@ -350,18 +350,18 @@ export default function Home() {
         </h1>
         <p className="text-base sm:text-lg text-slate-600 dark:text-slate-400 max-w-2xl mx-auto px-4">
           Fast, secure, and powerful media compression. Reduce file size by up to 90% 
-            while maintaining quality. All processing happens in your browser.
-          </p>
+          while maintaining quality. All processing happens in your browser.
+        </p>
 
-          {/* Global Stats */}
-          <div className="mt-8 mb-8">
-            <Suspense fallback={null}>
-              <GlobalStats />
-            </Suspense>
-          </div>
+        {/* Global Stats */}
+        <div className="mt-8">
+          <Suspense fallback={null}>
+            <GlobalStats />
+          </Suspense>
+        </div>
 
           {/* Features */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-8 max-w-4xl mx-auto">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-12 max-w-4xl mx-auto">
           <div className="p-6 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm">
             <div className="w-12 h-12 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-xl flex items-center justify-center mb-4 mx-auto">
               <Zap className="w-6 h-6 text-white" />
