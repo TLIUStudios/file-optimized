@@ -888,9 +888,11 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
       }
       
       const GIF = window.GIF;
+      // Convert quality (0-100) to GIF quality scale (1-10, lower is better)
+      const gifQuality = Math.round((100 - quality) / 10);
       const gif = new GIF({
         workers: 2,
-        quality: gifQuality,
+        quality: Math.max(1, Math.min(10, gifQuality)),
         width: targetWidth,
         height: targetHeight,
         workerScript: workerBlobUrl,
