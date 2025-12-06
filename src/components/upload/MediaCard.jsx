@@ -938,31 +938,18 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
         originalFileFormat: originalFormat
       });
       
-      // Record compression stat
-      try {
-        const isAuth = await base44.auth.isAuthenticated();
-        if (isAuth) {
+      // Record compression stat only if space was saved
+      if (gifBlob.size < image.size) {
+        try {
           await base44.entities.CompressionStat.create({
             original_size: image.size,
             compressed_size: gifBlob.size,
             media_type: 'image',
             output_format: 'gif'
           });
+        } catch (err) {
+          console.log('Could not save stat:', err);
         }
-      } catch (err) {
-        console.log('Could not save stat:', err);
-      }
-      
-      // Record compression stat
-      try {
-        await base44.entities.CompressionStat.create({
-          original_size: image.size,
-          compressed_size: gifBlob.size,
-          media_type: 'image',
-          output_format: 'gif'
-        });
-      } catch (err) {
-        console.log('Could not save stat:', err);
       }
       
       toast.success('Video converted to GIF!');
@@ -1779,31 +1766,18 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
         animations: [animationData]
       });
       
-      // Record compression stat
-      try {
-        const isAuth = await base44.auth.isAuthenticated();
-        if (isAuth) {
+      // Record compression stat only if space was saved
+      if (gifBlob.size < image.size) {
+        try {
           await base44.entities.CompressionStat.create({
             original_size: image.size,
             compressed_size: gifBlob.size,
             media_type: 'image',
             output_format: 'gif'
           });
+        } catch (err) {
+          console.log('Could not save stat:', err);
         }
-      } catch (err) {
-        console.log('Could not save stat:', err);
-      }
-      
-      // Record compression stat
-      try {
-        await base44.entities.CompressionStat.create({
-          original_size: image.size,
-          compressed_size: gifBlob.size,
-          media_type: 'image',
-          output_format: 'gif'
-        });
-      } catch (err) {
-        console.log('Could not save stat:', err);
       }
       
       toast.success(`Animation created! (${totalFrames} frames)`);
