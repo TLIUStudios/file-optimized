@@ -1016,7 +1016,7 @@ export default function ImageComparisonModal({
                 <div className="flex-1 relative flex items-center justify-center overflow-hidden select-none">
                   <div
                     ref={imageContainerRef}
-                    className="relative"
+                    className="relative w-full h-full flex items-center justify-center"
                     style={{
                       transform: `scale(${zoom}) translate(${pan.x / zoom}px, ${pan.y / zoom}px)`,
                       cursor: zoom > 1 ? (isPanning ? 'grabbing' : 'grab') : 'col-resize',
@@ -1038,24 +1038,24 @@ export default function ImageComparisonModal({
                       }
                     }}
                   >
-                    <img
-                      src={compressedImage}
-                      alt="Compressed"
-                      style={{ maxWidth: 'calc(100vw - 450px)', maxHeight: 'calc(100vh - 180px)' }}
-                      className="w-auto h-auto object-contain"
-                      draggable="false"
-                    />
-                    <div
-                      className="absolute top-0 left-0 w-full h-full overflow-hidden"
-                      style={{ clipPath: `inset(0 ${100 - sliderPosition}% 0 0)` }}
-                    >
+                    <div className="relative max-w-full max-h-full">
                       <img
-                        src={originalImage}
-                        alt="Original"
-                        style={{ maxWidth: 'calc(100vw - 450px)', maxHeight: 'calc(100vh - 180px)' }}
-                        className="w-auto h-auto object-contain"
+                        src={compressedImage}
+                        alt="Compressed"
+                        className="max-w-full max-h-[calc(100vh-180px)] w-auto h-auto object-contain"
                         draggable="false"
                       />
+                      <div
+                        className="absolute top-0 left-0 w-full h-full overflow-hidden"
+                        style={{ clipPath: `inset(0 ${100 - sliderPosition}% 0 0)` }}
+                      >
+                        <img
+                          src={originalImage}
+                          alt="Original"
+                          className="max-w-full max-h-[calc(100vh-180px)] w-auto h-auto object-contain"
+                          draggable="false"
+                        />
+                      </div>
                     </div>
                     {zoom === 1 && !isPanning && (
                       <div
