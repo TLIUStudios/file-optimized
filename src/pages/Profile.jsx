@@ -24,7 +24,9 @@ import {
   X,
   Star,
   Package,
-  ShoppingBag
+  ShoppingBag,
+  HardDrive,
+  TrendingDown
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
@@ -91,6 +93,63 @@ export default function Profile() {
     },
     enabled: !!user?.id && user?.plan === 'pro',
   });
+
+  // Load compression stats
+  const { data: compressionStats = [], isLoading: statsLoading } = useQuery({
+    queryKey: ['compressionStats', user?.email],
+    queryFn: async () => {
+      if (!user?.email) return [];
+      return await base44.entities.CompressionStat.filter(
+        { created_by: user.email },
+        '-created_date',
+        10000
+      );
+    },
+    enabled: !!user?.email,
+  });
+
+  // Calculate savings by time period
+  const calculateSavings = (timeframe) => {
+    const now = new Date();
+    let startDate;
+    
+    switch(timeframe) {
+      case '1day':
+        startDate = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+        break;
+      case '1week':
+        startDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+        break;
+      case '1month':
+        startDate = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+        break;
+      case '1year':
+        startDate = new Date(now.getTime() - 365 * 24 * 60 * 60 * 1000);
+        break;
+      default: // all time
+        startDate = new Date(0);
+    }
+
+    const filtered = compressionStats.filter(stat => 
+      new Date(stat.created_date) >= startDate
+    );
+
+    const totalSavings = filtered.reduce((sum, stat) => 
+      sum + (stat.original_size - stat.compressed_size), 0
+    );
+
+    return {
+      savings: totalSavings,
+      count: filtered.length
+    };
+  };
+
+  const formatFileSize = (bytes) => {
+    if (bytes < 1024) return bytes + ' B';
+    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+    if (bytes < 1024 * 1024 * 1024) return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+    return (bytes / (1024 * 1024 * 1024)).toFixed(2) + ' GB';
+  };
 
   const handleUpgrade = async (billingFrequency = 'monthly') => {
     console.log('🚀 Upgrade clicked from Profile');
@@ -525,12 +584,73 @@ export default function Profile() {
             </Card>
           </motion.div>
 
+          {/* Compression Stats */}
+          <motion.div
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.3 }}
+          >
+            <Card className="p-6">
+              <div className="flex items-center gap-2 mb-4">
+                <HardDrive className="w-5 h-5 text-emerald-600" />
+                <h3 className="text-lg font-semibold text-slate-900 dark:text-white">Space Saved</h3>
+              </div>
+
+              {statsLoading ? (
+                <div className="flex items-center justify-center py-8">
+                  <Loader2 className="w-6 h-6 animate-spin text-slate-400" />
+                </div>
+              ) : compressionStats.length === 0 ? (
+                <p className="text-sm text-slate-500 dark:text-slate-400 text-center py-8">
+                  Start compressing files to see your savings!
+                </p>
+              ) : (
+                <div className="space-y-3">
+                  {['1day', '1week', '1month', '1year', 'alltime'].map((timeframe) => {
+                    const { savings, count } = calculateSavings(timeframe);
+                    const labels = {
+                      '1day': 'Last 24 Hours',
+                      '1week': 'Last 7 Days',
+                      '1month': 'Last 30 Days',
+                      '1year': 'Last Year',
+                      'alltime': 'All Time'
+                    };
+
+                    return (
+                      <div
+                        key={timeframe}
+                        className="flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-950 rounded-lg"
+                      >
+                        <div className="flex-1">
+                          <p className="text-sm font-medium text-slate-900 dark:text-white">
+                            {labels[timeframe]}
+                          </p>
+                          <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                            {count} file{count !== 1 ? 's' : ''} compressed
+                          </p>
+                        </div>
+                        <div className="text-right">
+                          <div className="flex items-center gap-1">
+                            <TrendingDown className="w-4 h-4 text-emerald-600" />
+                            <p className="text-sm font-bold text-emerald-600 dark:text-emerald-400">
+                              {formatFileSize(savings)}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </Card>
+          </motion.div>
+
           {/* Billing History */}
           {isPro && (
             <motion.div
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.3 }}
+              transition={{ delay: 0.4 }}
             >
               <Card className="p-6">
                 <div className="flex items-center gap-2 mb-4">
@@ -595,7 +715,7 @@ export default function Profile() {
           <motion.div
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: 0.4 }}
+            transition={{ delay: 0.5 }}
           >
             <Card className="p-6">
               <div className="flex items-center justify-between mb-6">
