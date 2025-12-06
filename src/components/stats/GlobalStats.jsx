@@ -23,7 +23,8 @@ export default function GlobalStats() {
     refetchInterval: 60000,
     staleTime: 30000,
     retry: 2,
-    retryDelay: 1000
+    retryDelay: 1000,
+    refetchOnWindowFocus: false
   });
 
   const statsWithSavings = stats.filter(s => s.saved_bytes > 0);
@@ -34,8 +35,8 @@ export default function GlobalStats() {
 
   return (
     <div className="h-[60px] max-w-md mx-auto">
-      {showContent && (
-        <div className="relative bg-gradient-to-r from-emerald-500 to-teal-600 rounded-lg p-3 text-white shadow-lg animate-in fade-in-0 zoom-in-95 duration-500">
+      <div className={`relative bg-gradient-to-r from-emerald-500 to-teal-600 rounded-lg p-3 text-white shadow-lg transition-all duration-500 ${showContent ? 'opacity-100 scale-100' : 'opacity-0 scale-95'}`}>
+        {showContent && (
           <div className="flex items-center justify-between gap-3">
             <div className="flex items-center gap-2">
               <div className="w-8 h-8 bg-white/20 backdrop-blur-sm rounded-lg flex items-center justify-center flex-shrink-0">
