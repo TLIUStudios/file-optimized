@@ -1462,15 +1462,12 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
         
         // Record compression stat
         try {
-          const isAuth = await base44.auth.isAuthenticated();
-          if (isAuth) {
-            await base44.entities.CompressionStat.create({
-              original_size: image.size,
-              compressed_size: compressedFile.size,
-              media_type: 'image',
-              output_format: format
-            });
-          }
+          await base44.entities.CompressionStat.create({
+            original_size: image.size,
+            compressed_size: compressedFile.size,
+            media_type: 'image',
+            output_format: format
+          });
         } catch (err) {
           console.log('Could not save stat:', err);
         }
@@ -1567,15 +1564,12 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
     
     // Record compression stat
     try {
-      const isAuth = await base44.auth.isAuthenticated();
-      if (isAuth) {
-        await base44.entities.CompressionStat.create({
-          original_size: image.size,
-          compressed_size: blob.size,
-          media_type: 'image',
-          output_format: format
-        });
-      }
+      await base44.entities.CompressionStat.create({
+        original_size: image.size,
+        compressed_size: blob.size,
+        media_type: 'image',
+        output_format: format
+      });
     } catch (err) {
       console.log('Could not save stat:', err);
     }
