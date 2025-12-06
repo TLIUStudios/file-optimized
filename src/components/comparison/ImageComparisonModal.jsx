@@ -1048,13 +1048,12 @@ export default function ImageComparisonModal({
                       alt="Compressed"
                       className="max-w-[85vw] lg:max-w-[60vw] max-h-[calc(100vh-200px)] block"
                       draggable="false"
-                      style={{ display: 'block' }}
                     />
 
                     <img
                       src={originalImage}
                       alt="Original"
-                      className="absolute inset-0 w-full h-full object-cover pointer-events-none"
+                      className="absolute top-0 left-0 max-w-[85vw] lg:max-w-[60vw] max-h-[calc(100vh-200px)] block pointer-events-none"
                       draggable="false"
                       style={{ clipPath: `inset(0 ${100 - sliderPosition}% 0 0)` }}
                     />
