@@ -28,7 +28,7 @@ export default function GlobalStats() {
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      className="relative bg-gradient-to-r from-emerald-500 to-teal-600 rounded-xl p-4 text-white shadow-lg max-w-2xl mx-auto overflow-hidden"
+      className="relative bg-gradient-to-r from-emerald-500 to-teal-600 rounded-lg p-3 text-white shadow-lg max-w-xl mx-auto overflow-hidden"
     >
       {/* Animated Lightning Border Effect */}
       <div className="absolute inset-0 rounded-xl pointer-events-none">
@@ -139,25 +139,25 @@ export default function GlobalStats() {
           animation: zap 2s ease-in-out infinite;
         }
       `}</style>
-      <div className="relative z-10 flex items-center justify-between gap-8">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-white/20 backdrop-blur-sm rounded-lg flex items-center justify-center flex-shrink-0">
-            <Globe className="w-5 h-5" />
+      <div className="relative z-10 flex items-center justify-between gap-4">
+        <div className="flex items-center gap-2">
+          <div className="w-8 h-8 bg-white/20 backdrop-blur-sm rounded-lg flex items-center justify-center flex-shrink-0">
+            <Globe className="w-4 h-4" />
           </div>
           <div className="flex flex-col items-start">
-            <h3 className="text-sm font-bold leading-tight">Global Impact</h3>
-            <p className="text-xs text-emerald-100 leading-tight">Combined from all users</p>
+            <h3 className="text-xs font-bold leading-tight">Global Impact</h3>
+            <p className="text-[10px] text-emerald-100 leading-tight">Combined from all users</p>
           </div>
         </div>
 
-        <div className="flex items-center gap-20">
-          <div className="text-right min-w-[100px]">
-            <div className="text-2xl font-bold">{formatBytes(totalSaved)}</div>
-            <div className="text-xs text-emerald-100">Space Saved</div>
+        <div className="flex items-center gap-8">
+          <div className="text-right min-w-[70px]">
+            <div className="text-lg font-bold">{formatBytes(totalSaved)}</div>
+            <div className="text-[10px] text-emerald-100">Space Saved</div>
           </div>
-          <div className="text-right min-w-[80px]">
-            <div className="text-2xl font-bold">{totalCompressions.toLocaleString()}</div>
-            <div className="text-xs text-emerald-100">Files</div>
+          <div className="text-right min-w-[50px]">
+            <div className="text-lg font-bold">{totalCompressions.toLocaleString()}</div>
+            <div className="text-[10px] text-emerald-100">Files</div>
           </div>
         </div>
       </div>
