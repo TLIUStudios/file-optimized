@@ -33,33 +33,35 @@ export default function GlobalStats() {
 
   const showContent = !isLoading && totalSaved > 0;
 
+  if (!showContent) {
+    return <div className="h-[60px] max-w-md mx-auto" />;
+  }
+
   return (
     <div className="h-[60px] max-w-md mx-auto">
-      <div className={`relative bg-gradient-to-r from-emerald-500 to-teal-600 rounded-lg p-3 text-white shadow-lg transition-all duration-500 ${showContent ? 'opacity-100 scale-100' : 'opacity-0 scale-95'}`}>
-        {showContent && (
-          <div className="flex items-center justify-between gap-3">
-            <div className="flex items-center gap-2">
-              <div className="w-8 h-8 bg-white/20 backdrop-blur-sm rounded-lg flex items-center justify-center flex-shrink-0">
-                <Globe className="w-4 h-4" />
-              </div>
-              <div className="flex flex-col items-start">
-                <h3 className="text-xs font-bold leading-tight">Global Impact</h3>
-                <p className="text-[10px] text-emerald-100 leading-tight">Combined from all users</p>
-              </div>
+      <div className="relative bg-gradient-to-r from-emerald-500 to-teal-600 rounded-lg p-3 text-white shadow-lg transition-opacity duration-500">
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex items-center gap-2">
+            <div className="w-8 h-8 bg-white/20 backdrop-blur-sm rounded-lg flex items-center justify-center flex-shrink-0">
+              <Globe className="w-4 h-4" />
             </div>
-
-            <div className="flex items-center gap-24">
-              <div className="text-right">
-                <div className="text-base font-bold">{formatBytes(totalSaved)}</div>
-                <div className="text-[10px] text-emerald-100">Space Saved</div>
-              </div>
-              <div className="text-right">
-                <div className="text-base font-bold">{totalCompressions.toLocaleString()}</div>
-                <div className="text-[10px] text-emerald-100">Files</div>
-              </div>
+            <div className="flex flex-col items-start">
+              <h3 className="text-xs font-bold leading-tight">Global Impact</h3>
+              <p className="text-[10px] text-emerald-100 leading-tight">Combined from all users</p>
             </div>
           </div>
-        )}
+
+          <div className="flex items-center gap-24">
+            <div className="text-right">
+              <div className="text-base font-bold">{formatBytes(totalSaved)}</div>
+              <div className="text-[10px] text-emerald-100">Space Saved</div>
+            </div>
+            <div className="text-right">
+              <div className="text-base font-bold">{totalCompressions.toLocaleString()}</div>
+              <div className="text-[10px] text-emerald-100">Files</div>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );
