@@ -131,7 +131,7 @@ Provide a helpful, accurate, and concise response. If the question is about tech
                 >
                   <MessageCircle className="w-6 h-6 text-white" />
                   {/* Pulse animation */}
-                  <span className="absolute inset-0 rounded-full bg-emerald-400 animate-ping opacity-20" style={{ animationDuration: '2.5s' }} />
+                  <span className="absolute inset-0 rounded-full bg-emerald-400 animate-ping opacity-20" style={{ animationDuration: '3.5s' }} />
                 </Button>
               </TooltipTrigger>
               <TooltipContent 
