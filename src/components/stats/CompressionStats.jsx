@@ -14,7 +14,7 @@ const formatBytes = (bytes) => {
 
 const calculateStats = (stats, hours) => {
   const cutoff = new Date(Date.now() - hours * 60 * 60 * 1000);
-  const filtered = stats.filter(s => new Date(s.created_date) > cutoff && s.saved_bytes > 0);
+  const filtered = stats.filter(s => new Date(s.created_date) > cutoff);
   return filtered.reduce((sum, s) => sum + s.saved_bytes, 0);
 };
 
@@ -41,7 +41,7 @@ export default function CompressionStats({ userEmail }) {
     );
   }
 
-  const allTime = stats.filter(s => s.saved_bytes > 0).reduce((sum, s) => sum + s.saved_bytes, 0);
+  const allTime = stats.reduce((sum, s) => sum + s.saved_bytes, 0);
   const last24h = calculateStats(stats, 24);
   const last7d = calculateStats(stats, 24 * 7);
   const last30d = calculateStats(stats, 24 * 30);
@@ -82,11 +82,11 @@ export default function CompressionStats({ userEmail }) {
         ))}
       </div>
 
-      {stats.filter(s => s.saved_bytes > 0).length > 0 && (
+      {stats.length > 0 && (
         <div className="mt-4 pt-4 border-t border-slate-200 dark:border-slate-800">
           <div className="flex items-center justify-between text-sm">
             <span className="text-slate-600 dark:text-slate-400">Total compressions:</span>
-            <span className="font-semibold text-slate-900 dark:text-white">{stats.filter(s => s.saved_bytes > 0).length}</span>
+            <span className="font-semibold text-slate-900 dark:text-white">{stats.length}</span>
           </div>
         </div>
       )}

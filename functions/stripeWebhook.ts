@@ -7,7 +7,6 @@ Deno.serve(async (req) => {
     const webhookSecret = Deno.env.get('STRIPE_WEBHOOK_SECRET');
 
     if (!stripeSecretKey || !webhookSecret) {
-      console.error('❌ Stripe secrets not configured');
       return Response.json({ 
         error: 'Stripe not configured' 
       }, { status: 500 });
@@ -45,32 +44,23 @@ Deno.serve(async (req) => {
         const userId = session.metadata.user_id || session.client_reference_id;
 
         if (!userId) {
-          console.error('❌ No user ID in session metadata');
+          console.error('No user ID in session metadata');
           break;
         }
 
-        if (!session.subscription) {
-          console.error('❌ No subscription in session');
-          break;
-        }
+        // Get subscription details
+        const subscription = await stripe.subscriptions.retrieve(session.subscription);
+        const periodEnd = new Date(subscription.current_period_end * 1000);
 
-        try {
-          // Get subscription details
-          const subscription = await stripe.subscriptions.retrieve(session.subscription);
-          const periodEnd = new Date(subscription.current_period_end * 1000);
+        // Update user to Pro with service role
+        await base44.asServiceRole.entities.User.update(userId, {
+          plan: 'pro',
+          plan_expires_at: periodEnd.toISOString(),
+          stripe_customer_id: session.customer,
+          subscription_id: session.subscription,
+        });
 
-          // Update user to Pro with service role
-          await base44.asServiceRole.entities.User.update(userId, {
-            plan: 'pro',
-            plan_expires_at: periodEnd.toISOString(),
-            stripe_customer_id: session.customer,
-            subscription_id: session.subscription,
-          });
-
-          console.log(`✅ User ${userId} upgraded to Pro (expires: ${periodEnd.toISOString()})`);
-        } catch (error) {
-          console.error(`❌ Failed to upgrade user ${userId}:`, error);
-        }
+        console.log(`✅ User ${userId} upgraded to Pro (expires: ${periodEnd.toISOString()})`);
         break;
       }
 

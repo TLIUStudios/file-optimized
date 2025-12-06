@@ -38,18 +38,10 @@ Deno.serve(async (req) => {
 
     console.log('✅ User authenticated:', user.email);
 
-    // Get Stripe keys - validate they exist
+    // Get Stripe keys
     const stripeSecretKey = Deno.env.get('STRIPE_SECRET_KEY');
     const stripeMonthlyPriceId = Deno.env.get('STRIPE_PRICE_ID');
     const stripeAnnualPriceId = Deno.env.get('STRIPE_ANNUAL_PRICE_ID');
-    
-    // Validate billing frequency
-    if (!['monthly', 'annual'].includes(billingFrequency)) {
-      console.error('❌ Invalid billing frequency:', billingFrequency);
-      return Response.json({ 
-        error: 'Invalid billing frequency. Please try again.' 
-      }, { status: 400 });
-    }
     
     // Select the correct price ID based on billing frequency
     const stripePriceId = billingFrequency === 'annual' ? stripeAnnualPriceId : stripeMonthlyPriceId;

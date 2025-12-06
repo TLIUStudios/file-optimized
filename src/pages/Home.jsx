@@ -17,12 +17,11 @@ const Draggable = lazy(() => import("@hello-pangea/dnd").then(m => ({ default: m
 const ErrorBoundary = lazy(() => import("../components/ErrorBoundary"));
 
 const LoginPromptModal = lazy(() => import("../components/LoginPromptModal"));
+const ProUpgradeModal = lazy(() => import("../components/ProUpgradeModal"));
 const MediaCard = lazy(() => import("../components/upload/MediaCardMemo"));
-
-import ProUpgradeModal from "../components/ProUpgradeModal";
 const ImageComparisonModal = lazy(() => import("../components/comparison/ImageComparisonModal"));
 const KeyboardShortcuts = lazy(() => import("../components/features/KeyboardShortcuts"));
-import GlobalStats from "../components/stats/GlobalStats";
+const GlobalStats = lazy(() => import("../components/stats/GlobalStats"));
 
 // Loading fallback for image cards
 const ImageCardSkeleton = lazy(() => import("../components/upload/ImageCardSkeleton"));
@@ -160,7 +159,7 @@ export default function Home() {
     toast.success('Zip file downloaded!');
   }, [processedImages]);
 
-  const handleUpgradeToPro = async (billingFrequency = 'monthly') => {
+  const handleUpgradeToPro = async () => {
     console.log('🚀 Upgrade clicked from Home page');
 
     setUpgradeError(null);
@@ -196,8 +195,8 @@ export default function Home() {
       setProcessingCheckout(true);
       const toastId = toast.loading('Creating checkout session...', { duration: Infinity });
 
-      console.log('Calling createCheckoutSession with billing frequency:', billingFrequency);
-      const response = await base44.functions.invoke('createCheckoutSession', { billingFrequency });
+      console.log('Calling createCheckoutSession...');
+      const response = await base44.functions.invoke('createCheckoutSession');
 
       console.log('Response:', response);
 
@@ -356,7 +355,9 @@ export default function Home() {
 
         {/* Global Stats */}
         <div className="mt-8">
-          <GlobalStats />
+          <Suspense fallback={null}>
+            <GlobalStats />
+          </Suspense>
         </div>
 
           {/* Features */}

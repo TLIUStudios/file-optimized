@@ -45,7 +45,7 @@ export default function Layout({ children }) {
     }, [location.pathname]);
   const [user, setUser] = useState(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [authLoading, setAuthLoading] = useState(false);
+  const [authLoading, setAuthLoading] = useState(true);
   const [showLoginPrompt, setShowLoginPrompt] = useState(false);
   const [userPlan, setUserPlan] = useState('free');
   const [userTheme, setUserTheme] = useState('none');
@@ -64,11 +64,11 @@ export default function Layout({ children }) {
       document.head.appendChild(meta);
     }
     
-    // Add CSP meta tag with stricter policy
+    // Add CSP meta tag
     if (!document.querySelector('meta[http-equiv="Content-Security-Policy"]')) {
       const csp = document.createElement('meta');
       csp.httpEquiv = 'Content-Security-Policy';
-      csp.content = "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://pagead2.googlesyndication.com https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline'; img-src 'self' data: https: blob:; font-src 'self' data:; connect-src 'self' https:; frame-src https://checkout.stripe.com https://googleads.g.doubleclick.net https://tpc.googlesyndication.com; object-src 'none'; base-uri 'self'; form-action 'self' https://checkout.stripe.com;";
+      csp.content = "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://pagead2.googlesyndication.com https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline'; img-src 'self' data: https: blob:; font-src 'self' data:; connect-src 'self' https:; frame-src https://checkout.stripe.com;";
       document.head.appendChild(csp);
     }
     
@@ -247,76 +247,80 @@ export default function Layout({ children }) {
           </Link>
           
           <div className="flex items-center gap-1.5 sm:gap-2 md:gap-3">
-            {isAuthenticated && user ? (
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" className="gap-1.5 sm:gap-2 h-9 sm:h-10 px-2 sm:px-3">
-                    <User className="w-4 h-4" />
-                    <span className="hidden md:inline text-sm">{user.full_name || user.email}</span>
-                    {isPro ? (
-                      <Badge className="bg-gradient-to-r from-amber-500 to-orange-500 text-white text-[10px] sm:text-xs px-1.5 sm:px-2 py-0.5 font-bold">
-                        PRO
-                      </Badge>
-                    ) : (
-                      <Badge variant="outline" className="text-[10px] sm:text-xs px-1.5 sm:px-2 py-0.5">
-                        FREE
-                      </Badge>
-                    )}
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-56">
-                  <div className="px-2 py-1.5">
-                    <p className="text-sm font-medium text-slate-900 dark:text-white">
-                      {user.full_name || 'User'}
-                    </p>
-                    <p className="text-xs text-slate-500 dark:text-slate-400">
-                      {user.email}
-                    </p>
-                    <div className="mt-1">
-                      {isPro ? (
-                        <Badge className="bg-gradient-to-r from-amber-500 to-orange-500 text-white text-xs">
-                          PRO PLAN
-                        </Badge>
-                      ) : (
-                        <Badge variant="outline" className="text-xs">
-                          FREE PLAN
-                        </Badge>
+            {!authLoading && (
+              <>
+                {isAuthenticated && user ? (
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" className="gap-1.5 sm:gap-2 h-9 sm:h-10 px-2 sm:px-3">
+                        <User className="w-4 h-4" />
+                        <span className="hidden md:inline text-sm">{user.full_name || user.email}</span>
+                        {isPro ? (
+                          <Badge className="bg-gradient-to-r from-amber-500 to-orange-500 text-white text-[10px] sm:text-xs px-1.5 sm:px-2 py-0.5 font-bold">
+                            PRO
+                          </Badge>
+                        ) : (
+                          <Badge variant="outline" className="text-[10px] sm:text-xs px-1.5 sm:px-2 py-0.5">
+                            FREE
+                          </Badge>
+                        )}
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="w-56">
+                      <div className="px-2 py-1.5">
+                        <p className="text-sm font-medium text-slate-900 dark:text-white">
+                          {user.full_name || 'User'}
+                        </p>
+                        <p className="text-xs text-slate-500 dark:text-slate-400">
+                          {user.email}
+                        </p>
+                        <div className="mt-1">
+                          {isPro ? (
+                            <Badge className="bg-gradient-to-r from-amber-500 to-orange-500 text-white text-xs">
+                              PRO PLAN
+                            </Badge>
+                          ) : (
+                            <Badge variant="outline" className="text-xs">
+                              FREE PLAN
+                            </Badge>
+                          )}
+                        </div>
+                      </div>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem asChild>
+                        <Link to={createPageUrl('Profile')} className="cursor-pointer">
+                          <User className="w-4 h-4 mr-2" />
+                          Profile & Settings
+                        </Link>
+                      </DropdownMenuItem>
+                      {user?.role === 'admin' && (
+                        <DropdownMenuItem asChild>
+                          <Link to={createPageUrl('Admin')} className="cursor-pointer">
+                            <svg className="w-4 h-4 mr-2" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1Z"/></svg>
+                            Admin Dashboard
+                          </Link>
+                        </DropdownMenuItem>
                       )}
-                    </div>
-                  </div>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem asChild>
-                    <Link to={createPageUrl('Profile')} className="cursor-pointer">
-                      <User className="w-4 h-4 mr-2" />
-                      Profile & Settings
-                    </Link>
-                  </DropdownMenuItem>
-                  {user?.role === 'admin' && (
-                    <DropdownMenuItem asChild>
-                      <Link to={createPageUrl('Admin')} className="cursor-pointer">
-                        <svg className="w-4 h-4 mr-2" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1Z"/></svg>
-                        Admin Dashboard
-                      </Link>
-                    </DropdownMenuItem>
-                  )}
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={handleLogout} className="text-red-600 dark:text-red-400 cursor-pointer">
-                    <LogOut className="w-4 h-4 mr-2" />
-                    Log Out
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            ) : !authLoading && (
-              <Button
-                onClick={handleLoginClick}
-                variant="ghost"
-                className="gap-1.5 sm:gap-2 h-9 sm:h-10 px-2 sm:px-3 text-sm"
-              >
-                <LogIn className="w-4 h-4" />
-                <span className="hidden sm:inline">Sign In</span>
-              </Button>
-            )}
-            <Button
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem onClick={handleLogout} className="text-red-600 dark:text-red-400 cursor-pointer">
+                        <LogOut className="w-4 h-4 mr-2" />
+                        Log Out
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                ) : (
+                  <Button
+                    onClick={handleLoginClick}
+                    variant="ghost"
+                    className="gap-1.5 sm:gap-2 h-9 sm:h-10 px-2 sm:px-3 text-sm"
+                  >
+                    <LogIn className="w-4 h-4" />
+                    <span className="hidden sm:inline">Sign In</span>
+                  </Button>
+                )}
+                </>
+                )}
+                <Button
                 variant="ghost"
                 size="icon"
                 onClick={toggleTheme}
@@ -340,7 +344,7 @@ export default function Layout({ children }) {
         </Suspense>
         
           {/* Show Google Ads only for Free users */}
-          {(!isAuthenticated || userPlan === 'free') && (
+          {!authLoading && (!isAuthenticated || userPlan === 'free') && (
             <div className="mt-12">
               <GoogleAds adSlot="1234567890" />
             </div>

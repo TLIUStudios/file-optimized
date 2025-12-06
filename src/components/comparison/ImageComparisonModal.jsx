@@ -572,22 +572,47 @@ export default function ImageComparisonModal({
   // Use cached blobs for format conversion
   const convertToFormat = async (format) => {
     if (format === selectedFormat && previewFormat === format) {
-      return;
+      return; // Already on this format
     }
     
-    // If formats not generated yet, trigger generation first
-    if (!formatsGenerated && mediaType === 'image' && !isAnimationVariations) {
-      await generateAllFormats();
-    }
-    
+    setIsConverting(true);
     setSelectedFormat(format);
-    setPreviewFormat(format);
     
-    // Use the cached blob to update preview size
-    const blob = cachedFormatBlobs[format];
-    if (blob) {
-      setConvertedBlob(blob);
-      setPreviewSize(blob.size);
+    try {
+      if (mediaType === 'image' && !isAnimationVariations) {
+        // Use cached blob if available
+        const cachedBlob = cachedFormatBlobs[format];
+        
+        if (cachedBlob) {
+          setConvertedBlob(cachedBlob);
+          setPreviewSize(cachedBlob.size);
+          setPreviewFormat(format);
+          
+          const sizeDiff = cachedBlob.size - originalSize;
+          const percentChange = ((sizeDiff / originalSize) * 100).toFixed(1);
+          
+          if (cachedBlob.size > originalSize) {
+            toast.info(`${format.toUpperCase()}: ${formatFileSize(cachedBlob.size)} (+${percentChange}% larger)`);
+          } else {
+            toast.success(`${format.toUpperCase()}: ${formatFileSize(cachedBlob.size)} (${Math.abs(percentChange)}% smaller)`);
+          }
+          
+          setIsConverting(false);
+          return;
+        }
+        
+        // If not cached, shouldn't happen but handle gracefully
+        toast.warning('Format not ready, please wait...');
+        setSelectedFormat(previewFormat);
+      } else {
+        setPreviewFormat(format);
+      }
+    } catch (error) {
+      console.error('❌ Conversion error:', error);
+      toast.error(`${error.message || 'Failed to convert to ' + format.toUpperCase()}`);
+      setSelectedFormat(previewFormat);
+    } finally {
+      setIsConverting(false);
     }
   };
 
@@ -656,16 +681,9 @@ export default function ImageComparisonModal({
       return;
     }
 
-    // If formats not generated, generate them first
-    if (mediaType === 'image' && !formatsGenerated) {
-      toast.info('Generating formats first...');
-      await generateAllFormats();
-    }
-
-    // Use cached blob for download
-    const blob = cachedFormatBlobs[selectedFormat];
-    if (blob) {
-      const url = URL.createObjectURL(blob);
+    // If we have a converted blob, download that directly
+    if (convertedBlob) {
+      const url = URL.createObjectURL(convertedBlob);
       const link = document.createElement('a');
       link.href = url;
       const baseName = fileName.split('.')[0];
@@ -674,7 +692,8 @@ export default function ImageComparisonModal({
       URL.revokeObjectURL(url);
       toast.success(`Downloaded as ${selectedFormat.toUpperCase()}!`);
     } else {
-      toast.error('Format not available');
+      // Otherwise use the original compressed image
+      performSingleMediaDownload(compressedImage, selectedFormat, mediaType);
     }
   };
 
@@ -903,7 +922,7 @@ export default function ImageComparisonModal({
             </Button>
             
             {/* Download All Formats as ZIP */}
-            {mediaType === 'image' && !isAnimationVariations && formatsGenerated && (
+            {mediaType === 'image' && !isAnimationVariations && (
               <Button
                 onClick={downloadAllImageFormatsAsZip}
                 variant="outline"
@@ -925,9 +944,9 @@ export default function ImageComparisonModal({
           </div>
         </div>
 
-        <div className="flex h-full pt-[60px]">
+        <div className="flex flex-col lg:flex-row h-full overflow-hidden pt-[60px]">
           {/* Left Side - Media Display */}
-          <div className="flex-1 relative flex flex-col min-w-0">
+          <div className="flex-1 relative overflow-hidden flex flex-col min-h-0">
             {isAnimationVariations ? (
               // Animation Variations Grid (2x2)
               <div className="relative w-full h-full bg-slate-100 dark:bg-slate-900 flex items-center justify-center p-4">
@@ -993,85 +1012,92 @@ export default function ImageComparisonModal({
                 </div>
               </div>
             ) : mediaType === 'image' ? (
-              <div className="relative w-full h-full bg-slate-100 dark:bg-slate-900 flex flex-col">
-                <div className="flex-1 relative overflow-hidden">
-                  <div className="absolute inset-0 flex items-start justify-start p-4">
-                    <div
-                      className="relative"
-                      style={{
-                        transform: `scale(${zoom}) translate(${pan.x / zoom}px, ${pan.y / zoom}px)`,
-                        transition: isDragging || isPanning ? 'none' : 'transform 0.2s ease-out'
-                      }}
-                    >
+              // Original image comparison view
+              <div
+                ref={containerRef}
+                className="relative w-full h-full bg-slate-100 dark:bg-slate-900 select-none flex flex-col items-center justify-center overflow-hidden"
+              >
+                <div className="flex-1 relative w-full flex items-center justify-center py-4">
+                  <div
+                    ref={imageContainerRef}
+                    className="relative"
+                    style={{
+                      transform: `scale(${zoom}) translate(${pan.x / zoom}px, ${pan.y / zoom}px)`,
+                      transformOrigin: 'center',
+                      transition: isDragging || isPanning ? 'none' : 'transform 0.2s ease-out',
+                      cursor: zoom > 1 ? (isPanning ? 'grabbing' : 'grab') : 'col-resize'
+                    }}
+                    onMouseDown={(e) => {
+                      if (zoom > 1) {
+                        handlePanStart(e);
+                      } else {
+                        setIsDragging(true);
+                      }
+                    }}
+                    onTouchStart={(e) => {
+                      if (zoom > 1 && e.touches.length === 1) {
+                        setIsPanning(true);
+                        setPanStart({ x: e.touches[0].clientX, y: e.touches[0].clientY });
+                      } else if (e.touches.length === 1) {
+                        setIsDragging(true);
+                      }
+                    }}
+                  >
+                    <div className="relative">
+                      <img
+                        src={compressedImage}
+                        alt="Compressed"
+                        className="max-w-[85vw] lg:max-w-[60vw] max-h-[calc(100vh-200px)] w-auto h-auto object-contain"
+                        draggable="false"
+                      />
+
                       <div
-                        ref={imageContainerRef}
-                        className="relative cursor-col-resize"
-                        style={{
-                          cursor: zoom > 1 ? (isPanning ? 'grabbing' : 'grab') : 'col-resize'
-                        }}
-                        onMouseDown={(e) => {
-                          if (zoom > 1) {
-                            handlePanStart(e);
-                          } else {
-                            setIsDragging(true);
-                          }
-                        }}
-                        onTouchStart={(e) => {
-                          if (zoom > 1 && e.touches.length === 1) {
-                            setIsPanning(true);
-                            setPanStart({ x: e.touches[0].clientX, y: e.touches[0].clientY });
-                          } else if (e.touches.length === 1) {
-                            setIsDragging(true);
-                          }
-                        }}
+                        className="absolute inset-0 overflow-hidden"
+                        style={{ clipPath: `inset(0 ${100 - sliderPosition}% 0 0)` }}
                       >
                         <img
-                          src={compressedImage}
-                          alt="Compressed"
-                          className="max-h-[calc(100vh-240px)] max-w-[calc(100vw-500px)] w-auto h-auto object-contain"
+                          src={originalImage}
+                          alt="Original"
+                          className="max-w-[85vw] lg:max-w-[60vw] max-h-[calc(100vh-200px)] w-auto h-auto object-contain"
                           draggable="false"
                         />
-                        <div
-                          className="absolute top-0 left-0 w-full h-full overflow-hidden"
-                          style={{ clipPath: `inset(0 ${100 - sliderPosition}% 0 0)` }}
-                        >
-                          <img
-                            src={originalImage}
-                            alt="Original"
-                            className="max-h-[calc(100vh-240px)] max-w-[calc(100vw-500px)] w-auto h-auto object-contain"
-                            draggable="false"
-                          />
-                        </div>
-                        {zoom === 1 && !isPanning && (
-                          <div
-                            className="absolute top-0 bottom-0 w-0.5 bg-white shadow-2xl z-10"
-                            style={{ left: `${sliderPosition}%`, transform: 'translateX(-50%)' }}
-                          >
-                            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-12 h-12 bg-white dark:bg-slate-700 rounded-full shadow-2xl flex items-center justify-center cursor-col-resize border-2 border-slate-300 dark:border-slate-600">
-                              <MoveHorizontal className="w-5 h-5 text-slate-700 dark:text-white" />
-                            </div>
-                          </div>
-                        )}
                       </div>
+
+                      {zoom === 1 && !isPanning && (
+                        <div
+                          className="absolute top-0 bottom-0 w-0.5 bg-white shadow-2xl z-10 pointer-events-none"
+                          style={{ left: `${sliderPosition}%`, transform: 'translateX(-50%)' }}
+                        >
+                          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-12 h-12 bg-white dark:bg-slate-700 rounded-full shadow-2xl flex items-center justify-center cursor-col-resize border-2 border-slate-300 dark:border-slate-600 pointer-events-auto">
+                            <MoveHorizontal className="w-5 h-5 text-slate-700 dark:text-white" />
+                          </div>
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>
 
-                <div className="h-16 flex items-center justify-between px-6 bg-slate-950/80 backdrop-blur-sm border-t border-slate-800 flex-shrink-0">
-                  <div className="flex items-center gap-2">
-                    <span className="text-white text-sm font-semibold">Original</span>
-                    <Badge className="bg-slate-700 text-white text-xs px-2 py-0.5 font-bold">
+                <div className="h-16 w-full flex items-center justify-between px-6 bg-slate-100/80 dark:bg-slate-900/80 backdrop-blur-sm border-t border-slate-200 dark:border-slate-800">
+                  <div className="flex flex-col gap-1">
+                    <Badge className="bg-slate-700 dark:bg-slate-800 text-white text-sm px-3 py-1 font-semibold w-fit">
+                      Original
+                    </Badge>
+                    <Badge className="bg-slate-700 dark:bg-slate-800 text-white text-xs px-2 py-0.5 font-bold w-fit">
                       {originalExt}
                     </Badge>
                   </div>
+
                   {zoom === 1 && (
-                    <div className="px-4 py-2 bg-slate-800/80 backdrop-blur-sm rounded-lg text-white text-sm font-medium">
+                    <div className="px-4 py-2 bg-slate-600/80 dark:bg-slate-700/80 backdrop-blur-sm rounded-lg text-white text-sm font-medium animate-pulse">
                       ← Drag to compare →
                     </div>
                   )}
-                  <div className="flex items-center gap-2">
-                    <span className="text-white text-sm font-semibold">Compressed</span>
-                    <Badge className="bg-emerald-600 text-white text-xs px-2 py-0.5 font-bold">
+
+                  <div className="flex flex-col gap-1 items-end">
+                    <Badge className="bg-emerald-600 text-white text-sm px-3 py-1 font-semibold w-fit">
+                      Compressed
+                    </Badge>
+                    <Badge className="bg-emerald-600 text-white text-xs px-2 py-0.5 font-bold w-fit">
                       {previewFormat.toUpperCase()}
                     </Badge>
                   </div>
@@ -1112,8 +1138,8 @@ export default function ImageComparisonModal({
           </div>
 
           {/* Right Panel */}
-          <div className="w-[360px] xl:w-[400px] bg-white dark:bg-slate-900 border-l border-slate-200 dark:border-slate-800 overflow-y-scroll flex-shrink-0">
-            <div className="p-5 space-y-4 pb-8">
+          <div className="w-full lg:w-[360px] xl:w-[400px] bg-white dark:bg-slate-900 border-t lg:border-t-0 lg:border-l border-slate-200 dark:border-slate-800 flex flex-col overflow-y-auto">
+            <div className="p-5 space-y-4">
               <div>
                 <h2 className="text-slate-900 dark:text-white text-sm font-bold mb-1 break-words line-clamp-2">
                   {fileName}
