@@ -2,6 +2,7 @@ import { useState, useEffect, lazy, Suspense } from "react";
 import { base44 } from "@/api/base44Client";
 import SEOHead from "../components/SEOHead";
 import { useQuery } from "@tanstack/react-query";
+import CompressionStats from "../components/stats/CompressionStats";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
