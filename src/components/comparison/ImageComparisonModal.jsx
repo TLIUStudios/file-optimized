@@ -1016,6 +1016,7 @@ export default function ImageComparisonModal({
                 <div className="absolute inset-0 flex items-center justify-center p-4">
                   <div
                     ref={imageContainerRef}
+                    className="relative"
                     style={{
                       transform: `scale(${zoom}) translate(${pan.x / zoom}px, ${pan.y / zoom}px)`,
                       cursor: zoom > 1 ? (isPanning ? 'grabbing' : 'grab') : 'col-resize',
@@ -1037,37 +1038,35 @@ export default function ImageComparisonModal({
                       }
                     }}
                   >
-                    <div className="relative">
+                    <img
+                      src={compressedImage}
+                      alt="Compressed"
+                      style={{ maxWidth: '85vw', maxHeight: 'calc(100vh - 200px)' }}
+                      className="w-auto h-auto object-contain"
+                      draggable="false"
+                    />
+                    <div
+                      className="absolute top-0 left-0 w-full h-full overflow-hidden"
+                      style={{ clipPath: `inset(0 ${100 - sliderPosition}% 0 0)` }}
+                    >
                       <img
-                        src={compressedImage}
-                        alt="Compressed"
+                        src={originalImage}
+                        alt="Original"
                         style={{ maxWidth: '85vw', maxHeight: 'calc(100vh - 200px)' }}
                         className="w-auto h-auto object-contain"
                         draggable="false"
                       />
-                      <div
-                        className="absolute top-0 left-0 w-full h-full overflow-hidden"
-                        style={{ clipPath: `inset(0 ${100 - sliderPosition}% 0 0)` }}
-                      >
-                        <img
-                          src={originalImage}
-                          alt="Original"
-                          style={{ maxWidth: '85vw', maxHeight: 'calc(100vh - 200px)' }}
-                          className="w-auto h-auto object-contain"
-                          draggable="false"
-                        />
-                      </div>
-                      {zoom === 1 && !isPanning && (
-                        <div
-                          className="absolute top-0 bottom-0 w-0.5 bg-white shadow-2xl z-10"
-                          style={{ left: `${sliderPosition}%`, transform: 'translateX(-50%)' }}
-                        >
-                          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-12 h-12 bg-white dark:bg-slate-700 rounded-full shadow-2xl flex items-center justify-center cursor-col-resize border-2 border-slate-300 dark:border-slate-600">
-                            <MoveHorizontal className="w-5 h-5 text-slate-700 dark:text-white" />
-                          </div>
-                        </div>
-                      )}
                     </div>
+                    {zoom === 1 && !isPanning && (
+                      <div
+                        className="absolute top-0 bottom-0 w-0.5 bg-white shadow-2xl z-10"
+                        style={{ left: `${sliderPosition}%`, transform: 'translateX(-50%)' }}
+                      >
+                        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-12 h-12 bg-white dark:bg-slate-700 rounded-full shadow-2xl flex items-center justify-center cursor-col-resize border-2 border-slate-300 dark:border-slate-600">
+                          <MoveHorizontal className="w-5 h-5 text-slate-700 dark:text-white" />
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
 
