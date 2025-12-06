@@ -15,12 +15,12 @@ export default function GlobalStats() {
   const [glitchText, setGlitchText] = useState([]);
   
   useEffect(() => {
-    const chars = '01アイウエオカキクケコサシスセソタチツテトナニヌネノハヒフヘホマミムメモヤユヨラリルレロワヲン!@#$%^&*()_+-=[]{}|;:,.<>?/~`';
+    const chars = '01アイウエオカキクケコサシスセソタチツテトナニヌネノハヒフヘホマミムメモヤユヨラリルレロワヲン!@#$%^&*()_+-=[]{}|;:,.<>?/~`ﾊﾐﾋｰｳｼﾅﾓﾆｻﾜﾂｵﾘｱﾎﾃﾏｹﾒｴｶｷﾑﾕﾗｾﾈｽﾀﾇﾍ';
     const interval = setInterval(() => {
-      setGlitchText(Array.from({ length: 20 }, () => 
-        Array.from({ length: 15 }, () => chars[Math.floor(Math.random() * chars.length)]).join('')
+      setGlitchText(Array.from({ length: 25 }, () => 
+        Array.from({ length: 20 }, () => chars[Math.floor(Math.random() * chars.length)]).join('')
       ));
-    }, 80);
+    }, 50);
     return () => clearInterval(interval);
   }, []);
 
@@ -89,17 +89,19 @@ export default function GlobalStats() {
       animate={{ opacity: 1, y: 0 }}
       className="relative bg-gradient-to-r from-emerald-500 to-teal-600 rounded-lg p-3 text-white shadow-lg max-w-md mx-auto overflow-hidden"
     >
-      {/* Matrix falling code background effect */}
-      <div className="absolute inset-0 opacity-15 pointer-events-none overflow-hidden font-mono">
-        {[...Array(15)].map((_, i) => (
+      {/* Matrix falling code background effect - multiple layers */}
+      <div className="absolute inset-0 opacity-20 pointer-events-none overflow-hidden font-mono">
+        {[...Array(25)].map((_, i) => (
           <div
             key={i}
-            className="absolute text-[9px] leading-tight whitespace-pre animate-matrix-fall"
+            className="absolute text-[8px] leading-none whitespace-pre animate-matrix-fall"
             style={{
-              left: `${(i * 6.67)}%`,
+              left: `${(i * 4)}%`,
               animationDelay: `${Math.random() * 2}s`,
-              animationDuration: `${2 + Math.random() * 3}s`,
-              color: i % 3 === 0 ? '#6ee7b7' : i % 3 === 1 ? '#34d399' : '#a7f3d0'
+              animationDuration: `${1.5 + Math.random() * 2}s`,
+              color: i % 4 === 0 ? '#6ee7b7' : i % 4 === 1 ? '#34d399' : i % 4 === 2 ? '#a7f3d0' : '#10b981',
+              textShadow: '0 0 8px currentColor',
+              opacity: 0.7 + Math.random() * 0.3
             }}
           >
             {glitchText[i % glitchText.length]?.split('').join('\n')}
@@ -109,35 +111,73 @@ export default function GlobalStats() {
       
       {/* Multiple glitch scanlines */}
       <div className="absolute inset-0 pointer-events-none">
-        <div className="absolute w-full h-px bg-gradient-to-r from-transparent via-emerald-300 to-transparent animate-scanline opacity-30" />
-        <div className="absolute w-full h-px bg-gradient-to-r from-transparent via-emerald-200 to-transparent animate-scanline-reverse opacity-20" />
-        <div className="absolute h-full w-px bg-gradient-to-b from-transparent via-emerald-300 to-transparent animate-scanline-horizontal opacity-20" />
+        <div className="absolute w-full h-px bg-gradient-to-r from-transparent via-emerald-400 to-transparent animate-scanline opacity-40 shadow-lg shadow-emerald-500/50" />
+        <div className="absolute w-full h-px bg-gradient-to-r from-transparent via-emerald-300 to-transparent animate-scanline-reverse opacity-30" />
+        <div className="absolute w-full h-0.5 bg-gradient-to-r from-transparent via-white to-transparent animate-scanline-fast opacity-60" style={{ filter: 'blur(1px)' }} />
+        <div className="absolute h-full w-px bg-gradient-to-b from-transparent via-emerald-400 to-transparent animate-scanline-horizontal opacity-30 shadow-lg shadow-emerald-500/50" />
       </div>
       
-      {/* RGB glitch split effect */}
-      <div className="absolute inset-0 pointer-events-none animate-rgb-split opacity-30 mix-blend-screen">
-        <div className="absolute inset-0 bg-red-500 animate-glitch-x" style={{ mixBlendMode: 'screen', opacity: 0.1 }} />
-        <div className="absolute inset-0 bg-cyan-500 animate-glitch-y" style={{ mixBlendMode: 'screen', opacity: 0.1 }} />
+      {/* RGB chromatic aberration glitch */}
+      <div className="absolute inset-0 pointer-events-none opacity-40 mix-blend-screen">
+        <div className="absolute inset-0 bg-red-500 animate-glitch-x-intense" style={{ mixBlendMode: 'screen', opacity: 0.15 }} />
+        <div className="absolute inset-0 bg-cyan-400 animate-glitch-y-intense" style={{ mixBlendMode: 'screen', opacity: 0.15 }} />
+        <div className="absolute inset-0 bg-green-400 animate-glitch-diagonal" style={{ mixBlendMode: 'screen', opacity: 0.1 }} />
       </div>
       
-      {/* Digital noise overlay */}
-      <div className="absolute inset-0 opacity-5 pointer-events-none animate-digital-noise" 
+      {/* Digital noise overlay - more intense */}
+      <div className="absolute inset-0 opacity-8 pointer-events-none animate-digital-noise-intense" 
            style={{ 
-             backgroundImage: `repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(255,255,255,0.03) 2px, rgba(255,255,255,0.03) 4px)`
+             backgroundImage: `repeating-linear-gradient(0deg, transparent, transparent 1px, rgba(255,255,255,0.05) 1px, rgba(255,255,255,0.05) 2px)`
            }} 
       />
       
-      {/* Random pixel corruption effect */}
-      <div className="absolute inset-0 pointer-events-none animate-pixel-corrupt opacity-10">
-        {[...Array(30)].map((_, i) => (
+      {/* Random pixel corruption effect - more pixels */}
+      <div className="absolute inset-0 pointer-events-none opacity-15">
+        {[...Array(50)].map((_, i) => (
           <div
             key={i}
-            className="absolute w-1 h-1 bg-emerald-300 animate-glitch-pixel"
+            className="absolute bg-emerald-400 animate-glitch-pixel"
             style={{
+              width: `${1 + Math.random() * 2}px`,
+              height: `${1 + Math.random() * 2}px`,
               left: `${Math.random() * 100}%`,
               top: `${Math.random() * 100}%`,
+              animationDelay: `${Math.random() * 2}s`,
+              animationDuration: `${0.3 + Math.random() * 0.7}s`,
+              boxShadow: '0 0 3px currentColor'
+            }}
+          />
+        ))}
+      </div>
+      
+      {/* Horizontal data stream lines */}
+      <div className="absolute inset-0 pointer-events-none opacity-10">
+        {[...Array(8)].map((_, i) => (
+          <div
+            key={i}
+            className="absolute h-px w-full bg-gradient-to-r from-transparent via-emerald-400 to-transparent animate-data-stream"
+            style={{
+              top: `${(i + 1) * 12.5}%`,
+              animationDelay: `${i * 0.3}s`,
+              animationDuration: `${1 + Math.random()}s`
+            }}
+          />
+        ))}
+      </div>
+      
+      {/* Glitch blocks */}
+      <div className="absolute inset-0 pointer-events-none opacity-10">
+        {[...Array(6)].map((_, i) => (
+          <div
+            key={i}
+            className="absolute bg-emerald-500 animate-glitch-blocks"
+            style={{
+              width: `${10 + Math.random() * 30}px`,
+              height: `${2 + Math.random() * 4}px`,
+              left: `${Math.random() * 90}%`,
+              top: `${Math.random() * 90}%`,
               animationDelay: `${Math.random() * 3}s`,
-              animationDuration: `${0.5 + Math.random()}s`
+              animationDuration: `${0.5 + Math.random() * 1.5}s`
             }}
           />
         ))}
@@ -146,84 +186,136 @@ export default function GlobalStats() {
       <style>{`
         @keyframes matrix-fall {
           0% { 
-            transform: translateY(-120%); 
+            transform: translateY(-150%); 
             opacity: 0;
           }
+          5% { opacity: 0.8; }
           10% { opacity: 1; }
-          85% { opacity: 0.8; }
+          80% { opacity: 1; }
+          95% { opacity: 0.5; }
           100% { 
-            transform: translateY(220%); 
+            transform: translateY(250%); 
             opacity: 0;
           }
         }
         @keyframes scanline {
-          0% { top: -2px; }
-          100% { top: 100%; }
+          0% { top: -4px; }
+          100% { top: 105%; }
+        }
+        @keyframes scanline-fast {
+          0% { top: -4px; }
+          100% { top: 105%; }
         }
         @keyframes scanline-reverse {
-          0% { bottom: -2px; }
-          100% { bottom: 100%; }
+          0% { bottom: -4px; }
+          100% { bottom: 105%; }
         }
         @keyframes scanline-horizontal {
-          0% { left: -2px; }
-          100% { left: 100%; }
+          0% { left: -4px; }
+          100% { left: 105%; }
         }
-        @keyframes digital-noise {
+        @keyframes digital-noise-intense {
           0%, 100% { transform: translate(0, 0); }
-          10% { transform: translate(-2px, -1px); }
-          20% { transform: translate(2px, 1px); }
-          30% { transform: translate(-1px, 2px); }
-          40% { transform: translate(1px, -2px); }
-          50% { transform: translate(-2px, -2px); }
+          5% { transform: translate(-3px, -2px); }
+          10% { transform: translate(3px, 2px); }
+          15% { transform: translate(-2px, 3px); }
+          20% { transform: translate(2px, -3px); }
+          25% { transform: translate(-3px, -3px); }
+          30% { transform: translate(3px, 3px); }
+          35% { transform: translate(-3px, 2px); }
+          40% { transform: translate(2px, -2px); }
+          45% { transform: translate(-2px, -3px); }
+          50% { transform: translate(3px, -3px); }
+          55% { transform: translate(-3px, 3px); }
           60% { transform: translate(2px, 2px); }
-          70% { transform: translate(-2px, 1px); }
-          80% { transform: translate(1px, -1px); }
-          90% { transform: translate(-1px, -2px); }
+          65% { transform: translate(-2px, -2px); }
+          70% { transform: translate(3px, -2px); }
+          75% { transform: translate(-3px, 2px); }
+          80% { transform: translate(2px, 3px); }
+          85% { transform: translate(-2px, -3px); }
+          90% { transform: translate(3px, 2px); }
+          95% { transform: translate(-3px, -2px); }
         }
-        @keyframes glitch-x {
+        @keyframes glitch-x-intense {
           0%, 100% { transform: translateX(0); }
-          25% { transform: translateX(-3px); }
-          75% { transform: translateX(3px); }
+          10% { transform: translateX(-5px); }
+          20% { transform: translateX(5px); }
+          30% { transform: translateX(-4px); }
+          40% { transform: translateX(4px); }
+          50% { transform: translateX(-3px); }
+          60% { transform: translateX(3px); }
+          70% { transform: translateX(-5px); }
+          80% { transform: translateX(5px); }
+          90% { transform: translateX(-4px); }
         }
-        @keyframes glitch-y {
+        @keyframes glitch-y-intense {
           0%, 100% { transform: translateY(0); }
-          33% { transform: translateY(-2px); }
-          66% { transform: translateY(2px); }
+          15% { transform: translateY(-4px); }
+          30% { transform: translateY(4px); }
+          45% { transform: translateY(-3px); }
+          60% { transform: translateY(3px); }
+          75% { transform: translateY(-4px); }
+          90% { transform: translateY(4px); }
         }
-        @keyframes rgb-split {
-          0%, 100% { opacity: 0.3; }
-          50% { opacity: 0.1; }
+        @keyframes glitch-diagonal {
+          0%, 100% { transform: translate(0, 0); }
+          25% { transform: translate(-3px, -3px); }
+          50% { transform: translate(3px, 3px); }
+          75% { transform: translate(-3px, 3px); }
         }
         @keyframes glitch-pixel {
-          0%, 100% { opacity: 0; transform: scale(1); }
-          50% { opacity: 1; transform: scale(1.5); }
+          0%, 100% { opacity: 0; transform: scale(0.5) rotate(0deg); }
+          25% { opacity: 1; transform: scale(2) rotate(45deg); }
+          50% { opacity: 0.7; transform: scale(1.5) rotate(-45deg); }
+          75% { opacity: 1; transform: scale(2.5) rotate(90deg); }
+        }
+        @keyframes data-stream {
+          0% { transform: translateX(-100%); opacity: 0; }
+          50% { opacity: 1; }
+          100% { transform: translateX(200%); opacity: 0; }
+        }
+        @keyframes glitch-blocks {
+          0%, 100% { opacity: 0; transform: translateX(0) scaleX(1); }
+          10% { opacity: 1; transform: translateX(-20px) scaleX(1.5); }
+          20% { opacity: 0.8; transform: translateX(15px) scaleX(0.8); }
+          30% { opacity: 1; transform: translateX(-10px) scaleX(1.2); }
+          40% { opacity: 0; transform: translateX(0) scaleX(1); }
         }
         .animate-matrix-fall {
           animation: matrix-fall linear infinite;
         }
         .animate-scanline {
-          animation: scanline 2s linear infinite;
+          animation: scanline 1.5s linear infinite;
+        }
+        .animate-scanline-fast {
+          animation: scanline-fast 0.8s linear infinite;
         }
         .animate-scanline-reverse {
-          animation: scanline-reverse 3s linear infinite;
+          animation: scanline-reverse 2s linear infinite;
         }
         .animate-scanline-horizontal {
-          animation: scanline-horizontal 4s linear infinite;
+          animation: scanline-horizontal 2.5s linear infinite;
         }
-        .animate-digital-noise {
-          animation: digital-noise 0.3s steps(4, end) infinite;
+        .animate-digital-noise-intense {
+          animation: digital-noise-intense 0.2s steps(8, end) infinite;
         }
-        .animate-glitch-x {
-          animation: glitch-x 0.5s ease-in-out infinite;
+        .animate-glitch-x-intense {
+          animation: glitch-x-intense 0.4s ease-in-out infinite;
         }
-        .animate-glitch-y {
-          animation: glitch-y 0.7s ease-in-out infinite;
+        .animate-glitch-y-intense {
+          animation: glitch-y-intense 0.5s ease-in-out infinite;
         }
-        .animate-rgb-split {
-          animation: rgb-split 1.5s ease-in-out infinite;
+        .animate-glitch-diagonal {
+          animation: glitch-diagonal 0.6s ease-in-out infinite;
         }
         .animate-glitch-pixel {
-          animation: glitch-pixel 1s ease-in-out infinite;
+          animation: glitch-pixel 0.8s ease-in-out infinite;
+        }
+        .animate-data-stream {
+          animation: data-stream 2s linear infinite;
+        }
+        .animate-glitch-blocks {
+          animation: glitch-blocks 2s ease-in-out infinite;
         }
       `}</style>
       {/* Animated Lightning Border Effect */}
