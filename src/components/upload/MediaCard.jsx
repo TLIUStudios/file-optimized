@@ -663,6 +663,8 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
         originalFileFormat: originalFormat
       });
       
+      console.log(`✅ Video processed: ${hasAudio ? 'with audio' : 'no audio'}`);
+      
       // Record compression stat only if space was saved
       if (blob.size < image.size) {
         try {
