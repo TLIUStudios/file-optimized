@@ -397,13 +397,6 @@ export default function Home() {
             </p>
           </div>
         </div>
-
-        {/* Global Stats */}
-        <div className="mt-8">
-          <Suspense fallback={null}>
-            <GlobalStats />
-          </Suspense>
-        </div>
         </div>
 
       {/* Upload Zone */}
