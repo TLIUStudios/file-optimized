@@ -19,20 +19,11 @@ const LoginPromptModal = lazy(() => import("../components/LoginPromptModal"));
 const ProUpgradeModal = lazy(() => import("../components/ProUpgradeModal"));
 const MediaCard = lazy(() => import("../components/upload/MediaCardMemo"));
 const ImageComparisonModal = lazy(() => import("../components/comparison/ImageComparisonModal"));
+const QuickSettings = lazy(() => import("../components/features/QuickSettings"));
+const KeyboardShortcuts = lazy(() => import("../components/features/KeyboardShortcuts"));
 
 // Loading fallback for image cards
-function ImageCardSkeleton() {
-  return (
-    <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg p-4 space-y-4">
-      <div className="grid grid-cols-2 gap-2">
-        <Skeleton className="aspect-square rounded-lg" />
-        <Skeleton className="aspect-square rounded-lg" />
-      </div>
-      <Skeleton className="h-4 w-3/4" />
-      <Skeleton className="h-10 w-full" />
-    </div>);
-
-}
+const ImageCardSkeleton = lazy(() => import("../components/upload/ImageCardSkeleton"));
 
 export default function Home() {
   const [images, setImages] = useState([]);
@@ -48,6 +39,13 @@ export default function Home() {
   const [processingCheckout, setProcessingCheckout] = useState(false);
   const [upgradeError, setUpgradeError] = useState(null);
   const [showLoginPrompt, setShowLoginPrompt] = useState(false);
+  const [defaultQuality, setDefaultQuality] = useState(() => {
+    const saved = localStorage.getItem('defaultQuality');
+    return saved ? parseInt(saved) : 80;
+  });
+  const [defaultFormat, setDefaultFormat] = useState(() => {
+    return localStorage.getItem('defaultFormat') || 'jpg';
+  });
 
   // Load user and their plan
   useEffect(() => {
@@ -65,11 +63,11 @@ export default function Home() {
   }, []);
 
   const handleFilesSelected = useCallback((files) => {
+    const newFiles = Array.from(files).map((file) => ({
+      id: `${file.name}-${Date.now()}-${Math.random()}`,
+      file
+    }));
     startTransition(() => {
-      const newFiles = Array.from(files).map((file) => ({
-        id: `${file.name}-${Date.now()}-${Math.random()}`,
-        file
-      }));
       setImages((prev) => [...prev, ...newFiles]);
     });
   }, []);
@@ -271,6 +269,13 @@ export default function Home() {
     base44.auth.redirectToLogin(window.location.href);
   };
 
+  const handlePresetApply = useCallback((preset) => {
+    setDefaultQuality(preset.quality);
+    setDefaultFormat(preset.format);
+    localStorage.setItem('defaultQuality', preset.quality);
+    localStorage.setItem('defaultFormat', preset.format);
+  }, []);
+
   const totalOriginalSize = useMemo(() => 
     images.reduce((sum, img) => sum + img.file.size, 0), [images]);
   
@@ -459,7 +464,10 @@ export default function Home() {
               }
               </div>
 
-              <div className="flex gap-2 flex-wrap">
+              <div className="flex gap-2 flex-wrap items-center">
+                <Suspense fallback={null}>
+                  <QuickSettings onPresetApply={handlePresetApply} />
+                </Suspense>
                 {unprocessedCount > 0 &&
               <Button
                 onClick={processAllImages}
@@ -610,6 +618,17 @@ export default function Home() {
           />
         </Suspense>
       )}
+
+      {/* Keyboard Shortcuts */}
+      <Suspense fallback={null}>
+        <KeyboardShortcuts
+          onProcessAll={processAllImages}
+          onDownloadAll={downloadAll}
+          onClearAll={clearAll}
+          hasImages={images.length > 0}
+          hasProcessed={Object.keys(processedImages).length > 0}
+        />
+      </Suspense>
 
     </div>
     </ErrorBoundary>

@@ -76,13 +76,16 @@ export default function Layout({ children }) {
   }, []);
 
   useEffect(() => {
+    let mounted = true;
     const loadUser = async () => {
       try {
         const isAuth = await base44.auth.isAuthenticated();
+        if (!mounted) return;
         setIsAuthenticated(isAuth);
         
         if (isAuth) {
           const currentUser = await base44.auth.me();
+          if (!mounted) return;
           
           // Auto-downgrade if Pro plan has expired
           if (currentUser?.plan === 'pro' && currentUser?.plan_expires_at) {
@@ -93,31 +96,40 @@ export default function Layout({ children }) {
               // Expired - update to free
               try {
                 await base44.auth.updateMe({ plan: 'free', plan_expires_at: null });
-                currentUser.plan = 'free';
-                currentUser.plan_expires_at = null;
+                if (mounted) {
+                  currentUser.plan = 'free';
+                  currentUser.plan_expires_at = null;
+                }
               } catch (e) {
                 console.error('Failed to auto-downgrade:', e);
               }
             }
           }
           
-          setUser(currentUser);
-          setUserPlan(currentUser?.plan || 'free');
-          setUserTheme(currentUser?.theme || 'none');
+          if (mounted) {
+            setUser(currentUser);
+            setUserPlan(currentUser?.plan || 'free');
+            setUserTheme(currentUser?.theme || 'none');
+          }
         } else {
-          setUser(null);
-          setUserPlan('free');
-          setUserTheme('none');
+          if (mounted) {
+            setUser(null);
+            setUserPlan('free');
+            setUserTheme('none');
+          }
         }
       } catch (error) {
         console.log('Auth check:', error);
-        setIsAuthenticated(false);
-        setUser(null);
+        if (mounted) {
+          setIsAuthenticated(false);
+          setUser(null);
+        }
       } finally {
-        setAuthLoading(false);
+        if (mounted) setAuthLoading(false);
       }
     };
     loadUser();
+    return () => { mounted = false; };
 
     const handleThemeChange = (event) => {
       setUserTheme(event.detail.theme);
