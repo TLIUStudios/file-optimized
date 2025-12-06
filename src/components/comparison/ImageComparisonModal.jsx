@@ -1100,32 +1100,6 @@ export default function ImageComparisonModal({
                     </Badge>
                   </div>
                 </div>
-
-                <div className="h-16 w-full flex items-center justify-between px-6 bg-slate-100/80 dark:bg-slate-900/80 backdrop-blur-sm border-t border-slate-200 dark:border-slate-800">
-                  <div className="flex flex-col gap-1">
-                    <Badge className="bg-slate-700 dark:bg-slate-800 text-white text-sm px-3 py-1 font-semibold w-fit">
-                      Original
-                    </Badge>
-                    <Badge className="bg-slate-700 dark:bg-slate-800 text-white text-xs px-2 py-0.5 font-bold w-fit">
-                      {originalExt}
-                    </Badge>
-                  </div>
-
-                  {zoom === 1 && (
-                    <div className="px-4 py-2 bg-slate-600/80 dark:bg-slate-700/80 backdrop-blur-sm rounded-lg text-white text-sm font-medium animate-pulse">
-                      ← Drag to compare →
-                    </div>
-                  )}
-
-                  <div className="flex flex-col gap-1 items-end">
-                    <Badge className="bg-emerald-600 text-white text-sm px-3 py-1 font-semibold w-fit">
-                      Compressed
-                    </Badge>
-                    <Badge className="bg-emerald-600 text-white text-xs px-2 py-0.5 font-bold w-fit">
-                      {previewFormat.toUpperCase()}
-                    </Badge>
-                  </div>
-                </div>
               </div>
             ) : (
               // Video or Audio player
