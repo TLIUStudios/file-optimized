@@ -1013,61 +1013,68 @@ export default function ImageComparisonModal({
               </div>
             ) : mediaType === 'image' ? (
               // Original image comparison view
-              <div
-                ref={containerRef}
-                className="relative w-full h-full bg-slate-100 dark:bg-slate-900 select-none flex items-center justify-center overflow-hidden"
-              >
-                <div
-                  ref={imageContainerRef}
-                  className="relative"
-                  style={{
-                    transform: `scale(${zoom}) translate(${pan.x / zoom}px, ${pan.y / zoom}px)`,
-                    transformOrigin: 'center',
-                    transition: isDragging || isPanning ? 'none' : 'transform 0.2s ease-out',
-                    cursor: zoom > 1 ? (isPanning ? 'grabbing' : 'grab') : 'col-resize'
-                  }}
-                  onMouseDown={(e) => {
-                    if (zoom > 1) {
-                      handlePanStart(e);
-                    } else {
-                      setIsDragging(true);
-                    }
-                  }}
-                  onTouchStart={(e) => {
-                    if (zoom > 1 && e.touches.length === 1) {
-                      setIsPanning(true);
-                      setPanStart({ x: e.touches[0].clientX, y: e.touches[0].clientY });
-                    } else if (e.touches.length === 1) {
-                      setIsDragging(true);
-                    }
-                  }}
+              <div className="relative w-full h-full bg-slate-100 dark:bg-slate-900 flex flex-col">
+                <div 
+                  ref={containerRef}
+                  className="flex-1 relative flex items-center justify-center p-4 select-none overflow-hidden"
                 >
-                  <div className="relative">
+                  <div
+                    ref={imageContainerRef}
+                    className="relative inline-block"
+                    style={{
+                      transform: `scale(${zoom}) translate(${pan.x / zoom}px, ${pan.y / zoom}px)`,
+                      transformOrigin: 'center center',
+                      transition: isDragging || isPanning ? 'none' : 'transform 0.2s ease-out',
+                      cursor: zoom > 1 ? (isPanning ? 'grabbing' : 'grab') : 'col-resize'
+                    }}
+                    onMouseDown={(e) => {
+                      if (zoom > 1) {
+                        handlePanStart(e);
+                      } else {
+                        setIsDragging(true);
+                      }
+                    }}
+                    onTouchStart={(e) => {
+                      if (zoom > 1 && e.touches.length === 1) {
+                        setIsPanning(true);
+                        setPanStart({ x: e.touches[0].clientX, y: e.touches[0].clientY });
+                      } else if (e.touches.length === 1) {
+                        setIsDragging(true);
+                      }
+                    }}
+                  >
+                    {/* Base compressed image */}
                     <img
                       src={compressedImage}
                       alt="Compressed"
-                      className="max-w-[85vw] lg:max-w-[60vw] max-h-[calc(100vh-200px)] w-auto h-auto object-contain"
+                      className="block max-w-[80vw] lg:max-w-[55vw] max-h-[calc(100vh-250px)] w-auto h-auto"
                       draggable="false"
                     />
 
+                    {/* Original image overlay with clip */}
                     <div
-                      className="absolute inset-0 overflow-hidden"
+                      className="absolute top-0 left-0 w-full h-full overflow-hidden"
                       style={{ clipPath: `inset(0 ${100 - sliderPosition}% 0 0)` }}
                     >
                       <img
                         src={originalImage}
                         alt="Original"
-                        className="max-w-[85vw] lg:max-w-[60vw] max-h-[calc(100vh-200px)] w-auto h-auto object-contain"
+                        className="block max-w-[80vw] lg:max-w-[55vw] max-h-[calc(100vh-250px)] w-auto h-auto"
                         draggable="false"
                       />
                     </div>
 
+                    {/* Slider */}
                     {zoom === 1 && !isPanning && (
                       <div
-                        className="absolute top-0 bottom-0 w-0.5 bg-white shadow-2xl z-10 pointer-events-none"
-                        style={{ left: `${sliderPosition}%`, transform: 'translateX(-50%)' }}
+                        className="absolute top-0 bottom-0 w-0.5 bg-white shadow-2xl z-10"
+                        style={{ 
+                          left: `${sliderPosition}%`, 
+                          transform: 'translateX(-50%)',
+                          pointerEvents: 'none'
+                        }}
                       >
-                        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-12 h-12 bg-white dark:bg-slate-700 rounded-full shadow-2xl flex items-center justify-center cursor-col-resize border-2 border-slate-300 dark:border-slate-600 pointer-events-auto">
+                        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-12 h-12 bg-white dark:bg-slate-700 rounded-full shadow-2xl flex items-center justify-center border-2 border-slate-300 dark:border-slate-600 pointer-events-auto cursor-col-resize">
                           <MoveHorizontal className="w-5 h-5 text-slate-700 dark:text-white" />
                         </div>
                       </div>
@@ -1075,7 +1082,7 @@ export default function ImageComparisonModal({
                   </div>
                 </div>
 
-                <div className="absolute bottom-0 left-0 right-0 h-16 w-full flex items-center justify-between px-6 bg-slate-100/80 dark:bg-slate-900/80 backdrop-blur-sm border-t border-slate-200 dark:border-slate-800">
+                <div className="h-16 w-full flex items-center justify-between px-6 bg-slate-100/80 dark:bg-slate-900/80 backdrop-blur-sm border-t border-slate-200 dark:border-slate-800">
                   <div className="flex flex-col gap-1">
                     <Badge className="bg-slate-700 dark:bg-slate-800 text-white text-sm px-3 py-1 font-semibold w-fit">
                       Original
