@@ -28,7 +28,7 @@ export default function GlobalStats() {
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      className="relative bg-gradient-to-r from-emerald-500 to-teal-600 rounded-lg p-3 text-white shadow-lg max-w-sm mx-auto overflow-hidden"
+      className="relative bg-gradient-to-r from-emerald-500 to-teal-600 rounded-lg p-3 text-white shadow-lg max-w-xs mx-auto overflow-hidden"
     >
       {/* Animated Lightning Border Effect */}
       <div className="absolute inset-0 rounded-xl pointer-events-none">
@@ -150,7 +150,7 @@ export default function GlobalStats() {
           </div>
         </div>
 
-        <div className="flex items-center gap-8">
+        <div className="flex items-center gap-16">
           <div className="text-right">
             <div className="text-base font-bold">{formatBytes(totalSaved)}</div>
             <div className="text-[10px] text-emerald-100">Space Saved</div>
