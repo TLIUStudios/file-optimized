@@ -16,7 +16,8 @@ export default function GlobalStats() {
     queryFn: async () => {
       return await base44.entities.CompressionStat.list('-created_date', 10000);
     },
-    refetchInterval: 60000 // Refresh every minute
+    refetchInterval: 60000, // Refresh every minute
+    staleTime: 30000 // Consider data fresh for 30 seconds
   });
 
   const totalSaved = stats.reduce((sum, s) => sum + s.saved_bytes, 0);

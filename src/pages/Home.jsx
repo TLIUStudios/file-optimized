@@ -54,6 +54,10 @@ export default function Home() {
       }
     };
     loadUser();
+    
+    // Preload critical modals for instant opening
+    import("../components/ProUpgradeModal");
+    import("../components/LoginPromptModal");
   }, []);
 
   const handleFilesSelected = useCallback((files) => {
