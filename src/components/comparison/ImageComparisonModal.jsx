@@ -1015,12 +1015,12 @@ export default function ImageComparisonModal({
               // Original image comparison view
               <div
                 ref={containerRef}
-                className="relative w-full h-full bg-slate-100 dark:bg-slate-900 select-none flex flex-col items-center justify-center overflow-hidden"
+                className="relative w-full h-full bg-slate-100 dark:bg-slate-900 select-none flex flex-col overflow-hidden"
               >
-                <div className="flex-1 relative w-full flex items-center justify-center py-4">
+                <div className="flex-1 w-full flex items-center justify-center py-4 overflow-hidden">
                   <div
                     ref={imageContainerRef}
-                    className="relative"
+                    className="relative max-w-full max-h-full"
                     style={{
                       transform: `scale(${zoom}) translate(${pan.x / zoom}px, ${pan.y / zoom}px)`,
                       transformOrigin: 'center',
