@@ -56,19 +56,67 @@ export default function GlobalStats() {
           </defs>
         </svg>
         
-        {/* Corner lightning bolts */}
-        <svg className="absolute top-2 left-2 w-4 h-4 text-emerald-300 animate-pulse" viewBox="0 0 24 24" fill="currentColor" style={{ animationDuration: '1.5s', filter: 'drop-shadow(0 0 4px currentColor)' }}>
-          <path d="M13 2L3 14h8l-1 8 10-12h-8l1-8z" />
-        </svg>
-        <svg className="absolute top-2 right-2 w-4 h-4 text-emerald-300 animate-pulse" viewBox="0 0 24 24" fill="currentColor" style={{ animationDuration: '2s', filter: 'drop-shadow(0 0 4px currentColor)' }}>
-          <path d="M13 2L3 14h8l-1 8 10-12h-8l1-8z" />
-        </svg>
-        <svg className="absolute bottom-2 left-2 w-4 h-4 text-emerald-300 animate-pulse" viewBox="0 0 24 24" fill="currentColor" style={{ animationDuration: '1.8s', filter: 'drop-shadow(0 0 4px currentColor)' }}>
-          <path d="M13 2L3 14h8l-1 8 10-12h-8l1-8z" />
-        </svg>
-        <svg className="absolute bottom-2 right-2 w-4 h-4 text-emerald-300 animate-pulse" viewBox="0 0 24 24" fill="currentColor" style={{ animationDuration: '1.6s', filter: 'drop-shadow(0 0 4px currentColor)' }}>
-          <path d="M13 2L3 14h8l-1 8 10-12h-8l1-8z" />
-        </svg>
+        {/* Animated Lightning Zaps */}
+        {[...Array(8)].map((_, i) => (
+          <div
+            key={i}
+            className="absolute w-0.5 bg-gradient-to-b from-transparent via-emerald-300 to-transparent animate-zap"
+            style={{
+              height: '20px',
+              left: `${(i + 1) * 12}%`,
+              top: '0',
+              animationDelay: `${i * 0.3}s`,
+              animationDuration: '2s',
+              filter: 'drop-shadow(0 0 6px rgba(52, 211, 153, 0.8))',
+              opacity: 0
+            }}
+          />
+        ))}
+        {[...Array(8)].map((_, i) => (
+          <div
+            key={`bottom-${i}`}
+            className="absolute w-0.5 bg-gradient-to-t from-transparent via-emerald-300 to-transparent animate-zap"
+            style={{
+              height: '20px',
+              left: `${(i + 1) * 12}%`,
+              bottom: '0',
+              animationDelay: `${i * 0.3 + 1}s`,
+              animationDuration: '2s',
+              filter: 'drop-shadow(0 0 6px rgba(52, 211, 153, 0.8))',
+              opacity: 0
+            }}
+          />
+        ))}
+        {[...Array(4)].map((_, i) => (
+          <div
+            key={`left-${i}`}
+            className="absolute h-0.5 bg-gradient-to-r from-transparent via-emerald-300 to-transparent animate-zap"
+            style={{
+              width: '20px',
+              left: '0',
+              top: `${(i + 1) * 25}%`,
+              animationDelay: `${i * 0.4}s`,
+              animationDuration: '2s',
+              filter: 'drop-shadow(0 0 6px rgba(52, 211, 153, 0.8))',
+              opacity: 0
+            }}
+          />
+        ))}
+        {[...Array(4)].map((_, i) => (
+          <div
+            key={`right-${i}`}
+            className="absolute h-0.5 bg-gradient-to-l from-transparent via-emerald-300 to-transparent animate-zap"
+            style={{
+              width: '20px',
+              right: '0',
+              top: `${(i + 1) * 25}%`,
+              animationDelay: `${i * 0.4 + 0.5}s`,
+              animationDuration: '2s',
+              filter: 'drop-shadow(0 0 6px rgba(52, 211, 153, 0.8))',
+              opacity: 0
+            }}
+          />
+        ))}
       </div>
       
       <style>{`
@@ -79,19 +127,30 @@ export default function GlobalStats() {
         .animate-dash {
           animation: dash 3s linear infinite;
         }
+        @keyframes zap {
+          0% { opacity: 0; transform: scaleY(0); }
+          10% { opacity: 1; transform: scaleY(1); }
+          20% { opacity: 0.8; }
+          30% { opacity: 1; }
+          40% { opacity: 0; transform: scaleY(1); }
+          100% { opacity: 0; transform: scaleY(0); }
+        }
+        .animate-zap {
+          animation: zap 2s ease-in-out infinite;
+        }
       `}</style>
       <div className="relative z-10 flex items-center justify-between gap-8">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 bg-white/20 backdrop-blur-sm rounded-lg flex items-center justify-center flex-shrink-0">
             <Globe className="w-5 h-5" />
           </div>
-          <div>
-            <h3 className="text-sm font-bold">Global Impact</h3>
-            <p className="text-xs text-emerald-100">Combined from all users</p>
+          <div className="flex flex-col items-start">
+            <h3 className="text-sm font-bold leading-tight">Global Impact</h3>
+            <p className="text-xs text-emerald-100 leading-tight">Combined from all users</p>
           </div>
         </div>
 
-        <div className="flex items-center gap-16">
+        <div className="flex items-center gap-20">
           <div className="text-right min-w-[100px]">
             <div className="text-2xl font-bold">{formatBytes(totalSaved)}</div>
             <div className="text-xs text-emerald-100">Space Saved</div>
