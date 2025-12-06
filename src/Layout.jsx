@@ -17,8 +17,9 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import GoogleAds from "./components/GoogleAds";
+import ChatSupport from "./components/ChatSupport";
 
-const LoginPromptModal = lazy(() => import("./components/LoginPromptModal"));
+      const LoginPromptModal = lazy(() => import("./components/LoginPromptModal"));
 
 const SnowEffect = lazy(() => import("./components/themes/SnowEffect"));
 const FireworksEffect = lazy(() => import("./components/themes/FireworksEffect"));
@@ -421,6 +422,9 @@ export default function Layout({ children }) {
           />
         </Suspense>
       )}
-    </div>
-  );
-}
+
+      {/* AI Chat Support */}
+      <ChatSupport />
+      </div>
+      );
+      }
