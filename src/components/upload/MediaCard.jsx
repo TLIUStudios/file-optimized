@@ -925,6 +925,21 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
         originalFileFormat: originalFormat
       });
       
+      // Record compression stat
+      try {
+        const isAuth = await base44.auth.isAuthenticated();
+        if (isAuth) {
+          await base44.entities.CompressionStat.create({
+            original_size: image.size,
+            compressed_size: gifBlob.size,
+            media_type: 'image',
+            output_format: 'gif'
+          });
+        }
+      } catch (err) {
+        console.log('Could not save stat:', err);
+      }
+      
       toast.success('Video converted to GIF!');
     } catch (error) {
       console.error('Video to GIF conversion failed:', error);
@@ -1087,6 +1102,21 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
         fileFormat: 'mp4',
         originalFileFormat: originalFormat
       });
+
+      // Record compression stat
+      try {
+        const isAuth = await base44.auth.isAuthenticated();
+        if (isAuth) {
+          await base44.entities.CompressionStat.create({
+            original_size: image.size,
+            compressed_size: blob.size,
+            media_type: 'video',
+            output_format: 'mp4'
+          });
+        }
+      } catch (err) {
+        console.log('Could not save stat:', err);
+      }
 
       toast.success('GIF converted to MP4!');
     } catch (error) {
@@ -1429,6 +1459,22 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
           fileFormat: format,
           originalFileFormat: originalFormat
         });
+        
+        // Record compression stat
+        try {
+          const isAuth = await base44.auth.isAuthenticated();
+          if (isAuth) {
+            await base44.entities.CompressionStat.create({
+              original_size: image.size,
+              compressed_size: compressedFile.size,
+              media_type: 'image',
+              output_format: format
+            });
+          }
+        } catch (err) {
+          console.log('Could not save stat:', err);
+        }
+        
         const savings = ((1 - compressedFile.size / image.size) * 100).toFixed(1);
         toast.success(`PNG compressed! Saved ${savings}%`);
         return;
@@ -1696,6 +1742,22 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
         originalFileFormat: originalFormat,
         animations: [animationData]
       });
+      
+      // Record compression stat
+      try {
+        const isAuth = await base44.auth.isAuthenticated();
+        if (isAuth) {
+          await base44.entities.CompressionStat.create({
+            original_size: image.size,
+            compressed_size: gifBlob.size,
+            media_type: 'image',
+            output_format: 'gif'
+          });
+        }
+      } catch (err) {
+        console.log('Could not save stat:', err);
+      }
+      
       toast.success(`Animation created! (${totalFrames} frames)`);
     } catch (error) {
       console.error('❌ Animation failed:', error);
