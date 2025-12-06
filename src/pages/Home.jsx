@@ -1,11 +1,12 @@
 import { useState, lazy, Suspense, useEffect, useMemo, useCallback, memo, startTransition } from "react";
 import { Button } from "@/components/ui/button";
-import { Download, Trash2, Sparkles, Shield, Zap, Image as ImageIcon, FolderPlus } from "lucide-react";
+import { Download, Trash2, Sparkles, Shield, Zap, Image as ImageIcon, FolderPlus, TrendingDown, Globe } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { base44 } from "@/api/base44Client";
 import SEOHead from "../components/SEOHead";
+import { useQuery } from "@tanstack/react-query";
 
 // Lazy load heavy components for better performance
 const UploadZone = lazy(() => import("../components/upload/UploadZone"));
@@ -62,6 +63,26 @@ export default function Home() {
       }
     };
     loadUser();
+  }, []);
+
+  // Load global compression stats
+  const { data: globalStats = [] } = useQuery({
+    queryKey: ['globalCompressionStats'],
+    queryFn: () => base44.entities.CompressionStat.list('-created_date', 100000),
+    refetchInterval: 30000, // Refresh every 30 seconds
+  });
+
+  const globalSavings = useMemo(() => {
+    return globalStats.reduce((sum, stat) => 
+      sum + (stat.original_size - stat.compressed_size), 0
+    );
+  }, [globalStats]);
+
+  const formatFileSize = useCallback((bytes) => {
+    if (bytes < 1024) return bytes + ' B';
+    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+    if (bytes < 1024 * 1024 * 1024) return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+    return (bytes / (1024 * 1024 * 1024)).toFixed(2) + ' GB';
   }, []);
 
   const handleFilesSelected = useCallback((files) => {
@@ -288,12 +309,6 @@ export default function Home() {
 
   const sizeIncreased = totalCompressedSize > totalOriginalSize;
 
-  const formatFileSize = useCallback((bytes) => {
-    if (bytes < 1024) return bytes + ' B';
-    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
-    return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
-  }, []);
-
   const isPro = userPlan === 'pro';
 
   return (
@@ -355,6 +370,29 @@ export default function Home() {
           Fast, secure, and powerful media compression. Reduce file size by up to 90% 
           while maintaining quality. All processing happens in your browser.
         </p>
+
+        {/* Global Stats */}
+        {globalStats.length > 0 && (
+          <div className="mt-8 max-w-md mx-auto">
+            <div className="bg-gradient-to-br from-emerald-50 to-teal-50 dark:from-emerald-950/30 dark:to-teal-950/30 border border-emerald-200 dark:border-emerald-800 rounded-2xl p-6">
+              <div className="flex items-center justify-center gap-2 mb-3">
+                <Globe className="w-5 h-5 text-emerald-600" />
+                <h3 className="text-sm font-semibold text-slate-900 dark:text-white">Global Impact</h3>
+              </div>
+              <div className="text-center">
+                <div className="flex items-center justify-center gap-2 mb-2">
+                  <TrendingDown className="w-6 h-6 text-emerald-600" />
+                  <p className="text-3xl font-bold text-emerald-600 dark:text-emerald-400">
+                    {formatFileSize(globalSavings)}
+                  </p>
+                </div>
+                <p className="text-sm text-slate-600 dark:text-slate-400">
+                  saved across <span className="font-semibold text-slate-900 dark:text-white">{globalStats.length.toLocaleString()}</span> files optimized
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Features */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-12 max-w-4xl mx-auto">

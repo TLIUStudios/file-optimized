@@ -374,11 +374,57 @@ export default function Profile() {
             </Card>
           </motion.div>
 
+          {/* Space Saved Stats */}
+          <motion.div
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.15 }}
+          >
+            <Card className="p-6">
+              <div className="flex items-center gap-2 mb-4">
+                <HardDrive className="w-5 h-5 text-emerald-600" />
+                <h3 className="text-lg font-semibold text-slate-900 dark:text-white">Your Space Saved</h3>
+              </div>
+
+              {statsLoading ? (
+                <div className="flex items-center justify-center py-4">
+                  <Loader2 className="w-5 h-5 animate-spin text-slate-400" />
+                </div>
+              ) : compressionStats.length === 0 ? (
+                <p className="text-sm text-slate-500 dark:text-slate-400 text-center py-4">
+                  Start compressing files to track savings!
+                </p>
+              ) : (
+                <div className="grid grid-cols-2 gap-3">
+                  {[
+                    { key: '1day', label: 'Today' },
+                    { key: '1week', label: 'Week' },
+                    { key: '1month', label: 'Month' },
+                    { key: 'alltime', label: 'All Time' }
+                  ].map(({ key, label }) => {
+                    const { savings, count } = calculateSavings(key);
+                    return (
+                      <div key={key} className="bg-slate-50 dark:bg-slate-950 rounded-lg p-3 text-center">
+                        <p className="text-xs text-slate-500 dark:text-slate-400 mb-1">{label}</p>
+                        <p className="text-lg font-bold text-emerald-600 dark:text-emerald-400">
+                          {formatFileSize(savings)}
+                        </p>
+                        <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                          {count} file{count !== 1 ? 's' : ''}
+                        </p>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </Card>
+          </motion.div>
+
           {/* Plan Comparison Card */}
           <motion.div
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: 0.2 }}
+            transition={{ delay: 0.25 }}
           >
             <Card className="p-6">
               <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-4">Your Plan</h3>
@@ -584,73 +630,12 @@ export default function Profile() {
             </Card>
           </motion.div>
 
-          {/* Compression Stats */}
-          <motion.div
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: 0.3 }}
-          >
-            <Card className="p-6">
-              <div className="flex items-center gap-2 mb-4">
-                <HardDrive className="w-5 h-5 text-emerald-600" />
-                <h3 className="text-lg font-semibold text-slate-900 dark:text-white">Space Saved</h3>
-              </div>
-
-              {statsLoading ? (
-                <div className="flex items-center justify-center py-8">
-                  <Loader2 className="w-6 h-6 animate-spin text-slate-400" />
-                </div>
-              ) : compressionStats.length === 0 ? (
-                <p className="text-sm text-slate-500 dark:text-slate-400 text-center py-8">
-                  Start compressing files to see your savings!
-                </p>
-              ) : (
-                <div className="space-y-3">
-                  {['1day', '1week', '1month', '1year', 'alltime'].map((timeframe) => {
-                    const { savings, count } = calculateSavings(timeframe);
-                    const labels = {
-                      '1day': 'Last 24 Hours',
-                      '1week': 'Last 7 Days',
-                      '1month': 'Last 30 Days',
-                      '1year': 'Last Year',
-                      'alltime': 'All Time'
-                    };
-
-                    return (
-                      <div
-                        key={timeframe}
-                        className="flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-950 rounded-lg"
-                      >
-                        <div className="flex-1">
-                          <p className="text-sm font-medium text-slate-900 dark:text-white">
-                            {labels[timeframe]}
-                          </p>
-                          <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-                            {count} file{count !== 1 ? 's' : ''} compressed
-                          </p>
-                        </div>
-                        <div className="text-right">
-                          <div className="flex items-center gap-1">
-                            <TrendingDown className="w-4 h-4 text-emerald-600" />
-                            <p className="text-sm font-bold text-emerald-600 dark:text-emerald-400">
-                              {formatFileSize(savings)}
-                            </p>
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-            </Card>
-          </motion.div>
-
           {/* Billing History */}
           {isPro && (
             <motion.div
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.4 }}
+              transition={{ delay: 0.35 }}
             >
               <Card className="p-6">
                 <div className="flex items-center gap-2 mb-4">
@@ -715,7 +700,7 @@ export default function Profile() {
           <motion.div
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: 0.5 }}
+            transition={{ delay: 0.45 }}
           >
             <Card className="p-6">
               <div className="flex items-center justify-between mb-6">
