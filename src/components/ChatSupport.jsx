@@ -129,7 +129,7 @@ Provide a helpful, accurate, and concise response. If the question is about tech
                   className="h-14 w-14 rounded-full bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 shadow-lg hover:shadow-xl transition-all relative"
                   size="icon"
                 >
-                  <MessageCircle className="w-7 h-7 text-white" />
+                  <MessageCircle className="w-8 h-8 text-white" />
                   {/* Pulse animation */}
                   <span className="absolute inset-0 rounded-full bg-emerald-400 animate-ping opacity-20" style={{ animationDuration: '3.5s' }} />
                 </Button>
