@@ -29,6 +29,7 @@ export default function ImageComparisonModal({
   const [isDragging, setIsDragging] = useState(false);
   const [zoom, setZoom] = useState(1);
   const containerRef = useRef(null);
+  const imageRef = useRef(null);
   const [showSocialShare, setShowSocialShare] = useState(false);
   const [selectedFormat, setSelectedFormat] = useState(fileFormat);
   const [previewFormat, setPreviewFormat] = useState(fileFormat);
@@ -39,6 +40,7 @@ export default function ImageComparisonModal({
   const [loadingFormatSizes, setLoadingFormatSizes] = useState(false);
   const [previewSize, setPreviewSize] = useState(compressedSize);
   const [convertedBlob, setConvertedBlob] = useState(null);
+  const [imageDimensions, setImageDimensions] = useState({ width: 0, height: 0 });
 
   const [aiTitle, setAiTitle] = useState("");
   const [aiDescription, setAiDescription] = useState("");
@@ -49,7 +51,6 @@ export default function ImageComparisonModal({
   const [aiKeywords, setAiKeywords] = useState("");
   const [aiHashtags, setAiHashtags] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
-  const [regeneratingField, setRegeneratingField] = useState(null);
 
   const isAnimationVariations = generatedAnimations && generatedAnimations.length > 0;
   const originalExt = originalFileFormat ? originalFileFormat.toUpperCase() : fileName.split('.').pop().toUpperCase();
@@ -61,6 +62,17 @@ export default function ImageComparisonModal({
     : fileFormat === 'gif'
     ? ['gif', 'mp4']
     : ['jpg', 'png', 'webp', 'avif'];
+
+  // Load image dimensions
+  useEffect(() => {
+    if (originalImage && mediaType === 'image') {
+      const img = new Image();
+      img.onload = () => {
+        setImageDimensions({ width: img.width, height: img.height });
+      };
+      img.src = originalImage;
+    }
+  }, [originalImage, mediaType]);
 
   // Load cached data
   useEffect(() => {
@@ -87,12 +99,11 @@ export default function ImageComparisonModal({
   // Slider drag handlers
   useEffect(() => {
     const handleMove = (clientX) => {
-      if (containerRef.current) {
-        const rect = containerRef.current.getBoundingClientRect();
-        const x = clientX - rect.left;
-        const percentage = Math.max(0, Math.min(100, (x / rect.width) * 100));
-        setSliderPosition(percentage);
-      }
+      if (!containerRef.current) return;
+      const rect = containerRef.current.getBoundingClientRect();
+      const x = clientX - rect.left;
+      const percentage = Math.max(0, Math.min(100, (x / rect.width) * 100));
+      setSliderPosition(percentage);
     };
 
     const handleMouseMove = (e) => {
@@ -299,23 +310,23 @@ export default function ImageComparisonModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-[98vw] w-[98vw] h-[98vh] p-0 bg-slate-950 [&>button]:hidden">
+      <DialogContent className="max-w-[98vw] w-[98vw] h-[98vh] p-0 bg-slate-50 dark:bg-slate-950 [&>button]:hidden">
         
         {/* Top Bar */}
-        <div className="absolute top-0 left-0 right-0 z-50 flex items-center justify-between px-4 py-3 bg-slate-900/95 backdrop-blur border-b border-slate-800">
+        <div className="absolute top-0 left-0 right-0 z-50 flex items-center justify-between px-4 py-3 bg-white/95 dark:bg-slate-900/95 backdrop-blur border-b border-slate-200 dark:border-slate-800">
           <div className="flex items-center gap-2">
             {mediaType === 'image' && !isAnimationVariations && (
               <>
-                <Button variant="ghost" size="icon" onClick={() => setZoom(Math.min(3, zoom + 0.25))} className="h-8 w-8">
+                <Button variant="ghost" size="icon" onClick={() => setZoom(Math.min(3, zoom + 0.25))} className="h-9 w-9">
                   <ZoomIn className="w-4 h-4" />
                 </Button>
-                <Button variant="ghost" size="icon" onClick={() => setZoom(Math.max(0.5, zoom - 0.25))} className="h-8 w-8">
+                <Button variant="ghost" size="icon" onClick={() => setZoom(Math.max(0.5, zoom - 0.25))} className="h-9 w-9">
                   <ZoomOut className="w-4 h-4" />
                 </Button>
-                <Button variant="ghost" size="icon" onClick={() => setZoom(1)} className="h-8 w-8">
+                <Button variant="ghost" size="icon" onClick={() => setZoom(1)} className="h-9 w-9">
                   <Maximize2 className="w-4 h-4" />
                 </Button>
-                <div className="bg-slate-800 rounded px-3 h-8 flex items-center text-xs text-white">
+                <div className="bg-slate-100 dark:bg-slate-800 rounded px-3 h-9 flex items-center text-xs font-medium">
                   {(zoom * 100).toFixed(0)}%
                 </div>
               </>
@@ -324,7 +335,7 @@ export default function ImageComparisonModal({
 
           <div className="flex items-center gap-2">
             {!isAnimationVariations && (
-              <div className="flex gap-1 bg-slate-800 rounded p-1">
+              <div className="flex gap-1 bg-slate-100 dark:bg-slate-800 rounded p-1">
                 {availableFormats.map((fmt) => (
                   <Button
                     key={fmt}
@@ -332,7 +343,7 @@ export default function ImageComparisonModal({
                     variant="ghost"
                     size="sm"
                     className={cn(
-                      "h-7 px-3 text-xs",
+                      "h-8 px-3 text-xs",
                       selectedFormat === fmt && "bg-emerald-600 hover:bg-emerald-700 text-white"
                     )}
                   >
@@ -342,90 +353,105 @@ export default function ImageComparisonModal({
               </div>
             )}
             
-            <Button onClick={downloadMedia} className="bg-emerald-600 hover:bg-emerald-700 h-8 px-4 text-xs">
-              <DownloadIcon className="w-3.5 h-3.5 mr-1.5" />
+            <Button onClick={downloadMedia} className="bg-emerald-600 hover:bg-emerald-700 h-9 px-4 text-xs">
+              <DownloadIcon className="w-4 h-4 mr-1.5" />
               Download
             </Button>
             
             {mediaType === 'image' && !isAnimationVariations && (
-              <Button onClick={downloadAllFormatsZip} variant="outline" className="h-8 px-3 text-xs">
+              <Button onClick={downloadAllFormatsZip} variant="outline" className="h-9 px-3 text-xs">
                 .ZIP
               </Button>
             )}
             
-            <Button variant="ghost" size="icon" onClick={onClose} className="h-8 w-8 hover:bg-red-600">
-              <X className="w-4 h-4" />
+            <Button variant="ghost" size="icon" onClick={onClose} className="h-9 w-9 hover:bg-red-600 hover:text-white">
+              <X className="w-5 h-5" />
             </Button>
           </div>
         </div>
 
-        <div className="flex h-full pt-14">
-          {/* Image Area */}
-          <div className="flex-1 flex flex-col bg-slate-900">
+        <div className="flex h-full pt-[60px]">
+          {/* Image Comparison Area */}
+          <div className="flex-1 flex flex-col">
             {mediaType === 'image' && !isAnimationVariations ? (
               <>
                 <div
                   ref={containerRef}
-                  className="flex-1 relative bg-slate-900 flex items-center justify-center overflow-hidden"
+                  className="flex-1 relative bg-slate-100 dark:bg-slate-900 flex items-center justify-center overflow-hidden select-none"
+                  style={{ cursor: 'col-resize' }}
                   onMouseDown={() => setIsDragging(true)}
                   onTouchStart={() => setIsDragging(true)}
-                  style={{ cursor: 'col-resize' }}
                 >
-                  <div className="relative" style={{ transform: `scale(${zoom})` }}>
-                    {/* Base image - Compressed */}
-                    <img
-                      src={compressedImage}
-                      alt="Compressed"
-                      className="block max-w-[70vw] max-h-[calc(100vh-180px)] w-auto h-auto"
-                      draggable="false"
-                    />
-                    
-                    {/* Overlay image - Original with clip */}
-                    <img
-                      src={originalImage}
-                      alt="Original"
-                      className="block absolute top-0 left-0 w-full h-full"
-                      draggable="false"
-                      style={{ 
-                        clipPath: `inset(0 ${100 - sliderPosition}% 0 0)`,
-                        pointerEvents: 'none'
-                      }}
-                    />
-                    
-                    {/* Slider */}
-                    <div 
-                      className="absolute top-0 h-full w-1 bg-white shadow-2xl"
-                      style={{ left: `${sliderPosition}%`, transform: 'translateX(-50%)', pointerEvents: 'none' }}
-                    >
-                      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-10 h-10 bg-white rounded-full shadow-xl flex items-center justify-center border-2 border-slate-400">
-                        <MoveHorizontal className="w-5 h-5 text-slate-800" />
+                  <div
+                    className="relative"
+                    style={{
+                      transform: `scale(${zoom})`,
+                      transition: 'transform 0.2s ease-out'
+                    }}
+                  >
+                    {/* Container that defines the size */}
+                    <div className="relative">
+                      {/* Base image - Compressed (defines dimensions) */}
+                      <img
+                        ref={imageRef}
+                        src={compressedImage}
+                        alt="Compressed"
+                        className="block max-w-[70vw] max-h-[calc(100vh-200px)] w-auto h-auto"
+                        draggable="false"
+                      />
+                      
+                      {/* Overlay image - Original (matches base dimensions exactly) */}
+                      <img
+                        src={originalImage}
+                        alt="Original"
+                        className="absolute top-0 left-0 w-full h-full object-cover"
+                        draggable="false"
+                        style={{
+                          clipPath: `inset(0 ${100 - sliderPosition}% 0 0)`,
+                          pointerEvents: 'none'
+                        }}
+                      />
+                      
+                      {/* Slider line and handle */}
+                      <div
+                        className="absolute top-0 bottom-0 w-0.5 bg-white shadow-2xl pointer-events-none"
+                        style={{
+                          left: `${sliderPosition}%`,
+                          transform: 'translateX(-50%)'
+                        }}
+                      >
+                        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-12 h-12 bg-white dark:bg-slate-700 rounded-full shadow-2xl flex items-center justify-center border-2 border-slate-300 dark:border-slate-600">
+                          <MoveHorizontal className="w-5 h-5 text-slate-700 dark:text-white" />
+                        </div>
                       </div>
                     </div>
                   </div>
                 </div>
                 
                 {/* Bottom labels */}
-                <div className="h-14 bg-slate-900/95 border-t border-slate-800 flex items-center justify-between px-6">
-                  <div>
-                    <Badge className="bg-slate-700 text-white">Original</Badge>
-                    <Badge className="bg-slate-700 text-white text-xs ml-1">{originalExt}</Badge>
+                <div className="h-16 bg-white/80 dark:bg-slate-900/80 backdrop-blur border-t border-slate-200 dark:border-slate-800 flex items-center justify-between px-6 flex-shrink-0">
+                  <div className="flex flex-col gap-1">
+                    <Badge className="bg-slate-700 dark:bg-slate-800 text-white text-sm px-3 py-1 font-semibold w-fit">Original</Badge>
+                    <Badge className="bg-slate-700 dark:bg-slate-800 text-white text-xs px-2 py-0.5 font-bold w-fit">{originalExt}</Badge>
                   </div>
-                  <div className="px-4 py-1.5 bg-slate-700/50 rounded text-white text-xs animate-pulse">
-                    ← Drag to compare →
-                  </div>
-                  <div>
-                    <Badge className="bg-emerald-600 text-white">Compressed</Badge>
-                    <Badge className="bg-emerald-600 text-white text-xs ml-1">{previewFormat.toUpperCase()}</Badge>
+                  {zoom === 1 && (
+                    <div className="px-4 py-2 bg-slate-600/80 dark:bg-slate-700/80 backdrop-blur-sm rounded-lg text-white text-sm font-medium animate-pulse">
+                      ← Drag to compare →
+                    </div>
+                  )}
+                  <div className="flex flex-col gap-1 items-end">
+                    <Badge className="bg-emerald-600 text-white text-sm px-3 py-1 font-semibold w-fit">Compressed</Badge>
+                    <Badge className="bg-emerald-600 text-white text-xs px-2 py-0.5 font-bold w-fit">{previewFormat.toUpperCase()}</Badge>
                   </div>
                 </div>
               </>
             ) : isAnimationVariations ? (
-              <div className="flex-1 bg-slate-900 p-4 overflow-auto">
+              <div className="flex-1 bg-slate-100 dark:bg-slate-900 p-4 overflow-auto">
                 <div className="grid grid-cols-2 gap-4 max-w-4xl mx-auto">
                   {generatedAnimations.map((anim, i) => (
                     <div
                       key={i}
-                      className="relative aspect-video bg-slate-800 rounded-lg overflow-hidden cursor-pointer hover:ring-2 hover:ring-emerald-500"
+                      className="relative aspect-video bg-slate-200 dark:bg-slate-800 rounded-lg overflow-hidden cursor-pointer hover:ring-2 hover:ring-emerald-500"
                       onClick={() => {
                         const link = document.createElement('a');
                         link.href = anim.url;
@@ -441,7 +467,7 @@ export default function ImageComparisonModal({
                 </div>
               </div>
             ) : (
-              <div className="flex-1 bg-slate-900 flex items-center justify-center p-4">
+              <div className="flex-1 bg-slate-100 dark:bg-slate-900 flex items-center justify-center p-4">
                 {mediaType === 'video' && <video controls src={compressedImage} className="max-w-full max-h-full" />}
                 {mediaType === 'audio' && <audio controls src={compressedImage} className="w-full" />}
               </div>
@@ -449,11 +475,11 @@ export default function ImageComparisonModal({
           </div>
 
           {/* Right Panel */}
-          <div className="w-[400px] bg-slate-900 border-l border-slate-800 overflow-y-auto">
+          <div className="w-[400px] bg-white dark:bg-slate-900 border-l border-slate-200 dark:border-slate-800 overflow-y-auto flex-shrink-0">
             <div className="p-5 space-y-4">
               <div>
-                <h2 className="text-white text-sm font-bold mb-1">{fileName}</h2>
-                <p className="text-slate-400 text-xs">Compare quality and analyze compression</p>
+                <h2 className="text-slate-900 dark:text-white text-sm font-bold mb-1 break-words">{fileName}</h2>
+                <p className="text-slate-500 dark:text-slate-400 text-xs">Compare quality and analyze compression</p>
               </div>
 
               <Button variant="outline" className="w-full" size="sm" onClick={() => setShowSocialShare(true)}>
@@ -461,20 +487,21 @@ export default function ImageComparisonModal({
                 Share to Social Media
               </Button>
 
-              <div className="bg-slate-800 rounded-lg p-4">
-                <p className="text-slate-400 text-[10px] uppercase mb-1">Original Size</p>
-                <p className="text-white text-2xl font-bold">{formatFileSize(originalSize)}</p>
-                <p className="text-slate-400 text-xs mt-1">Format: {originalExt}</p>
+              <div className="bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg p-4">
+                <p className="text-slate-500 dark:text-slate-400 text-[10px] font-semibold uppercase tracking-wider mb-1">Original Size</p>
+                <p className="text-slate-900 dark:text-white text-2xl font-bold">{formatFileSize(originalSize)}</p>
+                <p className="text-slate-500 dark:text-slate-400 text-xs mt-2">Format: {originalExt}</p>
               </div>
 
               {mediaType === 'image' && !isAnimationVariations && (
-                <div className="bg-slate-800 rounded-lg p-4">
-                  <p className="text-slate-400 text-[10px] uppercase mb-3">Available Formats</p>
+                <div className="bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg p-4">
+                  <p className="text-slate-500 dark:text-slate-400 text-[10px] font-semibold uppercase tracking-wider mb-3">Available Formats</p>
                   {!formatsGenerated ? (
                     <div className="text-center py-3">
-                      <p className="text-xs text-slate-400 mb-2">Generate all formats to compare</p>
-                      <Button onClick={generateAllFormats} disabled={loadingFormatSizes} size="sm" className="bg-emerald-600 w-full">
-                        {loadingFormatSizes ? <RefreshCw className="w-3 h-3 animate-spin" /> : 'Generate Formats'}
+                      <p className="text-xs text-slate-500 dark:text-slate-400 mb-2">Generate all formats to compare</p>
+                      <Button onClick={generateAllFormats} disabled={loadingFormatSizes} size="sm" className="bg-emerald-600 hover:bg-emerald-700 w-full">
+                        {loadingFormatSizes ? <RefreshCw className="w-3 h-3 animate-spin mr-2" /> : <RefreshCw className="w-3 h-3 mr-2" />}
+                        {loadingFormatSizes ? 'Generating...' : 'Generate Formats'}
                       </Button>
                     </div>
                   ) : (
@@ -482,21 +509,33 @@ export default function ImageComparisonModal({
                       {availableFormats.map((format) => {
                         const size = allFormatSizes[format] || previewSize;
                         const isSelected = selectedFormat === format;
+                        const isBigger = size > originalSize;
+                        const percentChange = (((size - originalSize) / originalSize) * 100).toFixed(1);
                         
                         return (
                           <button
                             key={format}
                             onClick={() => convertToFormat(format)}
                             className={cn(
-                              "p-3 rounded-lg border text-left",
-                              isSelected ? "bg-emerald-500/10 border-emerald-500" : "bg-slate-900 border-slate-700"
+                              "p-3 rounded-lg border text-left transition-all",
+                              isSelected
+                                ? isBigger
+                                  ? "bg-red-50 dark:bg-red-950/20 border-red-500"
+                                  : "bg-emerald-50 dark:bg-emerald-950/20 border-emerald-500"
+                                : "bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700"
                             )}
                           >
                             <div className="flex items-center justify-between mb-1">
-                              <span className="text-xs font-bold text-white uppercase">{format}</span>
-                              {isSelected && <Check className="w-3 h-3 text-emerald-500" />}
+                              <span className="text-xs font-bold text-slate-900 dark:text-white uppercase">{format}</span>
+                              {isSelected && <Check className="w-3 h-3 text-emerald-600" />}
                             </div>
-                            <div className="text-sm text-white">{formatFileSize(size)}</div>
+                            <div className="text-sm font-semibold text-slate-900 dark:text-white">{formatFileSize(size)}</div>
+                            <div className={cn(
+                              "text-xs mt-1",
+                              isBigger ? "text-red-600 dark:text-red-400" : "text-emerald-600 dark:text-emerald-400"
+                            )}>
+                              {isBigger ? '+' : ''}{percentChange}%
+                            </div>
                           </button>
                         );
                       })}
@@ -507,62 +546,79 @@ export default function ImageComparisonModal({
 
               <div className={cn(
                 "rounded-lg p-4",
-                sizeIncreased ? "bg-red-600" : "bg-emerald-600"
+                sizeIncreased ? "bg-gradient-to-br from-red-600 to-red-700" : "bg-gradient-to-br from-emerald-600 to-emerald-700"
               )}>
-                <p className="text-white/80 text-[10px] uppercase mb-1">
+                <p className={cn(
+                  "text-[10px] font-semibold uppercase tracking-wider mb-1",
+                  sizeIncreased ? "text-red-100" : "text-emerald-100"
+                )}>
                   {sizeIncreased ? 'Size Increase' : 'Space Saved'}
                 </p>
-                <p className="text-white text-2xl font-bold">{formatFileSize(Math.abs(savingsAmount))}</p>
-                <Badge className="bg-white/20 text-white text-xs mt-2">
+                <p className="text-white text-2xl font-bold mb-2">{formatFileSize(Math.abs(savingsAmount))}</p>
+                <Badge className="bg-white/20 text-white text-xs px-2 py-0.5 font-bold">
                   {sizeIncreased ? '+' : ''}{savingsPercent}%
                 </Badge>
               </div>
 
+              {mediaType === 'image' && !isAnimationVariations && imageDimensions.width > 0 && (
+                <div className="space-y-2">
+                  <h3 className="text-slate-900 dark:text-white font-semibold text-xs uppercase tracking-wider">Image Details</h3>
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between py-2 px-3 bg-slate-50 dark:bg-slate-950 rounded-lg border border-slate-200 dark:border-slate-800">
+                      <span className="text-slate-600 dark:text-slate-400 text-xs font-medium">Resolution</span>
+                      <span className="text-slate-900 dark:text-white font-bold text-sm">{imageDimensions.width} × {imageDimensions.height}</span>
+                    </div>
+                  </div>
+                </div>
+              )}
+
               {mediaType === 'image' && !isAnimationVariations && (
                 <>
-                  <div className="h-px bg-slate-800" />
+                  <div className="h-px bg-slate-200 dark:bg-slate-800" />
                   <div>
                     <div className="flex items-center justify-between mb-3">
-                      <h3 className="text-white font-semibold text-xs uppercase">SEO Metadata</h3>
+                      <h3 className="text-slate-900 dark:text-white font-semibold text-xs uppercase tracking-wider">SEO Metadata</h3>
                       {hasAnyMetadata && (
-                        <Button variant="ghost" size="sm" onClick={generateMetadata} className="h-6 px-2 text-xs">
-                          <RefreshCw className="w-3 h-3" />
+                        <Button variant="ghost" size="sm" onClick={generateMetadata} className="h-7 px-2 text-xs">
+                          <RefreshCw className="w-3 h-3 mr-1" />
+                          Regenerate
                         </Button>
                       )}
                     </div>
 
                     {!hasAnyMetadata ? (
-                      <div className="bg-slate-800 rounded-lg p-4 text-center">
-                        <p className="text-xs text-slate-400 mb-3">Generate AI metadata</p>
-                        <Button onClick={generateMetadata} disabled={isGenerating} size="sm" className="bg-emerald-600 w-full">
-                          {isGenerating ? <RefreshCw className="w-3 h-3 animate-spin" /> : 'Generate'}
+                      <div className="bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg p-4 text-center">
+                        <p className="text-xs text-slate-500 dark:text-slate-400 mb-3">Generate AI-powered metadata</p>
+                        <Button onClick={generateMetadata} disabled={isGenerating} size="sm" className="bg-slate-700 hover:bg-slate-800 w-full">
+                          {isGenerating ? <RefreshCw className="w-3 h-3 animate-spin mr-2" /> : <RefreshCw className="w-3 h-3 mr-2" />}
+                          {isGenerating ? 'Generating...' : 'Generate Metadata'}
                         </Button>
                       </div>
                     ) : (
                       <div className="space-y-2">
-                        <div className="bg-slate-800 rounded p-3">
-                          <label className="text-[10px] text-slate-400 uppercase">Title</label>
+                        <div className="bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg p-3">
+                          <label className="text-[10px] font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider mb-2 block">Title</label>
                           <input
                             value={aiTitle}
                             readOnly
-                            className="w-full bg-slate-900 border border-slate-700 rounded px-2 py-1.5 text-xs text-white mt-1"
+                            className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded px-3 py-2 text-sm text-slate-900 dark:text-white"
                           />
                         </div>
-                        <div className="bg-slate-800 rounded p-3">
-                          <label className="text-[10px] text-slate-400 uppercase">Description</label>
+                        <div className="bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg p-3">
+                          <label className="text-[10px] font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider mb-2 block">Description</label>
                           <textarea
                             value={aiDescription}
                             readOnly
                             rows={2}
-                            className="w-full bg-slate-900 border border-slate-700 rounded px-2 py-1.5 text-xs text-white mt-1"
+                            className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded px-3 py-2 text-xs text-slate-900 dark:text-white resize-none"
                           />
                         </div>
-                        <div className="bg-slate-800 rounded p-3">
-                          <label className="text-[10px] text-slate-400 uppercase">Tags</label>
+                        <div className="bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg p-3">
+                          <label className="text-[10px] font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider mb-2 block">Tags</label>
                           <input
                             value={aiTags}
                             readOnly
-                            className="w-full bg-slate-900 border border-slate-700 rounded px-2 py-1.5 text-xs text-white mt-1"
+                            className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded px-3 py-2 text-xs text-slate-900 dark:text-white"
                           />
                         </div>
                       </div>
@@ -570,6 +626,12 @@ export default function ImageComparisonModal({
                   </div>
                 </>
               )}
+
+              <div className="bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg p-3">
+                <p className="text-xs text-slate-500 dark:text-slate-400 text-center">
+                  🔒 All processing happens locally in your browser
+                </p>
+              </div>
             </div>
           </div>
         </div>
