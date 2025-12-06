@@ -1020,13 +1020,12 @@ export default function ImageComparisonModal({
                 <div className="flex-1 relative w-full flex items-center justify-center py-4">
                   <div
                     ref={imageContainerRef}
-                    className="relative"
+                    className="relative inline-block"
                     style={{
                       transform: `scale(${zoom}) translate(${pan.x / zoom}px, ${pan.y / zoom}px)`,
                       transformOrigin: 'center',
                       transition: isDragging || isPanning ? 'none' : 'transform 0.2s ease-out',
-                      cursor: zoom > 1 ? (isPanning ? 'grabbing' : 'grab') : 'col-resize',
-                      display: 'inline-block'
+                      cursor: zoom > 1 ? (isPanning ? 'grabbing' : 'grab') : 'col-resize'
                     }}
                     onMouseDown={(e) => {
                       if (zoom > 1) {
@@ -1047,14 +1046,15 @@ export default function ImageComparisonModal({
                     <img
                       src={compressedImage}
                       alt="Compressed"
-                      className="max-w-[85vw] lg:max-w-[60vw] max-h-[calc(100vh-200px)] w-auto h-auto object-contain block"
+                      className="max-w-[85vw] lg:max-w-[60vw] max-h-[calc(100vh-200px)] block"
                       draggable="false"
+                      style={{ display: 'block' }}
                     />
 
                     <img
                       src={originalImage}
                       alt="Original"
-                      className="absolute top-0 left-0 max-w-[85vw] lg:max-w-[60vw] max-h-[calc(100vh-200px)] w-auto h-auto object-contain block pointer-events-none"
+                      className="absolute inset-0 w-full h-full object-cover pointer-events-none"
                       draggable="false"
                       style={{ clipPath: `inset(0 ${100 - sliderPosition}% 0 0)` }}
                     />
