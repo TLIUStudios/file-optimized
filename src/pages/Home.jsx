@@ -79,13 +79,19 @@ export default function Home() {
   }, [images]);
 
   const removeImage = useCallback((id) => {
+    // Cleanup blob URLs before removing
+    const processed = processedImages[id];
+    if (processed?.compressedUrl?.startsWith('blob:')) {
+      URL.revokeObjectURL(processed.compressedUrl);
+    }
+    
     setImages((prev) => prev.filter((img) => img.id !== id));
     setProcessedImages((prev) => {
       const newProcessed = { ...prev };
       delete newProcessed[id];
       return newProcessed;
     });
-  }, []);
+  }, [processedImages]);
 
   const handleImageProcessed = useCallback((id, data) => {
     setProcessedImages((prev) => {
@@ -116,11 +122,18 @@ export default function Home() {
   }, []);
 
   const clearAll = useCallback(() => {
+    // Cleanup all blob URLs before clearing
+    Object.values(processedImages).forEach(processed => {
+      if (processed?.compressedUrl?.startsWith('blob:')) {
+        URL.revokeObjectURL(processed.compressedUrl);
+      }
+    });
+    
     setImages([]);
     setProcessedImages({});
     setProcessingStartTime(null);
     setEstimatedTimeRemaining(null);
-  }, []);
+  }, [processedImages]);
 
   const processAllImages = useCallback(async () => {
     const unprocessedImages = images.filter((img) => !processedImages[img.id]);

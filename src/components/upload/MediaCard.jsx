@@ -102,17 +102,19 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
   useEffect(() => {
     const reader = new FileReader();
     reader.onloadend = async () => {
-      setPreview(reader.result);
+      const result = reader.result;
+      setPreview(result);
       setOriginalSize(image.size);
       setEditableFilename(image.name);
       if (isImage && !isGif) {
         const img = new Image();
         img.onload = () => setOriginalImageDimensions({ width: img.width, height: img.height });
-        img.src = reader.result;
+        img.onerror = () => console.error('Failed to load image dimensions');
+        img.src = result;
       }
       if (isGif) {
         try {
-          await parseGif(reader.result);
+          await parseGif(result);
         } catch (error) {
           console.error('Error parsing GIF:', error);
         }
@@ -123,6 +125,11 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
     else if (isVideo) setFormat('mp4');
     else if (isAudio) setFormat('mp3');
     else if (isImage) setFormat('jpg');
+    
+    // Cleanup
+    return () => {
+      reader.abort();
+    };
   }, [image, isGif, isVideo, isAudio, isImage]);
 
   useEffect(() => {
@@ -171,9 +178,12 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
 
   useEffect(() => {
     return () => {
+      // Cleanup all blob URLs on unmount
       if (workerBlobUrl) URL.revokeObjectURL(workerBlobUrl);
+      if (preview && preview.startsWith('blob:')) URL.revokeObjectURL(preview);
+      if (compressedPreview && compressedPreview.startsWith('blob:')) URL.revokeObjectURL(compressedPreview);
     };
-  }, [workerBlobUrl]);
+  }, [workerBlobUrl, preview, compressedPreview]);
 
   // Re-apply last preset when Standard Resolutions toggle changes
   useEffect(() => {
@@ -199,12 +209,16 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
     }
   }, [useStandardResolutions]);
 
-  // Track settings changes after processing
+  // Track settings changes after processing (debounced to avoid excessive updates)
   useEffect(() => {
-    if (processed) {
+    if (!processed) return;
+    
+    const timeout = setTimeout(() => {
       setSettingsChanged(true);
-    }
-  }, [quality, format, maxWidth, maxHeight, compressionMode, stripMetadata, noiseReduction, 
+    }, 300); // Debounce settings change indicator
+    
+    return () => clearTimeout(timeout);
+  }, [processed, quality, format, maxWidth, maxHeight, compressionMode, stripMetadata, noiseReduction, 
       enableUpscale, upscaleMultiplier, useStandardResolutions, enableAnimation, animationType, 
       animationDuration, videoBitrate, audioBitrate, frameRate, videoPreset, videoResolution, audioQuality, 
       editableFilename]);
