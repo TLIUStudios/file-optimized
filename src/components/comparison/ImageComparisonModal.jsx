@@ -946,7 +946,7 @@ export default function ImageComparisonModal({
                 </div>
               </div>
             ) : mediaType === 'image' ? (
-              <>
+              <div className="flex-1 flex flex-col w-full h-full">
                 <div
                   ref={containerRef}
                   className="flex-1 relative w-full bg-slate-100 dark:bg-slate-900 select-none flex items-center justify-center overflow-hidden"
@@ -1018,9 +1018,9 @@ export default function ImageComparisonModal({
                     <Badge className="bg-emerald-600 text-white text-xs px-2 py-0.5 font-bold w-fit">{previewFormat.toUpperCase()}</Badge>
                   </div>
                 </div>
-              </>
+              </div>
             ) : (
-              <>
+              <div className="flex-1 flex flex-col w-full h-full">
                 <div className="flex-1 relative w-full flex items-center justify-center p-4 bg-slate-100 dark:bg-slate-900">
                   {mediaType === 'video' && <video controls src={compressedImage} className="max-w-full max-h-full object-contain" />}
                   {mediaType === 'audio' && <audio controls src={compressedImage} className="max-w-full max-h-full" />}
@@ -1035,7 +1035,7 @@ export default function ImageComparisonModal({
                     <Badge className="bg-emerald-600 text-white text-xs px-2 py-0.5 font-bold w-fit">{previewFormat.toUpperCase()}</Badge>
                   </div>
                 </div>
-              </>
+              </div>
             )}
           </div>
 
