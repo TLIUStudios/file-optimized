@@ -53,7 +53,7 @@ export default function GlobalStats() {
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="relative bg-gradient-to-r from-emerald-500 to-teal-600 rounded-lg p-3 text-white shadow-lg max-w-md mx-auto overflow-hidden"
+          className="relative bg-gradient-to-r from-emerald-500 to-teal-600 rounded-xl p-3 text-white shadow-lg max-w-md mx-auto overflow-hidden"
         >
           <div className="relative z-10 flex items-center justify-between gap-3">
             <div className="flex items-center gap-2">
@@ -167,23 +167,131 @@ export default function GlobalStats() {
       
       {/* Glitch blocks */}
       <div className="absolute inset-0 pointer-events-none opacity-10">
-        {[...Array(6)].map((_, i) => (
-          <div
-            key={i}
-            className="absolute bg-emerald-500 animate-glitch-blocks"
-            style={{
-              width: `${10 + Math.random() * 30}px`,
-              height: `${2 + Math.random() * 4}px`,
-              left: `${Math.random() * 90}%`,
-              top: `${Math.random() * 90}%`,
-              animationDelay: `${Math.random() * 3}s`,
-              animationDuration: `${0.5 + Math.random() * 1.5}s`
-            }}
-          />
-        ))}
+      {[...Array(6)].map((_, i) => (
+      <div
+      key={i}
+      className="absolute bg-emerald-500 animate-glitch-blocks"
+      style={{
+        width: `${10 + Math.random() * 30}px`,
+        height: `${2 + Math.random() * 4}px`,
+        left: `${Math.random() * 90}%`,
+        top: `${Math.random() * 90}%`,
+        animationDelay: `${Math.random() * 3}s`,
+        animationDuration: `${0.5 + Math.random() * 1.5}s`
+      }}
+      />
+      ))}
       </div>
-      
+
+      {/* Animated Lightning Border Effect */}
+      <div className="absolute inset-0 rounded-xl pointer-events-none">
+      {/* Glowing border effect */}
+      <div className="absolute inset-0 rounded-xl animate-pulse" style={{ 
+      boxShadow: '0 0 30px rgba(52, 211, 153, 0.8), inset 0 0 30px rgba(52, 211, 153, 0.4)',
+      animationDuration: '1.5s'
+      }} />
+
+      {/* Animated lightning SVG border */}
+      <svg className="absolute inset-0 w-full h-full" style={{ filter: 'drop-shadow(0 0 8px rgba(52, 211, 153, 0.8))' }}>
+      <rect x="1" y="1" width="calc(100% - 2px)" height="calc(100% - 2px)" fill="none" stroke="url(#lightning-gradient)" strokeWidth="3" rx="12" className="animate-dash" strokeDasharray="300" strokeDashoffset="0" />
+      <defs>
+      <linearGradient id="lightning-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" style={{ stopColor: '#34d399', stopOpacity: 1 }}>
+          <animate attributeName="stop-color" values="#34d399;#6ee7b7;#a7f3d0;#6ee7b7;#34d399" dur="2s" repeatCount="indefinite" />
+        </stop>
+        <stop offset="50%" style={{ stopColor: '#6ee7b7', stopOpacity: 1 }}>
+          <animate attributeName="stop-color" values="#6ee7b7;#a7f3d0;#6ee7b7;#34d399;#6ee7b7" dur="2s" repeatCount="indefinite" />
+        </stop>
+        <stop offset="100%" style={{ stopColor: '#34d399', stopOpacity: 1 }}>
+          <animate attributeName="stop-color" values="#34d399;#6ee7b7;#a7f3d0;#6ee7b7;#34d399" dur="2s" repeatCount="indefinite" />
+        </stop>
+      </linearGradient>
+      </defs>
+      </svg>
+
+      {/* Animated Lightning Zaps */}
+      {[...Array(8)].map((_, i) => (
+      <div
+      key={i}
+      className="absolute w-0.5 bg-gradient-to-b from-transparent via-emerald-300 to-transparent animate-zap"
+      style={{
+        height: '20px',
+        left: `${(i + 1) * 12}%`,
+        top: '0',
+        animationDelay: `${i * 0.3}s`,
+        animationDuration: '2s',
+        filter: 'drop-shadow(0 0 6px rgba(52, 211, 153, 0.8))',
+        opacity: 0
+      }}
+      />
+      ))}
+      {[...Array(8)].map((_, i) => (
+      <div
+      key={`bottom-${i}`}
+      className="absolute w-0.5 bg-gradient-to-t from-transparent via-emerald-300 to-transparent animate-zap"
+      style={{
+        height: '20px',
+        left: `${(i + 1) * 12}%`,
+        bottom: '0',
+        animationDelay: `${i * 0.3 + 1}s`,
+        animationDuration: '2s',
+        filter: 'drop-shadow(0 0 6px rgba(52, 211, 153, 0.8))',
+        opacity: 0
+      }}
+      />
+      ))}
+      {[...Array(4)].map((_, i) => (
+      <div
+      key={`left-${i}`}
+      className="absolute h-0.5 bg-gradient-to-r from-transparent via-emerald-300 to-transparent animate-zap"
+      style={{
+        width: '20px',
+        left: '0',
+        top: `${(i + 1) * 25}%`,
+        animationDelay: `${i * 0.4}s`,
+        animationDuration: '2s',
+        filter: 'drop-shadow(0 0 6px rgba(52, 211, 153, 0.8))',
+        opacity: 0
+      }}
+      />
+      ))}
+      {[...Array(4)].map((_, i) => (
+      <div
+      key={`right-${i}`}
+      className="absolute h-0.5 bg-gradient-to-l from-transparent via-emerald-300 to-transparent animate-zap"
+      style={{
+        width: '20px',
+        right: '0',
+        top: `${(i + 1) * 25}%`,
+        animationDelay: `${i * 0.4 + 0.5}s`,
+        animationDuration: '2s',
+        filter: 'drop-shadow(0 0 6px rgba(52, 211, 153, 0.8))',
+        opacity: 0
+      }}
+      />
+      ))}
+      </div>
+
       <style>{`
+      @keyframes dash {
+      0% { stroke-dashoffset: 0; }
+      100% { stroke-dashoffset: -600; }
+      }
+      .animate-dash {
+      animation: dash 3s linear infinite;
+      }
+      @keyframes zap {
+      0% { opacity: 0; transform: scaleY(0); }
+      10% { opacity: 1; transform: scaleY(1); }
+      20% { opacity: 0.8; }
+      30% { opacity: 1; }
+      40% { opacity: 0; transform: scaleY(1); }
+      100% { opacity: 0; transform: scaleY(0); }
+      }
+      .animate-zap {
+      animation: zap 2s ease-in-out infinite;
+      }
+
         @keyframes matrix-fall {
           0% { 
             transform: translateY(-150%); 
