@@ -13,11 +13,11 @@ const AnimatedMediaIcon = lazy(() => import("../components/AnimatedMediaIcon"));
 const DragDropContext = lazy(() => import("@hello-pangea/dnd").then(m => ({ default: m.DragDropContext })));
 const Droppable = lazy(() => import("@hello-pangea/dnd").then(m => ({ default: m.Droppable })));
 const Draggable = lazy(() => import("@hello-pangea/dnd").then(m => ({ default: m.Draggable })));
-const motion = { div: memo(({ children, className, initial, animate, transition, ...props }) => <div className={className} {...props}>{children}</div>) };
+const ErrorBoundary = lazy(() => import("../components/ErrorBoundary"));
 
 const LoginPromptModal = lazy(() => import("../components/LoginPromptModal"));
 const ProUpgradeModal = lazy(() => import("../components/ProUpgradeModal"));
-const MediaCard = lazy(() => import("../components/upload/MediaCard"));
+const MediaCard = lazy(() => import("../components/upload/MediaCardMemo"));
 const ImageComparisonModal = lazy(() => import("../components/comparison/ImageComparisonModal"));
 
 // Loading fallback for image cards
@@ -302,12 +302,11 @@ export default function Home() {
         title="File Optimized - Compress, Upscale & Convert Media Files"
         description="Professional file optimization tool. Compress images up to 90%, upscale photos with AI, convert between formats. Fast, secure, and privacy-focused. Free & Pro plans available."
       />
-      <div className="max-w-7xl mx-auto">
+      <Suspense fallback={null}>
+        <ErrorBoundary>
+          <div className="max-w-7xl mx-auto">
       {/* Hero Section */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="text-center mb-12">
+      <div className="text-center mb-12">
 
         <div className="flex flex-wrap items-center justify-center gap-2 sm:gap-3 mb-6">
           <div className="inline-flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-1.5 sm:py-2 rounded-full bg-emerald-100 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-400 text-xs sm:text-sm font-medium">
@@ -393,7 +392,7 @@ export default function Home() {
             </p>
           </div>
         </div>
-      </motion.div>
+        </div>
 
       {/* Upload Zone */}
       {images.length === 0 &&
@@ -410,10 +409,7 @@ export default function Home() {
 
       {/* Images Grid */}
       {images.length > 0 &&
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        className="space-y-6">
+      <div className="space-y-6">
 
           {/* Stats Bar */}
           <div className="bg-white dark:bg-slate-900 rounded-2xl p-6 border border-slate-200 dark:border-slate-800 shadow-lg">
@@ -557,10 +553,10 @@ export default function Home() {
               </Droppable>
             </DragDropContext>
           </Suspense>
-        </motion.div>
-      }
+          </div>
+          }
 
-      {/* Comparison Modal */}
+          {/* Comparison Modal */}
       {comparisonData &&
       <Suspense fallback={null}>
           <ImageComparisonModal

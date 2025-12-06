@@ -1,4 +1,4 @@
-import { useEffect, useState, lazy, Suspense } from "react";
+import { useEffect, useState, lazy, Suspense, memo } from "react";
 import { useLocation } from "react-router-dom";
 import { Moon, Sun, User, LogIn, LogOut } from "lucide-react";
 import AnimatedMediaIcon from "./components/AnimatedMediaIcon";
@@ -19,6 +19,7 @@ import {
 import GoogleAds from "./components/GoogleAds";
 
 const LoginPromptModal = lazy(() => import("./components/LoginPromptModal"));
+const ErrorBoundary = lazy(() => import("./components/ErrorBoundary"));
 
 const SnowEffect = lazy(() => import("./components/themes/SnowEffect"));
 const FireworksEffect = lazy(() => import("./components/themes/FireworksEffect"));
@@ -316,15 +317,19 @@ export default function Layout({ children }) {
       </header>
       
       <main className="container mx-auto px-3 sm:px-4 py-4 sm:py-6 md:py-8">
-        {children}
+        <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><div className="w-8 h-8 border-4 border-emerald-600 border-t-transparent rounded-full animate-spin"></div></div>}>
+          <ErrorBoundary>
+            {children}
+          </ErrorBoundary>
+        </Suspense>
         
-        {/* Show Google Ads only for Free users */}
-        {!authLoading && (!isAuthenticated || userPlan === 'free') && (
-          <div className="mt-12">
-            <GoogleAds adSlot="1234567890" />
-          </div>
-        )}
-      </main>
+          {/* Show Google Ads only for Free users */}
+          {!authLoading && (!isAuthenticated || userPlan === 'free') && (
+            <div className="mt-12">
+              <GoogleAds adSlot="1234567890" />
+            </div>
+          )}
+        </main>
       
       <footer className="border-t border-slate-200 dark:border-slate-800 mt-12 sm:mt-16 md:mt-20">
         <div className="container mx-auto px-3 sm:px-4 py-8 sm:py-12">

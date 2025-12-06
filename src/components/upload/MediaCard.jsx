@@ -860,6 +860,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
       }
       
       const GIF = window.GIF;
+      const gifQuality = 10; // Default quality for video to GIF conversion
       const gif = new GIF({
         workers: 2,
         quality: gifQuality,
@@ -1610,11 +1611,11 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
       const GIF = window.GIF;
       
       // Apply user's quality setting (1-10 scale for GIF, lower is better quality but larger file)
-      const gifQuality = Math.round((100 - quality) / 10); // Convert 0-100 to 10-0 scale
+      const gifQualityValue = Math.round((100 - quality) / 10); // Convert 0-100 to 10-0 scale
       
       const gif = new GIF({
         workers: 4,
-        quality: Math.max(1, Math.min(10, gifQuality)), // Clamp between 1-10
+        quality: Math.max(1, Math.min(10, gifQualityValue)), // Clamp between 1-10
         width,
         height,
         workerScript: workerBlobUrl,
