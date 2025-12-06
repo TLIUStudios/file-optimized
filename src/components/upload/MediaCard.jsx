@@ -217,7 +217,13 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
         const progressFraction = processingProgress / 100;
         const estimatedTotal = elapsed / progressFraction;
         const remaining = Math.max(0, estimatedTotal - elapsed);
-        setEstimatedTimeForFile(Math.ceil(remaining / 1000));
+        const newEstimate = Math.ceil(remaining / 1000);
+        
+        // Only decrease time, never increase
+        setEstimatedTimeForFile(prev => {
+          if (prev === null) return newEstimate;
+          return Math.min(prev, newEstimate);
+        });
       }, 100);
       return () => clearInterval(interval);
     } else {
