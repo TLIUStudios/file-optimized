@@ -24,9 +24,6 @@ const ImageComparisonModal = lazy(() => import("../components/comparison/ImageCo
 const KeyboardShortcuts = lazy(() => import("../components/features/KeyboardShortcuts"));
 import GlobalStats from "../components/stats/GlobalStats";
 
-// Loading fallback for image cards
-const ImageCardSkeleton = lazy(() => import("../components/upload/ImageCardSkeleton"));
-
 export default function Home() {
   const [images, setImages] = useState([]);
   const [processedImages, setProcessedImages] = useState({});
@@ -525,7 +522,7 @@ export default function Home() {
           </div>
 
           {/* Images Grid with Drag & Drop */}
-          <Suspense fallback={<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-8">{images.map((_, i) => <ImageCardSkeleton key={i} />)}</div>}>
+          <Suspense fallback={<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-8">{images.map((_, i) => <Skeleton key={i} className="h-64 w-full" />)}</div>}>
             <DragDropContext onDragEnd={handleDragEnd}>
               <Droppable droppableId="images" direction="horizontal">
                 {(provided) =>
@@ -549,7 +546,7 @@ export default function Home() {
                       provided.draggableProps.style?.transform
                     }}>
 
-                            <Suspense fallback={<ImageCardSkeleton />}>
+                            <Suspense fallback={<Skeleton className="h-64 w-full" />}>
                               <MediaCard
                         image={image.file}
                         onRemove={() => removeImage(image.id)}
