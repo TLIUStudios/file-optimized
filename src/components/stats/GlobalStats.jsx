@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
 import { Globe, TrendingDown } from "lucide-react";
 import { motion } from "framer-motion";
+import { useState, useEffect } from "react";
 
 const formatBytes = (bytes) => {
   if (bytes === 0) return '0 B';
@@ -11,6 +12,16 @@ const formatBytes = (bytes) => {
 };
 
 export default function GlobalStats() {
+  const [glitchText, setGlitchText] = useState('');
+  
+  useEffect(() => {
+    const chars = '01アイウエオカキクケコサシスセソタチツテトナニヌネノハヒフヘホマミムメモヤユヨラリルレロワヲン';
+    const interval = setInterval(() => {
+      setGlitchText(Array.from({ length: 40 }, () => chars[Math.floor(Math.random() * chars.length)]).join(''));
+    }, 100);
+    return () => clearInterval(interval);
+  }, []);
+
   const { data: stats = [], isLoading } = useQuery({
     queryKey: ['globalCompressionStats'],
     queryFn: async () => {
@@ -76,6 +87,59 @@ export default function GlobalStats() {
       animate={{ opacity: 1, y: 0 }}
       className="relative bg-gradient-to-r from-emerald-500 to-teal-600 rounded-lg p-3 text-white shadow-lg max-w-md mx-auto overflow-hidden"
     >
+      {/* Matrix background effect */}
+      <div className="absolute inset-0 opacity-10 pointer-events-none overflow-hidden">
+        <div className="absolute top-0 left-0 w-full text-[8px] font-mono text-emerald-200 whitespace-nowrap animate-matrix-scroll">
+          {glitchText}
+        </div>
+        <div className="absolute top-2 left-0 w-full text-[8px] font-mono text-emerald-200 whitespace-nowrap animate-matrix-scroll-slow">
+          {glitchText.split('').reverse().join('')}
+        </div>
+      </div>
+      
+      {/* Glitch scanline effect */}
+      <div className="absolute inset-0 pointer-events-none">
+        <div className="absolute w-full h-px bg-gradient-to-r from-transparent via-emerald-200 to-transparent animate-scanline opacity-30" />
+      </div>
+      
+      <style>{`
+        @keyframes matrix-scroll {
+          0% { transform: translateX(0); }
+          100% { transform: translateX(-50%); }
+        }
+        @keyframes matrix-scroll-slow {
+          0% { transform: translateX(0); }
+          100% { transform: translateX(-30%); }
+        }
+        @keyframes scanline {
+          0% { top: -2px; }
+          100% { top: 100%; }
+        }
+        @keyframes glitch {
+          0%, 100% { transform: translate(0); }
+          33% { transform: translate(-2px, 2px); }
+          66% { transform: translate(2px, -2px); }
+        }
+        @keyframes flicker {
+          0%, 100% { opacity: 1; }
+          50% { opacity: 0.8; }
+        }
+        .animate-matrix-scroll {
+          animation: matrix-scroll 8s linear infinite;
+        }
+        .animate-matrix-scroll-slow {
+          animation: matrix-scroll-slow 12s linear infinite;
+        }
+        .animate-scanline {
+          animation: scanline 3s linear infinite;
+        }
+        .animate-glitch {
+          animation: glitch 0.3s ease-in-out infinite;
+        }
+        .animate-flicker {
+          animation: flicker 2s ease-in-out infinite;
+        }
+      `}</style>
       {/* Animated Lightning Border Effect */}
       <div className="absolute inset-0 rounded-xl pointer-events-none">
         {/* Glowing border effect */}
@@ -187,22 +251,22 @@ export default function GlobalStats() {
       `}</style>
       <div className="relative z-10 flex items-center justify-between gap-3">
         <div className="flex items-center gap-2">
-          <div className="w-8 h-8 bg-white/20 backdrop-blur-sm rounded-lg flex items-center justify-center flex-shrink-0">
-            <Globe className="w-4 h-4" />
+          <div className="w-8 h-8 bg-white/20 backdrop-blur-sm rounded-lg flex items-center justify-center flex-shrink-0 animate-flicker">
+            <Globe className="w-4 h-4 animate-pulse" />
           </div>
           <div className="flex flex-col items-start">
-            <h3 className="text-xs font-bold leading-tight">Global Impact</h3>
+            <h3 className="text-xs font-bold leading-tight animate-glitch">Global Impact</h3>
             <p className="text-[10px] text-emerald-100 leading-tight">Combined from all users</p>
           </div>
         </div>
 
         <div className="flex items-center gap-24">
           <div className="text-right">
-            <div className="text-base font-bold">{formatBytes(totalSaved)}</div>
+            <div className="text-base font-bold animate-glitch">{formatBytes(totalSaved)}</div>
             <div className="text-[10px] text-emerald-100">Space Saved</div>
           </div>
           <div className="text-right">
-            <div className="text-base font-bold">{totalCompressions.toLocaleString()}</div>
+            <div className="text-base font-bold animate-glitch">{totalCompressions.toLocaleString()}</div>
             <div className="text-[10px] text-emerald-100">Files</div>
           </div>
         </div>
