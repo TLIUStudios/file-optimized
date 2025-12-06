@@ -381,33 +381,35 @@ export default function ImageComparisonModal({
                   onMouseDown={() => setIsDragging(true)}
                   onTouchStart={() => setIsDragging(true)}
                 >
-                  <div className="relative flex" style={{ transform: `scale(${zoom})` }}>
-                    {/* Original image - left side */}
-                    <div style={{ width: `${sliderPosition}%`, overflow: 'hidden', position: 'relative' }}>
+                  <div 
+                    className="relative inline-block"
+                    style={{ transform: `scale(${zoom})`, transition: 'transform 0.2s ease-out' }}
+                  >
+                    {/* Compressed image - base layer */}
+                    <img
+                      src={compressedImage}
+                      alt="Compressed"
+                      className="block max-w-[70vw] max-h-[calc(100vh-200px)] w-auto h-auto"
+                      draggable="false"
+                    />
+                    
+                    {/* Original image - overlaid with clip */}
+                    <div
+                      className="absolute top-0 left-0 w-full h-full overflow-hidden"
+                      style={{ clipPath: `inset(0 ${100 - sliderPosition}% 0 0)` }}
+                    >
                       <img
                         src={originalImage}
                         alt="Original"
-                        className="h-auto max-h-[calc(100vh-200px)] w-auto"
+                        className="block w-full h-full object-cover"
                         draggable="false"
-                        style={{ maxWidth: 'none', display: 'block' }}
-                      />
-                    </div>
-                    
-                    {/* Compressed image - right side */}
-                    <div style={{ width: `${100 - sliderPosition}%`, overflow: 'hidden', position: 'relative' }}>
-                      <img
-                        src={compressedImage}
-                        alt="Compressed"
-                        className="h-auto max-h-[calc(100vh-200px)] w-auto"
-                        draggable="false"
-                        style={{ maxWidth: 'none', display: 'block', marginLeft: `-${sliderPosition / (100 - sliderPosition) * 100}%` }}
                       />
                     </div>
                     
                     {/* Slider */}
                     <div
-                      className="absolute top-0 bottom-0 w-1 bg-white shadow-2xl"
-                      style={{ left: `${sliderPosition}%`, transform: 'translateX(-50%)', pointerEvents: 'none' }}
+                      className="absolute top-0 bottom-0 w-1 bg-white shadow-2xl pointer-events-none"
+                      style={{ left: `${sliderPosition}%`, transform: 'translateX(-50%)' }}
                     >
                       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-12 h-12 bg-white rounded-full shadow-2xl flex items-center justify-center border-2 border-slate-400">
                         <MoveHorizontal className="w-5 h-5 text-slate-800" />
