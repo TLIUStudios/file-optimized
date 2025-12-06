@@ -380,42 +380,50 @@ export default function Profile() {
             animate={{ opacity: 1, x: 0 }}
             transition={{ delay: 0.15 }}
           >
-            <Card className="p-6">
-              <div className="flex items-center gap-2 mb-4">
-                <HardDrive className="w-5 h-5 text-emerald-600" />
-                <h3 className="text-lg font-semibold text-slate-900 dark:text-white">Your Space Saved</h3>
-              </div>
-
+            <Card className="p-6 bg-gradient-to-br from-emerald-50 to-teal-50 dark:from-emerald-950/20 dark:to-teal-950/20 border-emerald-200 dark:border-emerald-800">
               {statsLoading ? (
                 <div className="flex items-center justify-center py-4">
-                  <Loader2 className="w-5 h-5 animate-spin text-slate-400" />
+                  <Loader2 className="w-5 h-5 animate-spin text-emerald-600" />
                 </div>
               ) : compressionStats.length === 0 ? (
-                <p className="text-sm text-slate-500 dark:text-slate-400 text-center py-4">
-                  Start compressing files to track savings!
-                </p>
-              ) : (
-                <div className="grid grid-cols-2 gap-3">
-                  {[
-                    { key: '1day', label: 'Today' },
-                    { key: '1week', label: 'Week' },
-                    { key: '1month', label: 'Month' },
-                    { key: 'alltime', label: 'All Time' }
-                  ].map(({ key, label }) => {
-                    const { savings, count } = calculateSavings(key);
-                    return (
-                      <div key={key} className="bg-slate-50 dark:bg-slate-950 rounded-lg p-3 text-center">
-                        <p className="text-xs text-slate-500 dark:text-slate-400 mb-1">{label}</p>
-                        <p className="text-lg font-bold text-emerald-600 dark:text-emerald-400">
-                          {formatFileSize(savings)}
-                        </p>
-                        <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-                          {count} file{count !== 1 ? 's' : ''}
-                        </p>
-                      </div>
-                    );
-                  })}
+                <div className="text-center py-3">
+                  <TrendingDown className="w-8 h-8 text-emerald-600/50 mx-auto mb-2" />
+                  <p className="text-sm text-slate-600 dark:text-slate-400">
+                    Start compressing to track your savings!
+                  </p>
                 </div>
+              ) : (
+                <>
+                  <div className="flex items-center justify-center gap-2 mb-4">
+                    <TrendingDown className="w-5 h-5 text-emerald-600" />
+                    <h3 className="text-sm font-semibold text-slate-900 dark:text-white">Your Space Saved</h3>
+                  </div>
+                  <div className="text-center mb-4">
+                    <p className="text-3xl font-bold text-emerald-600 dark:text-emerald-400">
+                      {formatFileSize(calculateSavings('alltime').savings)}
+                    </p>
+                    <p className="text-xs text-slate-600 dark:text-slate-400 mt-1">
+                      across {calculateSavings('alltime').count} files
+                    </p>
+                  </div>
+                  <div className="grid grid-cols-3 gap-2">
+                    {[
+                      { key: '1day', label: 'Today' },
+                      { key: '1week', label: 'Week' },
+                      { key: '1month', label: 'Month' }
+                    ].map(({ key, label }) => {
+                      const { savings } = calculateSavings(key);
+                      return (
+                        <div key={key} className="bg-white/50 dark:bg-slate-900/50 rounded-lg p-2 text-center">
+                          <p className="text-xs text-slate-500 dark:text-slate-400 mb-1">{label}</p>
+                          <p className="text-sm font-bold text-emerald-600 dark:text-emerald-400">
+                            {formatFileSize(savings)}
+                          </p>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </>
               )}
             </Card>
           </motion.div>

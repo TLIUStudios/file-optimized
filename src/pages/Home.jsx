@@ -373,16 +373,16 @@ export default function Home() {
 
         {/* Global Stats */}
         {globalStats.length > 0 && (
-          <div className="mt-8 max-w-md mx-auto">
-            <div className="bg-gradient-to-br from-emerald-50 to-teal-50 dark:from-emerald-950/30 dark:to-teal-950/30 border border-emerald-200 dark:border-emerald-800 rounded-2xl p-6">
-              <div className="flex items-center justify-center gap-2 mb-3">
+          <div className="mt-8 max-w-md mx-auto px-4">
+            <div className="bg-gradient-to-br from-emerald-50 to-teal-50 dark:from-emerald-950/20 dark:to-teal-950/20 border border-emerald-200 dark:border-emerald-800 rounded-2xl p-6 shadow-lg">
+              <div className="flex items-center justify-center gap-2 mb-4">
                 <Globe className="w-5 h-5 text-emerald-600" />
                 <h3 className="text-sm font-semibold text-slate-900 dark:text-white">Global Impact</h3>
               </div>
               <div className="text-center">
                 <div className="flex items-center justify-center gap-2 mb-2">
                   <TrendingDown className="w-6 h-6 text-emerald-600" />
-                  <p className="text-3xl font-bold text-emerald-600 dark:text-emerald-400">
+                  <p className="text-3xl sm:text-4xl font-bold text-emerald-600 dark:text-emerald-400">
                     {formatFileSize(globalSavings)}
                   </p>
                 </div>
