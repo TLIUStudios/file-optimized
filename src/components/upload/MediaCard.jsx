@@ -638,6 +638,21 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
         originalFileFormat: originalFormat
       });
       
+      // Record compression stat
+      try {
+        const isAuth = await base44.auth.isAuthenticated();
+        if (isAuth) {
+          await base44.entities.CompressionStat.create({
+            original_size: image.size,
+            compressed_size: blob.size,
+            media_type: 'video',
+            output_format: 'mp4'
+          });
+        }
+      } catch (err) {
+        console.log('Could not save stat:', err);
+      }
+      
       const savings = image.size > blob.size ? ((1 - blob.size / image.size) * 100).toFixed(1) : 0;
       toast.success(`Video processed to MP4! ${savings > 0 ? `Saved ${savings}%` : ''}`);
       
@@ -1503,6 +1518,21 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
       fileFormat: format,
       originalFileFormat: originalFormat
     });
+    
+    // Record compression stat
+    try {
+      const isAuth = await base44.auth.isAuthenticated();
+      if (isAuth) {
+        await base44.entities.CompressionStat.create({
+          original_size: image.size,
+          compressed_size: blob.size,
+          media_type: 'image',
+          output_format: format
+        });
+      }
+    } catch (err) {
+      console.log('Could not save stat:', err);
+    }
   };
 
   const processImageToAnimation = async () => {
