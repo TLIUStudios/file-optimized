@@ -666,19 +666,13 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
   const processAudio = async () => {
     try {
       setProcessingProgress(10);
-      await new Promise(resolve => setTimeout(resolve, 0)); // Yield to browser
       
       // Decode audio
       const audioContext = new AudioContext();
       const arrayBuffer = await image.arrayBuffer();
-      
-      setProcessingProgress(20);
-      await new Promise(resolve => setTimeout(resolve, 0)); // Yield to browser
-      
       const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
       
       setProcessingProgress(30);
-      await new Promise(resolve => setTimeout(resolve, 0)); // Yield to browser
       
       // Target sample rate and bitrate
       const targetSampleRate = 44100;
@@ -687,9 +681,6 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
       // Resample if needed
       let processedBuffer = audioBuffer;
       if (audioBuffer.sampleRate !== targetSampleRate) {
-        setProcessingProgress(35);
-        await new Promise(resolve => setTimeout(resolve, 0)); // Yield to browser
-        
         const offlineContext = new OfflineAudioContext(
           audioBuffer.numberOfChannels,
           audioBuffer.duration * targetSampleRate,
@@ -703,7 +694,6 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
       }
       
       setProcessingProgress(50);
-      await new Promise(resolve => setTimeout(resolve, 0)); // Yield to browser
       
       let blob, mimeType, outputExt;
       
@@ -736,24 +726,12 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
           if (right) rightInt16[i] = right[i] * 0x7FFF;
         }
         
-        setProcessingProgress(60);
-        await new Promise(resolve => setTimeout(resolve, 0)); // Yield to browser
-        
         // Encode in blocks
-        const totalBlocks = Math.ceil(leftInt16.length / sampleBlockSize);
         for (let i = 0; i < leftInt16.length; i += sampleBlockSize) {
           const leftChunk = leftInt16.subarray(i, i + sampleBlockSize);
           const rightChunk = rightInt16 ? rightInt16.subarray(i, i + sampleBlockSize) : null;
           const mp3buf = mp3encoder.encodeBuffer(leftChunk, rightChunk);
           if (mp3buf.length > 0) mp3Data.push(mp3buf);
-          
-          // Update progress and yield periodically
-          const blockNum = Math.floor(i / sampleBlockSize);
-          if (blockNum % 10 === 0) {
-            const progress = 60 + (blockNum / totalBlocks) * 25;
-            setProcessingProgress(Math.min(85, progress));
-            await new Promise(resolve => setTimeout(resolve, 0)); // Yield to browser
-          }
         }
         
         const mp3buf = mp3encoder.flush();
@@ -792,19 +770,11 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
         
         // Write audio data
         let offset = 44;
-        const totalSamples = processedBuffer.length;
-        for (let i = 0; i < totalSamples; i++) {
+        for (let i = 0; i < processedBuffer.length; i++) {
           for (let channel = 0; channel < numberOfChannels; channel++) {
             const sample = Math.max(-1, Math.min(1, processedBuffer.getChannelData(channel)[i]));
             view.setInt16(offset, sample < 0 ? sample * 0x8000 : sample * 0x7FFF, true);
             offset += 2;
-          }
-          
-          // Update progress and yield periodically
-          if (i % 50000 === 0) {
-            const progress = 60 + (i / totalSamples) * 25;
-            setProcessingProgress(Math.min(85, progress));
-            await new Promise(resolve => setTimeout(resolve, 0)); // Yield to browser
           }
         }
         
