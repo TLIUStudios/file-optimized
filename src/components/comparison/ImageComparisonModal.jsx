@@ -208,7 +208,9 @@ export default function ImageComparisonModal({
 
   // Generate all format sizes on demand
   const generateAllFormats = async () => {
-    if (formatsGenerated || loadingFormatSizes) return;
+    if (loadingFormatSizes) return;
+    
+    setFormatsGenerated(false);
     
     setLoadingFormatSizes(true);
     const sizes = {};
