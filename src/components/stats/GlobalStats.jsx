@@ -32,38 +32,47 @@ export default function GlobalStats() {
     >
       {/* Animated Lightning Border Effect */}
       <div className="absolute inset-0 rounded-xl pointer-events-none">
+        {/* Glowing border effect */}
         <div className="absolute inset-0 rounded-xl animate-pulse" style={{ 
-          boxShadow: '0 0 20px rgba(16, 185, 129, 0.6), inset 0 0 20px rgba(16, 185, 129, 0.3)',
-          animationDuration: '2s'
+          boxShadow: '0 0 30px rgba(52, 211, 153, 0.8), inset 0 0 30px rgba(52, 211, 153, 0.4)',
+          animationDuration: '1.5s'
         }} />
-        <svg className="absolute inset-0 w-full h-full" style={{ filter: 'blur(1px)' }}>
-          <rect x="0" y="0" width="100%" height="100%" fill="none" stroke="url(#lightning-gradient)" strokeWidth="2" rx="12" className="animate-dash" strokeDasharray="400" strokeDashoffset="0" />
+        
+        {/* Animated lightning SVG border */}
+        <svg className="absolute inset-0 w-full h-full" style={{ filter: 'drop-shadow(0 0 8px rgba(52, 211, 153, 0.8))' }}>
+          <rect x="1" y="1" width="calc(100% - 2px)" height="calc(100% - 2px)" fill="none" stroke="url(#lightning-gradient)" strokeWidth="3" rx="12" className="animate-dash" strokeDasharray="300" strokeDashoffset="0" />
           <defs>
             <linearGradient id="lightning-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
-              <stop offset="0%" style={{ stopColor: '#10b981', stopOpacity: 0.8 }}>
-                <animate attributeName="stop-color" values="#10b981;#34d399;#10b981" dur="3s" repeatCount="indefinite" />
+              <stop offset="0%" style={{ stopColor: '#34d399', stopOpacity: 1 }}>
+                <animate attributeName="stop-color" values="#34d399;#6ee7b7;#a7f3d0;#6ee7b7;#34d399" dur="2s" repeatCount="indefinite" />
               </stop>
-              <stop offset="50%" style={{ stopColor: '#34d399', stopOpacity: 1 }}>
-                <animate attributeName="stop-color" values="#34d399;#6ee7b7;#34d399" dur="3s" repeatCount="indefinite" />
+              <stop offset="50%" style={{ stopColor: '#6ee7b7', stopOpacity: 1 }}>
+                <animate attributeName="stop-color" values="#6ee7b7;#a7f3d0;#6ee7b7;#34d399;#6ee7b7" dur="2s" repeatCount="indefinite" />
               </stop>
-              <stop offset="100%" style={{ stopColor: '#10b981', stopOpacity: 0.8 }}>
-                <animate attributeName="stop-color" values="#10b981;#34d399;#10b981" dur="3s" repeatCount="indefinite" />
+              <stop offset="100%" style={{ stopColor: '#34d399', stopOpacity: 1 }}>
+                <animate attributeName="stop-color" values="#34d399;#6ee7b7;#a7f3d0;#6ee7b7;#34d399" dur="2s" repeatCount="indefinite" />
               </stop>
             </linearGradient>
           </defs>
         </svg>
+        
+        {/* Corner lightning bolts */}
+        <div className="absolute top-0 left-0 w-4 h-4 bg-emerald-300 rounded-full animate-ping" style={{ animationDuration: '2s' }} />
+        <div className="absolute top-0 right-0 w-4 h-4 bg-emerald-300 rounded-full animate-ping" style={{ animationDuration: '2.5s' }} />
+        <div className="absolute bottom-0 left-0 w-4 h-4 bg-emerald-300 rounded-full animate-ping" style={{ animationDuration: '2.2s' }} />
+        <div className="absolute bottom-0 right-0 w-4 h-4 bg-emerald-300 rounded-full animate-ping" style={{ animationDuration: '1.8s' }} />
       </div>
       
       <style>{`
         @keyframes dash {
           0% { stroke-dashoffset: 0; }
-          100% { stroke-dashoffset: -800; }
+          100% { stroke-dashoffset: -600; }
         }
         .animate-dash {
-          animation: dash 4s linear infinite;
+          animation: dash 3s linear infinite;
         }
       `}</style>
-      <div className="relative z-10 flex items-center justify-between gap-4">
+      <div className="relative z-10 flex items-center justify-between gap-8">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 bg-white/20 backdrop-blur-sm rounded-lg flex items-center justify-center flex-shrink-0">
             <Globe className="w-5 h-5" />
@@ -74,7 +83,7 @@ export default function GlobalStats() {
           </div>
         </div>
 
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-12">
           <div className="text-right">
             <div className="text-2xl font-bold">{formatBytes(totalSaved)}</div>
             <div className="text-xs text-emerald-100">Space Saved</div>
