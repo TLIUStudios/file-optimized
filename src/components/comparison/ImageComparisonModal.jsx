@@ -1051,19 +1051,14 @@ export default function ImageComparisonModal({
                     />
 
                     <div
-                      className="absolute top-0 left-0 pointer-events-none"
-                      style={{ 
-                        clipPath: `inset(0 ${100 - sliderPosition}% 0 0)`,
-                        width: '100%',
-                        height: '100%'
-                      }}
+                      className="absolute inset-0 overflow-hidden pointer-events-none"
+                      style={{ clipPath: `inset(0 ${100 - sliderPosition}% 0 0)` }}
                     >
                       <img
                         src={originalImage}
                         alt="Original"
-                        className="max-w-[85vw] lg:max-w-[60vw] max-h-[calc(100vh-200px)] w-auto h-auto object-contain block absolute top-0 left-0"
+                        className="max-w-[85vw] lg:max-w-[60vw] max-h-[calc(100vh-200px)] w-auto h-auto object-contain block"
                         draggable="false"
-                        style={{ position: 'absolute', top: 0, left: 0 }}
                       />
                     </div>
 
