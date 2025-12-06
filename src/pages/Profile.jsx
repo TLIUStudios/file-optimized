@@ -62,21 +62,7 @@ export default function Profile() {
     loadUser();
   }, []);
 
-  // Check for success/canceled in URL
-  useEffect(() => {
-    const params = new URLSearchParams(window.location.hash.split('?')[1]);
-    if (params.get('success') === 'true') {
-      toast.success('🎉 Welcome to Pro! Your subscription is now active.');
-      // Reload user data after a short delay to ensure subscription status is updated
-      setTimeout(async () => {
-        const updatedUser = await base44.auth.me();
-        setUser(updatedUser);
-      }, 2000);
-    }
-    if (params.get('canceled') === 'true') {
-      toast.info('Checkout canceled. You can upgrade anytime!');
-    }
-  }, []);
+  // No longer needed - redirects to dedicated pages
 
   // Load billing history
   const { data: billingHistory = [], isLoading: billingLoading } = useQuery({

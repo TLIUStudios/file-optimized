@@ -553,10 +553,10 @@ export default function Home() {
               </Droppable>
             </DragDropContext>
           </Suspense>
-          </div>
-          }
+        </div>
+      }
 
-          {/* Comparison Modal */}
+      {/* Comparison Modal */}
       {comparisonData &&
       <Suspense fallback={null}>
           <ImageComparisonModal
@@ -611,7 +611,9 @@ export default function Home() {
         </Suspense>
       )}
 
-    </div>
+      </div>
+        </ErrorBoundary>
+      </Suspense>
     </>
   );
 
