@@ -588,6 +588,11 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
           // Update progress based on actual frames processed
           const progress = Math.min(90, 5 + (frameCount / totalFrames) * 85);
           setProcessingProgress(progress);
+          
+          // Yield to browser every 10 frames
+          if (frameCount % 10 === 0) {
+            await new Promise(resolve => setTimeout(resolve, 0));
+          }
         }
         
         // Ensure all frames are encoded before flushing
@@ -914,6 +919,11 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
         
         setProcessingProgress(5 + (frames.length / maxFrames) * 45);
         
+        // Yield to browser every 10 frames
+        if (frames.length % 10 === 0) {
+          await new Promise(resolve => setTimeout(resolve, 0));
+        }
+        
         if (frames.length >= 100) break; // Limit frames
       }
       
@@ -1089,6 +1099,11 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
           // Update progress based on frames processed
           const progress = Math.min(90, 5 + (i / frames.length) * 85);
           setProcessingProgress(progress);
+          
+          // Yield to browser every 10 frames
+          if (i % 10 === 0) {
+            await new Promise(resolve => setTimeout(resolve, 0));
+          }
         }
         
         // Ensure all frames are encoded
@@ -1221,6 +1236,11 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
           const originalDelay = frame.delay || 10;
           const delayMs = Math.max(20, originalDelay * 10);
           processedFrames.push({ canvas: outputCanvas, delay: delayMs });
+          
+          // Yield to browser every 20 frames
+          if (i % 20 === 0) {
+            await new Promise(resolve => setTimeout(resolve, 0));
+          }
         } catch (err) {
           console.error(`Frame ${i} error:`, err);
         }
@@ -1679,6 +1699,11 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
         ctx.drawImage(img, 0, 0, width, height);
         ctx.restore();
         frames.push(canvas);
+        
+        // Yield to browser every 15 frames
+        if (i % 15 === 0) {
+          await new Promise(resolve => setTimeout(resolve, 0));
+        }
       }
       toast.info('Rendering GIF...', { id: 'anim-gen' });
       const GIF = window.GIF;
