@@ -1013,64 +1013,62 @@ export default function ImageComparisonModal({
               </div>
             ) : mediaType === 'image' ? (
               <div className="relative w-full h-full bg-slate-100 dark:bg-slate-900 flex flex-col">
-                <div className="flex-1 relative flex items-start justify-center overflow-hidden select-none pt-8">
+                <div 
+                  ref={imageContainerRef}
+                  className="flex-1 relative overflow-hidden select-none cursor-col-resize"
+                  style={{
+                    cursor: zoom > 1 ? (isPanning ? 'grabbing' : 'grab') : 'col-resize'
+                  }}
+                  onMouseDown={(e) => {
+                    if (zoom > 1) {
+                      handlePanStart(e);
+                    } else {
+                      setIsDragging(true);
+                    }
+                  }}
+                  onTouchStart={(e) => {
+                    if (zoom > 1 && e.touches.length === 1) {
+                      setIsPanning(true);
+                      setPanStart({ x: e.touches[0].clientX, y: e.touches[0].clientY });
+                    } else if (e.touches.length === 1) {
+                      setIsDragging(true);
+                    }
+                  }}
+                >
                   <div
-                    className="relative"
+                    className="relative w-full h-full"
                     style={{
                       transform: `scale(${zoom}) translate(${pan.x / zoom}px, ${pan.y / zoom}px)`,
                       transition: isDragging || isPanning ? 'none' : 'transform 0.2s ease-out'
                     }}
                   >
+                    <img
+                      src={compressedImage}
+                      alt="Compressed"
+                      className="absolute inset-0 w-full h-full object-contain"
+                      draggable="false"
+                    />
                     <div
-                      ref={imageContainerRef}
-                      className="relative cursor-col-resize"
-                      style={{
-                        cursor: zoom > 1 ? (isPanning ? 'grabbing' : 'grab') : 'col-resize'
-                      }}
-                      onMouseDown={(e) => {
-                        if (zoom > 1) {
-                          handlePanStart(e);
-                        } else {
-                          setIsDragging(true);
-                        }
-                      }}
-                      onTouchStart={(e) => {
-                        if (zoom > 1 && e.touches.length === 1) {
-                          setIsPanning(true);
-                          setPanStart({ x: e.touches[0].clientX, y: e.touches[0].clientY });
-                        } else if (e.touches.length === 1) {
-                          setIsDragging(true);
-                        }
-                      }}
+                      className="absolute inset-0 overflow-hidden"
+                      style={{ clipPath: `inset(0 ${100 - sliderPosition}% 0 0)` }}
                     >
                       <img
-                        src={compressedImage}
-                        alt="Compressed"
-                        className="max-h-[calc(100vh-180px)] w-auto object-contain"
+                        src={originalImage}
+                        alt="Original"
+                        className="absolute inset-0 w-full h-full object-contain"
                         draggable="false"
                       />
-                      <div
-                        className="absolute top-0 left-0 w-full h-full overflow-hidden"
-                        style={{ clipPath: `inset(0 ${100 - sliderPosition}% 0 0)` }}
-                      >
-                        <img
-                          src={originalImage}
-                          alt="Original"
-                          className="max-h-[calc(100vh-180px)] w-auto object-contain"
-                          draggable="false"
-                        />
-                      </div>
-                      {zoom === 1 && !isPanning && (
-                        <div
-                          className="absolute top-0 bottom-0 w-0.5 bg-white shadow-2xl z-10"
-                          style={{ left: `${sliderPosition}%`, transform: 'translateX(-50%)' }}
-                        >
-                          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-12 h-12 bg-white dark:bg-slate-700 rounded-full shadow-2xl flex items-center justify-center cursor-col-resize border-2 border-slate-300 dark:border-slate-600">
-                            <MoveHorizontal className="w-5 h-5 text-slate-700 dark:text-white" />
-                          </div>
-                        </div>
-                      )}
                     </div>
+                    {zoom === 1 && !isPanning && (
+                      <div
+                        className="absolute top-0 bottom-0 w-0.5 bg-white shadow-2xl z-10"
+                        style={{ left: `${sliderPosition}%`, transform: 'translateX(-50%)' }}
+                      >
+                        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-12 h-12 bg-white dark:bg-slate-700 rounded-full shadow-2xl flex items-center justify-center cursor-col-resize border-2 border-slate-300 dark:border-slate-600">
+                          <MoveHorizontal className="w-5 h-5 text-slate-700 dark:text-white" />
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
 
