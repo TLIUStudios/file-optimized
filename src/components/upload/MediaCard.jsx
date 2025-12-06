@@ -910,12 +910,19 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
         gif.addFrame(frame, { delay: Math.round(frameInterval * 1000), copy: true });
       }
       
-      setProcessingProgress(60);
+      setProcessingProgress(55);
       
       const gifBlob = await new Promise((resolve, reject) => {
-        gif.on('finished', resolve);
-        gif.on('error', reject);
-        gif.on('progress', (p) => setProcessingProgress(60 + p * 35));
+        const timeout = setTimeout(() => reject(new Error('GIF encoding timeout')), 120000);
+        gif.on('finished', (blob) => {
+          clearTimeout(timeout);
+          resolve(blob);
+        });
+        gif.on('error', (err) => {
+          clearTimeout(timeout);
+          reject(err);
+        });
+        gif.on('progress', (p) => setProcessingProgress(55 + p * 40));
         gif.render();
       });
       
