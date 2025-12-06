@@ -1074,6 +1074,19 @@ export default function ImageComparisonModal({
                       )}
                     </div>
                   </div>
+
+                      {zoom === 1 && !isPanning && (
+                        <div
+                          className="absolute top-0 bottom-0 w-0.5 bg-white shadow-2xl z-10 pointer-events-none"
+                          style={{ left: `${sliderPosition}%`, transform: 'translateX(-50%)' }}
+                        >
+                          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-12 h-12 bg-white dark:bg-slate-700 rounded-full shadow-2xl flex items-center justify-center cursor-col-resize border-2 border-slate-300 dark:border-slate-600 pointer-events-auto">
+                            <MoveHorizontal className="w-5 h-5 text-slate-700 dark:text-white" />
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
                 </div>
 
                 <div className="h-16 w-full flex items-center justify-between px-6 bg-slate-100/80 dark:bg-slate-900/80 backdrop-blur-sm border-t border-slate-200 dark:border-slate-800">
