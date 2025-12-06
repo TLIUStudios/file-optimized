@@ -948,7 +948,7 @@ export default function ImageComparisonModal({
 
         <div className="flex flex-col lg:flex-row h-full overflow-hidden pt-[60px]">
           {/* Left Side - Media Display */}
-          <div className="flex-1 relative overflow-hidden flex flex-col min-h-0">
+          <div className="flex-1 relative overflow-hidden flex flex-col min-h-0 bg-slate-100 dark:bg-slate-900">
             {isAnimationVariations ? (
               // Animation Variations Grid (2x2)
               <div className="relative w-full h-full bg-slate-100 dark:bg-slate-900 flex items-center justify-center p-4">
@@ -1015,11 +1015,12 @@ export default function ImageComparisonModal({
               </div>
             ) : mediaType === 'image' ? (
               // Original image comparison view
+              <>
               <div
                 ref={containerRef}
-                className="relative w-full h-full bg-slate-100 dark:bg-slate-900 select-none flex flex-col items-center justify-center overflow-hidden"
+                className="flex-1 relative w-full bg-slate-100 dark:bg-slate-900 select-none flex items-center justify-center overflow-hidden"
               >
-                <div className="flex-1 relative w-full flex items-center justify-center py-4">
+                <div className="relative w-full h-full flex items-center justify-center py-4">
                   <div
                     ref={imageContainerRef}
                     className="relative"
