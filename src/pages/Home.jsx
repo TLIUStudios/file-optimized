@@ -24,6 +24,9 @@ const ImageComparisonModal = lazy(() => import("../components/comparison/ImageCo
 const KeyboardShortcuts = lazy(() => import("../components/features/KeyboardShortcuts"));
 import GlobalStats from "../components/stats/GlobalStats";
 
+// Loading fallback for image cards
+const ImageCardSkeleton = lazy(() => import("../components/upload/ImageCardSkeleton"));
+
 export default function Home() {
   const [images, setImages] = useState([]);
   const [processedImages, setProcessedImages] = useState({});
@@ -76,19 +79,13 @@ export default function Home() {
   }, [images]);
 
   const removeImage = useCallback((id) => {
-    // Cleanup blob URLs before removing
-    const processed = processedImages[id];
-    if (processed?.compressedUrl?.startsWith('blob:')) {
-      URL.revokeObjectURL(processed.compressedUrl);
-    }
-    
     setImages((prev) => prev.filter((img) => img.id !== id));
     setProcessedImages((prev) => {
       const newProcessed = { ...prev };
       delete newProcessed[id];
       return newProcessed;
     });
-  }, [processedImages]);
+  }, []);
 
   const handleImageProcessed = useCallback((id, data) => {
     setProcessedImages((prev) => {
@@ -119,18 +116,11 @@ export default function Home() {
   }, []);
 
   const clearAll = useCallback(() => {
-    // Cleanup all blob URLs before clearing
-    Object.values(processedImages).forEach(processed => {
-      if (processed?.compressedUrl?.startsWith('blob:')) {
-        URL.revokeObjectURL(processed.compressedUrl);
-      }
-    });
-    
     setImages([]);
     setProcessedImages({});
     setProcessingStartTime(null);
     setEstimatedTimeRemaining(null);
-  }, [processedImages]);
+  }, []);
 
   const processAllImages = useCallback(async () => {
     const unprocessedImages = images.filter((img) => !processedImages[img.id]);
@@ -522,7 +512,7 @@ export default function Home() {
           </div>
 
           {/* Images Grid with Drag & Drop */}
-          <Suspense fallback={<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-8">{images.map((_, i) => <Skeleton key={i} className="h-64 w-full" />)}</div>}>
+          <Suspense fallback={<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-8">{images.map((_, i) => <ImageCardSkeleton key={i} />)}</div>}>
             <DragDropContext onDragEnd={handleDragEnd}>
               <Droppable droppableId="images" direction="horizontal">
                 {(provided) =>
@@ -546,7 +536,7 @@ export default function Home() {
                       provided.draggableProps.style?.transform
                     }}>
 
-                            <Suspense fallback={<Skeleton className="h-64 w-full" />}>
+                            <Suspense fallback={<ImageCardSkeleton />}>
                               <MediaCard
                         image={image.file}
                         onRemove={() => removeImage(image.id)}

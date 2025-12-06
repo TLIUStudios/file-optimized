@@ -102,19 +102,17 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
   useEffect(() => {
     const reader = new FileReader();
     reader.onloadend = async () => {
-      const result = reader.result;
-      setPreview(result);
+      setPreview(reader.result);
       setOriginalSize(image.size);
       setEditableFilename(image.name);
       if (isImage && !isGif) {
         const img = new Image();
         img.onload = () => setOriginalImageDimensions({ width: img.width, height: img.height });
-        img.onerror = () => console.error('Failed to load image dimensions');
-        img.src = result;
+        img.src = reader.result;
       }
       if (isGif) {
         try {
-          await parseGif(result);
+          await parseGif(reader.result);
         } catch (error) {
           console.error('Error parsing GIF:', error);
         }
@@ -125,11 +123,6 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
     else if (isVideo) setFormat('mp4');
     else if (isAudio) setFormat('mp3');
     else if (isImage) setFormat('jpg');
-    
-    // Cleanup
-    return () => {
-      reader.abort();
-    };
   }, [image, isGif, isVideo, isAudio, isImage]);
 
   useEffect(() => {
@@ -178,12 +171,9 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
 
   useEffect(() => {
     return () => {
-      // Cleanup all blob URLs on unmount
       if (workerBlobUrl) URL.revokeObjectURL(workerBlobUrl);
-      if (preview && preview.startsWith('blob:')) URL.revokeObjectURL(preview);
-      if (compressedPreview && compressedPreview.startsWith('blob:')) URL.revokeObjectURL(compressedPreview);
     };
-  }, [workerBlobUrl, preview, compressedPreview]);
+  }, [workerBlobUrl]);
 
   // Re-apply last preset when Standard Resolutions toggle changes
   useEffect(() => {
@@ -209,16 +199,12 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
     }
   }, [useStandardResolutions]);
 
-  // Track settings changes after processing (debounced to avoid excessive updates)
+  // Track settings changes after processing
   useEffect(() => {
-    if (!processed) return;
-    
-    const timeout = setTimeout(() => {
+    if (processed) {
       setSettingsChanged(true);
-    }, 300); // Debounce settings change indicator
-    
-    return () => clearTimeout(timeout);
-  }, [processed, quality, format, maxWidth, maxHeight, compressionMode, stripMetadata, noiseReduction, 
+    }
+  }, [quality, format, maxWidth, maxHeight, compressionMode, stripMetadata, noiseReduction, 
       enableUpscale, upscaleMultiplier, useStandardResolutions, enableAnimation, animationType, 
       animationDuration, videoBitrate, audioBitrate, frameRate, videoPreset, videoResolution, audioQuality, 
       editableFilename]);
@@ -602,11 +588,6 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
           // Update progress based on actual frames processed
           const progress = Math.min(90, 5 + (frameCount / totalFrames) * 85);
           setProcessingProgress(progress);
-          
-          // Yield to browser every 10 frames
-          if (frameCount % 10 === 0) {
-            await new Promise(resolve => setTimeout(resolve, 0));
-          }
         }
         
         // Ensure all frames are encoded before flushing
@@ -933,11 +914,6 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
         
         setProcessingProgress(5 + (frames.length / maxFrames) * 45);
         
-        // Yield to browser every 10 frames
-        if (frames.length % 10 === 0) {
-          await new Promise(resolve => setTimeout(resolve, 0));
-        }
-        
         if (frames.length >= 100) break; // Limit frames
       }
       
@@ -1113,11 +1089,6 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
           // Update progress based on frames processed
           const progress = Math.min(90, 5 + (i / frames.length) * 85);
           setProcessingProgress(progress);
-          
-          // Yield to browser every 10 frames
-          if (i % 10 === 0) {
-            await new Promise(resolve => setTimeout(resolve, 0));
-          }
         }
         
         // Ensure all frames are encoded
@@ -1250,11 +1221,6 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
           const originalDelay = frame.delay || 10;
           const delayMs = Math.max(20, originalDelay * 10);
           processedFrames.push({ canvas: outputCanvas, delay: delayMs });
-          
-          // Yield to browser every 20 frames
-          if (i % 20 === 0) {
-            await new Promise(resolve => setTimeout(resolve, 0));
-          }
         } catch (err) {
           console.error(`Frame ${i} error:`, err);
         }
@@ -1713,11 +1679,6 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
         ctx.drawImage(img, 0, 0, width, height);
         ctx.restore();
         frames.push(canvas);
-        
-        // Yield to browser every 15 frames
-        if (i % 15 === 0) {
-          await new Promise(resolve => setTimeout(resolve, 0));
-        }
       }
       toast.info('Rendering GIF...', { id: 'anim-gen' });
       const GIF = window.GIF;

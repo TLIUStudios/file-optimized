@@ -20,14 +20,11 @@ export default function GlobalStats() {
         return [];
       }
     },
-    refetchInterval: 120000, // Reduced frequency: 2 minutes
-    staleTime: 90000, // Consider data fresh for 90 seconds
-    cacheTime: 300000, // Keep in cache for 5 minutes
-    retry: 1, // Reduce retries
-    retryDelay: 2000,
-    refetchOnWindowFocus: false,
-    refetchOnMount: false, // Don't refetch on every mount
-    refetchOnReconnect: false
+    refetchInterval: 60000,
+    staleTime: 30000,
+    retry: 2,
+    retryDelay: 1000,
+    refetchOnWindowFocus: false
   });
 
   const statsWithSavings = stats.filter(s => s.saved_bytes > 0);
