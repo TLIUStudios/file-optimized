@@ -19,7 +19,6 @@ const LoginPromptModal = lazy(() => import("../components/LoginPromptModal"));
 const ProUpgradeModal = lazy(() => import("../components/ProUpgradeModal"));
 const MediaCard = lazy(() => import("../components/upload/MediaCardMemo"));
 const ImageComparisonModal = lazy(() => import("../components/comparison/ImageComparisonModal"));
-const QuickSettings = lazy(() => import("../components/features/QuickSettings"));
 const KeyboardShortcuts = lazy(() => import("../components/features/KeyboardShortcuts"));
 
 // Loading fallback for image cards
@@ -39,13 +38,6 @@ export default function Home() {
   const [processingCheckout, setProcessingCheckout] = useState(false);
   const [upgradeError, setUpgradeError] = useState(null);
   const [showLoginPrompt, setShowLoginPrompt] = useState(false);
-  const [defaultQuality, setDefaultQuality] = useState(() => {
-    const saved = localStorage.getItem('defaultQuality');
-    return saved ? parseInt(saved) : 80;
-  });
-  const [defaultFormat, setDefaultFormat] = useState(() => {
-    return localStorage.getItem('defaultFormat') || 'jpg';
-  });
 
   // Load user and their plan
   useEffect(() => {
@@ -269,13 +261,6 @@ export default function Home() {
     base44.auth.redirectToLogin(window.location.href);
   };
 
-  const handlePresetApply = useCallback((preset) => {
-    setDefaultQuality(preset.quality);
-    setDefaultFormat(preset.format);
-    localStorage.setItem('defaultQuality', preset.quality);
-    localStorage.setItem('defaultFormat', preset.format);
-  }, []);
-
   const totalOriginalSize = useMemo(() => 
     images.reduce((sum, img) => sum + img.file.size, 0), [images]);
   
@@ -464,10 +449,7 @@ export default function Home() {
               }
               </div>
 
-              <div className="flex gap-2 flex-wrap items-center">
-                <Suspense fallback={null}>
-                  <QuickSettings onPresetApply={handlePresetApply} />
-                </Suspense>
+              <div className="flex gap-2 flex-wrap">
                 {unprocessedCount > 0 &&
               <Button
                 onClick={processAllImages}
