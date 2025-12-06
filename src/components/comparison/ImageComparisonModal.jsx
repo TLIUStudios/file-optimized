@@ -1020,7 +1020,7 @@ export default function ImageComparisonModal({
                 <div className="flex-1 relative w-full flex items-center justify-center py-4">
                   <div
                     ref={imageContainerRef}
-                    className="relative"
+                    className="relative inline-block"
                     style={{
                       transform: `scale(${zoom}) translate(${pan.x / zoom}px, ${pan.y / zoom}px)`,
                       transformOrigin: 'center',
@@ -1043,26 +1043,24 @@ export default function ImageComparisonModal({
                       }
                     }}
                   >
-                    <div className="relative inline-block">
+                    <img
+                      src={compressedImage}
+                      alt="Compressed"
+                      className="max-w-[85vw] lg:max-w-[60vw] max-h-[calc(100vh-200px)] w-auto h-auto object-contain block"
+                      draggable="false"
+                    />
+
+                    <div
+                      className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none"
+                      style={{ clipPath: `inset(0 ${100 - sliderPosition}% 0 0)` }}
+                    >
                       <img
-                        src={compressedImage}
-                        alt="Compressed"
+                        src={originalImage}
+                        alt="Original"
                         className="max-w-[85vw] lg:max-w-[60vw] max-h-[calc(100vh-200px)] w-auto h-auto object-contain block"
                         draggable="false"
                       />
-
-                      <div
-                        className="absolute inset-0 overflow-hidden pointer-events-none"
-                        style={{ clipPath: `inset(0 ${100 - sliderPosition}% 0 0)` }}
-                      >
-                        <img
-                          src={originalImage}
-                          alt="Original"
-                          className="max-w-[85vw] lg:max-w-[60vw] max-h-[calc(100vh-200px)] w-auto h-auto object-contain block"
-                          draggable="false"
-                          style={{ position: 'absolute', top: 0, left: 0 }}
-                        />
-                      </div>
+                    </div>
 
                       {zoom === 1 && !isPanning && (
                         <div
