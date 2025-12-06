@@ -90,18 +90,18 @@ export default function GlobalStats() {
       className="relative bg-gradient-to-r from-emerald-500 to-teal-600 rounded-lg p-3 text-white shadow-lg max-w-md mx-auto overflow-hidden"
     >
       {/* Matrix falling code background effect - multiple layers */}
-      <div className="absolute inset-0 opacity-20 pointer-events-none overflow-hidden font-mono">
+      <div className="absolute inset-0 opacity-35 pointer-events-none overflow-hidden font-mono">
         {[...Array(25)].map((_, i) => (
           <div
             key={i}
-            className="absolute text-[8px] leading-none whitespace-pre animate-matrix-fall"
+            className="absolute text-[10px] leading-none whitespace-pre animate-matrix-fall font-bold"
             style={{
               left: `${(i * 4)}%`,
               animationDelay: `${Math.random() * 2}s`,
-              animationDuration: `${1.5 + Math.random() * 2}s`,
+              animationDuration: `${1.2 + Math.random() * 1.5}s`,
               color: i % 4 === 0 ? '#6ee7b7' : i % 4 === 1 ? '#34d399' : i % 4 === 2 ? '#a7f3d0' : '#10b981',
-              textShadow: '0 0 8px currentColor',
-              opacity: 0.7 + Math.random() * 0.3
+              textShadow: '0 0 12px currentColor, 0 0 20px currentColor',
+              opacity: 0.8 + Math.random() * 0.2
             }}
           >
             {glitchText[i % glitchText.length]?.split('').join('\n')}
@@ -111,76 +111,78 @@ export default function GlobalStats() {
       
       {/* Multiple glitch scanlines */}
       <div className="absolute inset-0 pointer-events-none">
-        <div className="absolute w-full h-px bg-gradient-to-r from-transparent via-emerald-400 to-transparent animate-scanline opacity-40 shadow-lg shadow-emerald-500/50" />
-        <div className="absolute w-full h-px bg-gradient-to-r from-transparent via-emerald-300 to-transparent animate-scanline-reverse opacity-30" />
-        <div className="absolute w-full h-0.5 bg-gradient-to-r from-transparent via-white to-transparent animate-scanline-fast opacity-60" style={{ filter: 'blur(1px)' }} />
-        <div className="absolute h-full w-px bg-gradient-to-b from-transparent via-emerald-400 to-transparent animate-scanline-horizontal opacity-30 shadow-lg shadow-emerald-500/50" />
+        <div className="absolute w-full h-1 bg-gradient-to-r from-transparent via-emerald-300 to-transparent animate-scanline opacity-60 shadow-lg shadow-emerald-400/70" style={{ filter: 'blur(2px)' }} />
+        <div className="absolute w-full h-px bg-gradient-to-r from-transparent via-emerald-200 to-transparent animate-scanline-reverse opacity-50" />
+        <div className="absolute w-full h-1 bg-gradient-to-r from-transparent via-white to-transparent animate-scanline-fast opacity-80 shadow-lg shadow-white/50" style={{ filter: 'blur(1.5px)' }} />
+        <div className="absolute h-full w-1 bg-gradient-to-b from-transparent via-emerald-300 to-transparent animate-scanline-horizontal opacity-50 shadow-lg shadow-emerald-400/70" style={{ filter: 'blur(2px)' }} />
       </div>
-      
+
       {/* RGB chromatic aberration glitch */}
-      <div className="absolute inset-0 pointer-events-none opacity-40 mix-blend-screen">
-        <div className="absolute inset-0 bg-red-500 animate-glitch-x-intense" style={{ mixBlendMode: 'screen', opacity: 0.15 }} />
-        <div className="absolute inset-0 bg-cyan-400 animate-glitch-y-intense" style={{ mixBlendMode: 'screen', opacity: 0.15 }} />
-        <div className="absolute inset-0 bg-green-400 animate-glitch-diagonal" style={{ mixBlendMode: 'screen', opacity: 0.1 }} />
+      <div className="absolute inset-0 pointer-events-none opacity-60 mix-blend-screen">
+        <div className="absolute inset-0 bg-red-500 animate-glitch-x-intense" style={{ mixBlendMode: 'screen', opacity: 0.25 }} />
+        <div className="absolute inset-0 bg-cyan-400 animate-glitch-y-intense" style={{ mixBlendMode: 'screen', opacity: 0.25 }} />
+        <div className="absolute inset-0 bg-green-400 animate-glitch-diagonal" style={{ mixBlendMode: 'screen', opacity: 0.2 }} />
       </div>
-      
+
       {/* Digital noise overlay - more intense */}
-      <div className="absolute inset-0 opacity-8 pointer-events-none animate-digital-noise-intense" 
+      <div className="absolute inset-0 opacity-15 pointer-events-none animate-digital-noise-intense" 
            style={{ 
-             backgroundImage: `repeating-linear-gradient(0deg, transparent, transparent 1px, rgba(255,255,255,0.05) 1px, rgba(255,255,255,0.05) 2px)`
+             backgroundImage: `repeating-linear-gradient(0deg, transparent, transparent 1px, rgba(255,255,255,0.08) 1px, rgba(255,255,255,0.08) 2px)`
            }} 
       />
-      
+
       {/* Random pixel corruption effect - more pixels */}
-      <div className="absolute inset-0 pointer-events-none opacity-15">
-        {[...Array(50)].map((_, i) => (
+      <div className="absolute inset-0 pointer-events-none opacity-25">
+        {[...Array(60)].map((_, i) => (
           <div
             key={i}
             className="absolute bg-emerald-400 animate-glitch-pixel"
             style={{
-              width: `${1 + Math.random() * 2}px`,
-              height: `${1 + Math.random() * 2}px`,
+              width: `${2 + Math.random() * 3}px`,
+              height: `${2 + Math.random() * 3}px`,
               left: `${Math.random() * 100}%`,
               top: `${Math.random() * 100}%`,
               animationDelay: `${Math.random() * 2}s`,
               animationDuration: `${0.3 + Math.random() * 0.7}s`,
-              boxShadow: '0 0 3px currentColor'
+              boxShadow: '0 0 6px currentColor, 0 0 10px currentColor'
             }}
           />
         ))}
       </div>
-      
+
       {/* Horizontal data stream lines */}
-      <div className="absolute inset-0 pointer-events-none opacity-10">
-        {[...Array(8)].map((_, i) => (
+      <div className="absolute inset-0 pointer-events-none opacity-20">
+        {[...Array(10)].map((_, i) => (
           <div
             key={i}
-            className="absolute h-px w-full bg-gradient-to-r from-transparent via-emerald-400 to-transparent animate-data-stream"
+            className="absolute h-0.5 w-full bg-gradient-to-r from-transparent via-emerald-300 to-transparent animate-data-stream"
             style={{
-              top: `${(i + 1) * 12.5}%`,
-              animationDelay: `${i * 0.3}s`,
-              animationDuration: `${1 + Math.random()}s`
+              top: `${(i + 1) * 10}%`,
+              animationDelay: `${i * 0.25}s`,
+              animationDuration: `${0.8 + Math.random() * 0.5}s`,
+              boxShadow: '0 0 8px rgba(52, 211, 153, 0.6)'
             }}
           />
         ))}
       </div>
-      
+
       {/* Glitch blocks */}
-      <div className="absolute inset-0 pointer-events-none opacity-10">
-      {[...Array(6)].map((_, i) => (
-      <div
-      key={i}
-      className="absolute bg-emerald-500 animate-glitch-blocks"
-      style={{
-        width: `${10 + Math.random() * 30}px`,
-        height: `${2 + Math.random() * 4}px`,
-        left: `${Math.random() * 90}%`,
-        top: `${Math.random() * 90}%`,
-        animationDelay: `${Math.random() * 3}s`,
-        animationDuration: `${0.5 + Math.random() * 1.5}s`
-      }}
-      />
-      ))}
+      <div className="absolute inset-0 pointer-events-none opacity-20">
+        {[...Array(10)].map((_, i) => (
+          <div
+            key={i}
+            className="absolute bg-emerald-400 animate-glitch-blocks"
+            style={{
+              width: `${15 + Math.random() * 40}px`,
+              height: `${3 + Math.random() * 5}px`,
+              left: `${Math.random() * 90}%`,
+              top: `${Math.random() * 90}%`,
+              animationDelay: `${Math.random() * 2}s`,
+              animationDuration: `${0.4 + Math.random() * 1}s`,
+              boxShadow: '0 0 10px currentColor'
+            }}
+          />
+        ))}
       </div>
 
       {/* Animated Lightning Border Effect */}
@@ -430,8 +432,11 @@ export default function GlobalStats() {
       <div className="absolute inset-0 rounded-xl pointer-events-none">
         {/* Glowing border effect */}
         <div className="absolute inset-0 rounded-xl animate-pulse" style={{ 
-          boxShadow: '0 0 30px rgba(52, 211, 153, 0.8), inset 0 0 30px rgba(52, 211, 153, 0.4)',
-          animationDuration: '1.5s'
+          boxShadow: '0 0 50px rgba(52, 211, 153, 1), 0 0 80px rgba(52, 211, 153, 0.8), inset 0 0 40px rgba(52, 211, 153, 0.6), inset 0 0 60px rgba(52, 211, 153, 0.4)',
+          animationDuration: '1.2s'
+        }} />
+        <div className="absolute inset-0 rounded-xl" style={{ 
+          boxShadow: '0 0 100px rgba(110, 231, 183, 0.6), 0 0 150px rgba(16, 185, 129, 0.4)',
         }} />
         
         {/* Animated lightning SVG border */}
