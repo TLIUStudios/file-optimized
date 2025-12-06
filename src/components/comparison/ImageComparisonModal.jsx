@@ -1047,21 +1047,16 @@ export default function ImageComparisonModal({
                     <img
                       src={compressedImage}
                       alt="Compressed"
-                      className="max-w-[85vw] lg:max-w-[60vw] max-h-[calc(100vh-200px)] object-contain block"
+                      className="max-w-[85vw] lg:max-w-[60vw] max-h-[calc(100vh-200px)] w-auto h-auto object-contain block"
                       draggable="false"
-                      style={{ width: 'auto', height: 'auto' }}
                     />
 
                     <img
                       src={originalImage}
                       alt="Original"
-                      className="absolute top-0 left-0 max-w-[85vw] lg:max-w-[60vw] max-h-[calc(100vh-200px)] object-contain block pointer-events-none"
+                      className="absolute top-0 left-0 max-w-[85vw] lg:max-w-[60vw] max-h-[calc(100vh-200px)] w-auto h-auto object-contain block pointer-events-none"
                       draggable="false"
-                      style={{ 
-                        clipPath: `inset(0 ${100 - sliderPosition}% 0 0)`,
-                        width: 'auto',
-                        height: 'auto'
-                      }}
+                      style={{ clipPath: `inset(0 ${100 - sliderPosition}% 0 0)` }}
                     />
 
                     {zoom === 1 && !isPanning && (
