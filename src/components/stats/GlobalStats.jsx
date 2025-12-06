@@ -11,18 +11,55 @@ const formatBytes = (bytes) => {
 };
 
 export default function GlobalStats() {
-  const { data: stats = [] } = useQuery({
+  const { data: stats = [], isLoading } = useQuery({
     queryKey: ['globalCompressionStats'],
     queryFn: async () => {
       return await base44.entities.CompressionStat.list('-created_date', 10000);
     },
-    refetchInterval: 60000 // Refresh every minute
+    refetchInterval: 60000, // Refresh every minute
+    staleTime: 30000, // Consider data fresh for 30 seconds
+    placeholderData: [] // Show empty array immediately
   });
 
   const totalSaved = stats.reduce((sum, s) => sum + s.saved_bytes, 0);
   const totalCompressions = stats.length;
 
-  if (totalSaved === 0) return null;
+  // Show loading skeleton
+  if (isLoading || totalSaved === 0) {
+    if (isLoading) {
+      return (
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="relative bg-gradient-to-r from-emerald-500 to-teal-600 rounded-lg p-3 text-white shadow-lg max-w-md mx-auto overflow-hidden"
+        >
+          <div className="relative z-10 flex items-center justify-between gap-3">
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 bg-white/20 backdrop-blur-sm rounded-lg flex items-center justify-center flex-shrink-0">
+                <Globe className="w-4 h-4 animate-pulse" />
+              </div>
+              <div className="flex flex-col items-start">
+                <h3 className="text-xs font-bold leading-tight">Global Impact</h3>
+                <p className="text-[10px] text-emerald-100 leading-tight">Loading...</p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-24">
+              <div className="text-right">
+                <div className="text-base font-bold h-6 w-20 bg-white/20 rounded animate-pulse"></div>
+                <div className="text-[10px] text-emerald-100">Space Saved</div>
+              </div>
+              <div className="text-right">
+                <div className="text-base font-bold h-6 w-16 bg-white/20 rounded animate-pulse"></div>
+                <div className="text-[10px] text-emerald-100">Files</div>
+              </div>
+            </div>
+          </div>
+        </motion.div>
+      );
+    }
+    return null;
+  }
 
   return (
     <motion.div
