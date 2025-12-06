@@ -110,7 +110,7 @@ Provide a helpful, accurate, and concise response. If the question is about tech
   };
 
   return (
-    <TooltipProvider>
+    <TooltipProvider delayDuration={0}>
       {/* Floating Chat Button */}
       <AnimatePresence>
         {!isOpen && (
