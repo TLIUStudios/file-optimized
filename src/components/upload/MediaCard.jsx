@@ -638,31 +638,18 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
         originalFileFormat: originalFormat
       });
       
-      // Record compression stat
-      try {
-        const isAuth = await base44.auth.isAuthenticated();
-        if (isAuth) {
+      // Record compression stat only if space was saved
+      if (blob.size < image.size) {
+        try {
           await base44.entities.CompressionStat.create({
             original_size: image.size,
             compressed_size: blob.size,
             media_type: 'video',
             output_format: 'mp4'
           });
+        } catch (err) {
+          console.log('Could not save stat:', err);
         }
-      } catch (err) {
-        console.log('Could not save stat:', err);
-      }
-      
-      // Record compression stat
-      try {
-        await base44.entities.CompressionStat.create({
-          original_size: image.size,
-          compressed_size: blob.size,
-          media_type: 'video',
-          output_format: 'mp4'
-        });
-      } catch (err) {
-        console.log('Could not save stat:', err);
       }
       
       const savings = image.size > blob.size ? ((1 - blob.size / image.size) * 100).toFixed(1) : 0;
@@ -820,16 +807,18 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
         originalFileFormat: originalFormat
       });
       
-      // Record compression stat
-      try {
-        await base44.entities.CompressionStat.create({
-          original_size: image.size,
-          compressed_size: blob.size,
-          media_type: 'audio',
-          output_format: outputExt
-        });
-      } catch (err) {
-        console.log('Could not save stat:', err);
+      // Record compression stat only if space was saved
+      if (blob.size < image.size) {
+        try {
+          await base44.entities.CompressionStat.create({
+            original_size: image.size,
+            compressed_size: blob.size,
+            media_type: 'audio',
+            output_format: outputExt
+          });
+        } catch (err) {
+          console.log('Could not save stat:', err);
+        }
       }
       
       const savings = ((1 - blob.size / image.size) * 100).toFixed(1);
@@ -1139,31 +1128,18 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
         originalFileFormat: originalFormat
       });
 
-      // Record compression stat
-      try {
-        const isAuth = await base44.auth.isAuthenticated();
-        if (isAuth) {
+      // Record compression stat only if space was saved
+      if (blob.size < image.size) {
+        try {
           await base44.entities.CompressionStat.create({
             original_size: image.size,
             compressed_size: blob.size,
             media_type: 'video',
             output_format: 'mp4'
           });
+        } catch (err) {
+          console.log('Could not save stat:', err);
         }
-      } catch (err) {
-        console.log('Could not save stat:', err);
-      }
-
-      // Record compression stat
-      try {
-        await base44.entities.CompressionStat.create({
-          original_size: image.size,
-          compressed_size: blob.size,
-          media_type: 'video',
-          output_format: 'mp4'
-        });
-      } catch (err) {
-        console.log('Could not save stat:', err);
       }
 
       toast.success('GIF converted to MP4!');
@@ -1321,16 +1297,18 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
         originalFileFormat: originalFormat
       });
       
-      // Record compression stat
-      try {
-        await base44.entities.CompressionStat.create({
-          original_size: image.size,
-          compressed_size: finalBlob.size,
-          media_type: 'image',
-          output_format: 'gif'
-        });
-      } catch (err) {
-        console.log('Could not save stat:', err);
+      // Record compression stat only if space was saved
+      if (finalBlob.size < image.size) {
+        try {
+          await base44.entities.CompressionStat.create({
+            original_size: image.size,
+            compressed_size: finalBlob.size,
+            media_type: 'image',
+            output_format: 'gif'
+          });
+        } catch (err) {
+          console.log('Could not save stat:', err);
+        }
       }
       
       const savings = ((1 - finalBlob.size / image.size) * 100).toFixed(1);
@@ -1520,16 +1498,18 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
           originalFileFormat: originalFormat
         });
         
-        // Record compression stat
-        try {
-          await base44.entities.CompressionStat.create({
-            original_size: image.size,
-            compressed_size: compressedFile.size,
-            media_type: 'image',
-            output_format: format
-          });
-        } catch (err) {
-          console.log('Could not save stat:', err);
+        // Record compression stat only if space was saved
+        if (compressedFile.size < image.size) {
+          try {
+            await base44.entities.CompressionStat.create({
+              original_size: image.size,
+              compressed_size: compressedFile.size,
+              media_type: 'image',
+              output_format: format
+            });
+          } catch (err) {
+            console.log('Could not save stat:', err);
+          }
         }
         
         const savings = ((1 - compressedFile.size / image.size) * 100).toFixed(1);
@@ -1622,16 +1602,18 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
       originalFileFormat: originalFormat
     });
     
-    // Record compression stat
-    try {
-      await base44.entities.CompressionStat.create({
-        original_size: image.size,
-        compressed_size: blob.size,
-        media_type: 'image',
-        output_format: format
-      });
-    } catch (err) {
-      console.log('Could not save stat:', err);
+    // Record compression stat only if space was saved
+    if (blob.size < image.size) {
+      try {
+        await base44.entities.CompressionStat.create({
+          original_size: image.size,
+          compressed_size: blob.size,
+          media_type: 'image',
+          output_format: format
+        });
+      } catch (err) {
+        console.log('Could not save stat:', err);
+      }
     }
   };
 
