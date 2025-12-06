@@ -920,32 +920,17 @@ export default function ImageComparisonModal({
                         toast.success(`${anim.name} downloaded!`);
                       }}
                     >
-                      <img
-                        src={anim.url}
-                        alt={anim.name}
-                        className="w-full h-full object-contain"
-                      />
-
+                      <img src={anim.url} alt={anim.name} className="w-full h-full object-contain" />
                       <div className="absolute inset-0 bg-gradient-to-t from-slate-900/80 via-slate-900/0 to-slate-900/0 opacity-0 group-hover:opacity-100 transition-opacity" />
-
                       <div className="absolute top-3 left-3">
-                        <Badge className="bg-emerald-600 text-white font-semibold">
-                          {anim.name}
-                        </Badge>
+                        <Badge className="bg-emerald-600 text-white font-semibold">{anim.name}</Badge>
                       </div>
-
                       <div className="absolute top-3 right-3">
-                        <Badge className="bg-slate-900/80 text-white text-xs">
-                          {formatFileSize(anim.size)}
-                        </Badge>
+                        <Badge className="bg-slate-900/80 text-white text-xs">{formatFileSize(anim.size)}</Badge>
                       </div>
-
                       <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                        <div className="text-white text-[120px] font-bold opacity-20 group-hover:opacity-10 transition-opacity">
-                          {index + 1}
-                        </div>
+                        <div className="text-white text-[120px] font-bold opacity-20 group-hover:opacity-10 transition-opacity">{index + 1}</div>
                       </div>
-
                       <div className="absolute bottom-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity">
                         <div className="bg-emerald-600 rounded-full p-2">
                           <DownloadIcon className="w-5 h-5 text-white" />
@@ -954,7 +939,6 @@ export default function ImageComparisonModal({
                     </div>
                   ))}
                 </div>
-
                 <div className="absolute bottom-0 left-0 right-0 h-16 bg-slate-100/80 dark:bg-slate-900/80 backdrop-blur-sm border-t border-slate-200 dark:border-slate-800 flex items-center justify-center">
                   <div className="px-4 py-2 bg-emerald-600/80 backdrop-blur-sm rounded-lg text-white text-sm font-medium">
                     Click any animation to download
@@ -962,7 +946,7 @@ export default function ImageComparisonModal({
                 </div>
               </div>
             ) : mediaType === 'image' ? (
-              <div className="flex-1 flex flex-col">
+              <>
                 <div
                   ref={containerRef}
                   className="flex-1 relative w-full bg-slate-100 dark:bg-slate-900 select-none flex items-center justify-center overflow-hidden"
@@ -1000,11 +984,7 @@ export default function ImageComparisonModal({
                           className="max-w-[85vw] lg:max-w-[60vw] max-h-[calc(100vh-200px)] w-auto h-auto object-contain"
                           draggable="false"
                         />
-
-                        <div
-                          className="absolute inset-0 overflow-hidden"
-                          style={{ clipPath: `inset(0 ${100 - sliderPosition}% 0 0)` }}
-                        >
+                        <div className="absolute inset-0 overflow-hidden" style={{ clipPath: `inset(0 ${100 - sliderPosition}% 0 0)` }}>
                           <img
                             src={originalImage}
                             alt="Original"
@@ -1012,12 +992,8 @@ export default function ImageComparisonModal({
                             draggable="false"
                           />
                         </div>
-
                         {zoom === 1 && !isPanning && (
-                          <div
-                            className="absolute top-0 bottom-0 w-0.5 bg-white shadow-2xl z-10 pointer-events-none"
-                            style={{ left: `${sliderPosition}%`, transform: 'translateX(-50%)' }}
-                          >
+                          <div className="absolute top-0 bottom-0 w-0.5 bg-white shadow-2xl z-10 pointer-events-none" style={{ left: `${sliderPosition}%`, transform: 'translateX(-50%)' }}>
                             <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-12 h-12 bg-white dark:bg-slate-700 rounded-full shadow-2xl flex items-center justify-center cursor-col-resize border-2 border-slate-300 dark:border-slate-600 pointer-events-auto">
                               <MoveHorizontal className="w-5 h-5 text-slate-700 dark:text-white" />
                             </div>
@@ -1027,63 +1003,39 @@ export default function ImageComparisonModal({
                     </div>
                   </div>
                 </div>
-
                 <div className="h-16 w-full flex items-center justify-between px-6 bg-slate-100/80 dark:bg-slate-900/80 backdrop-blur-sm border-t border-slate-200 dark:border-slate-800">
                   <div className="flex flex-col gap-1">
-                    <Badge className="bg-slate-700 dark:bg-slate-800 text-white text-sm px-3 py-1 font-semibold w-fit">
-                      Original
-                    </Badge>
-                    <Badge className="bg-slate-700 dark:bg-slate-800 text-white text-xs px-2 py-0.5 font-bold w-fit">
-                      {originalExt}
-                    </Badge>
+                    <Badge className="bg-slate-700 dark:bg-slate-800 text-white text-sm px-3 py-1 font-semibold w-fit">Original</Badge>
+                    <Badge className="bg-slate-700 dark:bg-slate-800 text-white text-xs px-2 py-0.5 font-bold w-fit">{originalExt}</Badge>
                   </div>
-
                   {zoom === 1 && (
                     <div className="px-4 py-2 bg-slate-600/80 dark:bg-slate-700/80 backdrop-blur-sm rounded-lg text-white text-sm font-medium animate-pulse">
                       ← Drag to compare →
                     </div>
                   )}
-
                   <div className="flex flex-col gap-1 items-end">
-                    <Badge className="bg-emerald-600 text-white text-sm px-3 py-1 font-semibold w-fit">
-                      Compressed
-                    </Badge>
-                    <Badge className="bg-emerald-600 text-white text-xs px-2 py-0.5 font-bold w-fit">
-                      {previewFormat.toUpperCase()}
-                    </Badge>
+                    <Badge className="bg-emerald-600 text-white text-sm px-3 py-1 font-semibold w-fit">Compressed</Badge>
+                    <Badge className="bg-emerald-600 text-white text-xs px-2 py-0.5 font-bold w-fit">{previewFormat.toUpperCase()}</Badge>
                   </div>
                 </div>
-              </div>
+              </>
             ) : (
-              <div className="relative w-full h-full bg-slate-100 dark:bg-slate-900 flex flex-col items-center justify-center">
-                <div className="flex-1 relative w-full flex items-center justify-center p-4">
-                  {mediaType === 'video' && (
-                    <video controls src={compressedImage} className="max-w-full max-h-full object-contain" />
-                  )}
-                  {mediaType === 'audio' && (
-                    <audio controls src={compressedImage} className="max-w-full max-h-full" />
-                  )}
+              <>
+                <div className="flex-1 relative w-full flex items-center justify-center p-4 bg-slate-100 dark:bg-slate-900">
+                  {mediaType === 'video' && <video controls src={compressedImage} className="max-w-full max-h-full object-contain" />}
+                  {mediaType === 'audio' && <audio controls src={compressedImage} className="max-w-full max-h-full" />}
                 </div>
                 <div className="h-16 w-full flex items-center justify-between px-6 bg-slate-100/80 dark:bg-slate-900/80 backdrop-blur-sm border-t border-slate-200 dark:border-slate-800">
                   <div className="flex flex-col gap-1">
-                    <Badge className="bg-slate-700 dark:bg-slate-800 text-white text-sm px-3 py-1 font-semibold w-fit">
-                      Original
-                    </Badge>
-                    <Badge className="bg-slate-700 dark:bg-slate-800 text-white text-xs px-2 py-0.5 font-bold w-fit">
-                      {originalExt}
-                    </Badge>
+                    <Badge className="bg-slate-700 dark:bg-slate-800 text-white text-sm px-3 py-1 font-semibold w-fit">Original</Badge>
+                    <Badge className="bg-slate-700 dark:bg-slate-800 text-white text-xs px-2 py-0.5 font-bold w-fit">{originalExt}</Badge>
                   </div>
-
                   <div className="flex flex-col gap-1 items-end">
-                    <Badge className="bg-emerald-600 text-white text-sm px-3 py-1 font-semibold w-fit">
-                      Compressed
-                    </Badge>
-                    <Badge className="bg-emerald-600 text-white text-xs px-2 py-0.5 font-bold w-fit">
-                      {previewFormat.toUpperCase()}
-                    </Badge>
+                    <Badge className="bg-emerald-600 text-white text-sm px-3 py-1 font-semibold w-fit">Compressed</Badge>
+                    <Badge className="bg-emerald-600 text-white text-xs px-2 py-0.5 font-bold w-fit">{previewFormat.toUpperCase()}</Badge>
                   </div>
                 </div>
-              </div>
+              </>
             )}
           </div>
 
