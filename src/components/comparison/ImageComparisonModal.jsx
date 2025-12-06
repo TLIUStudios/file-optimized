@@ -964,6 +964,7 @@ export default function ImageComparisonModal({
               </div>
             ) : mediaType === 'image' ? (
               // Original image comparison view
+              <>
               <div
                 ref={containerRef}
                 className="flex-1 relative w-full bg-slate-100 dark:bg-slate-900 select-none flex items-center justify-center overflow-hidden"
@@ -1054,6 +1055,7 @@ export default function ImageComparisonModal({
                     </Badge>
                   </div>
                 </div>
+              </>
             ) : (
               // Video or Audio player
               <div className="relative w-full h-full bg-slate-100 dark:bg-slate-900 flex flex-col items-center justify-center">
