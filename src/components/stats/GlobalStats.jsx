@@ -1,7 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
 import { Globe } from "lucide-react";
-import { motion } from "framer-motion";
 
 const formatBytes = (bytes) => {
   if (bytes === 0) return '0 B';
@@ -35,11 +34,7 @@ export default function GlobalStats() {
   if (isLoading || totalSaved === 0) {
     if (isLoading) {
       return (
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="relative bg-gradient-to-r from-emerald-500 to-teal-600 rounded-lg p-3 text-white shadow-lg max-w-md mx-auto"
-        >
+        <div className="relative bg-gradient-to-r from-emerald-500 to-teal-600 rounded-lg p-3 text-white shadow-lg max-w-md mx-auto">
           <div className="flex items-center justify-between gap-3">
             <div className="flex items-center gap-2">
               <div className="w-8 h-8 bg-white/20 backdrop-blur-sm rounded-lg flex items-center justify-center flex-shrink-0">
@@ -62,18 +57,14 @@ export default function GlobalStats() {
               </div>
             </div>
           </div>
-        </motion.div>
+        </div>
       );
     }
     return null;
   }
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      className="relative bg-gradient-to-r from-emerald-500 to-teal-600 rounded-lg p-3 text-white shadow-lg max-w-md mx-auto"
-    >
+    <div className="relative bg-gradient-to-r from-emerald-500 to-teal-600 rounded-lg p-3 text-white shadow-lg max-w-md mx-auto">
       <div className="flex items-center justify-between gap-3">
         <div className="flex items-center gap-2">
           <div className="w-8 h-8 bg-white/20 backdrop-blur-sm rounded-lg flex items-center justify-center flex-shrink-0">
@@ -96,6 +87,6 @@ export default function GlobalStats() {
           </div>
         </div>
       </div>
-    </motion.div>
+    </div>
   );
 }
