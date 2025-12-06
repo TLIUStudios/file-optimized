@@ -1013,7 +1013,7 @@ export default function ImageComparisonModal({
               </div>
             ) : mediaType === 'image' ? (
               <div className="relative w-full h-full bg-slate-100 dark:bg-slate-900 flex flex-col">
-                <div className="flex-1 relative flex items-center justify-center overflow-hidden select-none">
+                <div className="flex-1 relative flex items-start justify-start overflow-hidden select-none p-4">
                   <div
                     className="relative"
                     style={{
