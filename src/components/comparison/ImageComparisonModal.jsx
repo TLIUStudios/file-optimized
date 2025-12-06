@@ -572,71 +572,22 @@ export default function ImageComparisonModal({
   // Use cached blobs for format conversion
   const convertToFormat = async (format) => {
     if (format === selectedFormat && previewFormat === format) {
-      return; // Already on this format
+      return;
     }
     
-    setIsConverting(true);
-    setSelectedFormat(format);
+    // If formats not generated yet, trigger generation first
+    if (!formatsGenerated && mediaType === 'image' && !isAnimationVariations) {
+      await generateAllFormats();
+    }
     
-    try {
-      if (mediaType === 'image' && !isAnimationVariations) {
-        // If formats not generated yet, generate them first
-        if (!formatsGenerated) {
-          toast.info('Generating formats...');
-          await generateAllFormats();
-          // After generation, the blob should be available
-          const cachedBlob = cachedFormatBlobs[format];
-          if (cachedBlob) {
-            setConvertedBlob(cachedBlob);
-            setPreviewSize(cachedBlob.size);
-            setPreviewFormat(format);
-            
-            const sizeDiff = cachedBlob.size - originalSize;
-            const percentChange = ((sizeDiff / originalSize) * 100).toFixed(1);
-            
-            if (cachedBlob.size > originalSize) {
-              toast.info(`${format.toUpperCase()}: ${formatFileSize(cachedBlob.size)} (+${percentChange}% larger)`);
-            } else {
-              toast.success(`${format.toUpperCase()}: ${formatFileSize(cachedBlob.size)} (${Math.abs(percentChange)}% smaller)`);
-            }
-          }
-          setIsConverting(false);
-          return;
-        }
-        
-        // Use cached blob if available
-        const cachedBlob = cachedFormatBlobs[format];
-        
-        if (cachedBlob) {
-          setConvertedBlob(cachedBlob);
-          setPreviewSize(cachedBlob.size);
-          setPreviewFormat(format);
-          
-          const sizeDiff = cachedBlob.size - originalSize;
-          const percentChange = ((sizeDiff / originalSize) * 100).toFixed(1);
-          
-          if (cachedBlob.size > originalSize) {
-            toast.info(`${format.toUpperCase()}: ${formatFileSize(cachedBlob.size)} (+${percentChange}% larger)`);
-          } else {
-            toast.success(`${format.toUpperCase()}: ${formatFileSize(cachedBlob.size)} (${Math.abs(percentChange)}% smaller)`);
-          }
-          
-          setIsConverting(false);
-          return;
-        }
-        
-        // If still not cached after generation attempt, show error
-        toast.error('Failed to generate format');
-        setSelectedFormat(previewFormat);
-      } else {
-        setPreviewFormat(format);
-      }
-    } catch (error) {
-      console.error('❌ Conversion error:', error);
-      toast.error(`${error.message || 'Failed to convert to ' + format.toUpperCase()}`);
-      setSelectedFormat(previewFormat);
-    } finally {
-      setIsConverting(false);
+    setSelectedFormat(format);
+    setPreviewFormat(format);
+    
+    // Use the cached blob to update preview size
+    const blob = cachedFormatBlobs[format];
+    if (blob) {
+      setConvertedBlob(blob);
+      setPreviewSize(blob.size);
     }
   };
 
@@ -705,9 +656,16 @@ export default function ImageComparisonModal({
       return;
     }
 
-    // If we have a converted blob, download that directly
-    if (convertedBlob) {
-      const url = URL.createObjectURL(convertedBlob);
+    // If formats not generated, generate them first
+    if (mediaType === 'image' && !formatsGenerated) {
+      toast.info('Generating formats first...');
+      await generateAllFormats();
+    }
+
+    // Use cached blob for download
+    const blob = cachedFormatBlobs[selectedFormat];
+    if (blob) {
+      const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
       const baseName = fileName.split('.')[0];
@@ -716,8 +674,7 @@ export default function ImageComparisonModal({
       URL.revokeObjectURL(url);
       toast.success(`Downloaded as ${selectedFormat.toUpperCase()}!`);
     } else {
-      // Otherwise use the original compressed image
-      performSingleMediaDownload(compressedImage, selectedFormat, mediaType);
+      toast.error('Format not available');
     }
   };
 
@@ -1155,8 +1112,8 @@ export default function ImageComparisonModal({
           </div>
 
           {/* Right Panel */}
-          <div className="w-[360px] xl:w-[400px] bg-white dark:bg-slate-900 border-l border-slate-200 dark:border-slate-800 overflow-y-auto flex-shrink-0">
-            <div className="p-5 space-y-4">
+          <div className="w-[360px] xl:w-[400px] bg-white dark:bg-slate-900 border-l border-slate-200 dark:border-slate-800 overflow-y-scroll flex-shrink-0">
+            <div className="p-5 space-y-4 pb-8">
               <div>
                 <h2 className="text-slate-900 dark:text-white text-sm font-bold mb-1 break-words line-clamp-2">
                   {fileName}
