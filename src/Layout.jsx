@@ -349,7 +349,7 @@ export default function Layout({ children }) {
         </Suspense>
         
           {/* Show Google Ads only for Free users */}
-          {!authLoading && (!isAuthenticated || userPlan === 'free') && (
+          {(!isAuthenticated || userPlan === 'free') && (
             <div className="mt-12">
               <GoogleAds adSlot="1234567890" />
             </div>
