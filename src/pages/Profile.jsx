@@ -255,7 +255,7 @@ export default function Profile() {
   }
 
   const isPro = user.plan === 'pro';
-  const planExpires = user.plan_expires ? new Date(user.plan_expires) : null;
+  const planExpires = user.plan_expires_at ? new Date(user.plan_expires_at) : null;
   const isExpired = planExpires && planExpires < new Date();
   const daysRemaining = planExpires ? Math.ceil((planExpires - new Date()) / (1000 * 60 * 60 * 24)) : null;
 

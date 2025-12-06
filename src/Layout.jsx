@@ -82,6 +82,24 @@ export default function Layout({ children }) {
         
         if (isAuth) {
           const currentUser = await base44.auth.me();
+          
+          // Auto-downgrade if Pro plan has expired
+          if (currentUser?.plan === 'pro' && currentUser?.plan_expires_at) {
+            const expiryDate = new Date(currentUser.plan_expires_at);
+            const now = new Date();
+            
+            if (expiryDate < now) {
+              // Expired - update to free
+              try {
+                await base44.auth.updateMe({ plan: 'free', plan_expires_at: null });
+                currentUser.plan = 'free';
+                currentUser.plan_expires_at = null;
+              } catch (e) {
+                console.error('Failed to auto-downgrade:', e);
+              }
+            }
+          }
+          
           setUser(currentUser);
           setUserPlan(currentUser?.plan || 'free');
           setUserTheme(currentUser?.theme || 'none');

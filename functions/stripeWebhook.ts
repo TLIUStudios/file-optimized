@@ -55,9 +55,9 @@ Deno.serve(async (req) => {
         // Update user to Pro with service role
         await base44.asServiceRole.entities.User.update(userId, {
           plan: 'pro',
-          plan_expires: periodEnd.toISOString(),
+          plan_expires_at: periodEnd.toISOString(),
           stripe_customer_id: session.customer,
-          stripe_subscription_id: session.subscription,
+          subscription_id: session.subscription,
         });
 
         console.log(`✅ User ${userId} upgraded to Pro (expires: ${periodEnd.toISOString()})`);
@@ -83,7 +83,7 @@ Deno.serve(async (req) => {
 
         // Update subscription period
         await base44.asServiceRole.entities.User.update(user.id, {
-          plan_expires: periodEnd.toISOString(),
+          plan_expires_at: periodEnd.toISOString(),
         });
 
         console.log(`✅ Subscription updated for user ${user.id} (expires: ${periodEnd.toISOString()})`);
@@ -109,7 +109,7 @@ Deno.serve(async (req) => {
         // Downgrade to free
         await base44.asServiceRole.entities.User.update(user.id, {
           plan: 'free',
-          plan_expires: null,
+          plan_expires_at: null,
         });
 
         console.log(`✅ User ${user.id} downgraded to Free (subscription canceled)`);
