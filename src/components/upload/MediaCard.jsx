@@ -1456,6 +1456,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
     // Standard compression for other formats
     const mimeType = format === 'jpg' ? 'image/jpeg' : `image/${format}`;
     let baseQuality = quality / 100;
+    const outputFilenameForStat = `${image.name.split('.').slice(0, -1).join('.')}.${format}`;
     
     // AVIF needs more aggressive quality reduction for better compression
     if (format === 'avif') {
@@ -1532,6 +1533,20 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
       fileFormat: format,
       originalFileFormat: originalFormat
     });
+
+    // Save compression stat (no await - fire and forget)
+    try {
+      const savedBytes = image.size - blob.size;
+      base44.entities.CompressionStat.create({
+        original_size: image.size,
+        compressed_size: blob.size,
+        saved_bytes: savedBytes > 0 ? savedBytes : 0,
+        file_type: 'image',
+        format: format
+      }).catch(() => {}); // Silently fail if not authenticated
+    } catch (e) {
+      // Ignore stat save errors
+    }
   };
 
   const processImageToAnimation = async () => {

@@ -301,6 +301,15 @@ export default function Profile() {
             </Card>
           </motion.div>
 
+          {/* Compression Stats */}
+          <motion.div
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.15 }}
+          >
+            <CompressionStats userId={user?.id} />
+          </motion.div>
+
           {/* Plan Comparison Card */}
           <motion.div
             initial={{ opacity: 0, x: -20 }}
