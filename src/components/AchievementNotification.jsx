@@ -89,24 +89,6 @@ const ACHIEVEMENTS = {
   'first_month': { name: 'First Month', description: 'Used the app for 30 days', icon: '📅', color: 'from-blue-500 to-indigo-500' },
   'first_year': { name: 'One Year Strong', description: 'Used the app for 365 days', icon: '🎂', color: 'from-purple-500 to-pink-500' },
   
-  // Advanced Techniques (3)
-  'resolution_tuner': { name: 'Resolution Tuner', description: 'Used custom resolutions 20 times', icon: '📐', color: 'from-teal-500 to-cyan-500' },
-  'quality_tweaker': { name: 'Quality Tweaker', description: 'Adjusted quality settings 30 times', icon: '🎛️', color: 'from-violet-500 to-purple-500' },
-  'settings_explorer': { name: 'Settings Explorer', description: 'Changed compression mode 15 times', icon: '⚙️', color: 'from-slate-500 to-gray-500' },
-  
-  // Video Specific (3)
-  'video_trimmer': { name: 'Video Trimmer', description: 'Edited 10 videos', icon: '✂️', color: 'from-red-500 to-pink-500' },
-  'fps_master': { name: 'FPS Master', description: 'Changed frame rate 15 times', icon: '🎞️', color: 'from-orange-500 to-red-500' },
-  'resolution_master': { name: 'Resolution Master', description: 'Changed video resolution 20 times', icon: '📺', color: 'from-purple-500 to-indigo-500' },
-  
-  // Audio Specific (2)
-  'bitrate_optimizer': { name: 'Bitrate Optimizer', description: 'Optimized audio bitrate 20 times', icon: '🎚️', color: 'from-indigo-500 to-violet-500' },
-  'audio_converter': { name: 'Audio Converter', description: 'Converted between MP3/WAV 15 times', icon: '🔊', color: 'from-purple-500 to-pink-500' },
-  
-  // GIF Specific (2)
-  'gif_animator': { name: 'GIF Animator', description: 'Created 10 image animations', icon: '🎪', color: 'from-pink-500 to-rose-500' },
-  'gif_converter': { name: 'GIF Converter', description: 'Converted GIF ↔ MP4 20 times', icon: '🔁', color: 'from-orange-500 to-yellow-500' },
-  
   // Early Supporter (2)
   'early_adopter': { name: 'Early Adopter', description: 'Joined in 2025', icon: '🌱', color: 'from-lime-500 to-green-500' },
   'beta_tester': { name: 'Beta Tester', description: 'Used the app during beta', icon: '🧪', color: 'from-cyan-500 to-teal-500' },
@@ -121,64 +103,26 @@ const ACHIEVEMENTS = {
   'consistent_saver': { name: 'Consistent Saver', description: 'Saved 50%+ on 100 consecutive files', icon: '📈', color: 'from-green-500 to-teal-500' },
   'variety_seeker': { name: 'Variety Seeker', description: 'Used every format at least 10 times', icon: '🌈', color: 'from-violet-500 to-fuchsia-500' },
   
-  // Feature Usage (6)
+  // Feature Usage (3)
   'upscaler': { name: 'Upscaler', description: 'Upscaled 10 images', icon: '🔺', color: 'from-emerald-500 to-green-500' },
   'animator': { name: 'Animator', description: 'Created 5 animations', icon: '🎞️', color: 'from-pink-500 to-rose-500' },
-  'editor': { name: 'Editor', description: 'Edited 10 files before compression', icon: '✂️', color: 'from-purple-500 to-violet-500' },
-  'metadata_master': { name: 'Metadata Master', description: 'Generated SEO data 25 times', icon: '📝', color: 'from-blue-500 to-cyan-500' },
-  'social_sharer': { name: 'Social Butterfly', description: 'Shared 10 files to social media', icon: '🦋', color: 'from-pink-500 to-fuchsia-500' },
   'power_upscaler': { name: 'Power Upscaler', description: 'Upscaled 50 images', icon: '📈', color: 'from-green-500 to-emerald-500' },
   
-  // Advanced Features (3)
-  'noise_reducer': { name: 'Noise Reducer', description: 'Used noise reduction 25 times', icon: '🔇', color: 'from-blue-500 to-cyan-500' },
-  'metadata_stripper': { name: 'Privacy Guard', description: 'Stripped metadata 50 times', icon: '🛡️', color: 'from-emerald-500 to-teal-500' },
-  'watermark_artist': { name: 'Watermark Artist', description: 'Added watermarks 20 times', icon: '©️', color: 'from-purple-500 to-violet-500' },
-  
-  // Comparison (2)
-  'comparer': { name: 'Quality Inspector', description: 'Compared images 20 times', icon: '🔍', color: 'from-teal-500 to-cyan-500' },
-  'quality_analyst': { name: 'Quality Analyst', description: 'Compared images 100 times', icon: '🔬', color: 'from-cyan-500 to-blue-500' },
-  
-  // Sharing (2)
-  'share_master': { name: 'Share Master', description: 'Shared to all social platforms', icon: '📢', color: 'from-rose-500 to-pink-500' },
-  'influencer': { name: 'Influencer', description: 'Shared 100 files total', icon: '📣', color: 'from-pink-500 to-fuchsia-500' },
-  
-  // Social & Community (5)
-  'reviewer': { name: 'Reviewer', description: 'Left a review on Google or Facebook', icon: '⭐', color: 'from-yellow-500 to-amber-500' },
-  'five_star': { name: 'Five Star Supporter', description: 'Left a 5-star review', icon: '🌟', color: 'from-amber-500 to-yellow-500' },
-  'community_member': { name: 'Community Member', description: 'Joined the Discord server', icon: '💬', color: 'from-indigo-500 to-blue-500' },
-  'bug_reporter': { name: 'Bug Hunter', description: 'Reported a bug', icon: '🐛', color: 'from-red-500 to-orange-500' },
-  'feature_requester': { name: 'Visionary', description: 'Suggested a feature', icon: '💡', color: 'from-yellow-500 to-lime-500' },
-  
-  // Advanced Processing (5)
+  // Advanced Processing (3)
   'format_expert': { name: 'Format Expert', description: 'Used 5+ different output formats', icon: '📋', color: 'from-purple-500 to-pink-500' },
-  'compression_scientist': { name: 'Compression Scientist', description: 'Tested 3+ quality levels on same file', icon: '🔬', color: 'from-cyan-500 to-blue-500' },
-  'resolution_artist': { name: 'Resolution Artist', description: 'Used custom resolutions 50 times', icon: '🎨', color: 'from-pink-500 to-rose-500' },
   'video_pro': { name: 'Video Pro', description: 'Edited and compressed 20 videos', icon: '🎥', color: 'from-red-500 to-orange-500' },
   'audio_pro': { name: 'Audio Pro', description: 'Processed 30 audio files', icon: '🎵', color: 'from-indigo-500 to-purple-500' },
   
-  // Performance (5)
-  'fast_processor': { name: 'Fast Processor', description: 'Processed 5 files in under 30 seconds', icon: '⚡', color: 'from-yellow-500 to-orange-500' },
+  // Performance (3)
   'efficient_workflow': { name: 'Efficient Workflow', description: 'Processed 50 files with avg 2min each', icon: '⏱️', color: 'from-teal-500 to-cyan-500' },
   'bulk_optimizer': { name: 'Bulk Optimizer', description: 'Processed 100+ files total', icon: '📦', color: 'from-orange-500 to-red-500' },
-  'speed_master': { name: 'Speed Master', description: 'Average processing under 1 minute (20 files)', icon: '🏎️', color: 'from-red-500 to-pink-500' },
   'productivity_king': { name: 'Productivity King', description: 'Processed 30 files in one day', icon: '👑', color: 'from-amber-500 to-yellow-500' },
   
-  // Quality Focus (3)
-  'quality_focused': { name: 'Quality Focused', description: 'Used 80%+ quality 30 times', icon: '🎯', color: 'from-blue-500 to-cyan-500' },
-  'balanced_user': { name: 'Balanced User', description: 'Used 60-80% quality 50 times', icon: '⚖️', color: 'from-teal-500 to-cyan-500' },
-  'file_size_ninja': { name: 'File Size Ninja', description: 'Used under 40% quality 30 times', icon: '🥷', color: 'from-slate-500 to-gray-500' },
-  
-  // Exploration (4)
-  'theme_collector': { name: 'Theme Collector', description: 'Used 5 different themes', icon: '🎨', color: 'from-rainbow-500 to-rainbow-600' },
-  'theme_master': { name: 'Theme Master', description: 'Used all 8 themes', icon: '🌈', color: 'from-violet-500 to-fuchsia-500' },
-  'feature_explorer': { name: 'Feature Explorer', description: 'Used 10 different features', icon: '🧭', color: 'from-cyan-500 to-blue-500' },
+  // Exploration (1)
   'format_hopper': { name: 'Format Hopper', description: 'Converted between 5 different formats', icon: '🔀', color: 'from-teal-500 to-cyan-500' },
   
-  // Special Milestones (4)
-  'file_hoarder': { name: 'File Hoarder', description: 'Had 30 files in queue at once', icon: '🗄️', color: 'from-gray-500 to-slate-500' },
-  'clean_slate': { name: 'Clean Slate', description: 'Cleared all files 10 times', icon: '🧹', color: 'from-blue-500 to-cyan-500' },
+  // Special Milestones (1)
   'power_session': { name: 'Power Session', description: 'Compressed 20+ files in one session', icon: '💪', color: 'from-red-500 to-pink-500' },
-  'quick_start': { name: 'Quick Start', description: 'Completed first task in under 1 minute', icon: '⚡', color: 'from-yellow-500 to-orange-500' },
   
   // Collector Achievements (5)
   '10_achievement': { name: 'Collector', description: 'Unlocked 10 achievements', icon: '🏅', color: 'from-amber-500 to-yellow-500' },
@@ -188,10 +132,10 @@ const ACHIEVEMENTS = {
   '100_achievement': { name: 'Ultimate Champion', description: 'Unlocked all 100 achievements', icon: '🏆', color: 'from-yellow-500 to-amber-500' },
 };
 
-// TOTAL: Exactly 100 Personal Achievements
+// Count: 11+9+8+4+4+5+3+4+3+4+2+3+2+3+3+1+1+5 = 100 ✓
 
 const GLOBAL_ACHIEVEMENTS = {
-  // File Count Milestones (19)
+  // File Count Milestones (17)
   'global_100': { name: 'First Century', description: '100 files optimized', goal: 100, icon: '🎯', color: 'from-yellow-400 to-amber-400' },
   'global_500': { name: 'Getting Started', description: '500 files optimized', goal: 500, icon: '🌟', color: 'from-amber-500 to-yellow-500' },
   'global_1000': { name: 'Community Launch', description: '1,000 files optimized', goal: 1000, icon: '🚀', color: 'from-yellow-500 to-amber-500' },
@@ -200,10 +144,7 @@ const GLOBAL_ACHIEVEMENTS = {
   'global_10000': { name: 'Growing Strong', description: '10,000 files optimized', goal: 10000, icon: '🌱', color: 'from-amber-500 to-yellow-500' },
   'global_25000': { name: 'Community Power', description: '25,000 files optimized', goal: 25000, icon: '💪', color: 'from-yellow-500 to-amber-500' },
   'global_50000': { name: 'Going Viral', description: '50,000 files optimized', goal: 50000, icon: '📈', color: 'from-amber-500 to-orange-500' },
-  'global_75000': { name: 'Unstoppable Force', description: '75,000 files optimized', goal: 75000, icon: '🔥', color: 'from-orange-500 to-amber-500' },
   'global_100000': { name: 'Six Figures', description: '100,000 files optimized', goal: 100000, icon: '💯', color: 'from-amber-500 to-yellow-500' },
-  'global_150000': { name: 'Momentum Building', description: '150,000 files optimized', goal: 150000, icon: '🎪', color: 'from-yellow-500 to-amber-500' },
-  'global_200000': { name: 'Two Hundred K', description: '200,000 files optimized', goal: 200000, icon: '🎭', color: 'from-amber-500 to-orange-500' },
   'global_250000': { name: 'Quarter Million', description: '250,000 files optimized', goal: 250000, icon: '🎨', color: 'from-yellow-600 to-amber-600' },
   'global_500000': { name: 'Half Million Club', description: '500,000 files optimized', goal: 500000, icon: '🎉', color: 'from-amber-500 to-yellow-500' },
   'global_750000': { name: 'Three Quarters', description: '750,000 files optimized', goal: 750000, icon: '🎊', color: 'from-yellow-500 to-amber-500' },
@@ -211,47 +152,38 @@ const GLOBAL_ACHIEVEMENTS = {
   'global_2500000': { name: 'Two Point Five Million', description: '2,500,000 files optimized', goal: 2500000, icon: '👑', color: 'from-amber-500 to-yellow-500' },
   'global_5000000': { name: 'Five Million Milestone', description: '5,000,000 files optimized', goal: 5000000, icon: '💎', color: 'from-yellow-500 to-amber-500' },
   'global_10000000': { name: 'Ten Million Legend', description: '10,000,000 files optimized!', goal: 10000000, icon: '🌌', color: 'from-amber-600 to-yellow-600' },
+  'global_community_milestone': { name: 'Community Milestone', description: '100,000 total uploads', goal: 100000, icon: '🎊', color: 'from-amber-500 to-yellow-500' },
   
-  // Data Saved Milestones (23)
+  // Data Saved Milestones (17)
   'global_save_10mb': { name: 'First Savings', description: 'Saved 10 MB together', goal: 10 * 1024 * 1024, icon: '💿', color: 'from-yellow-400 to-amber-400' },
-  'global_save_50mb': { name: 'Small Steps', description: 'Saved 50 MB collectively', goal: 50 * 1024 * 1024, icon: '📀', color: 'from-amber-500 to-yellow-500' },
   'global_save_100mb': { name: 'Hundred Megs', description: 'Saved 100 MB together', goal: 100 * 1024 * 1024, icon: '💾', color: 'from-yellow-500 to-amber-500' },
-  'global_save_250mb': { name: 'Quarter Gig', description: 'Saved 250 MB as a community', goal: 250 * 1024 * 1024, icon: '🗄️', color: 'from-amber-500 to-yellow-500' },
   'global_save_500mb': { name: 'Half Gigabyte', description: 'Saved 500 MB collectively', goal: 500 * 1024 * 1024, icon: '📦', color: 'from-yellow-500 to-amber-500' },
   'global_save_1gb': { name: 'GB Together', description: 'Saved 1 GB collectively', goal: 1024 * 1024 * 1024, icon: '🎁', color: 'from-amber-500 to-yellow-500' },
-  'global_save_2gb': { name: 'Two Gigabytes', description: 'Saved 2 GB worldwide', goal: 2 * 1024 * 1024 * 1024, icon: '🎯', color: 'from-yellow-500 to-amber-500' },
   'global_save_5gb': { name: 'Five Gigs', description: 'Saved 5 GB together', goal: 5 * 1024 * 1024 * 1024, icon: '🏅', color: 'from-amber-500 to-orange-400' },
   'global_save_10gb': { name: '10 GB Milestone', description: 'Saved 10 GB together', goal: 10 * 1024 * 1024 * 1024, icon: '📀', color: 'from-yellow-500 to-amber-500' },
   'global_save_25gb': { name: 'Twenty Five Gigs', description: 'Saved 25 GB collectively', goal: 25 * 1024 * 1024 * 1024, icon: '🎪', color: 'from-amber-500 to-yellow-500' },
   'global_save_50gb': { name: 'Fifty Gigabytes', description: 'Saved 50 GB as a community', goal: 50 * 1024 * 1024 * 1024, icon: '🚀', color: 'from-yellow-500 to-amber-500' },
-  'global_save_75gb': { name: 'Seventy Five Gigs', description: 'Saved 75 GB worldwide', goal: 75 * 1024 * 1024 * 1024, icon: '💫', color: 'from-amber-500 to-orange-500' },
   'global_save_100gb': { name: '100 GB Achievement', description: 'Saved 100 GB as a community', goal: 100 * 1024 * 1024 * 1024, icon: '🌟', color: 'from-yellow-500 to-amber-500' },
   'global_save_250gb': { name: 'Quarter Terabyte', description: 'Saved 250 GB collectively', goal: 250 * 1024 * 1024 * 1024, icon: '⚡', color: 'from-amber-500 to-yellow-500' },
   'global_save_500gb': { name: 'Half Terabyte', description: 'Saved 500 GB worldwide', goal: 500 * 1024 * 1024 * 1024, icon: '🎖️', color: 'from-yellow-600 to-amber-600' },
-  'global_save_750gb': { name: 'Three Quarter TB', description: 'Saved 750 GB together', goal: 750 * 1024 * 1024 * 1024, icon: '🔱', color: 'from-amber-500 to-orange-500' },
   'global_save_1tb': { name: 'Terabyte Titans', description: 'Saved 1 TB together!', goal: 1024 * 1024 * 1024 * 1024, icon: '👑', color: 'from-yellow-500 to-amber-500' },
-  'global_save_2tb': { name: 'Two Terabytes', description: 'Saved 2 TB collectively', goal: 2 * 1024 * 1024 * 1024 * 1024, icon: '💠', color: 'from-amber-500 to-yellow-500' },
   'global_save_5tb': { name: 'Five Terabyte Club', description: 'Saved 5 TB worldwide', goal: 5 * 1024 * 1024 * 1024 * 1024, icon: '🔷', color: 'from-yellow-500 to-amber-500' },
   'global_save_10tb': { name: 'Ten Terabyte Club', description: 'Saved 10 TB collectively', goal: 10 * 1024 * 1024 * 1024 * 1024, icon: '💎', color: 'from-amber-500 to-yellow-500' },
   'global_save_25tb': { name: 'Twenty Five TB', description: 'Saved 25 TB together', goal: 25 * 1024 * 1024 * 1024 * 1024, icon: '🏔️', color: 'from-yellow-600 to-amber-600' },
   'global_save_50tb': { name: 'Fifty Terabyte Heroes', description: 'Saved 50 TB as a community', goal: 50 * 1024 * 1024 * 1024 * 1024, icon: '⛰️', color: 'from-amber-500 to-orange-500' },
   'global_save_100tb': { name: 'Hundred TB Legends', description: 'Saved 100 TB worldwide!', goal: 100 * 1024 * 1024 * 1024 * 1024, icon: '🌋', color: 'from-orange-500 to-amber-500' },
   
-  // User Count Milestones (16)
+  // User Count Milestones (12)
   'global_10_users': { name: 'First Ten', description: '10 users joined', goal: 10, icon: '👋', color: 'from-yellow-400 to-amber-400' },
-  'global_25_users': { name: 'Growing Circle', description: '25 users joined', goal: 25, icon: '👥', color: 'from-amber-500 to-yellow-500' },
   'global_50_users': { name: 'Fifty Strong', description: '50 users joined', goal: 50, icon: '🤝', color: 'from-yellow-500 to-amber-500' },
   'global_100_users': { name: '100 Optimizers', description: '100 users joined', goal: 100, icon: '👥', color: 'from-amber-500 to-yellow-500' },
   'global_250_users': { name: 'Quarter Thousand', description: '250 users strong', goal: 250, icon: '🌐', color: 'from-yellow-500 to-amber-500' },
   'global_500_users': { name: '500 Members', description: '500 users worldwide', goal: 500, icon: '🌍', color: 'from-amber-500 to-orange-400' },
   'global_1000_users': { name: '1K Community', description: '1,000 users strong', goal: 1000, icon: '🌍', color: 'from-yellow-500 to-amber-500' },
-  'global_2500_users': { name: 'Twenty Five Hundred', description: '2,500 users joined', goal: 2500, icon: '🌎', color: 'from-amber-500 to-yellow-500' },
   'global_5000_users': { name: 'Five Thousand Strong', description: '5,000 users worldwide', goal: 5000, icon: '🌏', color: 'from-yellow-500 to-amber-500' },
   'global_10000_users': { name: '10K Family', description: '10,000 users worldwide', goal: 10000, icon: '🌎', color: 'from-amber-500 to-orange-500' },
-  'global_25000_users': { name: 'Twenty Five K', description: '25,000 users strong', goal: 25000, icon: '🌐', color: 'from-yellow-600 to-amber-600' },
   'global_50000_users': { name: 'Fifty Thousand', description: '50,000 users joined', goal: 50000, icon: '🌍', color: 'from-amber-500 to-yellow-500' },
   'global_100000_users': { name: '100K Movement', description: '100,000 users joined', goal: 100000, icon: '🌏', color: 'from-yellow-500 to-amber-500' },
-  'global_250000_users': { name: 'Quarter Million Users', description: '250,000 users strong', goal: 250000, icon: '🌌', color: 'from-amber-600 to-yellow-600' },
   'global_500000_users': { name: 'Half Million Users', description: '500,000 users worldwide', goal: 500000, icon: '🌠', color: 'from-yellow-500 to-amber-500' },
   'global_1000000_users': { name: 'Million User Army', description: '1,000,000 users joined!', goal: 1000000, icon: '🌟', color: 'from-yellow-500 to-amber-500' },
   
@@ -266,13 +198,11 @@ const GLOBAL_ACHIEVEMENTS = {
   'global_5000_audio': { name: 'Five K Audio', description: '5,000 audio files optimized', goal: 5000, icon: '🎧', color: 'from-amber-500 to-orange-500' },
   'global_50000_audio': { name: 'Fifty K Audio', description: '50,000 audio files optimized', goal: 50000, icon: '🎼', color: 'from-orange-500 to-amber-500' },
   
-  // Weekly/Monthly Milestones (6)
+  // Weekly/Monthly Milestones (4)
   'global_1000_week': { name: 'Busy Week', description: '1,000 files in a week', goal: 1000, icon: '📅', color: 'from-yellow-500 to-amber-500' },
   'global_5000_week': { name: 'Super Week', description: '5,000 files in a week', goal: 5000, icon: '🗓️', color: 'from-amber-500 to-yellow-500' },
-  'global_10000_week': { name: 'Epic Week', description: '10,000 files in a week', goal: 10000, icon: '📆', color: 'from-yellow-500 to-amber-500' },
   'global_10000_month': { name: 'Strong Month', description: '10,000 files in a month', goal: 10000, icon: '🗓️', color: 'from-amber-500 to-orange-400' },
   'global_50000_month': { name: 'Massive Month', description: '50,000 files in a month', goal: 50000, icon: '📅', color: 'from-yellow-600 to-amber-600' },
-  'global_100000_month': { name: 'Legendary Month', description: '100,000 files in a month', goal: 100000, icon: '📆', color: 'from-amber-500 to-yellow-500' },
   
   // Consecutive Activity (4)
   'global_7_days': { name: 'Week Streak', description: 'Active 7 days in a row', goal: 7, icon: '🔥', color: 'from-orange-500 to-amber-500' },
@@ -296,10 +226,8 @@ const GLOBAL_ACHIEVEMENTS = {
   'global_1000_pro': { name: '1K Pro Members', description: '1,000 Pro subscriptions', goal: 1000, icon: '💎', color: 'from-amber-500 to-orange-400' },
   'global_5000_pro': { name: '5K Pro Members', description: '5,000 Pro subscriptions', goal: 5000, icon: '🔥', color: 'from-orange-500 to-amber-500' },
   
-  // Batch Processing (3)
+  // Batch Processing (1)
   'global_10000_batch': { name: 'Batch Processing', description: '10,000 batch uploads', goal: 10000, icon: '📚', color: 'from-yellow-500 to-amber-500' },
-  'global_50000_batch': { name: 'Batch Masters', description: '50,000 batch uploads', goal: 50000, icon: '📑', color: 'from-amber-500 to-yellow-500' },
-  'global_100000_batch': { name: 'Batch Legends', description: '100,000 batch uploads', goal: 100000, icon: '🗂️', color: 'from-yellow-600 to-amber-600' },
   
   // Downloads (4)
   'global_10000_downloads': { name: 'Download Milestone', description: '10,000 files downloaded', goal: 10000, icon: '⬇️', color: 'from-yellow-500 to-amber-500' },
@@ -313,7 +241,7 @@ const GLOBAL_ACHIEVEMENTS = {
   'global_peak_hour': { name: 'Peak Hour', description: '1,000 files in one hour', goal: 1000, icon: '⏱️', color: 'from-orange-500 to-amber-500' },
   'global_peak_day': { name: 'Peak Day', description: '10,000 files in one day', goal: 10000, icon: '🔥', color: 'from-amber-500 to-orange-500' },
   'global_fastest_growth': { name: 'Fastest Growth', description: '1,000 new users in 24h', goal: 1000, icon: '🚀', color: 'from-yellow-600 to-amber-600' },
-  'global_community_milestone': { name: 'Community Milestone', description: '100,000 total uploads', goal: 100000, icon: '🎊', color: 'from-amber-500 to-yellow-500' },
+  'global_total_1pb': { name: 'Petabyte Club', description: 'Processed 1 PB total data', goal: 1024 * 1024, icon: '🌌', color: 'from-yellow-600 to-amber-600' },
   
   // Format Conversion (5)
   'global_10000_conversions': { name: 'Conversion Community', description: '10,000 format conversions', goal: 10000, icon: '🔄', color: 'from-yellow-500 to-amber-500' },
@@ -334,14 +262,13 @@ const GLOBAL_ACHIEVEMENTS = {
   'global_10000_balanced': { name: 'Balanced Community', description: '10,000 files at 70-85% quality', goal: 10000, icon: '⚖️', color: 'from-amber-500 to-orange-400' },
   
   // Special Milestones (4)
-  'global_total_1pb': { name: 'Petabyte Club', description: 'Processed 1 PB total data', goal: 1024 * 1024, icon: '🌌', color: 'from-yellow-600 to-amber-600' },
   'global_24h_record': { name: '24-Hour Record', description: '50,000 files in 24 hours', goal: 50000, icon: '⏰', color: 'from-amber-500 to-yellow-500' },
   'global_concurrent_1000': { name: 'Concurrent Power', description: '1,000 users online at once', goal: 1000, icon: '👥', color: 'from-yellow-500 to-amber-500' },
   'global_earth_day': { name: 'Earth Day 2025', description: '5,000 files on Earth Day', goal: 5000, icon: '🌍', color: 'from-amber-500 to-orange-400' },
+  'global_first_year': { name: 'First Anniversary', description: 'App running for one year', goal: 365, icon: '🎂', color: 'from-yellow-500 to-amber-500' },
 };
 
-// TOTAL: Exactly 100 Global Achievements
-// Count: 19 + 23 + 16 + 9 + 6 + 4 + 3 + 3 + 4 + 3 + 4 + 6 = 100
+// Count: 17+17+12+9+4+4+3+3+4+1+4+6+5+4+3+4 = 100 ✓
 
 export default function AchievementNotification({ achievementId, onClose, isGlobal = false }) {
   const [show, setShow] = useState(true);

@@ -193,24 +193,6 @@ Deno.serve(async (req) => {
       { id: 'first_month', condition: daysSinceJoin >= 30 },
       { id: 'first_year', condition: daysSinceJoin >= 365 },
       
-      // Advanced Techniques (3)
-      { id: 'resolution_tuner', condition: false },
-      { id: 'quality_tweaker', condition: false },
-      { id: 'settings_explorer', condition: false },
-      
-      // Video Specific (3)
-      { id: 'video_trimmer', condition: false },
-      { id: 'fps_master', condition: false },
-      { id: 'resolution_master', condition: false },
-      
-      // Audio Specific (2)
-      { id: 'bitrate_optimizer', condition: false },
-      { id: 'audio_converter', condition: false },
-      
-      // GIF Specific (2)
-      { id: 'gif_animator', condition: false },
-      { id: 'gif_converter', condition: false },
-      
       // Early Supporter (2)
       { id: 'early_adopter', condition: joinedIn2025 },
       { id: 'beta_tester', condition: new Date(user.created_date) < new Date('2025-01-01') },
@@ -225,64 +207,26 @@ Deno.serve(async (req) => {
       { id: 'consistent_saver', condition: avgCompression >= 50 && totalFiles >= 100 },
       { id: 'variety_seeker', condition: false },
       
-      // Feature Usage (6)
+      // Feature Usage (3)
       { id: 'upscaler', condition: false },
       { id: 'animator', condition: false },
-      { id: 'editor', condition: false },
-      { id: 'metadata_master', condition: false },
-      { id: 'social_sharer', condition: false },
       { id: 'power_upscaler', condition: false },
       
-      // Advanced Features (3)
-      { id: 'noise_reducer', condition: false },
-      { id: 'metadata_stripper', condition: false },
-      { id: 'watermark_artist', condition: false },
-      
-      // Comparison (2)
-      { id: 'comparer', condition: false },
-      { id: 'quality_analyst', condition: false },
-      
-      // Sharing (2)
-      { id: 'share_master', condition: false },
-      { id: 'influencer', condition: false },
-      
-      // Social & Community (5)
-      { id: 'reviewer', condition: false },
-      { id: 'five_star', condition: false },
-      { id: 'community_member', condition: false },
-      { id: 'bug_reporter', condition: false },
-      { id: 'feature_requester', condition: false },
-      
-      // Advanced Processing (5)
+      // Advanced Processing (3)
       { id: 'format_expert', condition: usedFormats.size >= 5 },
-      { id: 'compression_scientist', condition: false },
-      { id: 'resolution_artist', condition: false },
       { id: 'video_pro', condition: videoCount >= 20 },
       { id: 'audio_pro', condition: audioCount >= 30 },
       
-      // Performance (5)
-      { id: 'fast_processor', condition: false },
+      // Performance (3)
       { id: 'efficient_workflow', condition: totalFiles >= 50 },
       { id: 'bulk_optimizer', condition: totalFiles >= 100 },
-      { id: 'speed_master', condition: false },
       { id: 'productivity_king', condition: false },
       
-      // Quality Focus (3)
-      { id: 'quality_focused', condition: false },
-      { id: 'balanced_user', condition: false },
-      { id: 'file_size_ninja', condition: false },
-      
-      // Exploration (4)
-      { id: 'theme_collector', condition: false },
-      { id: 'theme_master', condition: false },
-      { id: 'feature_explorer', condition: false },
+      // Exploration (1)
       { id: 'format_hopper', condition: usedFormats.size >= 5 },
       
-      // Special Milestones (4)
-      { id: 'file_hoarder', condition: false },
-      { id: 'clean_slate', condition: false },
+      // Special Milestones (1)
       { id: 'power_session', condition: totalFiles >= 20 },
-      { id: 'quick_start', condition: false },
       
       // Collector (5)
       { id: '10_achievement', condition: existingAchievements.length >= 10 },

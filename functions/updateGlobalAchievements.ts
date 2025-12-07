@@ -34,7 +34,7 @@ Deno.serve(async (req) => {
 
     // Define all global achievements (exactly 100)
     const achievementChecks = [
-      // File count (19)
+      // File count (17)
       { id: 'global_100', metric: totalFiles, goal: 100 },
       { id: 'global_500', metric: totalFiles, goal: 500 },
       { id: 'global_1000', metric: totalFiles, goal: 1000 },
@@ -43,10 +43,7 @@ Deno.serve(async (req) => {
       { id: 'global_10000', metric: totalFiles, goal: 10000 },
       { id: 'global_25000', metric: totalFiles, goal: 25000 },
       { id: 'global_50000', metric: totalFiles, goal: 50000 },
-      { id: 'global_75000', metric: totalFiles, goal: 75000 },
       { id: 'global_100000', metric: totalFiles, goal: 100000 },
-      { id: 'global_150000', metric: totalFiles, goal: 150000 },
-      { id: 'global_200000', metric: totalFiles, goal: 200000 },
       { id: 'global_250000', metric: totalFiles, goal: 250000 },
       { id: 'global_500000', metric: totalFiles, goal: 500000 },
       { id: 'global_750000', metric: totalFiles, goal: 750000 },
@@ -54,47 +51,38 @@ Deno.serve(async (req) => {
       { id: 'global_2500000', metric: totalFiles, goal: 2500000 },
       { id: 'global_5000000', metric: totalFiles, goal: 5000000 },
       { id: 'global_10000000', metric: totalFiles, goal: 10000000 },
+      { id: 'global_community_milestone', metric: totalFiles, goal: 100000 },
       
-      // Data saved (23)
+      // Data saved (17)
       { id: 'global_save_10mb', metric: totalSavings, goal: 10 * 1024 * 1024 },
-      { id: 'global_save_50mb', metric: totalSavings, goal: 50 * 1024 * 1024 },
       { id: 'global_save_100mb', metric: totalSavings, goal: 100 * 1024 * 1024 },
-      { id: 'global_save_250mb', metric: totalSavings, goal: 250 * 1024 * 1024 },
       { id: 'global_save_500mb', metric: totalSavings, goal: 500 * 1024 * 1024 },
       { id: 'global_save_1gb', metric: totalSavings, goal: 1024 * 1024 * 1024 },
-      { id: 'global_save_2gb', metric: totalSavings, goal: 2 * 1024 * 1024 * 1024 },
       { id: 'global_save_5gb', metric: totalSavings, goal: 5 * 1024 * 1024 * 1024 },
       { id: 'global_save_10gb', metric: totalSavings, goal: 10 * 1024 * 1024 * 1024 },
       { id: 'global_save_25gb', metric: totalSavings, goal: 25 * 1024 * 1024 * 1024 },
       { id: 'global_save_50gb', metric: totalSavings, goal: 50 * 1024 * 1024 * 1024 },
-      { id: 'global_save_75gb', metric: totalSavings, goal: 75 * 1024 * 1024 * 1024 },
       { id: 'global_save_100gb', metric: totalSavings, goal: 100 * 1024 * 1024 * 1024 },
       { id: 'global_save_250gb', metric: totalSavings, goal: 250 * 1024 * 1024 * 1024 },
       { id: 'global_save_500gb', metric: totalSavings, goal: 500 * 1024 * 1024 * 1024 },
-      { id: 'global_save_750gb', metric: totalSavings, goal: 750 * 1024 * 1024 * 1024 },
       { id: 'global_save_1tb', metric: totalSavings, goal: 1024 * 1024 * 1024 * 1024 },
-      { id: 'global_save_2tb', metric: totalSavings, goal: 2 * 1024 * 1024 * 1024 * 1024 },
       { id: 'global_save_5tb', metric: totalSavings, goal: 5 * 1024 * 1024 * 1024 * 1024 },
       { id: 'global_save_10tb', metric: totalSavings, goal: 10 * 1024 * 1024 * 1024 * 1024 },
       { id: 'global_save_25tb', metric: totalSavings, goal: 25 * 1024 * 1024 * 1024 * 1024 },
       { id: 'global_save_50tb', metric: totalSavings, goal: 50 * 1024 * 1024 * 1024 * 1024 },
       { id: 'global_save_100tb', metric: totalSavings, goal: 100 * 1024 * 1024 * 1024 * 1024 },
       
-      // User count (16)
+      // User count (12)
       { id: 'global_10_users', metric: uniqueUsers, goal: 10 },
-      { id: 'global_25_users', metric: uniqueUsers, goal: 25 },
       { id: 'global_50_users', metric: uniqueUsers, goal: 50 },
       { id: 'global_100_users', metric: uniqueUsers, goal: 100 },
       { id: 'global_250_users', metric: uniqueUsers, goal: 250 },
       { id: 'global_500_users', metric: uniqueUsers, goal: 500 },
       { id: 'global_1000_users', metric: uniqueUsers, goal: 1000 },
-      { id: 'global_2500_users', metric: uniqueUsers, goal: 2500 },
       { id: 'global_5000_users', metric: uniqueUsers, goal: 5000 },
       { id: 'global_10000_users', metric: uniqueUsers, goal: 10000 },
-      { id: 'global_25000_users', metric: uniqueUsers, goal: 25000 },
       { id: 'global_50000_users', metric: uniqueUsers, goal: 50000 },
       { id: 'global_100000_users', metric: uniqueUsers, goal: 100000 },
-      { id: 'global_250000_users', metric: uniqueUsers, goal: 250000 },
       { id: 'global_500000_users', metric: uniqueUsers, goal: 500000 },
       { id: 'global_1000000_users', metric: uniqueUsers, goal: 1000000 },
       
@@ -109,13 +97,11 @@ Deno.serve(async (req) => {
       { id: 'global_5000_audio', metric: audioCount, goal: 5000 },
       { id: 'global_50000_audio', metric: audioCount, goal: 50000 },
       
-      // Weekly/Monthly (6)
+      // Weekly/Monthly (4)
       { id: 'global_1000_week', metric: 0, goal: 1000 },
       { id: 'global_5000_week', metric: 0, goal: 5000 },
-      { id: 'global_10000_week', metric: 0, goal: 10000 },
       { id: 'global_10000_month', metric: 0, goal: 10000 },
       { id: 'global_50000_month', metric: 0, goal: 50000 },
-      { id: 'global_100000_month', metric: 0, goal: 100000 },
       
       // Consecutive Activity (4)
       { id: 'global_7_days', metric: 0, goal: 7 },
@@ -139,10 +125,8 @@ Deno.serve(async (req) => {
       { id: 'global_1000_pro', metric: 0, goal: 1000 },
       { id: 'global_5000_pro', metric: 0, goal: 5000 },
       
-      // Batch (3)
+      // Batch (1)
       { id: 'global_10000_batch', metric: 0, goal: 10000 },
-      { id: 'global_50000_batch', metric: 0, goal: 50000 },
-      { id: 'global_100000_batch', metric: 0, goal: 100000 },
       
       // Downloads (4)
       { id: 'global_10000_downloads', metric: 0, goal: 10000 },
@@ -156,7 +140,31 @@ Deno.serve(async (req) => {
       { id: 'global_peak_hour', metric: 0, goal: 1000 },
       { id: 'global_peak_day', metric: 0, goal: 10000 },
       { id: 'global_fastest_growth', metric: 0, goal: 1000 },
-      { id: 'global_community_milestone', metric: totalFiles, goal: 100000 },
+      { id: 'global_total_1pb', metric: totalFiles, goal: 1024 * 1024 },
+      
+      // Format Conversion (5)
+      { id: 'global_10000_conversions', metric: 0, goal: 10000 },
+      { id: 'global_5000_gifs', metric: 0, goal: 5000 },
+      { id: 'global_1000_upscales', metric: 0, goal: 1000 },
+      { id: 'global_5000_animations', metric: 0, goal: 5000 },
+      { id: 'global_10000_edits', metric: 0, goal: 10000 },
+      
+      // Social Impact (4)
+      { id: 'global_1000_shares', metric: 0, goal: 1000 },
+      { id: 'global_100_reviews', metric: 0, goal: 100 },
+      { id: 'global_500_discord', metric: 0, goal: 500 },
+      { id: 'global_100_bugs', metric: 0, goal: 100 },
+      
+      // Quality (3)
+      { id: 'global_avg_90_compression', metric: avgSavingsPercent, goal: 90 },
+      { id: 'global_1000_perfect', metric: 0, goal: 1000 },
+      { id: 'global_10000_balanced', metric: 0, goal: 10000 },
+      
+      // Special (4)
+      { id: 'global_24h_record', metric: 0, goal: 50000 },
+      { id: 'global_concurrent_1000', metric: 0, goal: 1000 },
+      { id: 'global_earth_day', metric: 0, goal: 5000 },
+      { id: 'global_first_year', metric: 0, goal: 365 },
     ];
     
     // Get existing global achievements
