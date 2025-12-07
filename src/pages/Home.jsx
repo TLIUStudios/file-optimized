@@ -84,25 +84,40 @@ export default function Home() {
       // Check compression count achievements
       const countAchievements = [
         { id: 'first_compress', threshold: 1 },
+        { id: 'compress_5', threshold: 5 },
         { id: 'compress_10', threshold: 10 },
+        { id: 'compress_25', threshold: 25 },
         { id: 'compress_50', threshold: 50 },
         { id: 'compress_100', threshold: 100 },
+        { id: 'compress_250', threshold: 250 },
         { id: 'compress_500', threshold: 500 },
+        { id: 'compress_1000', threshold: 1000 },
+        { id: 'compress_5000', threshold: 5000 },
+        { id: 'compress_10000', threshold: 10000 },
       ];
 
       for (const { id, threshold } of countAchievements) {
         if (totalFiles >= threshold && !unlockedIds.includes(id)) {
           await base44.entities.Achievement.create({ achievement_id: id, unlocked_at: new Date().toISOString() });
           setUnlockedAchievement(id);
+          
+          // Update global achievements after each file
+          base44.functions.invoke('updateGlobalAchievements').catch(err => console.log('Global update error:', err));
           return; // Show one at a time
         }
       }
 
       // Check space savings achievements
       const savingsAchievements = [
+        { id: 'save_10mb', threshold: 10 * 1024 * 1024 },
+        { id: 'save_50mb', threshold: 50 * 1024 * 1024 },
         { id: 'save_100mb', threshold: 100 * 1024 * 1024 },
+        { id: 'save_500mb', threshold: 500 * 1024 * 1024 },
         { id: 'save_1gb', threshold: 1024 * 1024 * 1024 },
+        { id: 'save_5gb', threshold: 5 * 1024 * 1024 * 1024 },
         { id: 'save_10gb', threshold: 10 * 1024 * 1024 * 1024 },
+        { id: 'save_50gb', threshold: 50 * 1024 * 1024 * 1024 },
+        { id: 'save_100gb', threshold: 100 * 1024 * 1024 * 1024 },
       ];
 
       for (const { id, threshold } of savingsAchievements) {
@@ -115,7 +130,7 @@ export default function Home() {
 
       // Check format explorer achievement
       const usedFormats = new Set(stats.map(s => s.output_format));
-      if (usedFormats.size >= 5 && !unlockedIds.includes('all_formats')) {
+      if (usedFormats.size >= 7 && !unlockedIds.includes('all_formats')) {
         await base44.entities.Achievement.create({ achievement_id: 'all_formats', unlocked_at: new Date().toISOString() });
         setUnlockedAchievement('all_formats');
       }
