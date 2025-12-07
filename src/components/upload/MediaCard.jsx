@@ -506,56 +506,66 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
       // Setup audio encoder if video has audio
       let audioEncoder = null;
       let audioContext = null;
-      let audioFrames = [];
+      let mediaRecorder = null;
+      let recordedChunks = [];
       
-      if (hasAudio && 'AudioEncoder' in window) {
-        console.log('✓ Video has audio - setting up audio encoder');
-        audioEncoder = new AudioEncoder({
-          output: (chunk, meta) => muxer.addAudioChunk(chunk, meta),
-          error: (e) => {
-            console.error('Audio encoder error:', e);
-            toast.warning('Audio encoding issue: ' + e.message);
-          },
-        });
+      if (hasAudio) {
+        console.log('✓ Video has audio - setting up audio preservation');
         
-        audioEncoder.configure({
-          codec: 'mp4a.40.2',
-          sampleRate: 48000,
-          numberOfChannels: 2,
-          bitrate: (audioBitrate || 128) * 1000,
-        });
-        
-        // Setup audio context to capture audio frames
-        video.muted = false;
-        audioContext = new AudioContext({ sampleRate: 48000 });
-        const source = audioContext.createMediaElementSource(video);
-        const dest = audioContext.createMediaStreamDestination();
-        source.connect(dest);
-        
-        // Capture audio frames
-        if (dest.stream.getAudioTracks().length > 0) {
-          const audioTrack = dest.stream.getAudioTracks()[0];
-          const reader = new MediaStreamTrackProcessor({ track: audioTrack }).readable.getReader();
+        // Create a stream from the video element to capture audio
+        try {
+          const stream = video.captureStream ? video.captureStream() : video.mozCaptureStream();
+          const audioTrack = stream.getAudioTracks()[0];
           
-          // Collect audio frames
-          (async () => {
-            try {
-              while (true) {
-                const { done, value } = await reader.read();
-                if (done) break;
-                audioFrames.push(value);
+          if (audioTrack && 'AudioEncoder' in window) {
+            audioEncoder = new AudioEncoder({
+              output: (chunk, meta) => muxer.addAudioChunk(chunk, meta),
+              error: (e) => {
+                console.error('Audio encoder error:', e);
+              },
+            });
+            
+            audioEncoder.configure({
+              codec: 'mp4a.40.2',
+              sampleRate: 48000,
+              numberOfChannels: 2,
+              bitrate: (audioBitrate || 128) * 1000,
+            });
+            
+            // Process audio using MediaStreamTrackProcessor
+            const processor = new MediaStreamTrackProcessor({ track: audioTrack });
+            const reader = processor.readable.getReader();
+            
+            // Read and encode audio frames in real-time
+            const processAudio = async () => {
+              try {
+                while (true) {
+                  const { done, value } = await reader.read();
+                  if (done) break;
+                  
+                  if (audioEncoder.state === 'configured') {
+                    audioEncoder.encode(value);
+                  }
+                  value.close();
+                }
+              } catch (e) {
+                console.log('Audio processing completed or stopped:', e);
               }
-            } catch (e) {
-              console.warn('Audio capture stopped:', e);
-            }
-          })();
+            };
+            
+            processAudio(); // Start processing audio immediately
+            video.muted = false;
+          } else {
+            video.muted = true;
+            console.warn('⚠️ AudioEncoder not supported - audio will be lost');
+            toast.warning('Audio encoding not supported in this browser - video will be silent');
+          }
+        } catch (err) {
+          console.error('Failed to capture audio stream:', err);
+          video.muted = true;
         }
       } else {
         video.muted = true;
-        if (hasAudio) {
-          console.warn('⚠️ Video has audio but AudioEncoder not supported');
-          toast.warning('Audio encoding not supported in this browser');
-        }
       }
       
       const duration = Math.min(video.duration, 120); // Max 120 seconds
@@ -609,28 +619,11 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
           await videoEncoder.flush();
         }
         
-        // CRITICAL: Encode all collected audio frames
-        if (audioEncoder && audioFrames.length > 0) {
-          console.log(`⏳ Encoding ${audioFrames.length} audio frames...`);
-          for (const frame of audioFrames) {
-            if (audioEncoder.state === 'configured') {
-              audioEncoder.encode(frame);
-            }
-            frame.close();
-          }
-          console.log('✓ Audio frames encoded');
-        }
-        
-        // Flush audio encoder
+        // Flush and close audio encoder
         if (audioEncoder && audioEncoder.state === 'configured') {
           console.log('⏳ Flushing audio encoder...');
           await audioEncoder.flush();
           console.log('✓ Audio encoder flushed');
-        }
-        
-        // Close audio context
-        if (audioContext && audioContext.state !== 'closed') {
-          await audioContext.close();
         }
       } finally {
         // Always close encoders
@@ -668,7 +661,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
         originalFileFormat: originalFormat
       });
       
-      console.log(`✅ Video processed: ${hasAudio ? 'with audio' : 'no audio'}`);
+      console.log(`✅ Video processed: ${hasAudio ? 'with audio track' : 'no audio'}`);
       
       // Record compression stat only if space was saved
       if (blob.size < image.size) {
