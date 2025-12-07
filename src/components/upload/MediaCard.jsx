@@ -505,8 +505,8 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
       
       // Setup audio encoder if video has audio
       let audioEncoder = null;
-      let audioProcessingPromise = null;
       let audioContext = null;
+      let audioFrames = [];
       
       if (hasAudio && 'AudioEncoder' in window) {
         console.log('✓ Video has audio - setting up audio encoder');
@@ -514,7 +514,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
           output: (chunk, meta) => muxer.addAudioChunk(chunk, meta),
           error: (e) => {
             console.error('Audio encoder error:', e);
-            toast.warning('Audio encoding issue detected');
+            toast.warning('Audio encoding issue: ' + e.message);
           },
         });
         
@@ -525,30 +525,28 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
           bitrate: (audioBitrate || 128) * 1000,
         });
         
-        // Setup audio processing
+        // Setup audio context to capture audio frames
         video.muted = false;
         audioContext = new AudioContext({ sampleRate: 48000 });
         const source = audioContext.createMediaElementSource(video);
         const dest = audioContext.createMediaStreamDestination();
         source.connect(dest);
         
+        // Capture audio frames
         if (dest.stream.getAudioTracks().length > 0) {
           const audioTrack = dest.stream.getAudioTracks()[0];
           const reader = new MediaStreamTrackProcessor({ track: audioTrack }).readable.getReader();
           
-          // Process audio frames - wait for completion
-          audioProcessingPromise = (async () => {
+          // Collect audio frames
+          (async () => {
             try {
               while (true) {
                 const { done, value } = await reader.read();
                 if (done) break;
-                if (audioEncoder && audioEncoder.state === 'configured') {
-                  audioEncoder.encode(value);
-                }
-                value.close();
+                audioFrames.push(value);
               }
             } catch (e) {
-              console.warn('Audio processing stopped:', e);
+              console.warn('Audio capture stopped:', e);
             }
           })();
         }
@@ -611,12 +609,19 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
           await videoEncoder.flush();
         }
         
-        // CRITICAL: Wait for audio processing to complete and flush
-        if (audioProcessingPromise) {
-          console.log('⏳ Waiting for audio processing to complete...');
-          await audioProcessingPromise;
-          console.log('✓ Audio processing complete');
+        // CRITICAL: Encode all collected audio frames
+        if (audioEncoder && audioFrames.length > 0) {
+          console.log(`⏳ Encoding ${audioFrames.length} audio frames...`);
+          for (const frame of audioFrames) {
+            if (audioEncoder.state === 'configured') {
+              audioEncoder.encode(frame);
+            }
+            frame.close();
+          }
+          console.log('✓ Audio frames encoded');
         }
+        
+        // Flush audio encoder
         if (audioEncoder && audioEncoder.state === 'configured') {
           console.log('⏳ Flushing audio encoder...');
           await audioEncoder.flush();
