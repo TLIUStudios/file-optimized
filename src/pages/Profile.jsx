@@ -29,7 +29,7 @@ import {
   TrendingDown,
   Trophy
 } from "lucide-react";
-import { ACHIEVEMENTS } from "../components/AchievementNotification";
+import { ACHIEVEMENTS, GLOBAL_ACHIEVEMENTS } from "../components/AchievementNotification";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { motion } from "framer-motion";
@@ -52,8 +52,15 @@ export default function Profile() {
   // Load achievements
   const { data: achievements = [] } = useQuery({
     queryKey: ['achievements', user?.email],
-    queryFn: () => base44.entities.Achievement.list('-unlocked_at', 100),
+    queryFn: () => base44.entities.Achievement.list('-unlocked_at', 1000),
     enabled: !!user,
+  });
+
+  // Load global achievements
+  const { data: globalAchievements = [] } = useQuery({
+    queryKey: ['globalAchievements'],
+    queryFn: () => base44.entities.GlobalAchievement.list('-created_date', 100),
+    refetchInterval: 60000, // Refresh every minute
   });
 
   // Load user data
@@ -718,7 +725,7 @@ export default function Profile() {
             <motion.div
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.35 }}
+              transition={{ delay: 0.4 }}
             >
               <Card className="p-6">
                 <div className="flex items-center gap-2 mb-4">
@@ -783,7 +790,7 @@ export default function Profile() {
           <motion.div
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: 0.45 }}
+            transition={{ delay: 0.5 }}
           >
             <Card className="p-6">
               <div className="flex items-center justify-between mb-6">
