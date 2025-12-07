@@ -178,29 +178,7 @@ Deno.serve(async (req) => {
       { id: 'medium_handler', condition: mediumFiles >= 50 },
       { id: 'large_processor', condition: largeFiles >= 25 },
       
-      // Special (4)
-      { id: 'weekend_warrior', condition: weekendFiles >= 100 },
-      { id: 'workday_hero', condition: weekdayFiles >= 100 },
-      { id: 'morning_person', condition: morningFiles >= 50 },
-      { id: 'night_shifter', condition: nightFiles >= 50 },
-      
-      // Efficiency Expert (2)
-      { id: 'efficient_compressor', condition: avgCompression >= 70 && totalFiles >= 20 },
-      { id: 'size_reducer', condition: neverIncreased && totalFiles >= 50 },
-      
-      // Milestones (3)
-      { id: 'first_week', condition: daysSinceJoin >= 7 },
-      { id: 'first_month', condition: daysSinceJoin >= 30 },
-      { id: 'first_year', condition: daysSinceJoin >= 365 },
-      
-      // Early Supporter (2)
-      { id: 'early_adopter', condition: joinedIn2025 },
-      { id: 'beta_tester', condition: new Date(user.created_date) < new Date('2025-01-01') },
-      
-      // Seasonal (4)
-      { id: 'summer_optimizer', condition: seasonCounts.summer >= 50 },
-      { id: 'winter_compressor', condition: seasonCounts.winter >= 50 },
-      { id: 'spring_cleaner', condition: seasonCounts.spring >= 50 },
+      // Seasonal (1)
       { id: 'fall_processor', condition: seasonCounts.fall >= 50 },
       
       // Advanced Stats (2)
