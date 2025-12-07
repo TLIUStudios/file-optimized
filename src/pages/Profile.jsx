@@ -157,9 +157,10 @@ export default function Profile() {
       new Date(stat.created_date) >= startDate
     );
 
-    const totalSavings = filtered.reduce((sum, stat) => 
-      sum + (stat.original_size - stat.compressed_size), 0
-    );
+    const totalSavings = filtered.reduce((sum, stat) => {
+      const saved = stat.original_size - stat.compressed_size;
+      return sum + Math.max(0, saved); // Only count positive savings
+    }, 0);
 
     return {
       savings: totalSavings,

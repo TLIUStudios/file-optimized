@@ -21,7 +21,10 @@ Deno.serve(async (req) => {
     }
 
     const totalFiles = stats.length;
-    const totalSaved = stats.reduce((sum, s) => sum + (s.original_size - s.compressed_size), 0);
+    const totalSaved = stats.reduce((sum, s) => {
+      const saved = s.original_size - s.compressed_size;
+      return sum + Math.max(0, saved); // Only count positive savings
+    }, 0);
     
     // Count by media type
     const imageCount = stats.filter(s => s.media_type === 'image').length;
