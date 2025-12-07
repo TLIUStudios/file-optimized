@@ -214,20 +214,25 @@ Provide a helpful, accurate, and concise response. If the question is about tech
             {/* Input */}
             <div className="p-4 border-t border-slate-200 dark:border-slate-800">
               <div className="flex items-end gap-2">
-                <textarea
-                  value={input}
-                  onChange={(e) => setInput(e.target.value)}
-                  onKeyPress={handleKeyPress}
-                  placeholder="Ask a question..."
-                  rows={1}
-                  disabled={isLoading}
-                  className="flex-1 resize-none rounded-xl px-4 py-2 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-sm text-slate-900 dark:text-white placeholder:text-slate-500 dark:placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 disabled:opacity-50"
-                  style={{ maxHeight: "120px" }}
-                  onInput={(e) => {
-                    e.target.style.height = "auto";
-                    e.target.style.height = Math.min(e.target.scrollHeight, 120) + "px";
-                  }}
-                />
+                <div className="flex-1">
+                  <textarea
+                    value={input}
+                    onChange={(e) => setInput(e.target.value)}
+                    onKeyPress={handleKeyPress}
+                    placeholder="Ask a question..."
+                    rows={1}
+                    disabled={isLoading}
+                    className="w-full resize-none rounded-xl px-4 py-2 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-sm text-slate-900 dark:text-white placeholder:text-slate-500 dark:placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 disabled:opacity-50"
+                    style={{ maxHeight: "120px" }}
+                    onInput={(e) => {
+                      e.target.style.height = "auto";
+                      e.target.style.height = Math.min(e.target.scrollHeight, 120) + "px";
+                    }}
+                  />
+                  <p className="text-xs text-slate-400 dark:text-slate-500 mt-1.5 px-1">
+                    Ask about features, how-tos, or troubleshooting
+                  </p>
+                </div>
                 <Button
                   onClick={handleSend}
                   disabled={!input.trim() || isLoading}
