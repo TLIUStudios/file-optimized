@@ -29,7 +29,8 @@ import {
   TrendingDown,
   Trophy,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  RefreshCcw
 } from "lucide-react";
 import { ACHIEVEMENTS, GLOBAL_ACHIEVEMENTS } from "../components/AchievementNotification";
 import { cn } from "@/lib/utils";
@@ -52,6 +53,7 @@ export default function Profile() {
   const [billingFrequency, setBillingFrequency] = useState('monthly');
   const [achievementPage, setAchievementPage] = useState(0);
   const [achievementFilter, setAchievementFilter] = useState('personal'); // 'personal' or 'global'
+  const [checkingAchievements, setCheckingAchievements] = useState(false);
 
   // Load achievements
   const { data: achievements = [] } = useQuery({
@@ -312,6 +314,42 @@ export default function Profile() {
   const handleLoginFromPrompt = () => {
     setShowLoginPrompt(false);
     base44.auth.redirectToLogin(window.location.href);
+  };
+
+  const handleCheckAchievements = async () => {
+    setCheckingAchievements(true);
+    try {
+      const response = await base44.functions.invoke('checkPersonalAchievements');
+      const newAchievements = response.data?.new_achievements || [];
+      
+      if (newAchievements.length > 0) {
+        toast.success(`Found ${newAchievements.length} new achievement${newAchievements.length > 1 ? 's' : ''}!`);
+        
+        // Show notifications for each achievement with delays
+        for (let i = 0; i < newAchievements.length; i++) {
+          setTimeout(() => {
+            const achievement = ACHIEVEMENTS[newAchievements[i]];
+            if (achievement) {
+              toast.success(`🏆 ${achievement.name} - ${achievement.description}`, {
+                duration: 3000
+              });
+            }
+          }, i * 800); // Stagger notifications
+        }
+        
+        // Refresh achievements list
+        setTimeout(() => {
+          window.location.reload();
+        }, newAchievements.length * 800 + 500);
+      } else {
+        toast.info('You\'re all caught up! Keep compressing to unlock more.');
+      }
+    } catch (error) {
+      console.error('Error checking achievements:', error);
+      toast.error('Failed to check achievements');
+    } finally {
+      setCheckingAchievements(false);
+    }
   };
 
   if (loading) {
@@ -669,6 +707,20 @@ export default function Profile() {
                 <div className="flex items-center gap-2">
                   <Trophy className="w-5 h-5 text-amber-500" />
                   <h3 className="text-lg font-semibold text-slate-900 dark:text-white">Achievements</h3>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleCheckAchievements}
+                    disabled={checkingAchievements}
+                    className="h-7 text-xs"
+                  >
+                    {checkingAchievements ? (
+                      <Loader2 className="w-3 h-3 mr-1 animate-spin" />
+                    ) : (
+                      <RefreshCcw className="w-3 h-3 mr-1" />
+                    )}
+                    Check
+                  </Button>
                 </div>
 
                 {/* Filter Tabs */}
