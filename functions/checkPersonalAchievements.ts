@@ -234,6 +234,33 @@ Deno.serve(async (req) => {
       { id: '50_achievement', condition: existingAchievements.length >= 50 },
       { id: '75_achievement', condition: existingAchievements.length >= 75 },
       { id: '100_achievement', condition: existingAchievements.length >= 100 },
+      
+      // Conversion (4)
+      { id: 'gif_to_mp4_converter', condition: false },
+      { id: 'video_to_gif_converter', condition: false },
+      { id: 'format_converter', condition: false },
+      { id: 'master_converter', condition: false },
+      
+      // Quality Focus (3)
+      { id: 'quality_focused', condition: false },
+      { id: 'balanced_user', condition: false },
+      { id: 'file_size_ninja', condition: false },
+      
+      // Advanced Techniques (3)
+      { id: 'resolution_tuner', condition: false },
+      { id: 'quality_tweaker', condition: false },
+      { id: 'settings_explorer', condition: false },
+      
+      // Social & Community (2)
+      { id: 'reviewer', condition: false },
+      { id: 'community_member', condition: false },
+      
+      // Sharing (2)
+      { id: 'share_master', condition: false },
+      { id: 'influencer', condition: false },
+      
+      // Download (1)
+      { id: 'downloader', condition: false },
     ];
 
     // Find new achievements to unlock

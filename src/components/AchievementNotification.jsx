@@ -130,9 +130,36 @@ const ACHIEVEMENTS = {
   '50_achievement': { name: 'Achievement Master', description: 'Unlocked 50 achievements', icon: '👑', color: 'from-orange-500 to-red-500' },
   '75_achievement': { name: 'Completionist', description: 'Unlocked 75 achievements', icon: '💎', color: 'from-purple-500 to-pink-500' },
   '100_achievement': { name: 'Ultimate Champion', description: 'Unlocked all 100 achievements', icon: '🏆', color: 'from-yellow-500 to-amber-500' },
+  
+  // Conversion Achievements (4)
+  'gif_to_mp4_converter': { name: 'GIF to Video', description: 'Converted GIF to MP4 10 times', icon: '🎬', color: 'from-pink-500 to-purple-500' },
+  'video_to_gif_converter': { name: 'Video to GIF', description: 'Converted video to GIF 10 times', icon: '🎞️', color: 'from-purple-500 to-pink-500' },
+  'format_converter': { name: 'Format Converter', description: 'Converted between formats 30 times', icon: '🔄', color: 'from-teal-500 to-cyan-500' },
+  'master_converter': { name: 'Master Converter', description: 'Converted between formats 100 times', icon: '🔁', color: 'from-cyan-500 to-blue-500' },
+  
+  // Quality Focus (3)
+  'quality_focused': { name: 'Quality Focused', description: 'Used 80%+ quality 30 times', icon: '🎯', color: 'from-blue-500 to-cyan-500' },
+  'balanced_user': { name: 'Balanced User', description: 'Used 60-80% quality 50 times', icon: '⚖️', color: 'from-teal-500 to-cyan-500' },
+  'file_size_ninja': { name: 'File Size Ninja', description: 'Used under 40% quality 30 times', icon: '🥷', color: 'from-slate-500 to-gray-500' },
+  
+  // Advanced Techniques (3)
+  'resolution_tuner': { name: 'Resolution Tuner', description: 'Used custom resolutions 20 times', icon: '📐', color: 'from-teal-500 to-cyan-500' },
+  'quality_tweaker': { name: 'Quality Tweaker', description: 'Adjusted quality settings 30 times', icon: '🎛️', color: 'from-violet-500 to-purple-500' },
+  'settings_explorer': { name: 'Settings Explorer', description: 'Changed compression mode 15 times', icon: '⚙️', color: 'from-slate-500 to-gray-500' },
+  
+  // Social & Community (2)
+  'reviewer': { name: 'Reviewer', description: 'Left a review on Google or Facebook', icon: '⭐', color: 'from-yellow-500 to-amber-500' },
+  'community_member': { name: 'Community Member', description: 'Joined the Discord server', icon: '💬', color: 'from-indigo-500 to-blue-500' },
+  
+  // Sharing (2)
+  'share_master': { name: 'Share Master', description: 'Shared to all social platforms', icon: '📢', color: 'from-rose-500 to-pink-500' },
+  'influencer': { name: 'Influencer', description: 'Shared 100 files total', icon: '📣', color: 'from-pink-500 to-fuchsia-500' },
+  
+  // Download (1)
+  'downloader': { name: 'Downloader', description: 'Downloaded 50 compressed files', icon: '⬇️', color: 'from-green-500 to-emerald-500' },
 };
 
-// Count: 11+9+8+4+4+5+3+4+3+4+2+3+2+3+3+1+1+5 = 100 ✓
+// Count: 11+9+8+4+4+5+3+4+3+4+2+3+2+3+3+1+1+5+4+3+3+2+2+1 = 100 ✓
 
 const GLOBAL_ACHIEVEMENTS = {
   // File Count Milestones (17)
