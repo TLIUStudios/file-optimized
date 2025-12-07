@@ -8,6 +8,7 @@ import { base44 } from "@/api/base44Client";
 import SEOHead from "../components/SEOHead";
 import { useQuery } from "@tanstack/react-query";
 import { motion } from "framer-motion";
+import AchievementNotification from "../components/AchievementNotification";
 
 // Lazy load heavy components for better performance
 const UploadZone = lazy(() => import("../components/upload/UploadZone"));
@@ -49,6 +50,7 @@ export default function Home() {
   const [processingCheckout, setProcessingCheckout] = useState(false);
   const [upgradeError, setUpgradeError] = useState(null);
   const [showLoginPrompt, setShowLoginPrompt] = useState(false);
+  const [unlockedAchievement, setUnlockedAchievement] = useState(null);
 
   // Load user and their plan
   useEffect(() => {
@@ -64,6 +66,63 @@ export default function Home() {
     };
     loadUser();
   }, []);
+
+  // Check for achievements
+  const checkAchievements = useCallback(async () => {
+    if (!user) return;
+
+    try {
+      // Get user's existing achievements
+      const existingAchievements = await base44.entities.Achievement.list();
+      const unlockedIds = existingAchievements.map(a => a.achievement_id);
+
+      // Get user's compression stats
+      const stats = await base44.entities.CompressionStat.filter({ created_by: user.email });
+      const totalFiles = stats.length;
+      const totalSaved = stats.reduce((sum, s) => sum + (s.original_size - s.compressed_size), 0);
+
+      // Check compression count achievements
+      const countAchievements = [
+        { id: 'first_compress', threshold: 1 },
+        { id: 'compress_10', threshold: 10 },
+        { id: 'compress_50', threshold: 50 },
+        { id: 'compress_100', threshold: 100 },
+        { id: 'compress_500', threshold: 500 },
+      ];
+
+      for (const { id, threshold } of countAchievements) {
+        if (totalFiles >= threshold && !unlockedIds.includes(id)) {
+          await base44.entities.Achievement.create({ achievement_id: id, unlocked_at: new Date().toISOString() });
+          setUnlockedAchievement(id);
+          return; // Show one at a time
+        }
+      }
+
+      // Check space savings achievements
+      const savingsAchievements = [
+        { id: 'save_100mb', threshold: 100 * 1024 * 1024 },
+        { id: 'save_1gb', threshold: 1024 * 1024 * 1024 },
+        { id: 'save_10gb', threshold: 10 * 1024 * 1024 * 1024 },
+      ];
+
+      for (const { id, threshold } of savingsAchievements) {
+        if (totalSaved >= threshold && !unlockedIds.includes(id)) {
+          await base44.entities.Achievement.create({ achievement_id: id, unlocked_at: new Date().toISOString() });
+          setUnlockedAchievement(id);
+          return;
+        }
+      }
+
+      // Check format explorer achievement
+      const usedFormats = new Set(stats.map(s => s.output_format));
+      if (usedFormats.size >= 5 && !unlockedIds.includes('all_formats')) {
+        await base44.entities.Achievement.create({ achievement_id: 'all_formats', unlocked_at: new Date().toISOString() });
+        setUnlockedAchievement('all_formats');
+      }
+    } catch (error) {
+      console.log('Achievement check error:', error);
+    }
+  }, [user]);
 
   // Load global compression stats
   const { data: globalStats = [], isLoading: statsLoading } = useQuery({
@@ -123,7 +182,10 @@ export default function Home() {
       };
       return newProcessed;
     });
-  }, []);
+
+    // Check for achievements after processing
+    setTimeout(() => checkAchievements(), 1000);
+  }, [checkAchievements]);
 
   const handleCompare = useCallback((data) => {
     setComparisonData(data);
@@ -653,11 +715,19 @@ export default function Home() {
             context="upgrade"
             userPlan={userPlan}
           />
-        </Suspense>
-      )}
+          </Suspense>
+          )}
 
-    </div>
-    </>
-  );
+          {/* Achievement Notification */}
+          {unlockedAchievement && (
+          <AchievementNotification
+          achievementId={unlockedAchievement}
+          onClose={() => setUnlockedAchievement(null)}
+          />
+          )}
 
-}
+          </div>
+          </>
+          );
+
+          }
