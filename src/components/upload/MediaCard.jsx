@@ -505,67 +505,88 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
       
       // Setup audio encoder if video has audio
       let audioEncoder = null;
-      let audioContext = null;
-      let mediaRecorder = null;
-      let recordedChunks = [];
+      let audioProcessingPromise = null;
       
-      if (hasAudio) {
-        console.log('✓ Video has audio - setting up audio preservation');
+      if (hasAudio && 'AudioEncoder' in window) {
+        console.log('✓ Video has audio - setting up audio encoder');
         
-        // Create a stream from the video element to capture audio
-        try {
-          const stream = video.captureStream ? video.captureStream() : video.mozCaptureStream();
-          const audioTrack = stream.getAudioTracks()[0];
-          
-          if (audioTrack && 'AudioEncoder' in window) {
-            audioEncoder = new AudioEncoder({
-              output: (chunk, meta) => muxer.addAudioChunk(chunk, meta),
-              error: (e) => {
-                console.error('Audio encoder error:', e);
-              },
-            });
+        audioEncoder = new AudioEncoder({
+          output: (chunk, meta) => muxer.addAudioChunk(chunk, meta),
+          error: (e) => {
+            console.error('Audio encoder error:', e);
+          },
+        });
+        
+        audioEncoder.configure({
+          codec: 'mp4a.40.2',
+          sampleRate: 48000,
+          numberOfChannels: 2,
+          bitrate: (audioBitrate || 128) * 1000,
+        });
+        
+        // Extract and process audio from original video
+        audioProcessingPromise = (async () => {
+          try {
+            // Decode audio from original video file
+            const audioContext = new AudioContext({ sampleRate: 48000 });
+            const arrayBuffer = await image.arrayBuffer();
+            const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
             
-            audioEncoder.configure({
-              codec: 'mp4a.40.2',
-              sampleRate: 48000,
-              numberOfChannels: 2,
-              bitrate: (audioBitrate || 128) * 1000,
-            });
+            console.log(`✓ Audio decoded: ${audioBuffer.duration}s, ${audioBuffer.numberOfChannels} channels`);
             
-            // Process audio using MediaStreamTrackProcessor
-            const processor = new MediaStreamTrackProcessor({ track: audioTrack });
-            const reader = processor.readable.getReader();
+            // Encode audio frames from the decoded buffer
+            const sampleRate = 48000;
+            const frameSize = 1024; // AAC frame size
+            const numberOfChannels = Math.min(audioBuffer.numberOfChannels, 2); // Max 2 channels for AAC
             
-            // Read and encode audio frames in real-time
-            const processAudio = async () => {
-              try {
-                while (true) {
-                  const { done, value } = await reader.read();
-                  if (done) break;
-                  
-                  if (audioEncoder.state === 'configured') {
-                    audioEncoder.encode(value);
+            const totalSamples = Math.floor(audioBuffer.length);
+            const numFrames = Math.ceil(totalSamples / frameSize);
+            
+            for (let i = 0; i < numFrames; i++) {
+              const startSample = i * frameSize;
+              const endSample = Math.min(startSample + frameSize, totalSamples);
+              const frameSamples = endSample - startSample;
+              
+              // Create AudioData frame
+              const audioData = new AudioData({
+                format: 'f32-planar',
+                sampleRate: sampleRate,
+                numberOfFrames: frameSamples,
+                numberOfChannels: numberOfChannels,
+                timestamp: (startSample / sampleRate) * 1_000_000, // microseconds
+                data: (() => {
+                  const buffer = new Float32Array(frameSamples * numberOfChannels);
+                  for (let ch = 0; ch < numberOfChannels; ch++) {
+                    const channelData = audioBuffer.getChannelData(ch);
+                    for (let s = 0; s < frameSamples; s++) {
+                      buffer[ch * frameSamples + s] = channelData[startSample + s];
+                    }
                   }
-                  value.close();
-                }
-              } catch (e) {
-                console.log('Audio processing completed or stopped:', e);
+                  return buffer;
+                })(),
+              });
+              
+              if (audioEncoder.state === 'configured') {
+                audioEncoder.encode(audioData);
               }
-            };
+              audioData.close();
+            }
             
-            processAudio(); // Start processing audio immediately
-            video.muted = false;
-          } else {
-            video.muted = true;
-            console.warn('⚠️ AudioEncoder not supported - audio will be lost');
-            toast.warning('Audio encoding not supported in this browser - video will be silent');
+            console.log(`✓ Encoded ${numFrames} audio frames`);
+            await audioContext.close();
+          } catch (error) {
+            console.error('Audio processing error:', error);
+            toast.warning('Could not preserve audio - video will be silent');
           }
-        } catch (err) {
-          console.error('Failed to capture audio stream:', err);
-          video.muted = true;
-        }
+        })();
+        
+        video.muted = true; // Mute video element since we're extracting audio separately
       } else {
         video.muted = true;
+        if (hasAudio) {
+          console.warn('⚠️ AudioEncoder not supported - audio will be lost');
+          toast.warning('Audio encoding not supported in this browser');
+        }
       }
       
       const duration = Math.min(video.duration, 120); // Max 120 seconds
@@ -617,6 +638,12 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
         // Ensure all frames are encoded before flushing
         if (videoEncoder.state === 'configured') {
           await videoEncoder.flush();
+        }
+        
+        // Wait for audio processing to complete
+        if (audioProcessingPromise) {
+          console.log('⏳ Waiting for audio processing...');
+          await audioProcessingPromise;
         }
         
         // Flush and close audio encoder
