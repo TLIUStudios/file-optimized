@@ -27,7 +27,9 @@ import {
   ShoppingBag,
   HardDrive,
   TrendingDown,
-  Trophy
+  Trophy,
+  ChevronLeft,
+  ChevronRight
 } from "lucide-react";
 import { ACHIEVEMENTS, GLOBAL_ACHIEVEMENTS } from "../components/AchievementNotification";
 import { cn } from "@/lib/utils";
@@ -48,6 +50,8 @@ export default function Profile() {
   const [selectedTheme, setSelectedTheme] = useState('none');
   const [savingTheme, setSavingTheme] = useState(false);
   const [billingFrequency, setBillingFrequency] = useState('monthly');
+  const [achievementPage, setAchievementPage] = useState(0);
+  const [achievementFilter, setAchievementFilter] = useState('personal'); // 'personal' or 'global'
 
   // Load achievements
   const { data: achievements = [] } = useQuery({
