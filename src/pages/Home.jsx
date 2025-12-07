@@ -67,140 +67,19 @@ export default function Home() {
     loadUser();
   }, []);
 
-  // Check for achievements
+  // Check for achievements using backend function
   const checkAchievements = useCallback(async () => {
     if (!user) return;
 
     try {
-      // Get user's existing achievements
-      const existingAchievements = await base44.entities.Achievement.list();
-      const unlockedIds = existingAchievements.map(a => a.achievement_id);
-
-      // Get user's compression stats
-      const stats = await base44.entities.CompressionStat.filter({ created_by: user.email });
-      const totalFiles = stats.length;
-      const totalSaved = stats.reduce((sum, s) => sum + (s.original_size - s.compressed_size), 0);
-
-      // Count by media type
-      const imageCount = stats.filter(s => s.media_type === 'image').length;
-      const videoCount = stats.filter(s => s.media_type === 'video').length;
-      const audioCount = stats.filter(s => s.media_type === 'audio').length;
-
-      // Count by output format
-      const formatCounts = {};
-      stats.forEach(s => {
-        formatCounts[s.output_format] = (formatCounts[s.output_format] || 0) + 1;
-      });
-
-      // Check compression count achievements
-      const countAchievements = [
-        { id: 'first_compress', threshold: 1 },
-        { id: 'compress_5', threshold: 5 },
-        { id: 'compress_10', threshold: 10 },
-        { id: 'compress_25', threshold: 25 },
-        { id: 'compress_50', threshold: 50 },
-        { id: 'compress_100', threshold: 100 },
-        { id: 'compress_250', threshold: 250 },
-        { id: 'compress_500', threshold: 500 },
-        { id: 'compress_1000', threshold: 1000 },
-        { id: 'compress_5000', threshold: 5000 },
-        { id: 'compress_10000', threshold: 10000 },
-      ];
-
-      for (const { id, threshold } of countAchievements) {
-        if (totalFiles >= threshold && !unlockedIds.includes(id)) {
-          await base44.entities.Achievement.create({ achievement_id: id, unlocked_at: new Date().toISOString() });
-          setUnlockedAchievement(id);
-          
-          // Update global achievements after each file
-          base44.functions.invoke('updateGlobalAchievements').catch(err => console.log('Global update error:', err));
-          return; // Show one at a time
-        }
+      const { data } = await base44.functions.invoke('checkPersonalAchievements');
+      
+      if (data.newAchievements && data.newAchievements.length > 0) {
+        setUnlockedAchievement(data.newAchievements[0]);
       }
-
-      // Check space savings achievements
-      const savingsAchievements = [
-        { id: 'save_10mb', threshold: 10 * 1024 * 1024 },
-        { id: 'save_50mb', threshold: 50 * 1024 * 1024 },
-        { id: 'save_100mb', threshold: 100 * 1024 * 1024 },
-        { id: 'save_500mb', threshold: 500 * 1024 * 1024 },
-        { id: 'save_1gb', threshold: 1024 * 1024 * 1024 },
-        { id: 'save_5gb', threshold: 5 * 1024 * 1024 * 1024 },
-        { id: 'save_10gb', threshold: 10 * 1024 * 1024 * 1024 },
-        { id: 'save_50gb', threshold: 50 * 1024 * 1024 * 1024 },
-        { id: 'save_100gb', threshold: 100 * 1024 * 1024 * 1024 },
-      ];
-
-      for (const { id, threshold } of savingsAchievements) {
-        if (totalSaved >= threshold && !unlockedIds.includes(id)) {
-          await base44.entities.Achievement.create({ achievement_id: id, unlocked_at: new Date().toISOString() });
-          setUnlockedAchievement(id);
-          return;
-        }
-      }
-
-      // Check format specialist achievements
-      const formatAchievements = [
-        { id: 'jpg_specialist', format: 'jpg', threshold: 50 },
-        { id: 'png_specialist', format: 'png', threshold: 50 },
-        { id: 'webp_specialist', format: 'webp', threshold: 50 },
-        { id: 'avif_specialist', format: 'avif', threshold: 50 },
-        { id: 'gif_specialist', format: 'gif', threshold: 50 },
-      ];
-
-      for (const { id, format, threshold } of formatAchievements) {
-        if ((formatCounts[format] || 0) >= threshold && !unlockedIds.includes(id)) {
-          await base44.entities.Achievement.create({ achievement_id: id, unlocked_at: new Date().toISOString() });
-          setUnlockedAchievement(id);
-          return;
-        }
-      }
-
-      // Check media type achievements
-      if (videoCount >= 25 && !unlockedIds.includes('video_specialist')) {
-        await base44.entities.Achievement.create({ achievement_id: 'video_specialist', unlocked_at: new Date().toISOString() });
-        setUnlockedAchievement('video_specialist');
-        return;
-      }
-
-      if (audioCount >= 25 && !unlockedIds.includes('audio_specialist')) {
-        await base44.entities.Achievement.create({ achievement_id: 'audio_specialist', unlocked_at: new Date().toISOString() });
-        setUnlockedAchievement('audio_specialist');
-        return;
-      }
-
-      if (imageCount >= 100 && !unlockedIds.includes('image_master')) {
-        await base44.entities.Achievement.create({ achievement_id: 'image_master', unlocked_at: new Date().toISOString() });
-        setUnlockedAchievement('image_master');
-        return;
-      }
-
-      if (videoCount >= 50 && !unlockedIds.includes('video_master')) {
-        await base44.entities.Achievement.create({ achievement_id: 'video_master', unlocked_at: new Date().toISOString() });
-        setUnlockedAchievement('video_master');
-        return;
-      }
-
-      if (audioCount >= 50 && !unlockedIds.includes('audio_master')) {
-        await base44.entities.Achievement.create({ achievement_id: 'audio_master', unlocked_at: new Date().toISOString() });
-        setUnlockedAchievement('audio_master');
-        return;
-      }
-
-      // Check format explorer achievement
-      const usedFormats = new Set(stats.map(s => s.output_format));
-      if (usedFormats.size >= 7 && !unlockedIds.includes('all_formats')) {
-        await base44.entities.Achievement.create({ achievement_id: 'all_formats', unlocked_at: new Date().toISOString() });
-        setUnlockedAchievement('all_formats');
-        return;
-      }
-
-      // Check Pro member achievement
-      if (user.plan === 'pro' && !unlockedIds.includes('pro_member')) {
-        await base44.entities.Achievement.create({ achievement_id: 'pro_member', unlocked_at: new Date().toISOString() });
-        setUnlockedAchievement('pro_member');
-        return;
-      }
+      
+      // Update global achievements
+      base44.functions.invoke('updateGlobalAchievements').catch(err => console.log('Global update error:', err));
     } catch (error) {
       console.log('Achievement check error:', error);
     }
