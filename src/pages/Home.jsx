@@ -51,6 +51,7 @@ export default function Home() {
   const [upgradeError, setUpgradeError] = useState(null);
   const [showLoginPrompt, setShowLoginPrompt] = useState(false);
   const [unlockedAchievement, setUnlockedAchievement] = useState(null);
+  const [unlockedGlobalAchievement, setUnlockedGlobalAchievement] = useState(null);
 
   // Load user and their plan
   useEffect(() => {
@@ -92,6 +93,13 @@ export default function Home() {
     refetchInterval: 30000, // Refresh every 30 seconds
   });
 
+  // Load global achievements
+  const { data: globalAchievements = [] } = useQuery({
+    queryKey: ['globalAchievements'],
+    queryFn: () => base44.entities.GlobalAchievement.list('-created_date', 200),
+    refetchInterval: 30000, // Refresh every 30 seconds
+  });
+
   // Update global achievements periodically
   useEffect(() => {
     // Update on mount
@@ -104,6 +112,31 @@ export default function Home() {
     
     return () => clearInterval(interval);
   }, []);
+
+  // Check for newly completed global achievements
+  useEffect(() => {
+    let lastCompletedIds = new Set();
+    
+    const checkGlobalAchievements = () => {
+      const currentCompletedIds = new Set(
+        globalAchievements.filter(g => g.completed).map(g => g.achievement_id)
+      );
+      
+      // Find newly completed achievements
+      const newlyCompleted = [...currentCompletedIds].filter(id => !lastCompletedIds.has(id));
+      
+      if (newlyCompleted.length > 0 && lastCompletedIds.size > 0) {
+        // Show notification for the first newly completed achievement
+        setUnlockedGlobalAchievement(newlyCompleted[0]);
+      }
+      
+      lastCompletedIds = currentCompletedIds;
+    };
+    
+    if (globalAchievements.length > 0) {
+      checkGlobalAchievements();
+    }
+  }, [globalAchievements]);
 
   const globalSavings = useMemo(() => {
     return globalStats.reduce((sum, stat) => 
@@ -697,6 +730,15 @@ export default function Home() {
           <AchievementNotification
           achievementId={unlockedAchievement}
           onClose={() => setUnlockedAchievement(null)}
+          />
+          )}
+          
+          {/* Global Achievement Notification */}
+          {unlockedGlobalAchievement && (
+          <AchievementNotification
+          achievementId={unlockedGlobalAchievement}
+          onClose={() => setUnlockedGlobalAchievement(null)}
+          isGlobal={true}
           />
           )}
 
