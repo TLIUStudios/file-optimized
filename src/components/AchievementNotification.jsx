@@ -56,6 +56,10 @@ const ACHIEVEMENTS = {
   'batch_20': { name: 'Batch Legend', description: 'Processed 20 files at once', icon: '🗂️', color: 'from-indigo-500 to-purple-500' },
   'batch_30': { name: 'Batch Titan', description: 'Processed 30 files at once', icon: '📊', color: 'from-purple-500 to-pink-500' },
   
+  // Download Achievements
+  'downloader': { name: 'Downloader', description: 'Downloaded 50 compressed files', icon: '⬇️', color: 'from-blue-500 to-indigo-500' },
+  'bulk_downloader': { name: 'Bulk Downloader', description: 'Downloaded 10 ZIP archives', icon: '🗜️', color: 'from-purple-500 to-pink-500' },
+  
   // Time-based
   'night_owl': { name: 'Night Owl', description: 'Compressed files after midnight', icon: '🦉', color: 'from-slate-500 to-indigo-500' },
   'early_bird': { name: 'Early Bird', description: 'Compressed files before 6 AM', icon: '🐦', color: 'from-yellow-500 to-orange-500' },

@@ -81,6 +81,17 @@ export default function Home() {
       const totalFiles = stats.length;
       const totalSaved = stats.reduce((sum, s) => sum + (s.original_size - s.compressed_size), 0);
 
+      // Count by media type
+      const imageCount = stats.filter(s => s.media_type === 'image').length;
+      const videoCount = stats.filter(s => s.media_type === 'video').length;
+      const audioCount = stats.filter(s => s.media_type === 'audio').length;
+
+      // Count by output format
+      const formatCounts = {};
+      stats.forEach(s => {
+        formatCounts[s.output_format] = (formatCounts[s.output_format] || 0) + 1;
+      });
+
       // Check compression count achievements
       const countAchievements = [
         { id: 'first_compress', threshold: 1 },
@@ -128,11 +139,67 @@ export default function Home() {
         }
       }
 
+      // Check format specialist achievements
+      const formatAchievements = [
+        { id: 'jpg_specialist', format: 'jpg', threshold: 50 },
+        { id: 'png_specialist', format: 'png', threshold: 50 },
+        { id: 'webp_specialist', format: 'webp', threshold: 50 },
+        { id: 'avif_specialist', format: 'avif', threshold: 50 },
+        { id: 'gif_specialist', format: 'gif', threshold: 50 },
+      ];
+
+      for (const { id, format, threshold } of formatAchievements) {
+        if ((formatCounts[format] || 0) >= threshold && !unlockedIds.includes(id)) {
+          await base44.entities.Achievement.create({ achievement_id: id, unlocked_at: new Date().toISOString() });
+          setUnlockedAchievement(id);
+          return;
+        }
+      }
+
+      // Check media type achievements
+      if (videoCount >= 25 && !unlockedIds.includes('video_specialist')) {
+        await base44.entities.Achievement.create({ achievement_id: 'video_specialist', unlocked_at: new Date().toISOString() });
+        setUnlockedAchievement('video_specialist');
+        return;
+      }
+
+      if (audioCount >= 25 && !unlockedIds.includes('audio_specialist')) {
+        await base44.entities.Achievement.create({ achievement_id: 'audio_specialist', unlocked_at: new Date().toISOString() });
+        setUnlockedAchievement('audio_specialist');
+        return;
+      }
+
+      if (imageCount >= 100 && !unlockedIds.includes('image_master')) {
+        await base44.entities.Achievement.create({ achievement_id: 'image_master', unlocked_at: new Date().toISOString() });
+        setUnlockedAchievement('image_master');
+        return;
+      }
+
+      if (videoCount >= 50 && !unlockedIds.includes('video_master')) {
+        await base44.entities.Achievement.create({ achievement_id: 'video_master', unlocked_at: new Date().toISOString() });
+        setUnlockedAchievement('video_master');
+        return;
+      }
+
+      if (audioCount >= 50 && !unlockedIds.includes('audio_master')) {
+        await base44.entities.Achievement.create({ achievement_id: 'audio_master', unlocked_at: new Date().toISOString() });
+        setUnlockedAchievement('audio_master');
+        return;
+      }
+
       // Check format explorer achievement
       const usedFormats = new Set(stats.map(s => s.output_format));
       if (usedFormats.size >= 7 && !unlockedIds.includes('all_formats')) {
         await base44.entities.Achievement.create({ achievement_id: 'all_formats', unlocked_at: new Date().toISOString() });
         setUnlockedAchievement('all_formats');
+        return;
+      }
+
+      // Check Pro member achievement
+      if (user.plan === 'pro' && !unlockedIds.includes('pro_member')) {
+        await base44.entities.Achievement.create({ achievement_id: 'pro_member', unlocked_at: new Date().toISOString() });
+        setUnlockedAchievement('pro_member');
+        return;
       }
     } catch (error) {
       console.log('Achievement check error:', error);
@@ -145,6 +212,19 @@ export default function Home() {
     queryFn: () => base44.entities.CompressionStat.list('-created_date', 100000),
     refetchInterval: 30000, // Refresh every 30 seconds
   });
+
+  // Update global achievements periodically
+  useEffect(() => {
+    // Update on mount
+    base44.functions.invoke('updateGlobalAchievements').catch(err => console.log('Global update error:', err));
+    
+    // Update every 5 minutes
+    const interval = setInterval(() => {
+      base44.functions.invoke('updateGlobalAchievements').catch(err => console.log('Global update error:', err));
+    }, 5 * 60 * 1000);
+    
+    return () => clearInterval(interval);
+  }, []);
 
   const globalSavings = useMemo(() => {
     return globalStats.reduce((sum, stat) => 
