@@ -16,12 +16,17 @@ Deno.serve(async (req) => {
     const videoCount = allStats.filter(s => s.media_type === 'video').length;
     const audioCount = allStats.filter(s => s.media_type === 'audio').length;
     
-    // Get user count (count unique created_by emails)
-    const uniqueUsers = new Set(allStats.map(s => s.created_by)).size;
+    // Get unique user count
+    const uniqueUsers = new Set(allStats.map(s => s.created_by).filter(Boolean)).size;
     
-    // Define all global achievements and their tracking logic
+    // Calculate average savings percentage
+    const avgSavingsPercent = allStats.length > 0 
+      ? allStats.reduce((sum, s) => sum + ((s.original_size - s.compressed_size) / s.original_size * 100), 0) / allStats.length 
+      : 0;
+
+    // Define all global achievements and their tracking logic (100 total)
     const achievementChecks = [
-      // File count achievements
+      // File count achievements (19)
       { id: 'global_100', metric: totalFiles, goal: 100 },
       { id: 'global_500', metric: totalFiles, goal: 500 },
       { id: 'global_1000', metric: totalFiles, goal: 1000 },
@@ -42,7 +47,7 @@ Deno.serve(async (req) => {
       { id: 'global_5000000', metric: totalFiles, goal: 5000000 },
       { id: 'global_10000000', metric: totalFiles, goal: 10000000 },
       
-      // Data saved achievements
+      // Data saved achievements (23)
       { id: 'global_save_10mb', metric: totalSavings, goal: 10 * 1024 * 1024 },
       { id: 'global_save_50mb', metric: totalSavings, goal: 50 * 1024 * 1024 },
       { id: 'global_save_100mb', metric: totalSavings, goal: 100 * 1024 * 1024 },
@@ -67,7 +72,7 @@ Deno.serve(async (req) => {
       { id: 'global_save_50tb', metric: totalSavings, goal: 50 * 1024 * 1024 * 1024 * 1024 },
       { id: 'global_save_100tb', metric: totalSavings, goal: 100 * 1024 * 1024 * 1024 * 1024 },
       
-      // User count achievements
+      // User count achievements (16)
       { id: 'global_10_users', metric: uniqueUsers, goal: 10 },
       { id: 'global_25_users', metric: uniqueUsers, goal: 25 },
       { id: 'global_50_users', metric: uniqueUsers, goal: 50 },
@@ -85,7 +90,7 @@ Deno.serve(async (req) => {
       { id: 'global_500000_users', metric: uniqueUsers, goal: 500000 },
       { id: 'global_1000000_users', metric: uniqueUsers, goal: 1000000 },
       
-      // Format specific
+      // Format specific (9)
       { id: 'global_1000_images', metric: imageCount, goal: 1000 },
       { id: 'global_10000_images', metric: imageCount, goal: 10000 },
       { id: 'global_100000_images', metric: imageCount, goal: 100000 },
@@ -95,6 +100,57 @@ Deno.serve(async (req) => {
       { id: 'global_500_audio', metric: audioCount, goal: 500 },
       { id: 'global_5000_audio', metric: audioCount, goal: 5000 },
       { id: 'global_50000_audio', metric: audioCount, goal: 50000 },
+      
+      // Weekly/Monthly (6) - Simplified
+      { id: 'global_1000_week', metric: 0, goal: 1000 },
+      { id: 'global_5000_week', metric: 0, goal: 5000 },
+      { id: 'global_10000_week', metric: 0, goal: 10000 },
+      { id: 'global_10000_month', metric: 0, goal: 10000 },
+      { id: 'global_50000_month', metric: 0, goal: 50000 },
+      { id: 'global_100000_month', metric: 0, goal: 100000 },
+      
+      // Consecutive Activity (4) - Simplified
+      { id: 'global_7_days', metric: 0, goal: 7 },
+      { id: 'global_30_days', metric: 0, goal: 30 },
+      { id: 'global_100_days', metric: 0, goal: 100 },
+      { id: 'global_365_days', metric: 0, goal: 365 },
+      
+      // Efficiency (3)
+      { id: 'global_avg_50_savings', metric: avgSavingsPercent, goal: 50 },
+      { id: 'global_avg_70_savings', metric: avgSavingsPercent, goal: 70 },
+      { id: 'global_avg_80_savings', metric: avgSavingsPercent, goal: 80 },
+      
+      // Special Events (3) - Requires date tracking
+      { id: 'global_holiday_2025', metric: 0, goal: 10000 },
+      { id: 'global_newyear_2026', metric: 0, goal: 5000 },
+      { id: 'global_summer_2025', metric: 0, goal: 25000 },
+      
+      // Pro Members (4) - Requires subscription tracking
+      { id: 'global_100_pro', metric: 0, goal: 100 },
+      { id: 'global_500_pro', metric: 0, goal: 500 },
+      { id: 'global_1000_pro', metric: 0, goal: 1000 },
+      { id: 'global_5000_pro', metric: 0, goal: 5000 },
+      
+      // Batch (3) - Requires batch tracking
+      { id: 'global_10000_batch', metric: 0, goal: 10000 },
+      { id: 'global_50000_batch', metric: 0, goal: 50000 },
+      { id: 'global_100000_batch', metric: 0, goal: 100000 },
+      
+      // Downloads (4) - Requires download tracking
+      { id: 'global_10000_downloads', metric: 0, goal: 10000 },
+      { id: 'global_50000_downloads', metric: 0, goal: 50000 },
+      { id: 'global_100000_downloads', metric: 0, goal: 100000 },
+      { id: 'global_1000_zips', metric: 0, goal: 1000 },
+      
+      // Performance (6) - Requires detailed tracking
+      { id: 'global_avg_5mb', metric: totalFiles > 0 ? totalSavings / totalFiles / (1024 * 1024) : 0, goal: 5 },
+      { id: 'global_avg_10mb', metric: totalFiles > 0 ? totalSavings / totalFiles / (1024 * 1024) : 0, goal: 10 },
+      { id: 'global_peak_hour', metric: 0, goal: 1000 },
+      { id: 'global_peak_day', metric: 0, goal: 10000 },
+      { id: 'global_fastest_growth', metric: 0, goal: 1000 },
+      { id: 'global_community_milestone', metric: totalFiles, goal: 100000 },
+      
+      // Remaining achievements would need additional tracking entities (18 more)
     ];
     
     // Get existing global achievements
@@ -135,7 +191,8 @@ Deno.serve(async (req) => {
         uniqueUsers,
         imageCount,
         videoCount,
-        audioCount
+        audioCount,
+        avgSavingsPercent
       }
     });
     
