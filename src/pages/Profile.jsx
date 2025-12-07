@@ -53,6 +53,7 @@ export default function Profile() {
   const [billingFrequency, setBillingFrequency] = useState('monthly');
   const [achievementPage, setAchievementPage] = useState(0);
   const [achievementFilter, setAchievementFilter] = useState('personal'); // 'personal' or 'global'
+  const [achievementStatusFilter, setAchievementStatusFilter] = useState('all'); // 'all', 'completed', 'uncompleted'
   const [checkingAchievements, setCheckingAchievements] = useState(false);
 
   // Load achievements
@@ -724,38 +725,85 @@ export default function Profile() {
                 </div>
 
                 {/* Filter Tabs */}
-                <div className="flex items-center gap-1 sm:ml-auto bg-slate-100 dark:bg-slate-950 p-1 rounded-lg">
-                  <button
-                    onClick={() => { setAchievementFilter('personal'); setAchievementPage(0); }}
-                    className={cn(
-                      "px-3 py-1.5 rounded text-xs font-medium transition-all",
-                      achievementFilter === 'personal'
-                        ? "bg-white dark:bg-slate-800 text-slate-900 dark:text-white shadow-sm"
-                        : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
-                    )}
-                  >
-                    Personal ({achievements.length}/{Object.keys(ACHIEVEMENTS).length})
-                  </button>
-                  <button
-                    onClick={() => { setAchievementFilter('global'); setAchievementPage(0); }}
-                    className={cn(
-                      "px-3 py-1.5 rounded text-xs font-medium transition-all",
-                      achievementFilter === 'global'
-                        ? "bg-white dark:bg-slate-800 text-slate-900 dark:text-white shadow-sm"
-                        : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
-                    )}
-                  >
-                    Global ({globalAchievements.filter(g => g.completed).length}/{Object.keys(GLOBAL_ACHIEVEMENTS).length})
-                  </button>
+                <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:ml-auto">
+                  <div className="flex items-center gap-1 bg-slate-100 dark:bg-slate-950 p-1 rounded-lg">
+                    <button
+                      onClick={() => { setAchievementFilter('personal'); setAchievementPage(0); }}
+                      className={cn(
+                        "px-3 py-1.5 rounded text-xs font-medium transition-all",
+                        achievementFilter === 'personal'
+                          ? "bg-white dark:bg-slate-800 text-slate-900 dark:text-white shadow-sm"
+                          : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
+                      )}
+                    >
+                      Personal ({achievements.length}/{Object.keys(ACHIEVEMENTS).length})
+                    </button>
+                    <button
+                      onClick={() => { setAchievementFilter('global'); setAchievementPage(0); }}
+                      className={cn(
+                        "px-3 py-1.5 rounded text-xs font-medium transition-all",
+                        achievementFilter === 'global'
+                          ? "bg-white dark:bg-slate-800 text-slate-900 dark:text-white shadow-sm"
+                          : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
+                      )}
+                    >
+                      Global ({globalAchievements.filter(g => g.completed).length}/{Object.keys(GLOBAL_ACHIEVEMENTS).length})
+                    </button>
+                  </div>
+
+                  {/* Status Filter */}
+                  <div className="flex items-center gap-1 bg-slate-100 dark:bg-slate-950 p-1 rounded-lg">
+                    <button
+                      onClick={() => { setAchievementStatusFilter('all'); setAchievementPage(0); }}
+                      className={cn(
+                        "px-3 py-1.5 rounded text-xs font-medium transition-all",
+                        achievementStatusFilter === 'all'
+                          ? "bg-white dark:bg-slate-800 text-slate-900 dark:text-white shadow-sm"
+                          : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
+                      )}
+                    >
+                      All
+                    </button>
+                    <button
+                      onClick={() => { setAchievementStatusFilter('completed'); setAchievementPage(0); }}
+                      className={cn(
+                        "px-3 py-1.5 rounded text-xs font-medium transition-all",
+                        achievementStatusFilter === 'completed'
+                          ? "bg-white dark:bg-slate-800 text-slate-900 dark:text-white shadow-sm"
+                          : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
+                      )}
+                    >
+                      Completed
+                    </button>
+                    <button
+                      onClick={() => { setAchievementStatusFilter('uncompleted'); setAchievementPage(0); }}
+                      className={cn(
+                        "px-3 py-1.5 rounded text-xs font-medium transition-all",
+                        achievementStatusFilter === 'uncompleted'
+                          ? "bg-white dark:bg-slate-800 text-slate-900 dark:text-white shadow-sm"
+                          : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
+                      )}
+                    >
+                      Uncompleted
+                    </button>
+                  </div>
                 </div>
-              </div>
+                </div>
 
               {achievementFilter === 'personal' ? (
                 <>
                   {/* Personal Achievements */}
                   <div className="relative">
                     <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
-                      {Object.entries(ACHIEVEMENTS).slice(achievementPage * 12, (achievementPage + 1) * 12).map(([id, achievement]) => {
+                      {Object.entries(ACHIEVEMENTS)
+                        .filter(([id, achievement]) => {
+                          const unlocked = achievements.find(a => a.achievement_id === id);
+                          if (achievementStatusFilter === 'completed') return !!unlocked;
+                          if (achievementStatusFilter === 'uncompleted') return !unlocked;
+                          return true;
+                        })
+                        .slice(achievementPage * 12, (achievementPage + 1) * 12)
+                        .map(([id, achievement]) => {
                         const unlocked = achievements.find(a => a.achievement_id === id);
                         
                         return (
@@ -798,47 +846,61 @@ export default function Profile() {
                     </div>
 
                     {/* Navigation Controls */}
-                    {Object.keys(ACHIEVEMENTS).length > 12 && (
-                      <div className="flex items-center justify-center gap-2 mt-4">
-                        <Button
-                          variant="outline"
-                          size="icon"
-                          onClick={() => setAchievementPage(prev => Math.max(0, prev - 1))}
-                          disabled={achievementPage === 0}
-                          className="h-8 w-8"
-                        >
-                          <ChevronLeft className="w-4 h-4" />
-                        </Button>
-                        
-                        <div className="flex items-center gap-1">
-                          {Array.from({ length: Math.ceil(Object.keys(ACHIEVEMENTS).length / 12) }).map((_, i) => (
-                            <button
-                              key={i}
-                              onClick={() => setAchievementPage(i)}
-                              className={cn(
-                                "w-2 h-2 rounded-full transition-all",
-                                achievementPage === i
-                                  ? "bg-emerald-600 w-6"
-                                  : "bg-slate-300 dark:bg-slate-700 hover:bg-slate-400 dark:hover:bg-slate-600"
-                              )}
-                            />
-                          ))}
-                        </div>
+                    {(() => {
+                      const filteredAchievements = Object.entries(ACHIEVEMENTS).filter(([id]) => {
+                        const unlocked = achievements.find(a => a.achievement_id === id);
+                        if (achievementStatusFilter === 'completed') return !!unlocked;
+                        if (achievementStatusFilter === 'uncompleted') return !unlocked;
+                        return true;
+                      });
+                      const totalPages = Math.ceil(filteredAchievements.length / 12);
 
-                        <Button
-                          variant="outline"
-                          size="icon"
-                          onClick={() => setAchievementPage(prev => Math.min(Math.ceil(Object.keys(ACHIEVEMENTS).length / 12) - 1, prev + 1))}
-                          disabled={achievementPage >= Math.ceil(Object.keys(ACHIEVEMENTS).length / 12) - 1}
-                          className="h-8 w-8"
-                        >
-                          <ChevronRight className="w-4 h-4" />
-                        </Button>
-                      </div>
-                    )}
+                      return filteredAchievements.length > 12 && (
+                        <div className="flex items-center justify-center gap-2 mt-4">
+                          <Button
+                            variant="outline"
+                            size="icon"
+                            onClick={() => setAchievementPage(prev => Math.max(0, prev - 1))}
+                            disabled={achievementPage === 0}
+                            className="h-8 w-8"
+                          >
+                            <ChevronLeft className="w-4 h-4" />
+                          </Button>
+
+                          <div className="flex items-center gap-1">
+                            {Array.from({ length: totalPages }).map((_, i) => (
+                              <button
+                                key={i}
+                                onClick={() => setAchievementPage(i)}
+                                className={cn(
+                                  "w-2 h-2 rounded-full transition-all",
+                                  achievementPage === i
+                                    ? "bg-emerald-600 w-6"
+                                    : "bg-slate-300 dark:bg-slate-700 hover:bg-slate-400 dark:hover:bg-slate-600"
+                                )}
+                              />
+                            ))}
+                          </div>
+
+                          <Button
+                            variant="outline"
+                            size="icon"
+                            onClick={() => setAchievementPage(prev => Math.min(totalPages - 1, prev + 1))}
+                            disabled={achievementPage >= totalPages - 1}
+                            className="h-8 w-8"
+                          >
+                            <ChevronRight className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      );
+                    })()}
 
                     <p className="text-xs text-slate-500 dark:text-slate-400 text-center mt-4">
-                      {Object.keys(ACHIEVEMENTS).length - achievements.length} more to unlock!
+                      {achievementStatusFilter === 'completed' 
+                        ? `${achievements.length} unlocked`
+                        : achievementStatusFilter === 'uncompleted'
+                        ? `${Object.keys(ACHIEVEMENTS).length - achievements.length} to unlock`
+                        : `${Object.keys(ACHIEVEMENTS).length - achievements.length} more to unlock!`}
                     </p>
                   </div>
                 </>
@@ -851,7 +913,16 @@ export default function Profile() {
                     </p>
 
                     <div className="space-y-3">
-                      {Object.entries(GLOBAL_ACHIEVEMENTS).slice(achievementPage * 6, (achievementPage + 1) * 6).map(([id, achievement]) => {
+                      {Object.entries(GLOBAL_ACHIEVEMENTS)
+                        .filter(([id, achievement]) => {
+                          const globalData = globalAchievements.find(g => g.achievement_id === id);
+                          const completed = globalData?.completed || false;
+                          if (achievementStatusFilter === 'completed') return completed;
+                          if (achievementStatusFilter === 'uncompleted') return !completed;
+                          return true;
+                        })
+                        .slice(achievementPage * 6, (achievementPage + 1) * 6)
+                        .map(([id, achievement]) => {
                         const globalData = globalAchievements.find(g => g.achievement_id === id);
                         const progress = globalData?.current_progress || 0;
                         const goal = achievement.goal;
@@ -933,44 +1004,55 @@ export default function Profile() {
                     </div>
 
                     {/* Navigation for Global Achievements */}
-                    {Object.keys(GLOBAL_ACHIEVEMENTS).length > 6 && (
-                      <div className="flex items-center justify-center gap-2 mt-4">
-                        <Button
-                          variant="outline"
-                          size="icon"
-                          onClick={() => setAchievementPage(prev => Math.max(0, prev - 1))}
-                          disabled={achievementPage === 0}
-                          className="h-8 w-8"
-                        >
-                          <ChevronLeft className="w-4 h-4" />
-                        </Button>
-                        
-                        <div className="flex items-center gap-1">
-                          {Array.from({ length: Math.ceil(Object.keys(GLOBAL_ACHIEVEMENTS).length / 6) }).map((_, i) => (
-                            <button
-                              key={i}
-                              onClick={() => setAchievementPage(i)}
-                              className={cn(
-                                "w-2 h-2 rounded-full transition-all",
-                                achievementPage === i
-                                  ? "bg-amber-600 w-6"
-                                  : "bg-slate-300 dark:bg-slate-700 hover:bg-slate-400 dark:hover:bg-slate-600"
-                              )}
-                            />
-                          ))}
-                        </div>
+                    {(() => {
+                      const filteredGlobalAchievements = Object.entries(GLOBAL_ACHIEVEMENTS).filter(([id]) => {
+                        const globalData = globalAchievements.find(g => g.achievement_id === id);
+                        const completed = globalData?.completed || false;
+                        if (achievementStatusFilter === 'completed') return completed;
+                        if (achievementStatusFilter === 'uncompleted') return !completed;
+                        return true;
+                      });
+                      const totalPages = Math.ceil(filteredGlobalAchievements.length / 6);
 
-                        <Button
-                          variant="outline"
-                          size="icon"
-                          onClick={() => setAchievementPage(prev => Math.min(Math.ceil(Object.keys(GLOBAL_ACHIEVEMENTS).length / 6) - 1, prev + 1))}
-                          disabled={achievementPage >= Math.ceil(Object.keys(GLOBAL_ACHIEVEMENTS).length / 6) - 1}
-                          className="h-8 w-8"
-                        >
-                          <ChevronRight className="w-4 h-4" />
-                        </Button>
-                      </div>
-                    )}
+                      return filteredGlobalAchievements.length > 6 && (
+                        <div className="flex items-center justify-center gap-2 mt-4">
+                          <Button
+                            variant="outline"
+                            size="icon"
+                            onClick={() => setAchievementPage(prev => Math.max(0, prev - 1))}
+                            disabled={achievementPage === 0}
+                            className="h-8 w-8"
+                          >
+                            <ChevronLeft className="w-4 h-4" />
+                          </Button>
+
+                          <div className="flex items-center gap-1">
+                            {Array.from({ length: totalPages }).map((_, i) => (
+                              <button
+                                key={i}
+                                onClick={() => setAchievementPage(i)}
+                                className={cn(
+                                  "w-2 h-2 rounded-full transition-all",
+                                  achievementPage === i
+                                    ? "bg-amber-600 w-6"
+                                    : "bg-slate-300 dark:bg-slate-700 hover:bg-slate-400 dark:hover:bg-slate-600"
+                                )}
+                              />
+                            ))}
+                          </div>
+
+                          <Button
+                            variant="outline"
+                            size="icon"
+                            onClick={() => setAchievementPage(prev => Math.min(totalPages - 1, prev + 1))}
+                            disabled={achievementPage >= totalPages - 1}
+                            className="h-8 w-8"
+                          >
+                            <ChevronRight className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      );
+                    })()}
                   </div>
                 </>
               )}

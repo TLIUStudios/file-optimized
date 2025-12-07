@@ -275,12 +275,11 @@ Deno.serve(async (req) => {
           unlocked_at: new Date().toISOString()
         });
         newAchievements.push(check.id);
-        break; // Only unlock one at a time for notification purposes
       }
     }
 
     return Response.json({ 
-      newAchievements,
+      new_achievements: newAchievements,
       totalAchievements: existingAchievements.length + newAchievements.length,
       stats: {
         totalFiles,
