@@ -1,4 +1,3 @@
-
 import { useState, useEffect, lazy, Suspense } from "react";
 import { base44 } from "@/api/base44Client";
 import SEOHead from "../components/SEOHead";
@@ -395,11 +394,221 @@ export default function Profile() {
             </Card>
           </motion.div>
 
-          {/* Space Saved Stats */}
+          {/* Plan Comparison Card */}
           <motion.div
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ delay: 0.15 }}
+          >
+            <Card className="p-6">
+              <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-4">Your Plan</h3>
+              
+              {/* Billing Frequency Toggle */}
+              <div className="flex items-center justify-center gap-2 p-1 bg-slate-100 dark:bg-slate-900 rounded-lg mb-4">
+                <button
+                  onClick={() => setBillingFrequency('monthly')}
+                  className={`flex-1 px-4 py-2 rounded-md text-sm font-medium transition-all ${
+                    billingFrequency === 'monthly'
+                      ? 'bg-white dark:bg-slate-800 text-slate-900 dark:text-white shadow-sm'
+                      : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                  }`}
+                >
+                  Monthly
+                </button>
+                <button
+                  onClick={() => setBillingFrequency('annual')}
+                  className={`flex-1 px-4 py-2 rounded-md text-sm font-medium transition-all relative ${
+                    billingFrequency === 'annual'
+                      ? 'bg-white dark:bg-slate-800 text-slate-900 dark:text-white shadow-sm'
+                      : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                  }`}
+                >
+                  Annual
+                  <Badge className="absolute -top-2 -right-2 bg-emerald-600 text-white text-[10px] px-1.5 py-0.5">
+                    Save 17%
+                  </Badge>
+                </button>
+              </div>
+
+              {/* Plan Comparison Grid */}
+              <div className="grid grid-cols-2 gap-4 mb-4">
+              {/* Free Plan */}
+              <div className={`p-4 rounded-lg border-2 ${!isPro ? 'border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-950' : 'border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-950'} relative`}>
+                {!isPro && (
+                  <Badge className="absolute -top-2 left-1/2 -translate-x-1/2 bg-emerald-600 text-white">
+                    Current Plan
+                  </Badge>
+                )}
+                <h4 className="text-base font-bold text-slate-900 dark:text-white mb-1 text-center">Free Plan</h4>
+                <div className="text-center mb-3">
+                  <p className="text-2xl font-bold text-slate-600 dark:text-slate-400">$0</p>
+                  <div className="h-4 mt-1">
+                    <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">
+                      Limited Options
+                    </p>
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2 text-xs text-slate-900 dark:text-white font-medium">
+                    <CheckCircle2 className="w-3.5 h-3.5 text-slate-500 flex-shrink-0" />
+                    <span>50MB file limit</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-xs text-slate-900 dark:text-white font-medium">
+                    <CheckCircle2 className="w-3.5 h-3.5 text-slate-500 flex-shrink-0" />
+                    <span>9 files batch</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-xs text-slate-900 dark:text-white font-medium">
+                    <CheckCircle2 className="w-3.5 h-3.5 text-slate-500 flex-shrink-0" />
+                    <span>Standard processing speed</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-xs text-slate-900 dark:text-white font-medium">
+                    <CheckCircle2 className="w-3.5 h-3.5 text-slate-500 flex-shrink-0" />
+                    <span>No Watermark</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-xs text-slate-900 dark:text-white font-medium">
+                    <CheckCircle2 className="w-3.5 h-3.5 text-slate-500 flex-shrink-0" />
+                    <span>Displays Ads</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Pro Plan */}
+              <div className={`p-4 rounded-lg border-2 ${isPro ? 'border-amber-500 dark:border-amber-600 bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-950/30 dark:to-orange-950/30' : 'border-amber-500 dark:border-amber-600 bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-950/30 dark:to-orange-950/30'} relative overflow-hidden`}>
+                {isPro && (
+                  <Badge className="absolute -top-2 left-1/2 -translate-x-1/2 bg-emerald-600 text-white">
+                    Current Plan
+                  </Badge>
+                )}
+                {!isPro && (
+                  <div className="absolute top-0 right-0 bg-amber-500 text-white text-[10px] px-2 py-0.5 rounded-bl-lg font-bold">BEST</div>
+                )}
+                <h4 className="text-base font-bold text-slate-900 dark:text-white mb-1 text-center flex items-center justify-center gap-1">
+                  <Zap className="w-4 h-4 text-amber-600" />
+                  Pro Plan
+                </h4>
+                <div className="text-center mb-3">
+                  <p className="text-2xl font-bold text-amber-600 dark:text-amber-500">
+                    {billingFrequency === 'annual' ? '$100 USD' : '$10 USD'}
+                    <span className="text-sm">{billingFrequency === 'annual' ? '/yr' : '/mo'}</span>
+                  </p>
+                  <div className="h-4 mt-1">
+                    {billingFrequency === 'annual' && (
+                      <p className="text-xs text-emerald-600 dark:text-emerald-400 font-medium">
+                        Save $20/year vs monthly
+                      </p>
+                    )}
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2 text-xs text-slate-900 dark:text-white font-medium">
+                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 flex-shrink-0" />
+                    <span>500MB files</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-xs text-slate-900 dark:text-white font-medium">
+                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 flex-shrink-0" />
+                    <span>30 files batch</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-xs text-slate-900 dark:text-white font-medium">
+                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 flex-shrink-0" />
+                    <span>Priority processing speed</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-xs text-slate-900 dark:text-white font-medium">
+                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 flex-shrink-0" />
+                    <span>No Watermark</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-xs text-slate-900 dark:text-white font-medium">
+                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 flex-shrink-0" />
+                    <span>No Ads</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-xs text-slate-900 dark:text-white font-medium">
+                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 flex-shrink-0" />
+                    <span>Supports future TLIU projects</span>
+                  </div>
+                </div>
+              </div>
+              </div>
+
+              {/* Pro subscription details */}
+              {isPro && (
+                <div className="space-y-3 mb-4">
+                  {planExpires && !isExpired && (
+                    <div className="bg-slate-100 dark:bg-slate-950 rounded-lg p-3">
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm text-slate-600 dark:text-slate-400">Renews on</span>
+                        <span className="text-sm font-semibold text-slate-900 dark:text-white">
+                          {planExpires.toLocaleDateString()}
+                        </span>
+                      </div>
+                      {daysRemaining !== null && daysRemaining <= 7 && (
+                        <p className="text-xs text-amber-600 dark:text-amber-400 mt-1">
+                          {daysRemaining} day{daysRemaining !== 1 ? 's' : ''} remaining
+                        </p>
+                      )}
+                    </div>
+                  )}
+
+                  {isExpired && (
+                    <div className="bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800 rounded-lg p-3">
+                      <p className="text-sm text-red-600 dark:text-red-400 font-medium">
+                        Your Pro plan has expired. Renew to restore benefits.
+                      </p>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Action Button */}
+              {isPro ? (
+                <Button
+                  onClick={handleManageSubscription}
+                  disabled={processingPortal}
+                  className="w-full"
+                  variant="outline"
+                >
+                  {processingPortal ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      Opening Portal...
+                    </>
+                  ) : (
+                    <>
+                      <Settings className="w-4 h-4 mr-2" />
+                      Manage Subscription
+                    </>
+                  )}
+                </Button>
+              ) : (
+                <div className="relative">
+                  <div className="absolute -inset-1 bg-gradient-to-r from-yellow-400 via-amber-500 to-orange-500 rounded-lg opacity-75 blur-lg animate-pulse" style={{ animationDuration: '2s' }}></div>
+                  <Button
+                    onClick={() => setShowProModal(true)}
+                    className="relative w-full bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white overflow-hidden group"
+                  >
+                    <div className="absolute inset-0">
+                      <div className="absolute top-2 left-[15%] w-2 h-2 bg-yellow-200 rounded-full animate-ping" style={{ animationDuration: '1.5s' }} />
+                      <div className="absolute top-3 left-[35%] w-1.5 h-1.5 bg-white rounded-full animate-ping" style={{ animationDuration: '1.8s', animationDelay: '0.3s' }} />
+                      <div className="absolute top-2 left-[55%] w-2 h-2 bg-yellow-300 rounded-full animate-ping" style={{ animationDuration: '1.6s', animationDelay: '0.6s' }} />
+                      <div className="absolute top-3 left-[75%] w-1.5 h-1.5 bg-yellow-200 rounded-full animate-ping" style={{ animationDuration: '1.7s', animationDelay: '0.2s' }} />
+                      <div className="absolute top-2 left-[85%] w-2 h-2 bg-white rounded-full animate-ping" style={{ animationDuration: '1.9s', animationDelay: '0.8s' }} />
+                      <div className="absolute bottom-2 left-[20%] w-1.5 h-1.5 bg-yellow-300 rounded-full animate-ping" style={{ animationDuration: '1.4s', animationDelay: '0.4s' }} />
+                      <div className="absolute bottom-3 left-[45%] w-2 h-2 bg-white rounded-full animate-ping" style={{ animationDuration: '1.7s', animationDelay: '0.5s' }} />
+                      <div className="absolute bottom-2 left-[70%] w-1.5 h-1.5 bg-yellow-200 rounded-full animate-ping" style={{ animationDuration: '1.5s', animationDelay: '0.7s' }} />
+                    </div>
+                    <span className="relative z-10 flex items-center justify-center">
+                      <Sparkles className="w-4 h-4 mr-2" />
+                      Upgrade to Pro - {billingFrequency === 'annual' ? '$100 USD/yr' : '$10 USD/mo'}
+                    </span>
+                  </Button>
+                </div>
+              )}
+            </Card>
+          </motion.div>
+
+          {/* Space Saved Stats */}
+          <motion.div
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.2 }}
           >
             <Card className="p-6 bg-gradient-to-br from-emerald-50 to-teal-50 dark:from-emerald-950/20 dark:to-teal-950/20 border-emerald-200 dark:border-emerald-800">
               {statsLoading ? (
@@ -453,7 +662,7 @@ export default function Profile() {
           <motion.div
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: 0.2 }}
+            transition={{ delay: 0.25 }}
           >
             <Card className="p-6">
               <div className="flex flex-col sm:flex-row sm:items-center gap-3 mb-4">
@@ -716,222 +925,12 @@ export default function Profile() {
             </Card>
           </motion.div>
 
-          {/* Plan Comparison Card */}
-          <motion.div
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: 0.3 }}
-          >
-            <Card className="p-6">
-              <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-4">Your Plan</h3>
-              
-              {/* Billing Frequency Toggle */}
-              <div className="flex items-center justify-center gap-2 p-1 bg-slate-100 dark:bg-slate-900 rounded-lg mb-4">
-                <button
-                  onClick={() => setBillingFrequency('monthly')}
-                  className={`flex-1 px-4 py-2 rounded-md text-sm font-medium transition-all ${
-                    billingFrequency === 'monthly'
-                      ? 'bg-white dark:bg-slate-800 text-slate-900 dark:text-white shadow-sm'
-                      : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-                  }`}
-                >
-                  Monthly
-                </button>
-                <button
-                  onClick={() => setBillingFrequency('annual')}
-                  className={`flex-1 px-4 py-2 rounded-md text-sm font-medium transition-all relative ${
-                    billingFrequency === 'annual'
-                      ? 'bg-white dark:bg-slate-800 text-slate-900 dark:text-white shadow-sm'
-                      : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-                  }`}
-                >
-                  Annual
-                  <Badge className="absolute -top-2 -right-2 bg-emerald-600 text-white text-[10px] px-1.5 py-0.5">
-                    Save 17%
-                  </Badge>
-                </button>
-              </div>
-
-              {/* Plan Comparison Grid */}
-              <div className="grid grid-cols-2 gap-4 mb-4">
-              {/* Free Plan */}
-              <div className={`p-4 rounded-lg border-2 ${!isPro ? 'border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-950' : 'border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-950'} relative`}>
-                {!isPro && (
-                  <Badge className="absolute -top-2 left-1/2 -translate-x-1/2 bg-emerald-600 text-white">
-                    Current Plan
-                  </Badge>
-                )}
-                <h4 className="text-base font-bold text-slate-900 dark:text-white mb-1 text-center">Free Plan</h4>
-                <div className="text-center mb-3">
-                  <p className="text-2xl font-bold text-slate-600 dark:text-slate-400">$0</p>
-                  <div className="h-4 mt-1">
-                    <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">
-                      Limited Options
-                    </p>
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  <div className="flex items-center gap-2 text-xs text-slate-900 dark:text-white font-medium">
-                    <CheckCircle2 className="w-3.5 h-3.5 text-slate-500 flex-shrink-0" />
-                    <span>50MB file limit</span>
-                  </div>
-                  <div className="flex items-center gap-2 text-xs text-slate-900 dark:text-white font-medium">
-                    <CheckCircle2 className="w-3.5 h-3.5 text-slate-500 flex-shrink-0" />
-                    <span>9 files batch</span>
-                  </div>
-                  <div className="flex items-center gap-2 text-xs text-slate-900 dark:text-white font-medium">
-                    <CheckCircle2 className="w-3.5 h-3.5 text-slate-500 flex-shrink-0" />
-                    <span>Standard processing speed</span>
-                  </div>
-                  <div className="flex items-center gap-2 text-xs text-slate-900 dark:text-white font-medium">
-                    <CheckCircle2 className="w-3.5 h-3.5 text-slate-500 flex-shrink-0" />
-                    <span>No Watermark</span>
-                  </div>
-                  <div className="flex items-center gap-2 text-xs text-slate-900 dark:text-white font-medium">
-                    <CheckCircle2 className="w-3.5 h-3.5 text-slate-500 flex-shrink-0" />
-                    <span>Displays Ads</span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Pro Plan */}
-              <div className={`p-4 rounded-lg border-2 ${isPro ? 'border-amber-500 dark:border-amber-600 bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-950/30 dark:to-orange-950/30' : 'border-amber-500 dark:border-amber-600 bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-950/30 dark:to-orange-950/30'} relative overflow-hidden`}>
-                {isPro && (
-                  <Badge className="absolute -top-2 left-1/2 -translate-x-1/2 bg-emerald-600 text-white">
-                    Current Plan
-                  </Badge>
-                )}
-                {!isPro && (
-                  <div className="absolute top-0 right-0 bg-amber-500 text-white text-[10px] px-2 py-0.5 rounded-bl-lg font-bold">BEST</div>
-                )}
-                <h4 className="text-base font-bold text-slate-900 dark:text-white mb-1 text-center flex items-center justify-center gap-1">
-                  <Zap className="w-4 h-4 text-amber-600" />
-                  Pro Plan
-                </h4>
-                <div className="text-center mb-3">
-                  <p className="text-2xl font-bold text-amber-600 dark:text-amber-500">
-                    {billingFrequency === 'annual' ? '$100 USD' : '$10 USD'}
-                    <span className="text-sm">{billingFrequency === 'annual' ? '/yr' : '/mo'}</span>
-                  </p>
-                  <div className="h-4 mt-1">
-                    {billingFrequency === 'annual' && (
-                      <p className="text-xs text-emerald-600 dark:text-emerald-400 font-medium">
-                        Save $20/year vs monthly
-                      </p>
-                    )}
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  <div className="flex items-center gap-2 text-xs text-slate-900 dark:text-white font-medium">
-                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 flex-shrink-0" />
-                    <span>500MB files</span>
-                  </div>
-                  <div className="flex items-center gap-2 text-xs text-slate-900 dark:text-white font-medium">
-                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 flex-shrink-0" />
-                    <span>30 files batch</span>
-                  </div>
-                  <div className="flex items-center gap-2 text-xs text-slate-900 dark:text-white font-medium">
-                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 flex-shrink-0" />
-                    <span>Priority processing speed</span>
-                  </div>
-                  <div className="flex items-center gap-2 text-xs text-slate-900 dark:text-white font-medium">
-                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 flex-shrink-0" />
-                    <span>No Watermark</span>
-                  </div>
-                  <div className="flex items-center gap-2 text-xs text-slate-900 dark:text-white font-medium">
-                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 flex-shrink-0" />
-                    <span>No Ads</span>
-                  </div>
-                  <div className="flex items-center gap-2 text-xs text-slate-900 dark:text-white font-medium">
-                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 flex-shrink-0" />
-                    <span>Supports future TLIU projects</span>
-                  </div>
-                </div>
-              </div>
-              </div>
-
-              {/* Pro subscription details */}
-              {isPro && (
-                <div className="space-y-3 mb-4">
-                  {planExpires && !isExpired && (
-                    <div className="bg-slate-100 dark:bg-slate-950 rounded-lg p-3">
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm text-slate-600 dark:text-slate-400">Renews on</span>
-                        <span className="text-sm font-semibold text-slate-900 dark:text-white">
-                          {planExpires.toLocaleDateString()}
-                        </span>
-                      </div>
-                      {daysRemaining !== null && daysRemaining <= 7 && (
-                        <p className="text-xs text-amber-600 dark:text-amber-400 mt-1">
-                          {daysRemaining} day{daysRemaining !== 1 ? 's' : ''} remaining
-                        </p>
-                      )}
-                    </div>
-                  )}
-
-                  {isExpired && (
-                    <div className="bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800 rounded-lg p-3">
-                      <p className="text-sm text-red-600 dark:text-red-400 font-medium">
-                        Your Pro plan has expired. Renew to restore benefits.
-                      </p>
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {/* Action Button */}
-              {isPro ? (
-                <Button
-                  onClick={handleManageSubscription}
-                  disabled={processingPortal}
-                  className="w-full"
-                  variant="outline"
-                >
-                  {processingPortal ? (
-                    <>
-                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                      Opening Portal...
-                    </>
-                  ) : (
-                    <>
-                      <Settings className="w-4 h-4 mr-2" />
-                      Manage Subscription
-                    </>
-                  )}
-                </Button>
-              ) : (
-                <div className="relative">
-                  <div className="absolute -inset-1 bg-gradient-to-r from-yellow-400 via-amber-500 to-orange-500 rounded-lg opacity-75 blur-lg animate-pulse" style={{ animationDuration: '2s' }}></div>
-                  <Button
-                    onClick={() => setShowProModal(true)}
-                    className="relative w-full bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white overflow-hidden group"
-                  >
-                    <div className="absolute inset-0">
-                      <div className="absolute top-2 left-[15%] w-2 h-2 bg-yellow-200 rounded-full animate-ping" style={{ animationDuration: '1.5s' }} />
-                      <div className="absolute top-3 left-[35%] w-1.5 h-1.5 bg-white rounded-full animate-ping" style={{ animationDuration: '1.8s', animationDelay: '0.3s' }} />
-                      <div className="absolute top-2 left-[55%] w-2 h-2 bg-yellow-300 rounded-full animate-ping" style={{ animationDuration: '1.6s', animationDelay: '0.6s' }} />
-                      <div className="absolute top-3 left-[75%] w-1.5 h-1.5 bg-yellow-200 rounded-full animate-ping" style={{ animationDuration: '1.7s', animationDelay: '0.2s' }} />
-                      <div className="absolute top-2 left-[85%] w-2 h-2 bg-white rounded-full animate-ping" style={{ animationDuration: '1.9s', animationDelay: '0.8s' }} />
-                      <div className="absolute bottom-2 left-[20%] w-1.5 h-1.5 bg-yellow-300 rounded-full animate-ping" style={{ animationDuration: '1.4s', animationDelay: '0.4s' }} />
-                      <div className="absolute bottom-3 left-[45%] w-2 h-2 bg-white rounded-full animate-ping" style={{ animationDuration: '1.7s', animationDelay: '0.5s' }} />
-                      <div className="absolute bottom-2 left-[70%] w-1.5 h-1.5 bg-yellow-200 rounded-full animate-ping" style={{ animationDuration: '1.5s', animationDelay: '0.7s' }} />
-                    </div>
-                    <span className="relative z-10 flex items-center justify-center">
-                      <Sparkles className="w-4 h-4 mr-2" />
-                      Upgrade to Pro - {billingFrequency === 'annual' ? '$100 USD/yr' : '$10 USD/mo'}
-                    </span>
-                  </Button>
-                </div>
-              )}
-            </Card>
-          </motion.div>
-
           {/* Billing History */}
           {isPro && (
             <motion.div
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.35 }}
+              transition={{ delay: 0.3 }}
             >
               <Card className="p-6">
                 <div className="flex items-center gap-2 mb-4">
@@ -996,7 +995,7 @@ export default function Profile() {
           <motion.div
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: 0.4 }}
+            transition={{ delay: 0.35 }}
           >
             <Card className="p-6">
               <div className="flex items-center justify-between mb-6">
