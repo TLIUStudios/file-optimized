@@ -26,8 +26,10 @@ import {
   Package,
   ShoppingBag,
   HardDrive,
-  TrendingDown
+  TrendingDown,
+  Trophy
 } from "lucide-react";
+import { ACHIEVEMENTS } from "../components/AchievementNotification";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { motion } from "framer-motion";
@@ -46,6 +48,13 @@ export default function Profile() {
   const [selectedTheme, setSelectedTheme] = useState('none');
   const [savingTheme, setSavingTheme] = useState(false);
   const [billingFrequency, setBillingFrequency] = useState('monthly');
+
+  // Load achievements
+  const { data: achievements = [] } = useQuery({
+    queryKey: ['achievements', user?.email],
+    queryFn: () => base44.entities.Achievement.list('-unlocked_at', 100),
+    enabled: !!user,
+  });
 
   // Load user data
   useEffect(() => {
@@ -634,6 +643,72 @@ export default function Profile() {
                     </span>
                   </Button>
                 </div>
+              )}
+            </Card>
+          </motion.div>
+
+          {/* Achievements Section */}
+          <motion.div
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.3 }}
+          >
+            <Card className="p-6">
+              <div className="flex items-center gap-2 mb-4">
+                <Trophy className="w-5 h-5 text-amber-500" />
+                <h3 className="text-lg font-semibold text-slate-900 dark:text-white">Your Achievements</h3>
+                <Badge variant="outline" className="ml-auto">
+                  {achievements.length} / {Object.keys(ACHIEVEMENTS).length}
+                </Badge>
+              </div>
+
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                {Object.entries(ACHIEVEMENTS).slice(0, 6).map(([id, achievement]) => {
+                  const unlocked = achievements.find(a => a.achievement_id === id);
+                  
+                  return (
+                    <div
+                      key={id}
+                      className={`relative p-3 rounded-lg border-2 transition-all ${
+                        unlocked
+                          ? `bg-gradient-to-br ${achievement.color} border-transparent`
+                          : 'bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-800 opacity-40 grayscale'
+                      }`}
+                    >
+                      {unlocked && (
+                        <div className="absolute top-1 right-1">
+                          <div className="w-5 h-5 rounded-full bg-white dark:bg-slate-900 flex items-center justify-center">
+                            <Trophy className="w-2.5 h-2.5 text-amber-500" />
+                          </div>
+                        </div>
+                      )}
+
+                      <div className={`w-10 h-10 rounded-lg flex items-center justify-center text-2xl mb-2 ${
+                        unlocked ? 'bg-white/20 dark:bg-slate-900/20' : 'bg-slate-200 dark:bg-slate-800'
+                      }`}>
+                        {achievement.icon}
+                      </div>
+
+                      <h4 className={`font-bold text-xs mb-0.5 ${
+                        unlocked ? 'text-white' : 'text-slate-900 dark:text-white'
+                      }`}>
+                        {achievement.name}
+                      </h4>
+                      
+                      <p className={`text-[10px] leading-tight ${
+                        unlocked ? 'text-white/80' : 'text-slate-600 dark:text-slate-400'
+                      }`}>
+                        {achievement.description}
+                      </p>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {achievements.length < Object.keys(ACHIEVEMENTS).length && (
+                <p className="text-xs text-slate-500 dark:text-slate-400 text-center mt-4">
+                  Keep compressing to unlock more achievements!
+                </p>
               )}
             </Card>
           </motion.div>
