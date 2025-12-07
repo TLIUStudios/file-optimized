@@ -261,6 +261,29 @@ Deno.serve(async (req) => {
       
       // Download (1)
       { id: 'downloader', condition: false },
+      
+      // Batch Processing (3)
+      { id: 'batch_5', condition: false },
+      { id: 'batch_10', condition: false },
+      { id: 'batch_20', condition: false },
+      
+      // Video Features (3)
+      { id: 'video_trimmer', condition: false },
+      { id: 'fps_master', condition: false },
+      { id: 'resolution_master', condition: false },
+      
+      // Audio Features (2)
+      { id: 'bitrate_optimizer', condition: false },
+      { id: 'audio_converter', condition: false },
+      
+      // GIF Features (2)
+      { id: 'gif_animator', condition: false },
+      { id: 'gif_converter', condition: false },
+      
+      // Metadata & Editing (3)
+      { id: 'metadata_master', condition: false },
+      { id: 'editor', condition: false },
+      { id: 'comparison_expert', condition: false },
     ];
 
     // Find new achievements to unlock

@@ -157,9 +157,32 @@ const ACHIEVEMENTS = {
   
   // Download (1)
   'downloader': { name: 'Downloader', description: 'Downloaded 50 compressed files', icon: '⬇️', color: 'from-green-500 to-emerald-500' },
+  
+  // Batch Processing (3)
+  'batch_5': { name: 'Batch Beginner', description: 'Uploaded 5 files at once', icon: '📚', color: 'from-blue-500 to-cyan-500' },
+  'batch_10': { name: 'Batch Expert', description: 'Uploaded 10 files at once', icon: '📑', color: 'from-cyan-500 to-teal-500' },
+  'batch_20': { name: 'Batch Master', description: 'Uploaded 20 files at once', icon: '🗂️', color: 'from-teal-500 to-emerald-500' },
+  
+  // Video Features (3)
+  'video_trimmer': { name: 'Video Trimmer', description: 'Edited 10 videos', icon: '✂️', color: 'from-red-500 to-pink-500' },
+  'fps_master': { name: 'FPS Master', description: 'Changed frame rate 15 times', icon: '🎞️', color: 'from-orange-500 to-red-500' },
+  'resolution_master': { name: 'Resolution Master', description: 'Changed video resolution 20 times', icon: '📺', color: 'from-purple-500 to-indigo-500' },
+  
+  // Audio Features (2)
+  'bitrate_optimizer': { name: 'Bitrate Optimizer', description: 'Optimized audio bitrate 20 times', icon: '🎚️', color: 'from-indigo-500 to-violet-500' },
+  'audio_converter': { name: 'Audio Converter', description: 'Converted between MP3/WAV 15 times', icon: '🔊', color: 'from-purple-500 to-pink-500' },
+  
+  // GIF Features (2)
+  'gif_animator': { name: 'GIF Animator', description: 'Created 10 image animations', icon: '🎪', color: 'from-pink-500 to-rose-500' },
+  'gif_converter': { name: 'GIF Converter', description: 'Converted GIF ↔ MP4 20 times', icon: '🔁', color: 'from-orange-500 to-yellow-500' },
+  
+  // Metadata & Editing (3)
+  'metadata_master': { name: 'Metadata Master', description: 'Generated SEO data 25 times', icon: '📝', color: 'from-blue-500 to-cyan-500' },
+  'editor': { name: 'Editor', description: 'Edited 10 files before compression', icon: '✂️', color: 'from-purple-500 to-violet-500' },
+  'comparison_expert': { name: 'Comparison Expert', description: 'Compared images 30 times', icon: '🔍', color: 'from-teal-500 to-cyan-500' },
 };
 
-// Count: 11+9+8+4+4+5+3+4+3+4+2+3+2+3+3+1+1+5+4+3+3+2+2+1 = 100 ✓
+// Count: 11+9+8+4+4+5+3+4+3+4+2+3+2+3+3+1+1+5+4+3+3+2+2+1+3+3+2+2+3 = 100 ✓
 
 const GLOBAL_ACHIEVEMENTS = {
   // File Count Milestones (17)
