@@ -100,9 +100,6 @@ Deno.serve(async (req) => {
 
     // Check format variety
     const usedFormats = new Set(Object.keys(formatCounts).filter(f => f));
-    const allFormatsUsed10Times = ['jpg', 'jpeg', 'png', 'webp', 'avif', 'gif', 'mp4'].every(f => 
-      (formatCounts[f] || formatCounts[f.toUpperCase()] || 0) >= 10
-    );
 
     // Check account age
     const accountAge = Date.now() - new Date(user.created_date).getTime();
@@ -110,7 +107,7 @@ Deno.serve(async (req) => {
     
     const joinedIn2025 = new Date(user.created_date).getFullYear() === 2025;
 
-    // Build comprehensive achievement checks (all 100)
+    // Build comprehensive achievement checks (exactly 100)
     const achievementChecks = [
       // Compression Count (11)
       { id: 'first_compress', condition: totalFiles >= 1 },
@@ -158,47 +155,23 @@ Deno.serve(async (req) => {
       { id: 'big_file', condition: hasBigFile },
       { id: 'huge_file', condition: hasHugeFile },
       
-      // Streaks (5) - Simplified for now
+      // Streaks (5)
       { id: 'daily_user', condition: daysSinceJoin >= 7 && totalFiles >= 7 },
       { id: 'weekly_warrior', condition: daysSinceJoin >= 30 && totalFiles >= 30 },
       { id: 'monthly_master', condition: daysSinceJoin >= 60 && totalFiles >= 60 },
       { id: 'marathon_runner', condition: daysSinceJoin >= 100 && totalFiles >= 100 },
       { id: 'dedication_legend', condition: daysSinceJoin >= 365 && totalFiles >= 365 },
       
-      // Batch (4) - Requires session tracking
-      { id: 'batch_5', condition: false },
-      { id: 'batch_10', condition: false },
-      { id: 'batch_20', condition: false },
-      { id: 'batch_30', condition: false },
-      
       // Time-based (3)
       { id: 'night_owl', condition: nightOwlFiles >= 1 },
       { id: 'early_bird', condition: earlyBirdFiles >= 1 },
       { id: 'speed_demon', condition: false },
-      
-      // Conversion (5) - Requires conversion tracking
-      { id: 'format_converter', condition: false },
-      { id: 'gif_to_mp4', condition: false },
-      { id: 'video_to_gif', condition: false },
-      { id: 'conversion_pro', condition: false },
-      { id: 'image_format_master', condition: false },
-      
-      // Quality (2) - Requires quality tracking in stats
-      { id: 'perfectionist', condition: false },
-      { id: 'minimalist', condition: false },
       
       // Supporter (4)
       { id: 'pro_member', condition: user.plan === 'pro' },
       { id: 'annual_supporter', condition: user.plan === 'pro' && user.billing_frequency === 'annual' },
       { id: 'loyal_subscriber', condition: user.plan === 'pro' && daysSinceJoin >= 180 },
       { id: 'veteran', condition: user.plan === 'pro' && daysSinceJoin >= 365 },
-      
-      // Social (5) - Requires manual/external tracking
-      { id: 'reviewer', condition: false },
-      { id: 'five_star', condition: false },
-      { id: 'community_member', condition: false },
-      { id: 'bug_reporter', condition: false },
-      { id: 'feature_requester', condition: false },
       
       // Size Categories (3)
       { id: 'small_optimizer', condition: smallFiles >= 50 },
@@ -215,44 +188,32 @@ Deno.serve(async (req) => {
       { id: 'efficient_compressor', condition: avgCompression >= 70 && totalFiles >= 20 },
       { id: 'size_reducer', condition: neverIncreased && totalFiles >= 50 },
       
-      // Exploration (4) - Requires feature tracking
-      { id: 'theme_collector', condition: false },
-      { id: 'theme_master', condition: false },
-      { id: 'feature_explorer', condition: false },
-      { id: 'format_hopper', condition: usedFormats.size >= 5 },
-      
       // Milestones (3)
       { id: 'first_week', condition: daysSinceJoin >= 7 },
       { id: 'first_month', condition: daysSinceJoin >= 30 },
       { id: 'first_year', condition: daysSinceJoin >= 365 },
       
-      // Advanced Techniques (3) - Requires settings tracking
+      // Advanced Techniques (3)
       { id: 'resolution_tuner', condition: false },
       { id: 'quality_tweaker', condition: false },
       { id: 'settings_explorer', condition: false },
       
-      // Video Specific (3) - Requires video edit tracking
+      // Video Specific (3)
       { id: 'video_trimmer', condition: false },
       { id: 'fps_master', condition: false },
       { id: 'resolution_master', condition: false },
       
-      // Audio Specific (2) - Requires audio edit tracking
+      // Audio Specific (2)
       { id: 'bitrate_optimizer', condition: false },
       { id: 'audio_converter', condition: false },
       
-      // GIF Specific (2) - Requires GIF tracking
+      // GIF Specific (2)
       { id: 'gif_animator', condition: false },
       { id: 'gif_converter', condition: false },
       
       // Early Supporter (2)
       { id: 'early_adopter', condition: joinedIn2025 },
       { id: 'beta_tester', condition: new Date(user.created_date) < new Date('2025-01-01') },
-      
-      // Special Milestones (4) - Requires session tracking
-      { id: 'file_hoarder', condition: false },
-      { id: 'clean_slate', condition: false },
-      { id: 'power_session', condition: totalFiles >= 20 },
-      { id: 'quick_start', condition: false },
       
       // Seasonal (4)
       { id: 'summer_optimizer', condition: seasonCounts.summer >= 50 },
@@ -262,35 +223,37 @@ Deno.serve(async (req) => {
       
       // Advanced Stats (2)
       { id: 'consistent_saver', condition: avgCompression >= 50 && totalFiles >= 100 },
-      { id: 'variety_seeker', condition: allFormatsUsed10Times },
+      { id: 'variety_seeker', condition: false },
       
-      // Feature Usage (8) - Requires feature tracking
+      // Feature Usage (6)
       { id: 'upscaler', condition: false },
       { id: 'animator', condition: false },
       { id: 'editor', condition: false },
       { id: 'metadata_master', condition: false },
       { id: 'social_sharer', condition: false },
       { id: 'power_upscaler', condition: false },
-      { id: 'animation_pro', condition: false },
-      { id: 'edit_master', condition: false },
       
-      // Advanced Features (3) - Requires feature tracking
+      // Advanced Features (3)
       { id: 'noise_reducer', condition: false },
       { id: 'metadata_stripper', condition: false },
       { id: 'watermark_artist', condition: false },
       
-      // Comparison (2) - Requires comparison tracking
+      // Comparison (2)
       { id: 'comparer', condition: false },
       { id: 'quality_analyst', condition: false },
       
-      // Sharing (3) - Requires share tracking
+      // Sharing (2)
       { id: 'share_master', condition: false },
       { id: 'influencer', condition: false },
-      { id: 'brand_builder', condition: false },
       
-      // Advanced Processing (7)
-      { id: 'upscale_4x', condition: false },
-      { id: 'batch_converter', condition: false },
+      // Social & Community (5)
+      { id: 'reviewer', condition: false },
+      { id: 'five_star', condition: false },
+      { id: 'community_member', condition: false },
+      { id: 'bug_reporter', condition: false },
+      { id: 'feature_requester', condition: false },
+      
+      // Advanced Processing (5)
       { id: 'format_expert', condition: usedFormats.size >= 5 },
       { id: 'compression_scientist', condition: false },
       { id: 'resolution_artist', condition: false },
@@ -304,14 +267,22 @@ Deno.serve(async (req) => {
       { id: 'speed_master', condition: false },
       { id: 'productivity_king', condition: false },
       
-      // Download (2) - Requires download tracking
-      { id: 'downloader', condition: false },
-      { id: 'bulk_downloader', condition: false },
-      
-      // Quality Focus (3) - Requires quality tracking
+      // Quality Focus (3)
       { id: 'quality_focused', condition: false },
       { id: 'balanced_user', condition: false },
       { id: 'file_size_ninja', condition: false },
+      
+      // Exploration (4)
+      { id: 'theme_collector', condition: false },
+      { id: 'theme_master', condition: false },
+      { id: 'feature_explorer', condition: false },
+      { id: 'format_hopper', condition: usedFormats.size >= 5 },
+      
+      // Special Milestones (4)
+      { id: 'file_hoarder', condition: false },
+      { id: 'clean_slate', condition: false },
+      { id: 'power_session', condition: totalFiles >= 20 },
+      { id: 'quick_start', condition: false },
       
       // Collector (5)
       { id: '10_achievement', condition: existingAchievements.length >= 10 },

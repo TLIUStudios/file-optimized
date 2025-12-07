@@ -855,7 +855,7 @@ export default function Profile() {
                                   }`}>
                                     <div
                                       className={`h-full transition-all duration-500 ${
-                                        completed ? 'bg-white' : 'bg-gradient-to-r from-indigo-500 to-purple-500'
+                                        completed ? 'bg-white' : 'bg-gradient-to-r from-amber-500 to-yellow-500'
                                       }`}
                                       style={{ width: `${percentage}%` }}
                                     />
@@ -867,7 +867,7 @@ export default function Profile() {
                                       {id.includes('save') ? formatBytes(progress) : progress.toLocaleString()} / {id.includes('save') ? formatBytes(goal) : goal.toLocaleString()}
                                     </p>
                                     <p className={`text-[10px] font-bold ${
-                                      completed ? 'text-white' : 'text-indigo-600 dark:text-indigo-400'
+                                      completed ? 'text-white' : 'text-amber-600 dark:text-amber-400'
                                     }`}>
                                       {percentage.toFixed(1)}%
                                     </p>
@@ -901,7 +901,7 @@ export default function Profile() {
                               className={cn(
                                 "w-2 h-2 rounded-full transition-all",
                                 achievementPage === i
-                                  ? "bg-indigo-600 w-6"
+                                  ? "bg-amber-600 w-6"
                                   : "bg-slate-300 dark:bg-slate-700 hover:bg-slate-400 dark:hover:bg-slate-600"
                               )}
                             />
