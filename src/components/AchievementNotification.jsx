@@ -74,29 +74,7 @@ const ACHIEVEMENTS = {
   'medium_handler': { name: 'Medium File Handler', description: 'Compressed 50 files 1-10 MB', icon: '📄', color: 'from-blue-500 to-indigo-500' },
   'large_processor': { name: 'Large File Processor', description: 'Compressed 25 files over 10 MB', icon: '📦', color: 'from-orange-500 to-red-500' },
   
-  // Special Achievements (4)
-  'weekend_warrior': { name: 'Weekend Warrior', description: 'Compressed 100 files on weekends', icon: '🎉', color: 'from-pink-500 to-fuchsia-500' },
-  'workday_hero': { name: 'Workday Hero', description: 'Compressed 100 files on weekdays', icon: '💼', color: 'from-blue-500 to-indigo-500' },
-  'morning_person': { name: 'Morning Person', description: 'Compressed 50 files before noon', icon: '☀️', color: 'from-yellow-500 to-orange-500' },
-  'night_shifter': { name: 'Night Shifter', description: 'Compressed 50 files after 8 PM', icon: '🌙', color: 'from-indigo-500 to-purple-500' },
-  
-  // Efficiency Expert (2)
-  'efficient_compressor': { name: 'Efficient Compressor', description: 'Average 70%+ savings across 20 files', icon: '📊', color: 'from-green-500 to-emerald-500' },
-  'size_reducer': { name: 'Size Reducer', description: 'Never increased file size (50+ files)', icon: '📉', color: 'from-teal-500 to-cyan-500' },
-  
-  // Milestones (3)
-  'first_week': { name: 'First Week', description: 'Used the app for 7 days', icon: '📆', color: 'from-green-500 to-emerald-500' },
-  'first_month': { name: 'First Month', description: 'Used the app for 30 days', icon: '📅', color: 'from-blue-500 to-indigo-500' },
-  'first_year': { name: 'One Year Strong', description: 'Used the app for 365 days', icon: '🎂', color: 'from-purple-500 to-pink-500' },
-  
-  // Early Supporter (2)
-  'early_adopter': { name: 'Early Adopter', description: 'Joined in 2025', icon: '🌱', color: 'from-lime-500 to-green-500' },
-  'beta_tester': { name: 'Beta Tester', description: 'Used the app during beta', icon: '🧪', color: 'from-cyan-500 to-teal-500' },
-  
-  // Seasonal (4)
-  'summer_optimizer': { name: 'Summer Optimizer', description: 'Compressed 50 files in summer', icon: '☀️', color: 'from-yellow-500 to-orange-500' },
-  'winter_compressor': { name: 'Winter Compressor', description: 'Compressed 50 files in winter', icon: '❄️', color: 'from-cyan-500 to-blue-500' },
-  'spring_cleaner': { name: 'Spring Cleaner', description: 'Compressed 50 files in spring', icon: '🌸', color: 'from-pink-500 to-rose-500' },
+  // Seasonal (1)
   'fall_processor': { name: 'Fall Processor', description: 'Compressed 50 files in fall', icon: '🍂', color: 'from-orange-500 to-red-500' },
   
   // Advanced Stats (2)
@@ -182,7 +160,7 @@ const ACHIEVEMENTS = {
   'comparison_expert': { name: 'Comparison Expert', description: 'Compared images 30 times', icon: '🔍', color: 'from-teal-500 to-cyan-500' },
 };
 
-// Count: 11+9+8+4+4+5+3+4+3+4+2+3+2+3+3+1+1+5+4+3+3+2+2+1+3+3+2+2+3 = 100 ✓
+// Count: 11+9+8+4+4+5+3+4+3+1+2+3+3+1+1+5+4+3+3+2+2+1+3+3+2+2+3 = 100 ✓
 
 const GLOBAL_ACHIEVEMENTS = {
   // File Count Milestones (17)
