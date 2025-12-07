@@ -1,3 +1,4 @@
+
 import { useState, useEffect, lazy, Suspense } from "react";
 import { base44 } from "@/api/base44Client";
 import SEOHead from "../components/SEOHead";
@@ -448,11 +449,278 @@ export default function Profile() {
             </Card>
           </motion.div>
 
+          {/* Achievements Section with Filter & Navigation */}
+          <motion.div
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.2 }}
+          >
+            <Card className="p-6">
+              <div className="flex flex-col sm:flex-row sm:items-center gap-3 mb-4">
+                <div className="flex items-center gap-2">
+                  <Trophy className="w-5 h-5 text-amber-500" />
+                  <h3 className="text-lg font-semibold text-slate-900 dark:text-white">Achievements</h3>
+                </div>
+
+                {/* Filter Tabs */}
+                <div className="flex items-center gap-1 sm:ml-auto bg-slate-100 dark:bg-slate-950 p-1 rounded-lg">
+                  <button
+                    onClick={() => { setAchievementFilter('personal'); setAchievementPage(0); }}
+                    className={cn(
+                      "px-3 py-1.5 rounded text-xs font-medium transition-all",
+                      achievementFilter === 'personal'
+                        ? "bg-white dark:bg-slate-800 text-slate-900 dark:text-white shadow-sm"
+                        : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
+                    )}
+                  >
+                    Personal ({achievements.length}/{Object.keys(ACHIEVEMENTS).length})
+                  </button>
+                  <button
+                    onClick={() => { setAchievementFilter('global'); setAchievementPage(0); }}
+                    className={cn(
+                      "px-3 py-1.5 rounded text-xs font-medium transition-all",
+                      achievementFilter === 'global'
+                        ? "bg-white dark:bg-slate-800 text-slate-900 dark:text-white shadow-sm"
+                        : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
+                    )}
+                  >
+                    Global ({globalAchievements.filter(g => g.completed).length}/{Object.keys(GLOBAL_ACHIEVEMENTS).length})
+                  </button>
+                </div>
+              </div>
+
+              {achievementFilter === 'personal' ? (
+                <>
+                  {/* Personal Achievements */}
+                  <div className="relative">
+                    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+                      {Object.entries(ACHIEVEMENTS).slice(achievementPage * 12, (achievementPage + 1) * 12).map(([id, achievement]) => {
+                        const unlocked = achievements.find(a => a.achievement_id === id);
+                        
+                        return (
+                          <div
+                            key={id}
+                            className={`relative p-3 rounded-lg border-2 transition-all ${
+                              unlocked
+                                ? `bg-gradient-to-br ${achievement.color} border-transparent shadow-lg`
+                                : 'bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-800 opacity-40 grayscale'
+                            }`}
+                          >
+                            {unlocked && (
+                              <div className="absolute top-1 right-1">
+                                <div className="w-5 h-5 rounded-full bg-white dark:bg-slate-900 flex items-center justify-center">
+                                  <Trophy className="w-2.5 h-2.5 text-amber-500" />
+                                </div>
+                              </div>
+                            )}
+
+                            <div className={`w-10 h-10 rounded-lg flex items-center justify-center text-2xl mb-2 ${
+                              unlocked ? 'bg-white/20 dark:bg-slate-900/20' : 'bg-slate-200 dark:bg-slate-800'
+                            }`}>
+                              {achievement.icon}
+                            </div>
+
+                            <h4 className={`font-bold text-xs mb-0.5 line-clamp-1 ${
+                              unlocked ? 'text-white' : 'text-slate-900 dark:text-white'
+                            }`}>
+                              {achievement.name}
+                            </h4>
+                            
+                            <p className={`text-[10px] leading-tight line-clamp-2 ${
+                              unlocked ? 'text-white/80' : 'text-slate-600 dark:text-slate-400'
+                            }`}>
+                              {achievement.description}
+                            </p>
+                          </div>
+                        );
+                      })}
+                    </div>
+
+                    {/* Navigation Controls */}
+                    {Object.keys(ACHIEVEMENTS).length > 12 && (
+                      <div className="flex items-center justify-center gap-2 mt-4">
+                        <Button
+                          variant="outline"
+                          size="icon"
+                          onClick={() => setAchievementPage(prev => Math.max(0, prev - 1))}
+                          disabled={achievementPage === 0}
+                          className="h-8 w-8"
+                        >
+                          <ChevronLeft className="w-4 h-4" />
+                        </Button>
+                        
+                        <div className="flex items-center gap-1">
+                          {Array.from({ length: Math.ceil(Object.keys(ACHIEVEMENTS).length / 12) }).map((_, i) => (
+                            <button
+                              key={i}
+                              onClick={() => setAchievementPage(i)}
+                              className={cn(
+                                "w-2 h-2 rounded-full transition-all",
+                                achievementPage === i
+                                  ? "bg-emerald-600 w-6"
+                                  : "bg-slate-300 dark:bg-slate-700 hover:bg-slate-400 dark:hover:bg-slate-600"
+                              )}
+                            />
+                          ))}
+                        </div>
+
+                        <Button
+                          variant="outline"
+                          size="icon"
+                          onClick={() => setAchievementPage(prev => Math.min(Math.ceil(Object.keys(ACHIEVEMENTS).length / 12) - 1, prev + 1))}
+                          disabled={achievementPage >= Math.ceil(Object.keys(ACHIEVEMENTS).length / 12) - 1}
+                          className="h-8 w-8"
+                        >
+                          <ChevronRight className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    )}
+
+                    <p className="text-xs text-slate-500 dark:text-slate-400 text-center mt-4">
+                      {Object.keys(ACHIEVEMENTS).length - achievements.length} more to unlock!
+                    </p>
+                  </div>
+                </>
+              ) : (
+                <>
+                  {/* Global Achievements */}
+                  <div className="relative">
+                    <p className="text-sm text-slate-600 dark:text-slate-400 mb-4 text-center">
+                      🌍 Work together with all users to unlock these milestones!
+                    </p>
+
+                    <div className="space-y-3">
+                      {Object.entries(GLOBAL_ACHIEVEMENTS).slice(achievementPage * 6, (achievementPage + 1) * 6).map(([id, achievement]) => {
+                        const globalData = globalAchievements.find(g => g.achievement_id === id);
+                        const progress = globalData?.current_progress || 0;
+                        const goal = achievement.goal;
+                        const completed = globalData?.completed || false;
+                        const percentage = Math.min(100, (progress / goal) * 100);
+                        
+                        const formatBytes = (bytes) => {
+                          if (bytes < 1024) return bytes + ' B';
+                          if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(0) + ' KB';
+                          if (bytes < 1024 * 1024 * 1024) return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+                          if (bytes < 1024 * 1024 * 1024 * 1024) return (bytes / (1024 * 1024 * 1024)).toFixed(1) + ' GB';
+                          return (bytes / (1024 * 1024 * 1024 * 1024)).toFixed(2) + ' TB';
+                        };
+                        
+                        return (
+                          <div
+                            key={id}
+                            className={`relative p-4 rounded-lg border-2 transition-all ${
+                              completed
+                                ? `bg-gradient-to-r ${achievement.color} border-transparent shadow-lg`
+                                : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800'
+                            }`}
+                          >
+                            <div className="flex items-start gap-3">
+                              <div className={`w-12 h-12 rounded-lg flex items-center justify-center text-2xl flex-shrink-0 ${
+                                completed ? 'bg-white/20 dark:bg-slate-900/20' : 'bg-slate-100 dark:bg-slate-800'
+                              }`}>
+                                {achievement.icon}
+                              </div>
+
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center justify-between mb-1">
+                                  <h4 className={`font-bold text-sm ${
+                                    completed ? 'text-white' : 'text-slate-900 dark:text-white'
+                                  }`}>
+                                    {achievement.name}
+                                  </h4>
+                                  {completed && (
+                                    <Trophy className="w-4 h-4 text-white" />
+                                  )}
+                                </div>
+                                
+                                <p className={`text-xs mb-2 ${
+                                  completed ? 'text-white/80' : 'text-slate-600 dark:text-slate-400'
+                                }`}>
+                                  {achievement.description}
+                                </p>
+
+                                {/* Progress Bar */}
+                                <div className="space-y-1">
+                                  <div className={`h-2 rounded-full overflow-hidden ${
+                                    completed ? 'bg-white/30' : 'bg-slate-200 dark:bg-slate-700'
+                                  }`}>
+                                    <div
+                                      className={`h-full transition-all duration-500 ${
+                                        completed ? 'bg-white' : 'bg-gradient-to-r from-indigo-500 to-purple-500'
+                                      }`}
+                                      style={{ width: `${percentage}%` }}
+                                    />
+                                  </div>
+                                  <div className="flex items-center justify-between">
+                                    <p className={`text-[10px] font-medium ${
+                                      completed ? 'text-white/70' : 'text-slate-500 dark:text-slate-400'
+                                    }`}>
+                                      {id.includes('save') ? formatBytes(progress) : progress.toLocaleString()} / {id.includes('save') ? formatBytes(goal) : goal.toLocaleString()}
+                                    </p>
+                                    <p className={`text-[10px] font-bold ${
+                                      completed ? 'text-white' : 'text-indigo-600 dark:text-indigo-400'
+                                    }`}>
+                                      {percentage.toFixed(1)}%
+                                    </p>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+
+                    {/* Navigation for Global Achievements */}
+                    {Object.keys(GLOBAL_ACHIEVEMENTS).length > 6 && (
+                      <div className="flex items-center justify-center gap-2 mt-4">
+                        <Button
+                          variant="outline"
+                          size="icon"
+                          onClick={() => setAchievementPage(prev => Math.max(0, prev - 1))}
+                          disabled={achievementPage === 0}
+                          className="h-8 w-8"
+                        >
+                          <ChevronLeft className="w-4 h-4" />
+                        </Button>
+                        
+                        <div className="flex items-center gap-1">
+                          {Array.from({ length: Math.ceil(Object.keys(GLOBAL_ACHIEVEMENTS).length / 6) }).map((_, i) => (
+                            <button
+                              key={i}
+                              onClick={() => setAchievementPage(i)}
+                              className={cn(
+                                "w-2 h-2 rounded-full transition-all",
+                                achievementPage === i
+                                  ? "bg-indigo-600 w-6"
+                                  : "bg-slate-300 dark:bg-slate-700 hover:bg-slate-400 dark:hover:bg-slate-600"
+                              )}
+                            />
+                          ))}
+                        </div>
+
+                        <Button
+                          variant="outline"
+                          size="icon"
+                          onClick={() => setAchievementPage(prev => Math.min(Math.ceil(Object.keys(GLOBAL_ACHIEVEMENTS).length / 6) - 1, prev + 1))}
+                          disabled={achievementPage >= Math.ceil(Object.keys(GLOBAL_ACHIEVEMENTS).length / 6) - 1}
+                          className="h-8 w-8"
+                        >
+                          <ChevronRight className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+                </>
+              )}
+            </Card>
+          </motion.div>
+
           {/* Plan Comparison Card */}
           <motion.div
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: 0.25 }}
+            transition={{ delay: 0.3 }}
           >
             <Card className="p-6">
               <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-4">Your Plan</h3>
@@ -658,78 +926,12 @@ export default function Profile() {
             </Card>
           </motion.div>
 
-          {/* Achievements Section */}
-          <motion.div
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: 0.3 }}
-          >
-            <Card className="p-6">
-              <div className="flex items-center gap-2 mb-4">
-                <Trophy className="w-5 h-5 text-amber-500" />
-                <h3 className="text-lg font-semibold text-slate-900 dark:text-white">Your Achievements</h3>
-                <Badge variant="outline" className="ml-auto">
-                  {achievements.length} / {Object.keys(ACHIEVEMENTS).length}
-                </Badge>
-              </div>
-
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                {Object.entries(ACHIEVEMENTS).slice(0, 6).map(([id, achievement]) => {
-                  const unlocked = achievements.find(a => a.achievement_id === id);
-                  
-                  return (
-                    <div
-                      key={id}
-                      className={`relative p-3 rounded-lg border-2 transition-all ${
-                        unlocked
-                          ? `bg-gradient-to-br ${achievement.color} border-transparent`
-                          : 'bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-800 opacity-40 grayscale'
-                      }`}
-                    >
-                      {unlocked && (
-                        <div className="absolute top-1 right-1">
-                          <div className="w-5 h-5 rounded-full bg-white dark:bg-slate-900 flex items-center justify-center">
-                            <Trophy className="w-2.5 h-2.5 text-amber-500" />
-                          </div>
-                        </div>
-                      )}
-
-                      <div className={`w-10 h-10 rounded-lg flex items-center justify-center text-2xl mb-2 ${
-                        unlocked ? 'bg-white/20 dark:bg-slate-900/20' : 'bg-slate-200 dark:bg-slate-800'
-                      }`}>
-                        {achievement.icon}
-                      </div>
-
-                      <h4 className={`font-bold text-xs mb-0.5 ${
-                        unlocked ? 'text-white' : 'text-slate-900 dark:text-white'
-                      }`}>
-                        {achievement.name}
-                      </h4>
-                      
-                      <p className={`text-[10px] leading-tight ${
-                        unlocked ? 'text-white/80' : 'text-slate-600 dark:text-slate-400'
-                      }`}>
-                        {achievement.description}
-                      </p>
-                    </div>
-                  );
-                })}
-              </div>
-
-              {achievements.length < Object.keys(ACHIEVEMENTS).length && (
-                <p className="text-xs text-slate-500 dark:text-slate-400 text-center mt-4">
-                  Keep compressing to unlock more achievements!
-                </p>
-              )}
-            </Card>
-          </motion.div>
-
           {/* Billing History */}
           {isPro && (
             <motion.div
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.4 }}
+              transition={{ delay: 0.35 }}
             >
               <Card className="p-6">
                 <div className="flex items-center gap-2 mb-4">
@@ -794,7 +996,7 @@ export default function Profile() {
           <motion.div
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: 0.5 }}
+            transition={{ delay: 0.4 }}
           >
             <Card className="p-6">
               <div className="flex items-center justify-between mb-6">
