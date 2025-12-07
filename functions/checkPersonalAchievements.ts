@@ -109,7 +109,7 @@ Deno.serve(async (req) => {
 
     // Build comprehensive achievement checks (exactly 100)
     const achievementChecks = [
-      // Compression Count (11)
+      // Compression Count (12)
       { id: 'first_compress', condition: totalFiles >= 1 },
       { id: 'compress_5', condition: totalFiles >= 5 },
       { id: 'compress_10', condition: totalFiles >= 10 },
@@ -119,10 +119,11 @@ Deno.serve(async (req) => {
       { id: 'compress_250', condition: totalFiles >= 250 },
       { id: 'compress_500', condition: totalFiles >= 500 },
       { id: 'compress_1000', condition: totalFiles >= 1000 },
+      { id: 'compress_2500', condition: totalFiles >= 2500 },
       { id: 'compress_5000', condition: totalFiles >= 5000 },
       { id: 'compress_10000', condition: totalFiles >= 10000 },
       
-      // Space Saved (9)
+      // Space Saved (10)
       { id: 'save_10mb', condition: totalSaved >= 10 * 1024 * 1024 },
       { id: 'save_50mb', condition: totalSaved >= 50 * 1024 * 1024 },
       { id: 'save_100mb', condition: totalSaved >= 100 * 1024 * 1024 },
@@ -130,6 +131,7 @@ Deno.serve(async (req) => {
       { id: 'save_1gb', condition: totalSaved >= 1024 * 1024 * 1024 },
       { id: 'save_5gb', condition: totalSaved >= 5 * 1024 * 1024 * 1024 },
       { id: 'save_10gb', condition: totalSaved >= 10 * 1024 * 1024 * 1024 },
+      { id: 'save_25gb', condition: totalSaved >= 25 * 1024 * 1024 * 1024 },
       { id: 'save_50gb', condition: totalSaved >= 50 * 1024 * 1024 * 1024 },
       { id: 'save_100gb', condition: totalSaved >= 100 * 1024 * 1024 * 1024 },
       

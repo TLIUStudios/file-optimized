@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import confetti from "canvas-confetti";
 
 const ACHIEVEMENTS = {
-  // Compression Count Milestones (11)
+  // Compression Count Milestones (12)
   'first_compress': { name: 'First Steps', description: 'Compressed your first file', icon: '🎯', color: 'from-blue-500 to-cyan-500' },
   'compress_5': { name: 'Quick Learner', description: 'Compressed 5 files', icon: '📚', color: 'from-cyan-500 to-blue-500' },
   'compress_10': { name: 'Getting Started', description: 'Compressed 10 files', icon: '⚡', color: 'from-green-500 to-emerald-500' },
@@ -15,10 +15,11 @@ const ACHIEVEMENTS = {
   'compress_250': { name: 'Power User', description: 'Compressed 250 files', icon: '⚙️', color: 'from-orange-500 to-red-500' },
   'compress_500': { name: 'Compression Legend', description: 'Compressed 500 files', icon: '👑', color: 'from-red-500 to-rose-500' },
   'compress_1000': { name: 'Unstoppable', description: 'Compressed 1000 files', icon: '🔥', color: 'from-rose-500 to-pink-500' },
+  'compress_2500': { name: 'Dedication Master', description: 'Compressed 2500 files', icon: '🎖️', color: 'from-pink-500 to-purple-500' },
   'compress_5000': { name: 'Elite Optimizer', description: 'Compressed 5000 files', icon: '💎', color: 'from-indigo-500 to-purple-500' },
   'compress_10000': { name: 'Legendary Status', description: 'Compressed 10000 files', icon: '🌟', color: 'from-violet-500 to-fuchsia-500' },
   
-  // Space Saved Milestones (9)
+  // Space Saved Milestones (10)
   'save_10mb': { name: 'Space Conscious', description: 'Saved 10 MB of space', icon: '💿', color: 'from-teal-400 to-cyan-400' },
   'save_50mb': { name: 'Storage Optimizer', description: 'Saved 50 MB of space', icon: '📀', color: 'from-cyan-500 to-blue-500' },
   'save_100mb': { name: 'Space Saver', description: 'Saved 100 MB of space', icon: '💾', color: 'from-teal-500 to-cyan-500' },
@@ -26,6 +27,7 @@ const ACHIEVEMENTS = {
   'save_1gb': { name: 'Gigabyte Guardian', description: 'Saved 1 GB of space', icon: '🌟', color: 'from-indigo-500 to-purple-500' },
   'save_5gb': { name: 'Storage Wizard', description: 'Saved 5 GB of space', icon: '🧙', color: 'from-purple-500 to-violet-500' },
   'save_10gb': { name: 'Storage Hero', description: 'Saved 10 GB of space', icon: '🎖️', color: 'from-pink-500 to-rose-500' },
+  'save_25gb': { name: 'Storage Champion', description: 'Saved 25 GB of space', icon: '🏅', color: 'from-orange-500 to-amber-500' },
   'save_50gb': { name: 'Disk Space Champion', description: 'Saved 50 GB of space', icon: '🏅', color: 'from-amber-500 to-yellow-500' },
   'save_100gb': { name: 'Storage Titan', description: 'Saved 100 GB of space', icon: '⚡', color: 'from-yellow-500 to-orange-500' },
   
@@ -160,7 +162,7 @@ const ACHIEVEMENTS = {
   'comparison_expert': { name: 'Comparison Expert', description: 'Compared images 30 times', icon: '🔍', color: 'from-teal-500 to-cyan-500' },
 };
 
-// Count: 11+9+8+4+4+5+3+4+3+1+2+3+3+1+1+5+4+3+3+2+2+1+3+3+2+2+3 = 100 ✓
+// Count: 12+10+8+4+4+5+3+4+3+1+2+3+3+1+1+5+4+3+3+2+2+1+3+3+2+2+3 = 100 ✓
 
 const GLOBAL_ACHIEVEMENTS = {
   // File Count Milestones (17)
