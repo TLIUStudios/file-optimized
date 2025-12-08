@@ -1055,25 +1055,20 @@ export default function ImageComparisonModal({
                     <Badge className="bg-emerald-600 text-white text-[10px]">Active</Badge>
                   </DropdownMenuItem>
                   <DropdownMenuItem disabled className="opacity-50 cursor-not-allowed">
-                    <svg className="w-4 h-4 mr-2 opacity-40" viewBox="0 0 235 224" fill="none">
-                      <path d="M58.968 0L0 37.696l23.615 37.728L82.56 37.696z" fill="#0061FF"/>
-                      <path d="M58.968 187.648l-58.968 37.728 23.615-37.728 58.968-37.728z" fill="#0061FF"/>
-                      <path d="M58.968 187.648l58.968-37.728-23.584-37.696-58.968 37.728z" fill="#0061FF"/>
-                      <path d="M117.936 75.424L176.904 37.696 153.32 0l-58.968 37.696z" fill="#0061FF"/>
-                      <path d="M176.936 187.648l58.968 37.728L212.289 187.648l-58.968-37.728z" fill="#0061FF"/>
-                      <path d="M176.936 187.648l-58.968-37.728 23.584-37.696 58.968 37.728z" fill="#0061FF"/>
+                    <svg className="w-4 h-4 mr-2 opacity-40" viewBox="0 0 512 512">
+                      <path fill="#0061FF" d="M128 256l-128 96 128 96 128-96z"/>
+                      <path fill="#0061FF" d="M128 64L0 160l128 96 128-96z"/>
+                      <path fill="#0061FF" d="M256 160l128-96 128 96-128 96z"/>
+                      <path fill="#0061FF" d="M256 352l128 96 128-96-128-96z"/>
                     </svg>
                     <span className="flex-1 text-slate-400">Dropbox</span>
                     <Badge variant="outline" className="text-[10px]">Soon</Badge>
                   </DropdownMenuItem>
                   <DropdownMenuItem disabled className="opacity-50 cursor-not-allowed">
                     <svg className="w-4 h-4 mr-2 opacity-40" viewBox="0 0 24 24">
-                      <path fill="#0364B8" d="M3 4.5A1.5 1.5 0 0 1 4.5 3H9v8.5H3V4.5z"/>
-                      <path fill="#0078D4" d="M9 3h6v8.5H9V3z"/>
-                      <path fill="#28A8EA" d="M15 3h4.5A1.5 1.5 0 0 1 21 4.5v7H15V3z"/>
-                      <path fill="#0078D4" d="M3 11.5h6V21H4.5A1.5 1.5 0 0 1 3 19.5v-8z"/>
-                      <path fill="#0364B8" d="M9 11.5h6V21H9v-9.5z"/>
-                      <path fill="#14447D" d="M15 11.5h6v8a1.5 1.5 0 0 1-1.5 1.5H15v-9.5z"/>
+                      <path fill="#0078D4" d="M13.8 0L0 13.5 4.7 24H24v-9.7L13.8 0z"/>
+                      <path fill="#0078D4" opacity="0.8" d="M13.8 0v14.3H24V0z"/>
+                      <path fill="#28A8EA" d="M0 13.5L4.7 24H24l-10.2-9.7z"/>
                     </svg>
                     <span className="flex-1 text-slate-400">OneDrive</span>
                     <Badge variant="outline" className="text-[10px]">Soon</Badge>
