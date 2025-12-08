@@ -71,10 +71,16 @@ Deno.serve(async (req) => {
 
     if (!uploadResponse.ok) {
       const errorData = await uploadResponse.text();
-      console.error('Google Drive upload error:', errorData);
+      console.error('Google Drive API error:', {
+        status: uploadResponse.status,
+        statusText: uploadResponse.statusText,
+        body: errorData,
+        url: uploadResponse.url
+      });
       return Response.json({ 
-        error: 'Failed to upload to Google Drive',
-        details: errorData 
+        error: 'Google Drive upload failed',
+        details: errorData,
+        status: uploadResponse.status
       }, { status: uploadResponse.status });
     }
 
