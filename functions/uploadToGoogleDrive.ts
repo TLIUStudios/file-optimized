@@ -44,12 +44,6 @@ Deno.serve(async (req) => {
       }, { status: 401 });
     }
 
-    if (!fileName || !fileData || !mimeType) {
-      return Response.json({ 
-        error: 'Missing required fields: fileName, fileData, mimeType' 
-      }, { status: 400 });
-    }
-
     // Convert base64 to blob
     const base64Data = fileData.split(',')[1] || fileData;
     const binaryData = Uint8Array.from(atob(base64Data), c => c.charCodeAt(0));
