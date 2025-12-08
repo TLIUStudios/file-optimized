@@ -4,6 +4,15 @@ Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
     
+    // Parse the request body first
+    const { fileName, fileData, mimeType } = await req.json();
+
+    if (!fileName || !fileData || !mimeType) {
+      return Response.json({ 
+        error: 'Missing required fields: fileName, fileData, mimeType' 
+      }, { status: 400 });
+    }
+    
     // Check authentication
     const user = await base44.auth.me();
     if (!user) {
@@ -15,8 +24,25 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Pro plan required' }, { status: 403 });
     }
 
-    // Parse the request body first
-    const { fileName, fileData, mimeType } = await req.json();
+    // Get the user's Google Drive access token via service role
+    let accessToken;
+    try {
+      accessToken = await base44.asServiceRole.connectors.getAccessToken('googledrive');
+      console.log('Token retrieved for:', user.email, 'length:', accessToken?.length);
+    } catch (error) {
+      console.error('Token error:', error);
+      return Response.json({ 
+        error: 'Google Drive not connected. Please reconnect in your profile.',
+        requiresAuth: true 
+      }, { status: 401 });
+    }
+    
+    if (!accessToken) {
+      return Response.json({ 
+        error: 'Google Drive token empty. Please reconnect in your profile.',
+        requiresAuth: true 
+      }, { status: 401 });
+    }
 
     if (!fileName || !fileData || !mimeType) {
       return Response.json({ 
@@ -24,31 +50,11 @@ Deno.serve(async (req) => {
       }, { status: 400 });
     }
 
-    // Get the user's Google Drive access token using service role
-    let accessToken;
-    try {
-      accessToken = await base44.asServiceRole.connectors.getAccessToken('googledrive');
-      console.log('Access token retrieved for user:', user.email);
-    } catch (error) {
-      console.error('Error getting access token:', error);
-      return Response.json({ 
-        error: 'Google Drive not connected. Please authorize access in your profile settings.',
-        requiresAuth: true 
-      }, { status: 401 });
-    }
-    
-    if (!accessToken) {
-      return Response.json({ 
-        error: 'Google Drive not connected. Please authorize access in your profile settings.',
-        requiresAuth: true 
-      }, { status: 401 });
-    }
-
     // Convert base64 to blob
     const base64Data = fileData.split(',')[1] || fileData;
     const binaryData = Uint8Array.from(atob(base64Data), c => c.charCodeAt(0));
 
-    // Upload to Google Drive using multipart upload
+    // Upload to Google Drive
     const metadata = {
       name: fileName,
       mimeType: mimeType
@@ -57,8 +63,6 @@ Deno.serve(async (req) => {
     const form = new FormData();
     form.append('metadata', new Blob([JSON.stringify(metadata)], { type: 'application/json' }));
     form.append('file', new Blob([binaryData], { type: mimeType }));
-
-    console.log('Uploading to Google Drive:', fileName, 'size:', binaryData.length);
 
     const uploadResponse = await fetch(
       'https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart',
@@ -73,9 +77,9 @@ Deno.serve(async (req) => {
 
     if (!uploadResponse.ok) {
       const errorData = await uploadResponse.text();
-      console.error('Google Drive API error:', uploadResponse.status, errorData);
+      console.error('Google Drive upload error:', errorData);
       return Response.json({ 
-        error: `Failed to upload to Google Drive (${uploadResponse.status})`,
+        error: 'Failed to upload to Google Drive',
         details: errorData 
       }, { status: uploadResponse.status });
     }
