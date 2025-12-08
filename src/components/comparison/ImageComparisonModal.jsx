@@ -172,7 +172,7 @@ export default function ImageComparisonModal({
   // Check if we're displaying animated variations
   const isAnimationVariations = generatedAnimations && generatedAnimations.length > 0;
 
-  // Check user plan on mount
+  // Check user plan immediately on mount
   useEffect(() => {
     const checkUserPlan = async () => {
       try {
@@ -182,8 +182,23 @@ export default function ImageComparisonModal({
         setIsPro(false);
       }
     };
+    // Start check immediately
     checkUserPlan();
   }, []);
+
+  // Auto-generate formats on modal open if not cached
+  useEffect(() => {
+    if (isOpen && mediaType === 'image' && !isAnimationVariations && !cachedFormatData && !formatsGenerated && !loadingFormatSizes) {
+      generateAllFormats();
+    }
+  }, [isOpen]);
+
+  // Auto-generate metadata on modal open if not cached
+  useEffect(() => {
+    if (isOpen && mediaType === 'image' && !isAnimationVariations && !cachedSeoMetadata && !hasAnyMetadata && !isGenerating) {
+      generateMetadata();
+    }
+  }, [isOpen]);
 
   // Load image dimensions
   useEffect(() => {
