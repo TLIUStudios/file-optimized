@@ -257,8 +257,9 @@ export default function Home() {
     toast.success('Zip file downloaded!');
   }, [processedImages]);
 
-  const handleUpgradeToPro = async () => {
+  const handleUpgradeToPro = async (billingFrequency = 'monthly') => {
     console.log('🚀 Upgrade clicked from Home page');
+    console.log('📅 Billing frequency:', billingFrequency);
 
     setUpgradeError(null);
 
@@ -287,8 +288,8 @@ export default function Home() {
       setProcessingCheckout(true);
       const toastId = toast.loading('Creating checkout session...', { duration: Infinity });
 
-      console.log('Calling createCheckoutSession...');
-      const response = await base44.functions.invoke('createCheckoutSession');
+      console.log('Calling createCheckoutSession with billing frequency:', billingFrequency);
+      const response = await base44.functions.invoke('createCheckoutSession', { billingFrequency });
 
       console.log('Response:', response);
 
