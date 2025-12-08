@@ -205,7 +205,7 @@ export default function ProUpgradeModal({ isOpen, onClose, onUpgrade, processing
                   ) : (
                     <>
                       <Zap className="w-5 h-5 mr-2 inline-block" />
-                      Upgrade to Pro Now
+                      Upgrade to Pro - {price}{period}
                     </>
                   )}
                 </span>
