@@ -178,9 +178,9 @@ export default function Profile() {
   const handleUpgrade = async (billingFrequency = 'monthly') => {
     console.log('🚀 Upgrade clicked from Profile');
     console.log('📅 Billing frequency:', billingFrequency);
-    
+
     setUpgradeError(null);
-    
+
     try {
       // Try to get the user - this is more reliable than isAuthenticated()
       let currentUser;
@@ -192,7 +192,7 @@ export default function Profile() {
         setShowLoginPrompt(true);
         return;
       }
-      
+
       if (!currentUser) {
         console.log('❌ No user found');
         setShowProModal(false);
@@ -204,8 +204,8 @@ export default function Profile() {
 
       // Only set processing state AFTER confirming user is authenticated
       setProcessingCheckout(true);
-      const toastId = toast.loading('Creating checkout session...', { duration: Infinity });
-      
+      const toastId = toast.loading(`Creating checkout session for ${billingFrequency} plan...`, { duration: Infinity });
+
       console.log('Calling createCheckoutSession with billing frequency:', billingFrequency);
       const response = await base44.functions.invoke('createCheckoutSession', { billingFrequency });
       
