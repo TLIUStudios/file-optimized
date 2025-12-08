@@ -109,10 +109,14 @@ export default function LoginPromptModal({ isOpen, onClose, onLogin, context = "
                     <Check className="w-3.5 h-3.5 text-slate-500 flex-shrink-0" />
                     <span>Displays Ads</span>
                   </div>
-                </div>
-              </div>
+                  <div className="flex items-center gap-2 text-xs text-slate-700 dark:text-slate-300">
+                    <Check className="w-3.5 h-3.5 text-slate-500 flex-shrink-0" />
+                    <span>No cloud storage</span>
+                  </div>
+                  </div>
+                  </div>
 
-              {/* Pro Plan Card */}
+                  {/* Pro Plan Card */}
               <div className="p-3 sm:p-4 rounded-lg border-2 border-amber-500 dark:border-amber-600 bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-950/30 dark:to-orange-950/30 relative overflow-hidden">
                 {isPro && (
                   <Badge className="absolute -top-2 left-1/2 -translate-x-1/2 bg-emerald-600 text-white text-[10px] sm:text-xs whitespace-nowrap">
@@ -161,12 +165,16 @@ export default function LoginPromptModal({ isOpen, onClose, onLogin, context = "
                   </div>
                   <div className="flex items-center gap-2 text-xs text-slate-900 dark:text-white font-medium">
                     <Check className="w-3.5 h-3.5 text-emerald-600 flex-shrink-0" />
+                    <span>Save to Google Drive</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-xs text-slate-900 dark:text-white font-medium">
+                    <Check className="w-3.5 h-3.5 text-emerald-600 flex-shrink-0" />
                     <span>Supports future TLIU projects</span>
                   </div>
-                </div>
-              </div>
-            </div>
-          </div>
+                  </div>
+                  </div>
+                  </div>
+                  </div>
 
           {/* Action Buttons */}
           <div className="space-y-3">
