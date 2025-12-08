@@ -693,6 +693,12 @@ export default function ImageComparisonModal({
 
   // Use cached blobs for ZIP download
   const downloadAllImageFormatsAsZip = async () => {
+    // Auto-generate formats if not yet generated
+    if (!formatsGenerated && !loadingFormatSizes) {
+      toast.info('Preparing formats...');
+      await generateAllFormats();
+    }
+
     toast.info('Creating multi-format ZIP...');
 
     try {
@@ -754,6 +760,12 @@ export default function ImageComparisonModal({
     if (isAnimationVariations) {
       await downloadAllAnimationsAsZip();
       return;
+    }
+
+    // Auto-generate formats if not yet generated for images
+    if (mediaType === 'image' && !formatsGenerated && !loadingFormatSizes) {
+      toast.info('Preparing download...');
+      await generateAllFormats();
     }
 
     // If we have a converted blob, download that directly
@@ -1008,6 +1020,68 @@ export default function ImageComparisonModal({
               </Button>
             )}
 
+            {/* Save to Cloud Storage */}
+            {isPro && mediaType === 'image' && !isAnimationVariations && (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button 
+                    className="bg-blue-600 hover:bg-blue-700 text-white h-7 px-2 sm:h-8 sm:px-3 text-[10px] sm:text-xs" 
+                    disabled={uploadingToDrive}
+                  >
+                    {uploadingToDrive ? (
+                      <>
+                        <Loader2 className="w-3 h-3 sm:w-3.5 sm:h-3.5 animate-spin" />
+                        <span className="hidden sm:inline ml-1.5">Saving...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Cloud className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
+                        <span className="hidden sm:inline ml-1.5">Save</span>
+                      </>
+                    )}
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent className="w-56">
+                  <DropdownMenuItem onClick={handleSaveToGoogleDrive} disabled={uploadingToDrive}>
+                    <svg className="w-4 h-4 mr-2" viewBox="0 0 87.3 78">
+                      <path fill="#0066da" d="m6.6 66.85 3.85 6.65c.8 1.4 1.95 2.5 3.3 3.3l13.75-23.8h-27.5c0 1.55.4 3.1 1.2 4.5z"/>
+                      <path fill="#00ac47" d="m43.65 25-13.75-23.8c-1.35.8-2.5 1.9-3.3 3.3l-25.4 44a9.06 9.06 0 0 0 -1.2 4.5h27.5z"/>
+                      <path fill="#ea4335" d="m73.55 76.8c1.35-.8 2.5-1.9 3.3-3.3l1.6-2.75 7.65-13.25c.8-1.4 1.2-2.95 1.2-4.5h-27.502l5.852 11.5z"/>
+                      <path fill="#00832d" d="m43.65 25 13.75-23.8c-1.35-.8-2.9-1.2-4.5-1.2h-18.5c-1.6 0-3.15.45-4.5 1.2z"/>
+                      <path fill="#2684fc" d="m59.8 53h-32.3l-13.75 23.8c1.35.8 2.9 1.2 4.5 1.2h50.8c1.6 0 3.15-.45 4.5-1.2z"/>
+                      <path fill="#ffba00" d="m73.4 26.5-12.7-22c-.8-1.4-1.95-2.5-3.3-3.3l-13.75 23.8 16.15 28h27.45c0-1.55-.4-3.1-1.2-4.5z"/>
+                    </svg>
+                    <span className="flex-1">Google Drive</span>
+                    <Badge className="bg-emerald-600 text-white text-[10px]">Active</Badge>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem disabled className="opacity-50 cursor-not-allowed">
+                    <svg className="w-4 h-4 mr-2 opacity-40" viewBox="0 0 235 224" fill="none">
+                      <path d="M58.968 0L0 37.696l23.615 37.728L82.56 37.696z" fill="#0061FF"/>
+                      <path d="M58.968 187.648l-58.968 37.728 23.615-37.728 58.968-37.728z" fill="#0061FF"/>
+                      <path d="M58.968 187.648l58.968-37.728-23.584-37.696-58.968 37.728z" fill="#0061FF"/>
+                      <path d="M117.936 75.424L176.904 37.696 153.32 0l-58.968 37.696z" fill="#0061FF"/>
+                      <path d="M176.936 187.648l58.968 37.728L212.289 187.648l-58.968-37.728z" fill="#0061FF"/>
+                      <path d="M176.936 187.648l-58.968-37.728 23.584-37.696 58.968 37.728z" fill="#0061FF"/>
+                    </svg>
+                    <span className="flex-1 text-slate-400">Dropbox</span>
+                    <Badge variant="outline" className="text-[10px]">Soon</Badge>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem disabled className="opacity-50 cursor-not-allowed">
+                    <svg className="w-4 h-4 mr-2 opacity-40" viewBox="0 0 24 24">
+                      <path fill="#0364B8" d="M3 4.5A1.5 1.5 0 0 1 4.5 3H9v8.5H3V4.5z"/>
+                      <path fill="#0078D4" d="M9 3h6v8.5H9V3z"/>
+                      <path fill="#28A8EA" d="M15 3h4.5A1.5 1.5 0 0 1 21 4.5v7H15V3z"/>
+                      <path fill="#0078D4" d="M3 11.5h6V21H4.5A1.5 1.5 0 0 1 3 19.5v-8z"/>
+                      <path fill="#0364B8" d="M9 11.5h6V21H9v-9.5z"/>
+                      <path fill="#14447D" d="M15 11.5h6v8a1.5 1.5 0 0 1-1.5 1.5H15v-9.5z"/>
+                    </svg>
+                    <span className="flex-1 text-slate-400">OneDrive</span>
+                    <Badge variant="outline" className="text-[10px]">Soon</Badge>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
+
             <Button
               variant="ghost"
               size="icon"
@@ -1232,60 +1306,6 @@ export default function ImageComparisonModal({
                   <Share2 className="w-4 h-4 mr-2" />
                   Share to Social Media
                 </Button>
-
-                {/* Save to Cloud Storage */}
-                {isPro && (
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button 
-                        className="w-full bg-blue-600 hover:bg-blue-700 text-white" 
-                        size="sm"
-                        disabled={uploadingToDrive}
-                      >
-                        {uploadingToDrive ? (
-                          <>
-                            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                            Saving to Drive...
-                          </>
-                        ) : (
-                          <>
-                            <Cloud className="w-4 h-4 mr-2" />
-                            Save to...
-                            <ChevronDown className="w-4 h-4 ml-2" />
-                          </>
-                        )}
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent className="w-56">
-                      <DropdownMenuItem onClick={handleSaveToGoogleDrive} disabled={uploadingToDrive}>
-                        <svg className="w-4 h-4 mr-2" viewBox="0 0 24 24">
-                          <path fill="#4285F4" d="M14.727 6.727H14L9.636 14.91l.636 1.091h4.364l.636-1.091z"/>
-                          <path fill="#EA4335" d="M6.273 14.91l-2.882 5L6.273 22l2.882-5z"/>
-                          <path fill="#34A853" d="M14 14.91l2.909 5.045 2.818-1.727-2.909-5.046z"/>
-                          <path fill="#4285F4" d="M14 6.727L9.636 14.91 12 19.909l7.273-12.636z"/>
-                          <path fill="#188038" d="M3.391 19.91l2.882-5-5.455-3.182z"/>
-                          <path fill="#FBBC04" d="M20.727 11.727L14 6.727l-4.364 8.183z"/>
-                        </svg>
-                        <span className="flex-1">Google Drive</span>
-                        <Badge className="bg-emerald-600 text-white text-[10px]">Active</Badge>
-                      </DropdownMenuItem>
-                      <DropdownMenuItem disabled className="opacity-50 cursor-not-allowed">
-                        <svg className="w-4 h-4 mr-2" viewBox="0 0 24 24" fill="currentColor" opacity="0.3">
-                          <path d="M16.509 8.35L8.35 16.509l7.118-1.044 1.041-7.115zm2.078-1.847l-1.01 6.91c-.026.178-.13.34-.289.45l-6.917 4.801c-.261.181-.612.155-.845-.063-.232-.218-.289-.569-.137-.851l2.548-4.735-4.735 2.548c-.282.152-.633.095-.851-.137-.218-.233-.244-.584-.063-.845l4.801-6.917c.11-.159.272-.263.45-.289l6.91-1.01c.365-.053.717.199.77.564.053.366-.201.718-.566.771l-.066.008z"/>
-                        </svg>
-                        <span className="flex-1 text-slate-400">Dropbox</span>
-                        <Badge variant="outline" className="text-[10px]">Soon</Badge>
-                      </DropdownMenuItem>
-                      <DropdownMenuItem disabled className="opacity-50 cursor-not-allowed">
-                        <svg className="w-4 h-4 mr-2" viewBox="0 0 24 24" fill="currentColor" opacity="0.3">
-                          <path d="M13.2 1L1 8.5l12.2 7.5L25.4 8.5L13.2 1zm0 2.4l9.2 5.1-9.2 5.7-9.2-5.7 9.2-5.1zM1 14.7v3.8l12.2 7.5 12.2-7.5v-3.8L13.2 22 1 14.7z"/>
-                        </svg>
-                        <span className="flex-1 text-slate-400">OneDrive</span>
-                        <Badge variant="outline" className="text-[10px]">Soon</Badge>
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                )}
               
                 <div className="bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg p-3 sm:p-4">
                   <p className="text-slate-500 dark:text-slate-400 text-[9px] sm:text-[10px] font-semibold uppercase tracking-wider mb-1">Original Size</p>

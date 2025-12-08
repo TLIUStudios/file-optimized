@@ -2827,18 +2827,39 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
                     </DropdownMenuTrigger>
                     <DropdownMenuContent className="w-56">
                       <DropdownMenuItem onClick={handleSaveToGoogleDrive} disabled={uploadingToDrive}>
-                        <Cloud className="w-4 h-4 mr-2 text-blue-600" />
+                        <svg className="w-4 h-4 mr-2" viewBox="0 0 87.3 78">
+                          <path fill="#0066da" d="m6.6 66.85 3.85 6.65c.8 1.4 1.95 2.5 3.3 3.3l13.75-23.8h-27.5c0 1.55.4 3.1 1.2 4.5z"/>
+                          <path fill="#00ac47" d="m43.65 25-13.75-23.8c-1.35.8-2.5 1.9-3.3 3.3l-25.4 44a9.06 9.06 0 0 0 -1.2 4.5h27.5z"/>
+                          <path fill="#ea4335" d="m73.55 76.8c1.35-.8 2.5-1.9 3.3-3.3l1.6-2.75 7.65-13.25c.8-1.4 1.2-2.95 1.2-4.5h-27.502l5.852 11.5z"/>
+                          <path fill="#00832d" d="m43.65 25 13.75-23.8c-1.35-.8-2.9-1.2-4.5-1.2h-18.5c-1.6 0-3.15.45-4.5 1.2z"/>
+                          <path fill="#2684fc" d="m59.8 53h-32.3l-13.75 23.8c1.35.8 2.9 1.2 4.5 1.2h50.8c1.6 0 3.15-.45 4.5-1.2z"/>
+                          <path fill="#ffba00" d="m73.4 26.5-12.7-22c-.8-1.4-1.95-2.5-3.3-3.3l-13.75 23.8 16.15 28h27.45c0-1.55-.4-3.1-1.2-4.5z"/>
+                        </svg>
                         <span className="flex-1">Google Drive</span>
                         <Badge className="bg-emerald-600 text-white text-[10px]">Active</Badge>
                       </DropdownMenuItem>
                       <DropdownMenuItem disabled className="opacity-50 cursor-not-allowed">
-                        <CloudOff className="w-4 h-4 mr-2 text-slate-400" />
-                        <span className="flex-1">Dropbox</span>
+                        <svg className="w-4 h-4 mr-2 opacity-40" viewBox="0 0 235 224" fill="none">
+                          <path d="M58.968 0L0 37.696l23.615 37.728L82.56 37.696z" fill="#0061FF"/>
+                          <path d="M58.968 187.648l-58.968 37.728 23.615-37.728 58.968-37.728z" fill="#0061FF"/>
+                          <path d="M58.968 187.648l58.968-37.728-23.584-37.696-58.968 37.728z" fill="#0061FF"/>
+                          <path d="M117.936 75.424L176.904 37.696 153.32 0l-58.968 37.696z" fill="#0061FF"/>
+                          <path d="M176.936 187.648l58.968 37.728L212.289 187.648l-58.968-37.728z" fill="#0061FF"/>
+                          <path d="M176.936 187.648l-58.968-37.728 23.584-37.696 58.968 37.728z" fill="#0061FF"/>
+                        </svg>
+                        <span className="flex-1 text-slate-400">Dropbox</span>
                         <Badge variant="outline" className="text-[10px]">Soon</Badge>
                       </DropdownMenuItem>
                       <DropdownMenuItem disabled className="opacity-50 cursor-not-allowed">
-                        <CloudOff className="w-4 h-4 mr-2 text-slate-400" />
-                        <span className="flex-1">OneDrive</span>
+                        <svg className="w-4 h-4 mr-2 opacity-40" viewBox="00 0 24 24">
+                          <path fill="#0364B8" d="M3 4.5A1.5 1.5 0 0 1 4.5 3H9v8.5H3V4.5z"/>
+                          <path fill="#0078D4" d="M9 3h6v8.5H9V3z"/>
+                          <path fill="#28A8EA" d="M15 3h4.5A1.5 1.5 0 0 1 21 4.5v7H15V3z"/>
+                          <path fill="#0078D4" d="M3 11.5h6V21H4.5A1.5 1.5 0 0 1 3 19.5v-8z"/>
+                          <path fill="#0364B8" d="M9 11.5h6V21H9v-9.5z"/>
+                          <path fill="#14447D" d="M15 11.5h6v8a1.5 1.5 0 0 1-1.5 1.5H15v-9.5z"/>
+                        </svg>
+                        <span className="flex-1 text-slate-400">OneDrive</span>
                         <Badge variant="outline" className="text-[10px]">Soon</Badge>
                       </DropdownMenuItem>
                     </DropdownMenuContent>
