@@ -28,19 +28,20 @@ Deno.serve(async (req) => {
     let accessToken;
     try {
       accessToken = await base44.asServiceRole.connectors.getAccessToken('googledrive');
-      console.log('Token retrieved for:', user.email, 'length:', accessToken?.length);
+      console.log('Token retrieved for:', user.email);
+      console.log('Token type:', typeof accessToken);
+      console.log('Token length:', accessToken?.length);
+      console.log('Token starts with:', accessToken?.substring(0, 10));
+      
+      if (!accessToken || typeof accessToken !== 'string' || accessToken.length < 20) {
+        throw new Error('Invalid token received');
+      }
     } catch (error) {
-      console.error('Token error:', error);
+      console.error('Token retrieval failed:', error.message);
       return Response.json({ 
-        error: 'Google Drive not connected. Please reconnect in your profile.',
-        requiresAuth: true 
-      }, { status: 401 });
-    }
-    
-    if (!accessToken) {
-      return Response.json({ 
-        error: 'Google Drive token empty. Please reconnect in your profile.',
-        requiresAuth: true 
+        error: 'Google Drive connection failed. Please disconnect and reconnect in Profile settings.',
+        requiresAuth: true,
+        debug: error.message
       }, { status: 401 });
     }
 
