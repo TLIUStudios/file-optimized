@@ -2080,8 +2080,11 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
         mediaType: isVideo ? 'video' : isAudio ? 'audio' : 'image',
         fileFormat: outputFormat || format,
         originalFileFormat: originalFormat,
+        generatedAnimations,
         cachedFormatData,
-        cachedSeoMetadata
+        cachedSeoMetadata,
+        onFormatDataCached: handleFormatDataCached,
+        onSeoMetadataCached: handleSeoMetadataCached
       });
     }
   };
