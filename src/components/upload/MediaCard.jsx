@@ -3,11 +3,17 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Slider } from "@/components/ui/slider";
-import { Download, X, Loader2, CheckCircle2, ArrowRight, Settings2, AlertCircle, Info, Edit2, RefreshCcw, Sparkles, Film, Music, Video, ChevronDown, Check, Wand2, ImageIcon, Share2, Cloud } from "lucide-react";
+import { Download, X, Loader2, CheckCircle2, ArrowRight, Settings2, AlertCircle, Info, Edit2, RefreshCcw, Sparkles, Film, Music, Video, ChevronDown, Check, Wand2, ImageIcon, Share2, Cloud, CloudOff } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import LazyImage from "./LazyImage";
 import SocialShareModal from "../SocialShareModal";
 import {
@@ -2766,9 +2772,9 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
             </Tooltip>
           </div>
 
-          <div className="flex flex-col sm:flex-row gap-2">
+          <div className="space-y-2">
             {!processed ? (
-              <Button onClick={processMedia} disabled={processing || (((isGif && format === 'gif') || (isImage && !isGif && enableAnimation)) && !gifJsLoaded)} className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white relative overflow-hidden text-sm">
+              <Button onClick={processMedia} disabled={processing || (((isGif && format === 'gif') || (isImage && !isGif && enableAnimation)) && !gifJsLoaded)} className="w-full bg-emerald-600 hover:bg-emerald-700 text-white relative overflow-hidden text-sm">
                 {processing && <div className="absolute inset-0 bg-emerald-500 transition-all duration-300 ease-linear" style={{ width: `${processingProgress}%`, left: 0 }} />}
                 <span className="relative z-10 flex items-center justify-center">
                   {processing ? (<><Loader2 className="w-4 h-4 mr-2 animate-spin" /><span className="hidden sm:inline">Optimizing... {Math.round(processingProgress)}%</span><span className="sm:hidden">{Math.round(processingProgress)}%</span></>) : (<>{MediaIcon && <MediaIcon className="w-4 h-4 mr-2" />}<span className="hidden sm:inline">{enableAnimation ? 'Create Animation' : 'Optimize Asset'}</span><span className="sm:hidden">Optimize</span></>)}
@@ -2776,44 +2782,67 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
               </Button>
             ) : (
               <>
-                <Button 
-                  onClick={processMedia} 
-                  variant={settingsChanged && !processing ? "default" : "outline"} 
-                  className={cn(
-                    "flex-1 text-sm relative overflow-hidden transition-all duration-300",
-                    settingsChanged && !processing && "bg-red-600 hover:bg-red-700 text-white"
-                  )} 
-                  disabled={processing || (((isGif && format === 'gif') || (isImage && !isGif && enableAnimation)) && !gifJsLoaded)}
-                >
-                  {processing && <div className="absolute inset-0 bg-emerald-500 transition-all duration-300 ease-linear" style={{ width: `${processingProgress}%`, left: 0 }} />}
-                  <span className="relative z-10 flex items-center justify-center">
-                    <RefreshCcw className={cn("w-4 h-4 mr-2 transition-all duration-700", processing && "animate-spin", settingsChanged && !processing && "animate-[spin_15s_ease-in-out_infinite]")} />
-                    <span className="hidden sm:inline">{processing ? `${Math.round(processingProgress)}%` : 'Reprocess'}</span>
-                    <span className="sm:hidden">{processing ? `${Math.round(processingProgress)}%` : 'Reprocess'}</span>
-                  </span>
-                </Button>
-                <Button onClick={() => downloadMedia()} className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white text-sm" disabled={processing}>
-                  <Download className="w-4 h-4 mr-2" /><span className="hidden sm:inline">Download</span>
-                </Button>
-                {isPro && (
+                <div className="flex gap-2">
                   <Button 
-                    onClick={handleSaveToGoogleDrive} 
-                    className="flex-1 bg-blue-600 hover:bg-blue-700 text-white text-sm" 
-                    disabled={processing || uploadingToDrive}
+                    onClick={processMedia} 
+                    variant={settingsChanged && !processing ? "default" : "outline"} 
+                    className={cn(
+                      "flex-1 text-sm relative overflow-hidden transition-all duration-300",
+                      settingsChanged && !processing && "bg-red-600 hover:bg-red-700 text-white"
+                    )} 
+                    disabled={processing || (((isGif && format === 'gif') || (isImage && !isGif && enableAnimation)) && !gifJsLoaded)}
                   >
-                    {uploadingToDrive ? (
-                      <>
-                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                        <span className="hidden sm:inline">Saving...</span>
-                      </>
-                    ) : (
-                      <>
-                        <Cloud className="w-4 h-4 mr-2" />
-                        <span className="hidden sm:inline">Save to Drive</span>
-                        <span className="sm:hidden">Drive</span>
-                      </>
-                    )}
+                    {processing && <div className="absolute inset-0 bg-emerald-500 transition-all duration-300 ease-linear" style={{ width: `${processingProgress}%`, left: 0 }} />}
+                    <span className="relative z-10 flex items-center justify-center">
+                      <RefreshCcw className={cn("w-4 h-4 mr-2 transition-all duration-700", processing && "animate-spin", settingsChanged && !processing && "animate-[spin_15s_ease-in-out_infinite]")} />
+                      <span className="hidden sm:inline">{processing ? `${Math.round(processingProgress)}%` : 'Reprocess'}</span>
+                      <span className="sm:hidden">{processing ? `${Math.round(processingProgress)}%` : 'Reprocess'}</span>
+                    </span>
                   </Button>
+                  <Button onClick={() => downloadMedia()} className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white text-sm" disabled={processing}>
+                    <Download className="w-4 h-4 mr-2" /><span className="hidden sm:inline">Download</span>
+                  </Button>
+                </div>
+                
+                {isPro && (
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button 
+                        className="w-full bg-blue-600 hover:bg-blue-700 text-white text-sm" 
+                        disabled={processing || uploadingToDrive}
+                      >
+                        {uploadingToDrive ? (
+                          <>
+                            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                            Saving to Drive...
+                          </>
+                        ) : (
+                          <>
+                            <Cloud className="w-4 h-4 mr-2" />
+                            Save to...
+                            <ChevronDown className="w-4 h-4 ml-2" />
+                          </>
+                        )}
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent className="w-56">
+                      <DropdownMenuItem onClick={handleSaveToGoogleDrive} disabled={uploadingToDrive}>
+                        <Cloud className="w-4 h-4 mr-2 text-blue-600" />
+                        <span className="flex-1">Google Drive</span>
+                        <Badge className="bg-emerald-600 text-white text-[10px]">Active</Badge>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem disabled className="opacity-50 cursor-not-allowed">
+                        <CloudOff className="w-4 h-4 mr-2 text-slate-400" />
+                        <span className="flex-1">Dropbox</span>
+                        <Badge variant="outline" className="text-[10px]">Soon</Badge>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem disabled className="opacity-50 cursor-not-allowed">
+                        <CloudOff className="w-4 h-4 mr-2 text-slate-400" />
+                        <span className="flex-1">OneDrive</span>
+                        <Badge variant="outline" className="text-[10px]">Soon</Badge>
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                 )}
               </>
             )}
