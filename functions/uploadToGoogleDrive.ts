@@ -15,8 +15,16 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Pro plan required' }, { status: 403 });
     }
 
-    // Get the access token for Google Drive
-    const accessToken = await base44.asServiceRole.connectors.getAccessToken('googledrive');
+    // Get the access token for Google Drive (user's token, not service role)
+    let accessToken;
+    try {
+      accessToken = await base44.connectors.getAccessToken('googledrive');
+    } catch (error) {
+      return Response.json({ 
+        error: 'Google Drive not connected. Please authorize access first.',
+        requiresAuth: true 
+      }, { status: 401 });
+    }
     
     if (!accessToken) {
       return Response.json({ 
