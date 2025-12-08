@@ -509,6 +509,10 @@ export default function Profile() {
                     <CheckCircle2 className="w-3.5 h-3.5 text-slate-500 flex-shrink-0" />
                     <span>Displays Ads</span>
                   </div>
+                  <div className="flex items-center gap-2 text-xs text-slate-900 dark:text-white font-medium">
+                    <CheckCircle2 className="w-3.5 h-3.5 text-slate-500 flex-shrink-0" />
+                    <span>No cloud storage</span>
+                  </div>
                 </div>
               </div>
 
@@ -559,6 +563,10 @@ export default function Profile() {
                   <div className="flex items-center gap-2 text-xs text-slate-900 dark:text-white font-medium">
                     <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 flex-shrink-0" />
                     <span>No Ads</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-xs text-slate-900 dark:text-white font-medium">
+                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 flex-shrink-0" />
+                    <span>Save to Google Drive</span>
                   </div>
                   <div className="flex items-center gap-2 text-xs text-slate-900 dark:text-white font-medium">
                     <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 flex-shrink-0" />

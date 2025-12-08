@@ -3,7 +3,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Slider } from "@/components/ui/slider";
-import { Download, X, Loader2, CheckCircle2, ArrowRight, Settings2, AlertCircle, Info, Edit2, RefreshCcw, Sparkles, Film, Music, Video, ChevronDown, Check, Wand2, ImageIcon, Share2 } from "lucide-react";
+import { Download, X, Loader2, CheckCircle2, ArrowRight, Settings2, AlertCircle, Info, Edit2, RefreshCcw, Sparkles, Film, Music, Video, ChevronDown, Check, Wand2, ImageIcon, Share2, Cloud } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
@@ -72,6 +72,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
   const [showSocialShare, setShowSocialShare] = useState(false);
   const [cachedFormatData, setCachedFormatData] = useState(null);
   const [cachedSeoMetadata, setCachedSeoMetadata] = useState(null);
+  const [uploadingToDrive, setUploadingToDrive] = useState(false);
   const isImage = image?.type?.startsWith('image/') || false;
   const isVideo = image?.type?.startsWith('video/') || false;
   const isAudio = image?.type?.startsWith('audio/') || false;
@@ -2005,6 +2006,57 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
     performSingleMediaDownload(compressedBlob, currentCompressedFormat, mediaType, getOutputFilename(currentCompressedFormat));
   };
 
+  const handleSaveToGoogleDrive = async () => {
+    if (!compressedBlob) {
+      toast.error("No processed file available to upload.");
+      return;
+    }
+
+    setUploadingToDrive(true);
+    try {
+      // Convert blob to base64
+      const reader = new FileReader();
+      const base64Data = await new Promise((resolve, reject) => {
+        reader.onloadend = () => resolve(reader.result);
+        reader.onerror = reject;
+        reader.readAsDataURL(compressedBlob);
+      });
+
+      const response = await base44.functions.invoke('uploadToGoogleDrive', {
+        fileName: getOutputFilename(),
+        fileData: base64Data,
+        mimeType: compressedBlob.type
+      });
+
+      if (response.data?.error) {
+        if (response.data.requiresAuth) {
+          toast.error('Please authorize Google Drive access first.');
+          window.open('https://accounts.google.com/o/oauth2/v2/auth?redirect_uri=https://www.base44.com/oauth/callback&client_id=YOUR_CLIENT_ID&scope=https://www.googleapis.com/auth/drive.file&response_type=code', '_blank');
+        } else {
+          throw new Error(response.data.error);
+        }
+        return;
+      }
+
+      if (response.data?.success) {
+        toast.success(`✅ Saved to Google Drive!`);
+        if (response.data.webViewLink) {
+          toast.info('Click to view in Drive', {
+            action: {
+              label: 'Open',
+              onClick: () => window.open(response.data.webViewLink, '_blank')
+            }
+          });
+        }
+      }
+    } catch (error) {
+      console.error('Error uploading to Google Drive:', error);
+      toast.error('Failed to save to Google Drive: ' + (error.message || 'Unknown error'));
+    } finally {
+      setUploadingToDrive(false);
+    }
+  };
+
   const getOutputFilename = (targetFormat = null) => {
     const nameWithoutExt = editableFilename.split('.').slice(0, -1).join('.') || editableFilename;
     const finalExt = targetFormat || outputFormat || format;
@@ -2743,6 +2795,26 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
                 <Button onClick={() => downloadMedia()} className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white text-sm" disabled={processing}>
                   <Download className="w-4 h-4 mr-2" /><span className="hidden sm:inline">Download</span>
                 </Button>
+                {isPro && (
+                  <Button 
+                    onClick={handleSaveToGoogleDrive} 
+                    className="flex-1 bg-blue-600 hover:bg-blue-700 text-white text-sm" 
+                    disabled={processing || uploadingToDrive}
+                  >
+                    {uploadingToDrive ? (
+                      <>
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                        <span className="hidden sm:inline">Saving...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Cloud className="w-4 h-4 mr-2" />
+                        <span className="hidden sm:inline">Save to Drive</span>
+                        <span className="sm:hidden">Drive</span>
+                      </>
+                    )}
+                  </Button>
+                )}
               </>
             )}
           </div>
