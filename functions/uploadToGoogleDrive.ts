@@ -72,9 +72,11 @@ Deno.serve(async (req) => {
 
     return Response.json({ 
       success: true,
-      fileId: result.id,
-      fileName: result.name,
-      webViewLink: `https://drive.google.com/file/d/${result.id}/view`
+      file: {
+        id: result.id,
+        name: result.name,
+        webViewLink: `https://drive.google.com/file/d/${result.id}/view`
+      }
     });
 
   } catch (error) {
