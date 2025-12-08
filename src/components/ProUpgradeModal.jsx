@@ -57,7 +57,8 @@ export default function ProUpgradeModal({ isOpen, onClose, onUpgrade, processing
           <div className="flex items-center justify-center gap-2 p-1 bg-slate-100 dark:bg-slate-900 rounded-lg">
             <button
               onClick={() => setBillingFrequency('monthly')}
-              className={`flex-1 px-4 py-2 rounded-md text-sm font-medium transition-all ${
+              disabled={processing}
+              className={`flex-1 px-4 py-2 rounded-md text-sm font-medium transition-all disabled:opacity-50 disabled:cursor-not-allowed ${
                 billingFrequency === 'monthly'
                   ? 'bg-white dark:bg-slate-800 text-slate-900 dark:text-white shadow-sm'
                   : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
@@ -67,7 +68,8 @@ export default function ProUpgradeModal({ isOpen, onClose, onUpgrade, processing
             </button>
             <button
               onClick={() => setBillingFrequency('annual')}
-              className={`flex-1 px-4 py-2 rounded-md text-sm font-medium transition-all relative ${
+              disabled={processing}
+              className={`flex-1 px-4 py-2 rounded-md text-sm font-medium transition-all relative disabled:opacity-50 disabled:cursor-not-allowed ${
                 billingFrequency === 'annual'
                   ? 'bg-white dark:bg-slate-800 text-slate-900 dark:text-white shadow-sm'
                   : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
