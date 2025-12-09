@@ -10,9 +10,10 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Pencil, Trash2, BookOpen, HelpCircle, Shield, Loader2, X, Database, FileText } from "lucide-react";
+import { Plus, Pencil, Trash2, BookOpen, HelpCircle, Shield, Loader2, X, Database, FileText, BarChart3 } from "lucide-react";
 import { toast } from "sonner";
 import SEOHead from "../components/SEOHead";
+import LiveAnalyticsDashboard from "../components/admin/LiveAnalyticsDashboard";
 
 // Import built-in articles from Blog page
 const builtInArticles = [
@@ -333,6 +334,9 @@ export default function Admin() {
 
         <Tabs value={activeTab} onValueChange={setActiveTab}>
           <TabsList className="mb-6">
+            <TabsTrigger value="analytics" className="gap-2">
+              <BarChart3 className="w-4 h-4" /> Live Analytics
+            </TabsTrigger>
             <TabsTrigger value="articles" className="gap-2">
               <BookOpen className="w-4 h-4" /> All Articles ({builtInArticles.length + articles.length})
             </TabsTrigger>
@@ -340,6 +344,10 @@ export default function Admin() {
               <HelpCircle className="w-4 h-4" /> All FAQs ({builtInFaqsCount + faqs.length})
             </TabsTrigger>
           </TabsList>
+
+          <TabsContent value="analytics">
+            <LiveAnalyticsDashboard />
+          </TabsContent>
 
           <TabsContent value="articles">
             <div className="flex justify-between items-center mb-4">

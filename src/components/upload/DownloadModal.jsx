@@ -1,10 +1,13 @@
-import { useState } from "react";
+import { useState, lazy, Suspense } from "react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Download, X } from "lucide-react";
+import { Download, X, Cloud } from "lucide-react";
 import { toast } from "sonner";
+import { base44 } from "@/api/base44Client";
+
+const CloudSaveModal = lazy(() => import("./CloudSaveModal"));
 
 export default function DownloadModal({ isOpen, onClose, blob, originalFilename, format }) {
   const [filename, setFilename] = useState(originalFilename);
@@ -13,6 +16,22 @@ export default function DownloadModal({ isOpen, onClose, blob, originalFilename,
   const [author, setAuthor] = useState("");
   const [copyright, setCopyright] = useState("");
   const [keywords, setKeywords] = useState("");
+  const [showCloudSave, setShowCloudSave] = useState(false);
+  const [user, setUser] = useState(null);
+  const [isPro, setIsPro] = useState(false);
+
+  useState(() => {
+    const loadUser = async () => {
+      try {
+        const currentUser = await base44.auth.me();
+        setUser(currentUser);
+        setIsPro(currentUser?.plan === 'pro');
+      } catch (e) {
+        // User not logged in
+      }
+    };
+    if (isOpen) loadUser();
+  }, [isOpen]);
 
   const handleDownload = async () => {
     try {
@@ -118,11 +137,29 @@ export default function DownloadModal({ isOpen, onClose, blob, originalFilename,
             <Button onClick={onClose} variant="outline" className="flex-1">
               Cancel
             </Button>
+            {isPro && (
+              <Button onClick={() => setShowCloudSave(true)} variant="outline" className="flex-1">
+                <Cloud className="w-4 h-4 mr-2" />
+                Save to...
+              </Button>
+            )}
             <Button onClick={handleDownload} className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white">
               <Download className="w-4 h-4 mr-2" />
               Download
             </Button>
           </div>
+
+          {showCloudSave && (
+            <Suspense fallback={null}>
+              <CloudSaveModal
+                isOpen={showCloudSave}
+                onClose={() => setShowCloudSave(false)}
+                blob={blob}
+                filename={filename}
+                mimeType={format}
+              />
+            </Suspense>
+          )}
         </div>
       </DialogContent>
     </Dialog>

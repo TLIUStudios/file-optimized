@@ -24,21 +24,21 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Pro plan required' }, { status: 403 });
     }
 
-    // Get the user's Google Drive access token - must use user's email
+    // Get the user's Google Drive access token via service role for this specific user
     let accessToken;
     try {
+      // CRITICAL: Pass the user's email to get THEIR token, not the app's token
       accessToken = await base44.asServiceRole.connectors.getAccessToken('googledrive', user.email);
-      console.log('Token retrieved for:', user.email);
+      console.log('Token retrieved for user:', user.email);
       
       if (!accessToken || typeof accessToken !== 'string' || accessToken.length < 20) {
-        throw new Error('Invalid or missing token');
+        throw new Error('Invalid token received');
       }
     } catch (error) {
       console.error('Token retrieval failed:', error.message);
       return Response.json({ 
-        error: 'Google Drive not connected. Please connect in Profile settings.',
-        requiresAuth: true,
-        debug: error.message
+        error: 'Please connect Google Drive in your Profile settings first.',
+        requiresAuth: true
       }, { status: 401 });
     }
 
