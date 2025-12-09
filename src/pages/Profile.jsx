@@ -734,13 +734,9 @@ export default function Profile() {
                   Connect Google Drive to save optimized files directly to your cloud storage.
                 </p>
                 <Button
-                  onClick={async () => {
-                    try {
-                      const authUrl = await base44.connectors.getAuthorizationURL('googledrive', ['https://www.googleapis.com/auth/drive.file']);
-                      window.location.href = authUrl;
-                    } catch (error) {
-                      toast.error('Failed to start Google Drive connection');
-                    }
+                  onClick={() => {
+                    const authUrl = base44.connectors.getAuthorizationURL('googledrive', ['https://www.googleapis.com/auth/drive.file']);
+                    window.location.href = authUrl;
                   }}
                   className="w-full"
                   variant="outline"
