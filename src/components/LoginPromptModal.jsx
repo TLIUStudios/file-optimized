@@ -163,7 +163,7 @@ export default function LoginPromptModal({ isOpen, onClose, onLogin, context = "
                   </div>
                   <div className="flex items-center gap-1 text-[10px] sm:text-[11px] text-slate-900 dark:text-white font-medium">
                     <Check className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-emerald-600 flex-shrink-0" />
-                    <span>Google Drive sync</span>
+                    <span>Cloud Save</span>
                   </div>
                   <div className="flex items-center gap-1 text-[10px] sm:text-[11px] text-slate-900 dark:text-white font-medium">
                     <Check className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-emerald-600 flex-shrink-0" />
