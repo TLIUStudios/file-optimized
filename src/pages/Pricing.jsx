@@ -25,7 +25,7 @@ const features = [
 ];
 
 export default function Pricing() {
-  const [isAnnual, setIsAnnual] = useState(true);
+  const [isAnnual, setIsAnnual] = useState(false);
   const [loading, setLoading] = useState(false);
 
   const monthlyPrice = 10;
