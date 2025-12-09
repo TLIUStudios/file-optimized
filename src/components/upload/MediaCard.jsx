@@ -2842,23 +2842,18 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
                         <Badge className="bg-emerald-600 text-white text-[10px]">Active</Badge>
                       </DropdownMenuItem>
                       <DropdownMenuItem disabled className="opacity-50 cursor-not-allowed">
-                        <svg className="w-4 h-4 mr-2 opacity-40" viewBox="0 0 512 512">
-                          <path fill="#0061FF" d="M128 256l-128 96 128 96 128-96z"/>
-                          <path fill="#0061FF" d="M128 64L0 160l128 96 128-96z"/>
-                          <path fill="#0061FF" d="M256 160l128-96 128 96-128 96z"/>
-                          <path fill="#0061FF" d="M256 352l128 96 128-96-128-96z"/>
+                        <svg className="w-4 h-4 mr-2 opacity-40" viewBox="0 0 24 24" fill="#0061FF">
+                          <path d="M6 1.807L0 5.629l6 3.822 6.001-3.822L6 1.807zM18 1.807l-6 3.822 6 3.822 6-3.822-6-3.822zM0 13.274l6 3.822 6.001-3.822L6 9.452 0 13.274zM18 9.452l-6 3.822 6 3.822 6-3.822-6-3.822zM6 18.371l6.001 3.822 6-3.822-6-3.822L6 18.371z"/>
                         </svg>
                         <span className="flex-1 text-slate-400">Dropbox</span>
-                        <Badge variant="outline" className="text-[10px]">Soon</Badge>
+                        <Badge variant="outline" className="text-[10px]">Coming Soon</Badge>
                       </DropdownMenuItem>
                       <DropdownMenuItem disabled className="opacity-50 cursor-not-allowed">
                         <svg className="w-4 h-4 mr-2 opacity-40" viewBox="0 0 24 24">
-                          <path fill="#0078D4" d="M13.8 0L0 13.5 4.7 24H24v-9.7L13.8 0z"/>
-                          <path fill="#0078D4" opacity="0.8" d="M13.8 0v14.3H24V0z"/>
-                          <path fill="#28A8EA" d="M0 13.5L4.7 24H24l-10.2-9.7z"/>
+                          <path fill="#0078D4" d="M13.977 5.998c2.382 0 4.438 1.382 5.414 3.386a4.746 4.746 0 013.608 4.599c0 2.626-2.131 4.756-4.757 4.756H5.758C2.579 18.739 0 16.16 0 12.98c0-2.812 2.018-5.157 4.688-5.659a6.99 6.99 0 016.289-1.323z"/>
                         </svg>
                         <span className="flex-1 text-slate-400">OneDrive</span>
-                        <Badge variant="outline" className="text-[10px]">Soon</Badge>
+                        <Badge variant="outline" className="text-[10px]">Coming Soon</Badge>
                       </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
