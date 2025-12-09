@@ -155,7 +155,7 @@ const faqCategories = [
 export default function Admin() {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState("articles");
+  const [activeTab, setActiveTab] = useState("analytics");
   const [editingArticle, setEditingArticle] = useState(null);
   const [editingFaq, setEditingFaq] = useState(null);
   const [showArticleDialog, setShowArticleDialog] = useState(false);
