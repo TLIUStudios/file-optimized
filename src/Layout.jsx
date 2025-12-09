@@ -197,7 +197,7 @@ export default function Layout({ children }) {
       `}</style>
       
       <header className="sticky top-0 z-50 w-full border-b border-slate-200/50 dark:border-slate-800/50 bg-white/80 dark:bg-slate-950/80 backdrop-blur-lg safe-top">
-        <div className="container mx-auto px-3 sm:px-4 h-14 sm:h-16 flex items-center justify-between">
+        <div className="container mx-auto px-3 sm:px-4 h-16 sm:h-16 flex items-center justify-between">
           <Link to={createPageUrl('Home')} className="flex items-center gap-2 hover:opacity-80 transition-opacity min-w-0">
             <div className="w-8 h-8 sm:w-9 sm:h-9 md:w-10 md:h-10 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-xl flex items-center justify-center shadow-lg flex-shrink-0">
               <AnimatedMediaIcon className="w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6 text-white" />
@@ -217,8 +217,8 @@ export default function Layout({ children }) {
             ) : isAuthenticated && user ? (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" className="gap-1.5 sm:gap-2 h-9 sm:h-10 px-2 sm:px-3">
-                    <User className="w-4 h-4" />
+                    <Button variant="ghost" className="gap-1.5 sm:gap-2 h-11 sm:h-10 px-3 sm:px-3 min-w-[44px] min-h-[44px] touch-manipulation">
+                      <User className="w-5 h-5 sm:w-4 sm:h-4" />
                     <span className="hidden md:inline text-sm">{user.full_name || user.email}</span>
                     {isPro ? (
                       <Badge className="bg-gradient-to-r from-amber-500 to-orange-500 text-white text-[10px] sm:text-xs px-1.5 sm:px-2 py-0.5 font-bold">
@@ -277,9 +277,9 @@ export default function Layout({ children }) {
               <Button
                 onClick={handleLoginClick}
                 variant="ghost"
-                className="gap-1.5 sm:gap-2 h-9 sm:h-10 px-2 sm:px-3 text-sm"
+                className="gap-1.5 sm:gap-2 h-11 sm:h-10 px-3 sm:px-3 text-sm min-w-[44px] min-h-[44px] touch-manipulation"
               >
-                <LogIn className="w-4 h-4" />
+                <LogIn className="w-5 h-5 sm:w-4 sm:h-4" />
                 <span className="hidden sm:inline">Sign In</span>
               </Button>
             )}
