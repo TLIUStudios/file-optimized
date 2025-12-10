@@ -17,6 +17,8 @@ export default function LiveAnalyticsDashboard() {
   const [selectedUser, setSelectedUser] = useState(null);
   const [hoveredMarker, setHoveredMarker] = useState(null);
   const controlsRef = useRef(null);
+  const cameraRef = useRef(null);
+  const sceneRef = useRef(null);
   const raycasterRef = useRef(new THREE.Raycaster());
   const mouseRef = useRef(new THREE.Vector2());
   const markersRef = useRef([]);
@@ -221,10 +223,12 @@ export default function LiveAnalyticsDashboard() {
     if (!canvasRef.current || users.length === 0) return;
 
     const scene = new THREE.Scene();
+    sceneRef.current = scene;
     
     const width = containerRef.current.clientWidth;
     const height = containerRef.current.clientHeight;
     const camera = new THREE.PerspectiveCamera(50, width / height, 0.1, 1000);
+    cameraRef.current = camera;
     const renderer = new THREE.WebGLRenderer({ 
       canvas: canvasRef.current, 
       alpha: true,
@@ -855,7 +859,9 @@ export default function LiveAnalyticsDashboard() {
               variant="secondary"
               className="h-10 w-10 rounded-full bg-slate-900/90 hover:bg-slate-800 border border-slate-700"
               onClick={() => {
-                if (controlsRef.current && camera) {
+                if (cameraRef.current && sceneRef.current) {
+                  const camera = cameraRef.current;
+                  const scene = sceneRef.current;
                   const distance = camera.position.distanceTo(scene.position);
                   const newDistance = Math.max(1.8, distance - 0.3);
                   const direction = camera.position.clone().normalize();
@@ -870,7 +876,9 @@ export default function LiveAnalyticsDashboard() {
               variant="secondary"
               className="h-10 w-10 rounded-full bg-slate-900/90 hover:bg-slate-800 border border-slate-700"
               onClick={() => {
-                if (controlsRef.current && camera) {
+                if (cameraRef.current && sceneRef.current) {
+                  const camera = cameraRef.current;
+                  const scene = sceneRef.current;
                   const distance = camera.position.distanceTo(scene.position);
                   const newDistance = Math.min(5, distance + 0.3);
                   const direction = camera.position.clone().normalize();
@@ -885,9 +893,12 @@ export default function LiveAnalyticsDashboard() {
               variant="secondary"
               className="h-10 w-10 rounded-full bg-slate-900/90 hover:bg-slate-800 border border-slate-700"
               onClick={() => {
-                if (controlsRef.current) {
-                  controlsRef.current.reset();
-                  camera.position.set(0, 0, 3.2);
+                if (cameraRef.current) {
+                  cameraRef.current.position.set(0, 0, 3.2);
+                  if (controlsRef.current) {
+                    controlsRef.current.target.set(0, 0, 0);
+                    controlsRef.current.update();
+                  }
                 }
               }}
             >
