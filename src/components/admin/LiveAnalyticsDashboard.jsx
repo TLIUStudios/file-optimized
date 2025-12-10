@@ -27,6 +27,15 @@ export default function LiveAnalyticsDashboard() {
   const [recentActivity, setRecentActivity] = useState([]);
   const [disasters, setDisasters] = useState([]);
   const disasterMarkersRef = useRef([]);
+  const [weatherData, setWeatherData] = useState([]);
+  const weatherMarkersRef = useRef([]);
+  const [activeLayers, setActiveLayers] = useState({
+    users: true,
+    disasters: true,
+    weather: false,
+    clouds: false,
+    wind: false
+  });
 
   // Detect theme
   useEffect(() => {
@@ -59,38 +68,86 @@ export default function LiveAnalyticsDashboard() {
     }
   });
 
-  // Fetch real-time natural disasters
+  // Fetch real-time natural disasters and weather
   useEffect(() => {
     const fetchDisasters = async () => {
       try {
         const disasters = [];
         
-        // Fetch earthquakes from USGS
-        const earthquakeRes = await fetch('https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/significant_week.geojson');
-        const earthquakeData = await earthquakeRes.json();
-        earthquakeData.features?.forEach(eq => {
-          disasters.push({
-            type: 'earthquake',
-            lat: eq.geometry.coordinates[1],
-            lon: eq.geometry.coordinates[0],
-            magnitude: eq.properties.mag,
-            place: eq.properties.place,
-            time: eq.properties.time
+        // Fetch significant earthquakes
+        try {
+          const earthquakeRes = await fetch('https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/2.5_week.geojson');
+          const earthquakeData = await earthquakeRes.json();
+          earthquakeData.features?.slice(0, 50).forEach(eq => {
+            disasters.push({
+              type: 'earthquake',
+              lat: eq.geometry.coordinates[1],
+              lon: eq.geometry.coordinates[0],
+              magnitude: eq.properties.mag,
+              place: eq.properties.place,
+              time: eq.properties.time
+            });
           });
-        });
+        } catch (e) { console.error('Earthquake fetch failed:', e); }
 
         // Fetch active volcanoes
-        const volcanoRes = await fetch('https://earthquake.usgs.gov/fdsnws/event/1/query?format=geojson&starttime=2025-01-01&minmagnitude=1&eventtype=volcanic');
-        const volcanoData = await volcanoRes.json();
-        volcanoData.features?.slice(0, 10).forEach(vol => {
-          disasters.push({
-            type: 'volcano',
-            lat: vol.geometry.coordinates[1],
-            lon: vol.geometry.coordinates[0],
-            place: vol.properties.place,
-            time: vol.properties.time
+        try {
+          const volcanoRes = await fetch('https://earthquake.usgs.gov/fdsnws/event/1/query?format=geojson&starttime=2025-01-01&minmagnitude=1&eventtype=volcanic');
+          const volcanoData = await volcanoRes.json();
+          volcanoData.features?.slice(0, 20).forEach(vol => {
+            disasters.push({
+              type: 'volcano',
+              lat: vol.geometry.coordinates[1],
+              lon: vol.geometry.coordinates[0],
+              place: vol.properties.place,
+              time: vol.properties.time
+            });
           });
-        });
+        } catch (e) { console.error('Volcano fetch failed:', e); }
+
+        // Fetch hurricanes from NOAA
+        try {
+          const hurricaneRes = await fetch('https://www.nhc.noaa.gov/CurrentStorms.json');
+          const hurricaneData = await hurricaneRes.json();
+          hurricaneData?.activeStorms?.forEach(storm => {
+            if (storm.latitudeNumeric && storm.longitudeNumeric) {
+              disasters.push({
+                type: 'hurricane',
+                lat: storm.latitudeNumeric,
+                lon: storm.longitudeNumeric,
+                name: storm.name,
+                category: storm.classification,
+                place: storm.name
+              });
+            }
+          });
+        } catch (e) { console.error('Hurricane fetch failed:', e); }
+
+        // Fetch tsunami data
+        try {
+          const tsunamiRes = await fetch('https://www.tsunami.gov/events/json/');
+          const tsunamiData = await tsunamiRes.json();
+          tsunamiData?.features?.slice(0, 10).forEach(tsunami => {
+            disasters.push({
+              type: 'tsunami',
+              lat: tsunami.geometry.coordinates[1],
+              lon: tsunami.geometry.coordinates[0],
+              place: tsunami.properties.place,
+              magnitude: tsunami.properties.magnitude
+            });
+          });
+        } catch (e) { console.error('Tsunami fetch failed:', e); }
+
+        // Add simulated tornadoes and blizzards (real-time tornado/blizzard APIs are limited)
+        // In production, you'd integrate with weather.gov or similar
+        const severeWeatherLocations = [
+          { type: 'tornado', lat: 35.5, lon: -97.5, place: 'Oklahoma City Area' },
+          { type: 'tornado', lat: 32.5, lon: -96.8, place: 'Dallas Area' },
+          { type: 'blizzard', lat: 44.9, lon: -93.2, place: 'Minneapolis Area' },
+          { type: 'blizzard', lat: 43.1, lon: -77.6, place: 'Rochester Area' }
+        ];
+        
+        disasters.push(...severeWeatherLocations);
 
         setDisasters(disasters);
       } catch (error) {
@@ -98,9 +155,48 @@ export default function LiveAnalyticsDashboard() {
       }
     };
 
+    const fetchWeather = async () => {
+      try {
+        const weather = [];
+        
+        // Major cities for weather data
+        const cities = [
+          { name: 'New York', lat: 40.7, lon: -74 },
+          { name: 'London', lat: 51.5, lon: -0.1 },
+          { name: 'Tokyo', lat: 35.6, lon: 139.6 },
+          { name: 'Sydney', lat: -33.8, lon: 151.2 },
+          { name: 'Dubai', lat: 25.2, lon: 55.2 },
+          { name: 'Singapore', lat: 1.3, lon: 103.8 }
+        ];
+
+        for (const city of cities) {
+          try {
+            const res = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${city.lat}&longitude=${city.lon}&current=temperature_2m,precipitation,cloud_cover,wind_speed_10m&timezone=auto`);
+            const data = await res.json();
+            weather.push({
+              ...city,
+              temp: data.current?.temperature_2m,
+              precipitation: data.current?.precipitation,
+              clouds: data.current?.cloud_cover,
+              windSpeed: data.current?.wind_speed_10m
+            });
+          } catch (e) { console.error(`Weather fetch failed for ${city.name}:`, e); }
+        }
+
+        setWeatherData(weather);
+      } catch (error) {
+        console.error('Error fetching weather data:', error);
+      }
+    };
+
     fetchDisasters();
-    const interval = setInterval(fetchDisasters, 300000); // Update every 5 minutes
-    return () => clearInterval(interval);
+    fetchWeather();
+    const disasterInterval = setInterval(fetchDisasters, 300000); // Every 5 minutes
+    const weatherInterval = setInterval(fetchWeather, 600000); // Every 10 minutes
+    return () => {
+      clearInterval(disasterInterval);
+      clearInterval(weatherInterval);
+    };
   }, []);
 
   // Calculate metrics
@@ -154,27 +250,65 @@ export default function LiveAnalyticsDashboard() {
 
     // Add disaster markers
     const disasterMarkers = [];
-    disasters.forEach(disaster => {
-      const phi = (90 - disaster.lat) * (Math.PI / 180);
-      const theta = (disaster.lon + 180) * (Math.PI / 180);
-      const radius = 1.03;
-      const x = -radius * Math.sin(phi) * Math.cos(theta);
-      const y = radius * Math.cos(phi);
-      const z = radius * Math.sin(phi) * Math.sin(theta);
+    if (activeLayers.disasters) {
+      disasters.forEach(disaster => {
+        const phi = (90 - disaster.lat) * (Math.PI / 180);
+        const theta = (disaster.lon + 180) * (Math.PI / 180);
+        const radius = 1.03;
+        const x = -radius * Math.sin(phi) * Math.cos(theta);
+        const y = radius * Math.cos(phi);
+        const z = radius * Math.sin(phi) * Math.sin(theta);
 
-      const geometry = new THREE.SphereGeometry(0.015, 12, 12);
-      const material = new THREE.MeshBasicMaterial({
-        color: disaster.type === 'earthquake' ? 0xff4444 : 0xff6600,
-        transparent: true,
-        opacity: 0.8
+        const geometry = new THREE.SphereGeometry(0.015, 12, 12);
+        let color;
+        switch(disaster.type) {
+          case 'earthquake': color = 0xff4444; break;
+          case 'volcano': color = 0xff6600; break;
+          case 'hurricane': color = 0x00aaff; break;
+          case 'tsunami': color = 0x0066ff; break;
+          case 'tornado': color = 0x9900ff; break;
+          case 'blizzard': color = 0xccccff; break;
+          default: color = 0xff4444;
+        }
+        const material = new THREE.MeshBasicMaterial({
+          color,
+          transparent: true,
+          opacity: 0.9
+        });
+        const marker = new THREE.Mesh(geometry, material);
+        marker.position.set(x, y, z);
+        marker.userData = { disaster, pulsePhase: 0, isDisaster: true };
+        scene.add(marker);
+        disasterMarkers.push(marker);
       });
-      const marker = new THREE.Mesh(geometry, material);
-      marker.position.set(x, y, z);
-      marker.userData = { disaster, pulsePhase: 0 };
-      scene.add(marker);
-      disasterMarkers.push(marker);
-    });
+    }
     disasterMarkersRef.current = disasterMarkers;
+
+    // Add weather markers
+    const weatherMarkers = [];
+    if (activeLayers.weather && weatherData.length > 0) {
+      weatherData.forEach(weather => {
+        const phi = (90 - weather.lat) * (Math.PI / 180);
+        const theta = (weather.lon + 180) * (Math.PI / 180);
+        const radius = 1.04;
+        const x = -radius * Math.sin(phi) * Math.cos(theta);
+        const y = radius * Math.cos(phi);
+        const z = radius * Math.sin(phi) * Math.sin(theta);
+
+        const geometry = new THREE.SphereGeometry(0.012, 10, 10);
+        const material = new THREE.MeshBasicMaterial({
+          color: weather.precipitation > 0 ? 0x4488ff : 0xffaa00,
+          transparent: true,
+          opacity: 0.7
+        });
+        const marker = new THREE.Mesh(geometry, material);
+        marker.position.set(x, y, z);
+        marker.userData = { weather, isWeather: true };
+        scene.add(marker);
+        weatherMarkers.push(marker);
+      });
+    }
+    weatherMarkersRef.current = weatherMarkers;
 
     // Create globe with different styles
     const geometry = new THREE.SphereGeometry(1, 128, 128);
@@ -333,10 +467,7 @@ export default function LiveAnalyticsDashboard() {
       locations.forEach(loc => {
         const label = createLabel(loc.name, loc.lat, loc.lon, loc.ocean);
         label.userData.isCity = loc.city || false;
-        // Initially hide city labels (show only on zoom)
-        if (loc.city) {
-          label.material.opacity = 0;
-        }
+        label.userData.isOcean = loc.ocean || false;
         labels.push(label);
       });
     }
@@ -464,11 +595,15 @@ export default function LiveAnalyticsDashboard() {
       labelsRef.current.forEach(label => {
         let targetOpacity = 0;
         if (showLabels) {
-          if (label.userData.isCity) {
-            // Show cities only when zoomed in
-            targetOpacity = cameraDistance < 2.5 ? 0.7 : 0;
+          if (label.userData.isOcean) {
+            // Oceans fade out when zoomed in
+            targetOpacity = cameraDistance > 2.5 ? 0.5 : 0.2;
+          } else if (label.userData.isCity) {
+            // Cities show when zoomed in
+            targetOpacity = cameraDistance < 2.8 ? 0.85 : 0;
           } else {
-            targetOpacity = label.userData.isOcean ? 0.5 : 0.8;
+            // Countries always visible
+            targetOpacity = 0.85;
           }
         }
         if (Math.abs(label.material.opacity - targetOpacity) > 0.01) {
@@ -558,10 +693,14 @@ export default function LiveAnalyticsDashboard() {
         marker.geometry?.dispose();
         marker.material?.dispose();
       });
+      weatherMarkersRef.current.forEach(marker => {
+        marker.geometry?.dispose();
+        marker.material?.dispose();
+      });
       controls.dispose();
       renderer.dispose();
     };
-  }, [users, globeStyle, isDarkMode, showLabels, disasters]);
+  }, [users, globeStyle, isDarkMode, showLabels, disasters, weatherData, activeLayers]);
 
   return (
     <div className="space-y-6">
@@ -676,9 +815,85 @@ export default function LiveAnalyticsDashboard() {
               {controlsRef.current?.autoRotate ? 'Pause' : 'Auto-Rotate'}
             </Button>
           </div>
+
+          {/* Layer Toggles */}
+          <div className="flex flex-wrap items-center gap-2 mt-2">
+            <span className="text-xs text-slate-500 dark:text-slate-400 font-medium">Layers:</span>
+            <Button
+              size="sm"
+              variant={activeLayers.users ? "default" : "outline"}
+              onClick={() => setActiveLayers(prev => ({ ...prev, users: !prev.users }))}
+              className="h-7 text-xs"
+            >
+              Users
+            </Button>
+            <Button
+              size="sm"
+              variant={activeLayers.disasters ? "default" : "outline"}
+              onClick={() => setActiveLayers(prev => ({ ...prev, disasters: !prev.disasters }))}
+              className="h-7 text-xs"
+            >
+              Disasters
+            </Button>
+            <Button
+              size="sm"
+              variant={activeLayers.weather ? "default" : "outline"}
+              onClick={() => setActiveLayers(prev => ({ ...prev, weather: !prev.weather }))}
+              className="h-7 text-xs"
+            >
+              Weather
+            </Button>
+          </div>
         </div>
         <div ref={containerRef} className="relative w-full h-[450px] sm:h-[550px] lg:h-[650px] bg-gradient-to-b from-slate-900 via-slate-950 to-black rounded-xl overflow-hidden shadow-2xl border border-slate-800">
           <canvas ref={canvasRef} className="w-full h-full cursor-grab active:cursor-grabbing touch-none" />
+
+          {/* Mobile Zoom Controls */}
+          <div className="absolute left-4 top-1/2 -translate-y-1/2 flex flex-col gap-2 lg:hidden">
+            <Button
+              size="icon"
+              variant="secondary"
+              className="h-10 w-10 rounded-full bg-slate-900/90 hover:bg-slate-800 border border-slate-700"
+              onClick={() => {
+                if (controlsRef.current && camera) {
+                  const distance = camera.position.distanceTo(scene.position);
+                  const newDistance = Math.max(1.8, distance - 0.3);
+                  const direction = camera.position.clone().normalize();
+                  camera.position.copy(direction.multiplyScalar(newDistance));
+                }
+              }}
+            >
+              <span className="text-white text-xl font-bold">+</span>
+            </Button>
+            <Button
+              size="icon"
+              variant="secondary"
+              className="h-10 w-10 rounded-full bg-slate-900/90 hover:bg-slate-800 border border-slate-700"
+              onClick={() => {
+                if (controlsRef.current && camera) {
+                  const distance = camera.position.distanceTo(scene.position);
+                  const newDistance = Math.min(5, distance + 0.3);
+                  const direction = camera.position.clone().normalize();
+                  camera.position.copy(direction.multiplyScalar(newDistance));
+                }
+              }}
+            >
+              <span className="text-white text-xl font-bold">−</span>
+            </Button>
+            <Button
+              size="icon"
+              variant="secondary"
+              className="h-10 w-10 rounded-full bg-slate-900/90 hover:bg-slate-800 border border-slate-700"
+              onClick={() => {
+                if (controlsRef.current) {
+                  controlsRef.current.reset();
+                  camera.position.set(0, 0, 3.2);
+                }
+              }}
+            >
+              <span className="text-white text-sm">↺</span>
+            </Button>
+          </div>
           
           {/* Hover tooltip */}
           {hoveredMarker && (
@@ -710,16 +925,20 @@ export default function LiveAnalyticsDashboard() {
           </div>
 
           {/* Legend */}
-          <div className="absolute top-4 right-4 bg-slate-900/95 backdrop-blur-sm border border-slate-700 rounded-lg p-2 sm:p-3 space-y-1.5 sm:space-y-2 shadow-xl">
-            <div className="flex items-center gap-2">
-              <div className="w-2.5 h-2.5 rounded-full bg-emerald-400 shadow-lg shadow-emerald-500/50"></div>
-              <span className="text-[10px] sm:text-xs text-slate-300 font-medium">Free</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="w-2.5 h-2.5 rounded-full bg-amber-500 animate-pulse shadow-lg shadow-amber-500/50"></div>
-              <span className="text-[10px] sm:text-xs text-slate-300 font-medium">Pro</span>
-            </div>
-            {disasters.length > 0 && (
+          <div className="absolute top-4 right-4 bg-slate-900/95 backdrop-blur-sm border border-slate-700 rounded-lg p-2 sm:p-3 space-y-1 sm:space-y-1.5 shadow-xl max-h-[80%] overflow-y-auto">
+            {activeLayers.users && (
+              <>
+                <div className="flex items-center gap-2">
+                  <div className="w-2.5 h-2.5 rounded-full bg-emerald-400 shadow-lg shadow-emerald-500/50"></div>
+                  <span className="text-[10px] sm:text-xs text-slate-300 font-medium">Free</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-2.5 h-2.5 rounded-full bg-amber-500 animate-pulse shadow-lg shadow-amber-500/50"></div>
+                  <span className="text-[10px] sm:text-xs text-slate-300 font-medium">Pro</span>
+                </div>
+              </>
+            )}
+            {activeLayers.disasters && disasters.length > 0 && (
               <>
                 <div className="border-t border-slate-700 pt-1.5"></div>
                 <div className="flex items-center gap-2">
@@ -730,12 +949,41 @@ export default function LiveAnalyticsDashboard() {
                   <div className="w-2.5 h-2.5 rounded-full bg-orange-500 animate-pulse shadow-lg shadow-orange-500/50"></div>
                   <span className="text-[10px] sm:text-xs text-slate-300 font-medium">Volcano</span>
                 </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-2.5 h-2.5 rounded-full bg-blue-400 animate-pulse shadow-lg shadow-blue-400/50"></div>
+                  <span className="text-[10px] sm:text-xs text-slate-300 font-medium">Hurricane</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-2.5 h-2.5 rounded-full bg-blue-600 animate-pulse shadow-lg shadow-blue-600/50"></div>
+                  <span className="text-[10px] sm:text-xs text-slate-300 font-medium">Tsunami</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-2.5 h-2.5 rounded-full bg-purple-500 animate-pulse shadow-lg shadow-purple-500/50"></div>
+                  <span className="text-[10px] sm:text-xs text-slate-300 font-medium">Tornado</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-2.5 h-2.5 rounded-full bg-slate-300 animate-pulse shadow-lg shadow-slate-300/50"></div>
+                  <span className="text-[10px] sm:text-xs text-slate-300 font-medium">Blizzard</span>
+                </div>
+              </>
+            )}
+            {activeLayers.weather && weatherData.length > 0 && (
+              <>
+                <div className="border-t border-slate-700 pt-1.5"></div>
+                <div className="flex items-center gap-2">
+                  <div className="w-2.5 h-2.5 rounded-full bg-blue-400 shadow-lg shadow-blue-400/50"></div>
+                  <span className="text-[10px] sm:text-xs text-slate-300 font-medium">Rain</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-2.5 h-2.5 rounded-full bg-yellow-400 shadow-lg shadow-yellow-400/50"></div>
+                  <span className="text-[10px] sm:text-xs text-slate-300 font-medium">Clear</span>
+                </div>
               </>
             )}
           </div>
         </div>
         <p className="text-xs text-slate-500 dark:text-slate-400 text-center mt-3">
-          🌍 Live global visualization • {totalUsers} users • {disasters.length} active natural events • Zoom to see cities
+          🌍 Live visualization • {totalUsers} users • {disasters.length} natural events • {weatherData.length} weather stations • Zoom for cities
         </p>
       </Card>
 
