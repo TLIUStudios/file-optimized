@@ -1178,32 +1178,8 @@ export default function LiveAnalyticsDashboard() {
         { name: 'Adelaide', lat: -34.9285, lon: 138.6007, zoom: 4 },
         { name: 'Canberra', lat: -35.2809, lon: 149.1300, zoom: 4 },
         { name: 'Gold Coast', lat: -28.0167, lon: 153.4000, zoom: 4 },
-        { name: 'Darwin', lat: -12.4634, lon: 130.8456, zoom: 4 },
+        { name: 'Darwin', lat: -12.4634, lon: 130.8456, zoom: 4 }
       ];
-        { name: 'San Francisco', lat: 37.7749, lon: -122.4194, zoom: 4 },
-        { name: 'Detroit', lat: 42.3314, lon: -83.0458, zoom: 4 },
-        { name: 'Nashville', lat: 36.1627, lon: -86.7816, zoom: 4 },
-        { name: 'Charlotte', lat: 35.2271, lon: -80.8431, zoom: 4 },
-        { name: 'Indianapolis', lat: 39.7684, lon: -86.1581, zoom: 4 },
-        { name: 'Columbus', lat: 39.9612, lon: -82.9988, zoom: 4 },
-        { name: 'Minneapolis', lat: 44.9778, lon: -93.265, zoom: 4 },
-        { name: 'Salt Lake City', lat: 40.7608, lon: -111.891, zoom: 4 },
-        { name: 'Milwaukee', lat: 43.0389, lon: -87.9065, zoom: 4 },
-        { name: 'Albuquerque', lat: 35.0844, lon: -106.6504, zoom: 4 },
-        { name: 'Tucson', lat: 32.2226, lon: -110.9747, zoom: 4 },
-        { name: 'Fresno', lat: 36.7378, lon: -119.7871, zoom: 4 },
-        { name: 'Sacramento', lat: 38.5816, lon: -121.4944, zoom: 4 },
-        { name: 'Kansas City', lat: 39.0997, lon: -94.5786, zoom: 4 },
-        { name: 'Mesa', lat: 33.4152, lon: -111.8315, zoom: 4 },
-        { name: 'Atlanta', lat: 33.749, lon: -84.388, zoom: 4 },
-        { name: 'Omaha', lat: 41.2565, lon: -95.9345, zoom: 4 },
-        { name: 'Raleigh', lat: 35.7796, lon: -78.6382, zoom: 4 },
-        { name: 'Miami Beach', lat: 25.7907, lon: -80.13, zoom: 4 },
-        { name: 'Oakland', lat: 37.8044, lon: -122.2712, zoom: 4 },
-        { name: 'Tampa', lat: 27.9506, lon: -82.4572, zoom: 4 },
-        { name: 'New Orleans', lat: 29.9511, lon: -90.0715, zoom: 4 },
-        { name: 'Cleveland', lat: 41.4993, lon: -81.6944, zoom: 4 },
-
 
       locations.forEach(loc => {
         const label = createLabel(
@@ -1400,9 +1376,7 @@ export default function LiveAnalyticsDashboard() {
           } else if (zoomLevel === 2) { // Countries
             shouldShow = cameraDistance > 2.6;
           } else if (zoomLevel === 3) { // States
-            shouldShow = cameraDistance <= 2.8 && cameraDistance > 2.0;
-          } else if (zoomLevel === 4) { // Cities
-            shouldShow = cameraDistance <= 2.2;
+            shouldShow = cameraDistance <= 2.8;
           }
           
           if (shouldShow) {
