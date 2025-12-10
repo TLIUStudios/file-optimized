@@ -4,9 +4,11 @@ import { base44 } from "@/api/base44Client";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Users, FileUp, HardDrive, TrendingUp, Globe, Activity, X, ExternalLink, Crown, Calendar, Mail } from "lucide-react";
+import { Users, FileUp, HardDrive, TrendingUp, Globe as GlobeIcon, Activity, X, ExternalLink, Crown, Calendar, Mail, MapPin } from "lucide-react";
 import * as THREE from "three";
 import { OrbitControls } from "three-stdlib";
+import { Link } from "react-router-dom";
+import { createPageUrl } from "../../utils";
 
 export default function LiveAnalyticsDashboard() {
   const canvasRef = useRef(null);
@@ -17,8 +19,10 @@ export default function LiveAnalyticsDashboard() {
   const raycasterRef = useRef(new THREE.Raycaster());
   const mouseRef = useRef(new THREE.Vector2());
   const markersRef = useRef([]);
-  const [globeStyle, setGlobeStyle] = useState('realistic');
+  const [globeStyle, setGlobeStyle] = useState('earth');
   const [isDarkMode, setIsDarkMode] = useState(false);
+  const [showLabels, setShowLabels] = useState(true);
+  const labelsRef = useRef([]);
 
   // Detect theme
   useEffect(() => {
@@ -92,100 +96,176 @@ export default function LiveAnalyticsDashboard() {
     controlsRef.current = controls;
 
     // Create globe with different styles
-    const geometry = new THREE.SphereGeometry(1, 64, 64);
+    const geometry = new THREE.SphereGeometry(1, 128, 128);
     let material;
 
-    if (globeStyle === 'realistic') {
+    if (globeStyle === 'earth') {
       // Load realistic Earth texture
       const textureLoader = new THREE.TextureLoader();
-      const earthTexture = textureLoader.load('https://cdn.jsdelivr.net/gh/mrdoob/three.js@r128/examples/textures/planets/earth_atmos_2048.jpg');
+      const earthTexture = textureLoader.load('https://unpkg.com/three-globe@2.31.1/example/img/earth-blue-marble.jpg');
+      const bumpTexture = textureLoader.load('https://unpkg.com/three-globe@2.31.1/example/img/earth-topology.png');
+      
       material = new THREE.MeshPhongMaterial({
         map: earthTexture,
-        shininess: 25,
-        transparent: false
+        bumpMap: bumpTexture,
+        bumpScale: 0.015,
+        shininess: 15,
+        specular: new THREE.Color(0x333333)
       });
-    } else if (globeStyle === 'modern-light') {
-      material = new THREE.MeshPhongMaterial({
-        color: isDarkMode ? 0x1e293b : 0xf8fafc,
-        emissive: isDarkMode ? 0x0f172a : 0xe2e8f0,
-        shininess: 80,
-        wireframe: false,
-        transparent: true,
-        opacity: 0.95
+    } else if (globeStyle === 'white') {
+      material = new THREE.MeshStandardMaterial({
+        color: 0xffffff,
+        metalness: 0.1,
+        roughness: 0.7,
+        emissive: 0xf8fafc,
+        emissiveIntensity: 0.2
       });
-    } else if (globeStyle === 'neon') {
-      material = new THREE.MeshPhongMaterial({
-        color: 0x06b6d4,
-        emissive: 0x0891b2,
-        emissiveIntensity: 0.5,
-        shininess: 100,
-        wireframe: false,
-        transparent: true,
-        opacity: 0.9
+    } else if (globeStyle === 'black') {
+      material = new THREE.MeshStandardMaterial({
+        color: 0x0f172a,
+        metalness: 0.3,
+        roughness: 0.5,
+        emissive: 0x1e293b,
+        emissiveIntensity: 0.3
       });
     } else {
-      // emerald style
-      material = new THREE.MeshPhongMaterial({
+      // green style
+      material = new THREE.MeshStandardMaterial({
         color: 0x10b981,
-        emissive: 0x072f1f,
-        shininess: 100,
-        wireframe: false,
-        transparent: true,
-        opacity: 0.95
+        metalness: 0.2,
+        roughness: 0.6,
+        emissive: 0x059669,
+        emissiveIntensity: 0.25
       });
     }
 
     const sphere = new THREE.Mesh(geometry, material);
+    sphere.userData = { isSphere: true };
     scene.add(sphere);
 
-    // Add wireframe overlay (only for non-realistic styles)
+    // Add wireframe overlay (only for non-earth styles)
     let wireframe = null;
-    if (globeStyle !== 'realistic') {
-      const wireframeGeometry = new THREE.SphereGeometry(1.01, 24, 24);
-      const wireframeColor = globeStyle === 'modern-light' 
-        ? (isDarkMode ? 0x475569 : 0x94a3b8)
-        : globeStyle === 'neon' 
-        ? 0x22d3ee 
+    if (globeStyle !== 'earth') {
+      const wireframeGeometry = new THREE.SphereGeometry(1.005, 36, 36);
+      const wireframeColor = globeStyle === 'white' 
+        ? 0xd1d5db
+        : globeStyle === 'black' 
+        ? 0x475569 
         : 0x059669;
       const wireframeMaterial = new THREE.MeshBasicMaterial({
         color: wireframeColor,
         wireframe: true,
         transparent: true,
-        opacity: globeStyle === 'modern-light' ? 0.15 : 0.2
+        opacity: 0.15
       });
       wireframe = new THREE.Mesh(wireframeGeometry, wireframeMaterial);
+      wireframe.userData = { isWireframe: true };
       scene.add(wireframe);
     }
 
     // Add atmosphere glow
-    const atmosphereGeometry = new THREE.SphereGeometry(1.15, 32, 32);
-    const atmosphereColor = globeStyle === 'realistic' 
+    const atmosphereGeometry = new THREE.SphereGeometry(1.12, 64, 64);
+    const atmosphereColor = globeStyle === 'earth' 
       ? 0x4a9eff
-      : globeStyle === 'modern-light'
-      ? (isDarkMode ? 0x3b82f6 : 0x60a5fa)
-      : globeStyle === 'neon'
-      ? 0x06b6d4
-      : 0x10b981;
+      : globeStyle === 'white'
+      ? 0x94a3b8
+      : globeStyle === 'black'
+      ? 0x3b82f6
+      : 0x34d399;
     const atmosphereMaterial = new THREE.MeshBasicMaterial({
       color: atmosphereColor,
       transparent: true,
-      opacity: globeStyle === 'realistic' ? 0.15 : 0.1,
+      opacity: globeStyle === 'earth' ? 0.12 : 0.08,
       side: THREE.BackSide
     });
     const atmosphere = new THREE.Mesh(atmosphereGeometry, atmosphereMaterial);
+    atmosphere.userData = { isAtmosphere: true };
     scene.add(atmosphere);
 
     // Add lights
-    const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+    const ambientLight = new THREE.AmbientLight(0xffffff, globeStyle === 'earth' ? 0.4 : 0.6);
     scene.add(ambientLight);
     
-    const directionalLight = new THREE.DirectionalLight(0xffffff, 1);
+    const directionalLight = new THREE.DirectionalLight(0xffffff, globeStyle === 'earth' ? 1.2 : 1);
     directionalLight.position.set(5, 3, 5);
     scene.add(directionalLight);
 
-    const pointLight = new THREE.PointLight(0xffffff, 0.5);
+    const pointLight = new THREE.PointLight(0xffffff, 0.3);
     pointLight.position.set(-5, -3, -5);
     scene.add(pointLight);
+
+    // Add location labels
+    const createLabel = (text, lat, lon, isOcean = false) => {
+      const phi = (90 - lat) * (Math.PI / 180);
+      const theta = (lon + 180) * (Math.PI / 180);
+      const radius = 1.15;
+      const x = -radius * Math.sin(phi) * Math.cos(theta);
+      const y = radius * Math.cos(phi);
+      const z = radius * Math.sin(phi) * Math.sin(theta);
+
+      const canvas = document.createElement('canvas');
+      const context = canvas.getContext('2d');
+      canvas.width = 512;
+      canvas.height = 128;
+      
+      context.fillStyle = 'transparent';
+      context.fillRect(0, 0, canvas.width, canvas.height);
+      
+      const fontSize = isOcean ? 32 : 42;
+      context.font = `${isOcean ? 'italic' : 'bold'} ${fontSize}px Arial`;
+      context.fillStyle = globeStyle === 'earth' 
+        ? (isOcean ? '#4a9eff' : '#ffffff')
+        : globeStyle === 'white'
+        ? '#334155'
+        : globeStyle === 'black'
+        ? '#ffffff'
+        : '#10b981';
+      context.textAlign = 'center';
+      context.textBaseline = 'middle';
+      context.fillText(text, canvas.width / 2, canvas.height / 2);
+
+      const texture = new THREE.CanvasTexture(canvas);
+      const spriteMaterial = new THREE.SpriteMaterial({ 
+        map: texture, 
+        transparent: true,
+        opacity: showLabels ? (isOcean ? 0.5 : 0.8) : 0
+      });
+      const sprite = new THREE.Sprite(spriteMaterial);
+      sprite.position.set(x, y, z);
+      sprite.scale.set(isOcean ? 0.6 : 0.4, isOcean ? 0.15 : 0.1, 1);
+      sprite.userData = { isLabel: true };
+      scene.add(sprite);
+      return sprite;
+    };
+
+    // Add major countries and cities
+    const labels = [];
+    if (showLabels) {
+      const locations = [
+        // Countries/Regions
+        { name: 'USA', lat: 39, lon: -95, ocean: false },
+        { name: 'Canada', lat: 56, lon: -106, ocean: false },
+        { name: 'Brazil', lat: -10, lon: -55, ocean: false },
+        { name: 'UK', lat: 54, lon: -2, ocean: false },
+        { name: 'France', lat: 47, lon: 2, ocean: false },
+        { name: 'Germany', lat: 51, lon: 10, ocean: false },
+        { name: 'Russia', lat: 60, lon: 100, ocean: false },
+        { name: 'China', lat: 35, lon: 105, ocean: false },
+        { name: 'India', lat: 20, lon: 77, ocean: false },
+        { name: 'Japan', lat: 36, lon: 138, ocean: false },
+        { name: 'Australia', lat: -25, lon: 133, ocean: false },
+        { name: 'South Africa', lat: -29, lon: 24, ocean: false },
+        // Oceans
+        { name: 'Pacific Ocean', lat: 0, lon: -160, ocean: true },
+        { name: 'Atlantic Ocean', lat: 15, lon: -30, ocean: true },
+        { name: 'Indian Ocean', lat: -20, lon: 80, ocean: true },
+      ];
+
+      locations.forEach(loc => {
+        labels.push(createLabel(loc.name, loc.lat, loc.lon, loc.ocean));
+      });
+    }
+    labelsRef.current = labels;
 
     // Generate realistic user locations based on population density
     const locationClusters = [
@@ -304,6 +384,22 @@ export default function LiveAnalyticsDashboard() {
       // Update controls
       controls.update();
 
+      // Rotate sphere and labels together
+      if (controls.autoRotate) {
+        sphere.rotation.y += 0.001;
+        if (wireframe) wireframe.rotation.y += 0.001;
+        labelsRef.current.forEach(label => {
+          label.material.rotation += 0.001;
+        });
+      }
+
+      // Update label opacity based on showLabels
+      labelsRef.current.forEach(label => {
+        if (label.material.opacity !== (showLabels ? (label.userData.isOcean ? 0.5 : 0.8) : 0)) {
+          label.material.opacity = showLabels ? (label.userData.isOcean ? 0.5 : 0.8) : 0;
+        }
+      });
+
       // Pulse Pro markers
       markers.forEach(marker => {
         if (marker.userData.user?.plan === 'pro' && marker.userData.pulsePhase !== undefined) {
@@ -370,10 +466,14 @@ export default function LiveAnalyticsDashboard() {
       markerMaterialHovered.dispose();
       markerMaterialPro.dispose();
       markers.forEach(m => m.geometry?.dispose());
+      labelsRef.current.forEach(label => {
+        label.material.map?.dispose();
+        label.material.dispose();
+      });
       controls.dispose();
       renderer.dispose();
     };
-  }, [users, globeStyle, isDarkMode]);
+  }, [users, globeStyle, isDarkMode, showLabels]);
 
   return (
     <div className="space-y-6">
@@ -435,20 +535,20 @@ export default function LiveAnalyticsDashboard() {
 
       {/* Interactive Globe Visualization */}
       <Card className="p-6">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
+        <div className="flex flex-col gap-3 mb-4">
           <div className="flex items-center gap-2">
-            <Globe className="w-5 h-5 text-slate-600 dark:text-slate-400" />
+            <GlobeIcon className="w-5 h-5 text-slate-600 dark:text-slate-400" />
             <h3 className="text-lg font-semibold text-slate-900 dark:text-white">Interactive User Globe</h3>
-            <Badge variant="outline" className="text-xs">Live</Badge>
+            <Badge variant="outline" className="text-xs">Live • {totalUsers} Users</Badge>
           </div>
           
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             {/* Globe Style Selector */}
             <div className="flex items-center gap-1 bg-slate-100 dark:bg-slate-900 p-1 rounded-lg">
               <button
-                onClick={() => setGlobeStyle('realistic')}
-                className={`px-2 py-1 rounded text-xs font-medium transition-all ${
-                  globeStyle === 'realistic'
+                onClick={() => setGlobeStyle('earth')}
+                className={`px-3 py-1.5 rounded text-xs font-medium transition-all ${
+                  globeStyle === 'earth'
                     ? 'bg-white dark:bg-slate-800 text-slate-900 dark:text-white shadow-sm'
                     : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
                 }`}
@@ -456,36 +556,45 @@ export default function LiveAnalyticsDashboard() {
                 🌍 Earth
               </button>
               <button
-                onClick={() => setGlobeStyle('modern-light')}
-                className={`px-2 py-1 rounded text-xs font-medium transition-all ${
-                  globeStyle === 'modern-light'
+                onClick={() => setGlobeStyle('white')}
+                className={`px-3 py-1.5 rounded text-xs font-medium transition-all ${
+                  globeStyle === 'white'
                     ? 'bg-white dark:bg-slate-800 text-slate-900 dark:text-white shadow-sm'
                     : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
                 }`}
               >
-                ⚪ Minimal
+                ⚪ White
               </button>
               <button
-                onClick={() => setGlobeStyle('neon')}
-                className={`px-2 py-1 rounded text-xs font-medium transition-all ${
-                  globeStyle === 'neon'
+                onClick={() => setGlobeStyle('black')}
+                className={`px-3 py-1.5 rounded text-xs font-medium transition-all ${
+                  globeStyle === 'black'
                     ? 'bg-white dark:bg-slate-800 text-slate-900 dark:text-white shadow-sm'
                     : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
                 }`}
               >
-                💎 Neon
+                ⚫ Black
               </button>
               <button
-                onClick={() => setGlobeStyle('emerald')}
-                className={`px-2 py-1 rounded text-xs font-medium transition-all ${
-                  globeStyle === 'emerald'
+                onClick={() => setGlobeStyle('green')}
+                className={`px-3 py-1.5 rounded text-xs font-medium transition-all ${
+                  globeStyle === 'green'
                     ? 'bg-white dark:bg-slate-800 text-slate-900 dark:text-white shadow-sm'
                     : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
                 }`}
               >
-                💚 Emerald
+                💚 Green
               </button>
             </div>
+
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => setShowLabels(!showLabels)}
+            >
+              <MapPin className="w-4 h-4 mr-1" />
+              {showLabels ? 'Hide' : 'Show'} Labels
+            </Button>
 
             <Button
               size="sm"
@@ -500,65 +609,79 @@ export default function LiveAnalyticsDashboard() {
             </Button>
           </div>
         </div>
-        <div className="relative w-full h-[500px] bg-gradient-to-b from-slate-900 to-slate-950 rounded-lg overflow-hidden shadow-2xl border border-slate-800">
-          <canvas ref={canvasRef} className="w-full h-full cursor-grab active:cursor-grabbing" />
+        <div className="relative w-full aspect-square sm:aspect-video sm:h-[500px] bg-gradient-to-b from-slate-900 to-slate-950 rounded-lg overflow-hidden shadow-2xl border border-slate-800">
+          <canvas ref={canvasRef} className="w-full h-full cursor-grab active:cursor-grabbing touch-none" />
           
           {/* Hover tooltip */}
           {hoveredMarker && (
-            <div className="absolute top-4 left-4 bg-slate-900/95 backdrop-blur-sm border border-slate-700 rounded-lg p-3 shadow-xl pointer-events-none">
-              <p className="text-xs font-medium text-white">{hoveredMarker.userData.user.full_name || 'User'}</p>
-              <p className="text-xs text-slate-400">{hoveredMarker.userData.user.email}</p>
+            <div className="absolute top-4 left-4 bg-slate-900/95 backdrop-blur-sm border border-slate-700 rounded-lg p-3 shadow-xl pointer-events-none z-10">
+              <p className="text-sm font-semibold text-white">{hoveredMarker.userData.user.full_name || 'User'}</p>
+              <p className="text-xs text-slate-400 mt-0.5">{hoveredMarker.userData.user.email}</p>
               {hoveredMarker.userData.user.plan === 'pro' && (
-                <Badge className="mt-1 bg-amber-500 text-white text-[10px]">PRO</Badge>
+                <Badge className="mt-1.5 bg-gradient-to-r from-amber-500 to-orange-500 text-white text-[10px]">
+                  <Crown className="w-2.5 h-2.5 mr-1" />
+                  PRO USER
+                </Badge>
               )}
+              <p className="text-[10px] text-slate-500 mt-2">Click for details</p>
             </div>
           )}
 
           {/* Instructions */}
-          <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-slate-900/80 backdrop-blur-sm border border-slate-700 rounded-lg px-4 py-2">
-            <p className="text-xs text-slate-300 text-center">
-              🖱️ Drag to rotate • 🔍 Scroll to zoom • 👆 Click markers for details
+          <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-slate-900/90 backdrop-blur-sm border border-slate-700/50 rounded-lg px-3 py-2 sm:px-4 hidden sm:block">
+            <p className="text-[10px] sm:text-xs text-slate-300 text-center whitespace-nowrap">
+              🖱️ Drag to rotate • 🔍 Scroll to zoom • 👆 Click markers for user details
+            </p>
+          </div>
+
+          {/* Mobile instruction */}
+          <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-slate-900/90 backdrop-blur-sm border border-slate-700/50 rounded-lg px-3 py-2 sm:hidden">
+            <p className="text-[10px] text-slate-300 text-center">
+              👆 Drag & pinch • Tap markers for details
             </p>
           </div>
 
           {/* Legend */}
-          <div className="absolute top-4 right-4 bg-slate-900/95 backdrop-blur-sm border border-slate-700 rounded-lg p-3 space-y-2">
+          <div className="absolute top-4 right-4 bg-slate-900/95 backdrop-blur-sm border border-slate-700 rounded-lg p-2 sm:p-3 space-y-1.5 sm:space-y-2">
             <div className="flex items-center gap-2">
-              <div className="w-2 h-2 rounded-full bg-yellow-500"></div>
-              <span className="text-xs text-slate-300">Free User</span>
+              <div className="w-2 h-2 rounded-full bg-yellow-400 shadow-lg shadow-yellow-500/50"></div>
+              <span className="text-[10px] sm:text-xs text-slate-300">Free</span>
             </div>
             <div className="flex items-center gap-2">
-              <div className="w-2 h-2 rounded-full bg-amber-500 animate-pulse"></div>
-              <span className="text-xs text-slate-300">Pro User</span>
+              <div className="w-2 h-2 rounded-full bg-amber-500 animate-pulse shadow-lg shadow-amber-500/50"></div>
+              <span className="text-[10px] sm:text-xs text-slate-300">Pro</span>
             </div>
           </div>
         </div>
         <p className="text-xs text-slate-500 dark:text-slate-400 text-center mt-3">
-          Real-time 3D visualization of {totalUsers} users • Click any marker to view detailed information
+          Professional 3D visualization • {totalUsers} users worldwide • Click markers for detailed profiles
         </p>
       </Card>
 
       {/* Selected User Detail Panel */}
       {selectedUser && (
-        <Card className="p-6 border-2 border-emerald-500 bg-gradient-to-br from-emerald-50 to-teal-50 dark:from-emerald-950/30 dark:to-teal-950/30">
-          <div className="flex items-start justify-between mb-4">
-            <div className="flex items-center gap-3">
-              <div className="w-12 h-12 rounded-full bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center text-white text-xl font-bold">
+        <Card className="p-4 sm:p-6 border-2 border-emerald-500 dark:border-emerald-600 bg-gradient-to-br from-emerald-50 to-teal-50 dark:from-emerald-950/30 dark:to-teal-950/30 shadow-xl">
+          <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 mb-4">
+            <div className="flex items-start gap-3">
+              <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-xl bg-gradient-to-br from-emerald-500 via-teal-500 to-emerald-600 flex items-center justify-center text-white text-2xl font-bold shadow-lg flex-shrink-0">
                 {selectedUser.full_name?.charAt(0) || selectedUser.email.charAt(0).toUpperCase()}
               </div>
-              <div>
-                <div className="flex items-center gap-2">
-                  <h3 className="text-xl font-bold text-slate-900 dark:text-white">{selectedUser.full_name || 'User'}</h3>
+              <div className="min-w-0 flex-1">
+                <div className="flex flex-wrap items-center gap-2">
+                  <h3 className="text-lg sm:text-xl font-bold text-slate-900 dark:text-white">{selectedUser.full_name || 'User'}</h3>
                   {selectedUser.plan === 'pro' && (
                     <Badge className="bg-gradient-to-r from-amber-500 to-orange-500 text-white">
                       <Crown className="w-3 h-3 mr-1" />
                       PRO
                     </Badge>
                   )}
+                  {selectedUser.role === 'admin' && (
+                    <Badge className="bg-blue-600 text-white text-xs">ADMIN</Badge>
+                  )}
                 </div>
-                <div className="flex items-center gap-1 text-sm text-slate-600 dark:text-slate-400 mt-1">
-                  <Mail className="w-3 h-3" />
-                  {selectedUser.email}
+                <div className="flex items-center gap-1 text-xs sm:text-sm text-slate-600 dark:text-slate-400 mt-1">
+                  <Mail className="w-3 h-3 flex-shrink-0" />
+                  <span className="truncate">{selectedUser.email}</span>
                 </div>
               </div>
             </div>
@@ -566,19 +689,19 @@ export default function LiveAnalyticsDashboard() {
               variant="ghost"
               size="icon"
               onClick={() => setSelectedUser(null)}
-              className="h-8 w-8"
+              className="h-8 w-8 flex-shrink-0 sm:relative absolute top-4 right-4 sm:top-0 sm:right-0"
             >
               <X className="w-4 h-4" />
             </Button>
           </div>
 
-          <div className="grid grid-cols-2 gap-4 mb-4">
-            <div className="bg-white dark:bg-slate-900 rounded-lg p-3">
-              <div className="flex items-center gap-2 mb-1">
-                <Calendar className="w-4 h-4 text-slate-500" />
-                <span className="text-xs text-slate-500">Member Since</span>
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-4">
+            <div className="bg-white dark:bg-slate-900 rounded-lg p-3 border border-slate-200 dark:border-slate-800">
+              <div className="flex items-center gap-2 mb-1.5">
+                <Calendar className="w-4 h-4 text-emerald-600" />
+                <span className="text-xs text-slate-500 dark:text-slate-400">Joined</span>
               </div>
-              <p className="text-sm font-semibold text-slate-900 dark:text-white">
+              <p className="text-sm font-bold text-slate-900 dark:text-white">
                 {new Date(selectedUser.created_date).toLocaleDateString('en-US', {
                   month: 'short',
                   day: 'numeric',
@@ -587,22 +710,22 @@ export default function LiveAnalyticsDashboard() {
               </p>
             </div>
 
-            <div className="bg-white dark:bg-slate-900 rounded-lg p-3">
-              <div className="flex items-center gap-2 mb-1">
-                <FileUp className="w-4 h-4 text-slate-500" />
-                <span className="text-xs text-slate-500">Files Processed</span>
+            <div className="bg-white dark:bg-slate-900 rounded-lg p-3 border border-slate-200 dark:border-slate-800">
+              <div className="flex items-center gap-2 mb-1.5">
+                <FileUp className="w-4 h-4 text-blue-600" />
+                <span className="text-xs text-slate-500 dark:text-slate-400">Files</span>
               </div>
-              <p className="text-sm font-semibold text-slate-900 dark:text-white">
-                {allStats.filter(s => s.created_by === selectedUser.email).length}
+              <p className="text-sm font-bold text-slate-900 dark:text-white">
+                {allStats.filter(s => s.created_by === selectedUser.email).length.toLocaleString()}
               </p>
             </div>
 
-            <div className="bg-white dark:bg-slate-900 rounded-lg p-3">
-              <div className="flex items-center gap-2 mb-1">
-                <HardDrive className="w-4 h-4 text-slate-500" />
-                <span className="text-xs text-slate-500">Space Saved</span>
+            <div className="bg-white dark:bg-slate-900 rounded-lg p-3 border border-slate-200 dark:border-slate-800">
+              <div className="flex items-center gap-2 mb-1.5">
+                <HardDrive className="w-4 h-4 text-purple-600" />
+                <span className="text-xs text-slate-500 dark:text-slate-400">Saved</span>
               </div>
-              <p className="text-sm font-semibold text-slate-900 dark:text-white">
+              <p className="text-sm font-bold text-slate-900 dark:text-white">
                 {formatBytes(
                   allStats
                     .filter(s => s.created_by === selectedUser.email)
@@ -611,37 +734,45 @@ export default function LiveAnalyticsDashboard() {
               </p>
             </div>
 
-            <div className="bg-white dark:bg-slate-900 rounded-lg p-3">
-              <div className="flex items-center gap-2 mb-1">
-                <TrendingUp className="w-4 h-4 text-slate-500" />
-                <span className="text-xs text-slate-500">Account Status</span>
+            <div className="bg-white dark:bg-slate-900 rounded-lg p-3 border border-slate-200 dark:border-slate-800">
+              <div className="flex items-center gap-2 mb-1.5">
+                <TrendingUp className="w-4 h-4 text-amber-600" />
+                <span className="text-xs text-slate-500 dark:text-slate-400">Plan</span>
               </div>
-              <Badge variant={selectedUser.plan === 'pro' ? 'default' : 'outline'} className="text-xs">
+              <Badge variant={selectedUser.plan === 'pro' ? 'default' : 'outline'} className="text-xs font-bold">
                 {selectedUser.plan === 'pro' ? 'PRO' : 'FREE'}
               </Badge>
             </div>
           </div>
 
-          <div className="flex gap-2">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
             <Button
               size="sm"
               variant="outline"
               onClick={() => window.open(`mailto:${selectedUser.email}`, '_blank')}
-              className="flex-1"
             >
               <Mail className="w-4 h-4 mr-2" />
-              Email User
+              Email
             </Button>
             <Button
               size="sm"
-              className="flex-1 bg-emerald-600 hover:bg-emerald-700"
+              variant="outline"
               onClick={() => {
-                // Copy user ID to clipboard
                 navigator.clipboard.writeText(selectedUser.id);
-                alert('User ID copied to clipboard!');
+                alert('User ID copied!');
               }}
             >
-              Copy User ID
+              Copy ID
+            </Button>
+            <Button
+              size="sm"
+              className="bg-emerald-600 hover:bg-emerald-700 text-white"
+              asChild
+            >
+              <Link to={createPageUrl('Profile') + `?user=${selectedUser.id}`}>
+                <ExternalLink className="w-4 h-4 mr-2" />
+                View Profile
+              </Link>
             </Button>
           </div>
         </Card>
