@@ -802,11 +802,37 @@ export default function LiveAnalyticsDashboard() {
         .catch(err => console.error('Failed to load country borders:', err));
     }
 
+    // Calculate real UTC sun position
+    const calculateSunPosition = (date = new Date()) => {
+      const dayOfYear = Math.floor((date - new Date(date.getFullYear(), 0, 0)) / 86400000);
+      const declination = 23.45 * Math.sin((360/365) * (dayOfYear - 81) * Math.PI / 180);
+      
+      const hours = date.getUTCHours();
+      const minutes = date.getUTCMinutes();
+      const seconds = date.getUTCSeconds();
+      const timeDecimal = hours + minutes/60 + seconds/3600;
+      const longitude = (timeDecimal - 12) * 15;
+      
+      return { lat: declination, lon: longitude };
+    };
+
+    const sunPos = calculateSunPosition(new Date());
+    const latitude = sunPos.lat;
+    const longitude = sunPos.lon;
+
+    const sunPhi = (90 - latitude) * (Math.PI / 180);
+    const sunTheta = (longitude + 180) * (Math.PI / 180);
+    const sunDirection = new THREE.Vector3(
+      -Math.sin(sunPhi) * Math.cos(sunTheta),
+      Math.cos(sunPhi),
+      Math.sin(sunPhi) * Math.sin(sunTheta)
+    );
+
     // Add day/night terminator visualization
     const terminatorGeometry = new THREE.SphereGeometry(1.002, 128, 128);
     const terminatorMaterial = new THREE.ShaderMaterial({
       uniforms: {
-        sunDirection: { value: new THREE.Vector3(1, 0.5, 0.5).normalize() }
+        sunDirection: { value: sunDirection.clone() }
       },
       vertexShader: `
         varying vec3 vNormal;
