@@ -12,6 +12,7 @@ import { createPageUrl } from "../../utils";
 
 export default function LiveAnalyticsDashboard() {
   const canvasRef = useRef(null);
+  const containerRef = useRef(null);
   const [globe, setGlobe] = useState(null);
   const [selectedUser, setSelectedUser] = useState(null);
   const [hoveredMarker, setHoveredMarker] = useState(null);
@@ -23,6 +24,7 @@ export default function LiveAnalyticsDashboard() {
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [showLabels, setShowLabels] = useState(true);
   const labelsRef = useRef([]);
+  const [recentActivity, setRecentActivity] = useState([]);
 
   // Detect theme
   useEffect(() => {
@@ -46,7 +48,13 @@ export default function LiveAnalyticsDashboard() {
   const { data: allStats = [] } = useQuery({
     queryKey: ['admin-all-stats'],
     queryFn: () => base44.entities.CompressionStat.list('-created_date', 10000),
-    refetchInterval: 30000
+    refetchInterval: 5000, // Update every 5 seconds for live feel
+    onSuccess: (newStats) => {
+      // Update recent activity
+      if (newStats.length > 0) {
+        setRecentActivity(newStats.slice(0, 15));
+      }
+    }
   });
 
   // Calculate metrics
@@ -71,17 +79,22 @@ export default function LiveAnalyticsDashboard() {
     if (!canvasRef.current || users.length === 0) return;
 
     const scene = new THREE.Scene();
-    const camera = new THREE.PerspectiveCamera(75, 1, 0.1, 1000);
+    
+    // Use square aspect ratio for perfectly round globe
+    const size = Math.min(canvasRef.current.clientWidth, canvasRef.current.clientHeight);
+    const camera = new THREE.PerspectiveCamera(45, 1, 0.1, 1000);
     const renderer = new THREE.WebGLRenderer({ 
       canvas: canvasRef.current, 
       alpha: true,
-      antialias: true
+      antialias: true,
+      powerPreference: "high-performance"
     });
     
-    const width = canvasRef.current.clientWidth;
-    const height = canvasRef.current.clientHeight;
-    renderer.setSize(width, height);
-    camera.position.z = 3;
+    renderer.setSize(size, size);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    camera.aspect = 1;
+    camera.updateProjectionMatrix();
+    camera.position.set(0, 0, 2.5);
 
     // Add OrbitControls for interactivity
     const controls = new OrbitControls(camera, renderer.domElement);
@@ -436,14 +449,14 @@ export default function LiveAnalyticsDashboard() {
     };
     animate();
 
-    // Handle resize
+    // Handle resize - maintain square aspect
     const handleResize = () => {
-      if (!canvasRef.current) return;
-      const newWidth = canvasRef.current.clientWidth;
-      const newHeight = canvasRef.current.clientHeight;
-      camera.aspect = newWidth / newHeight;
+      if (!canvasRef.current || !containerRef.current) return;
+      const size = Math.min(containerRef.current.clientWidth, containerRef.current.clientHeight);
+      camera.aspect = 1;
       camera.updateProjectionMatrix();
-      renderer.setSize(newWidth, newHeight);
+      renderer.setSize(size, size);
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     };
     window.addEventListener('resize', handleResize);
 
@@ -609,8 +622,10 @@ export default function LiveAnalyticsDashboard() {
             </Button>
           </div>
         </div>
-        <div className="relative w-full aspect-square sm:aspect-video sm:h-[500px] bg-gradient-to-b from-slate-900 to-slate-950 rounded-lg overflow-hidden shadow-2xl border border-slate-800">
-          <canvas ref={canvasRef} className="w-full h-full cursor-grab active:cursor-grabbing touch-none" />
+        <div ref={containerRef} className="relative w-full h-[400px] sm:h-[500px] md:h-[600px] bg-gradient-to-b from-slate-900 via-slate-950 to-black rounded-xl overflow-hidden shadow-2xl border border-slate-800">
+          <div className="absolute inset-0 flex items-center justify-center">
+            <canvas ref={canvasRef} className="cursor-grab active:cursor-grabbing touch-none" style={{ maxWidth: '100%', maxHeight: '100%' }} />
+          </div>
           
           {/* Hover tooltip */}
           {hoveredMarker && (
@@ -642,19 +657,19 @@ export default function LiveAnalyticsDashboard() {
           </div>
 
           {/* Legend */}
-          <div className="absolute top-4 right-4 bg-slate-900/95 backdrop-blur-sm border border-slate-700 rounded-lg p-2 sm:p-3 space-y-1.5 sm:space-y-2">
+          <div className="absolute top-4 right-4 bg-slate-900/95 backdrop-blur-sm border border-slate-700 rounded-lg p-2 sm:p-3 space-y-1.5 sm:space-y-2 shadow-xl">
             <div className="flex items-center gap-2">
-              <div className="w-2 h-2 rounded-full bg-yellow-400 shadow-lg shadow-yellow-500/50"></div>
-              <span className="text-[10px] sm:text-xs text-slate-300">Free</span>
+              <div className="w-2.5 h-2.5 rounded-full bg-yellow-400 shadow-lg shadow-yellow-500/50"></div>
+              <span className="text-[10px] sm:text-xs text-slate-300 font-medium">Free</span>
             </div>
             <div className="flex items-center gap-2">
-              <div className="w-2 h-2 rounded-full bg-amber-500 animate-pulse shadow-lg shadow-amber-500/50"></div>
-              <span className="text-[10px] sm:text-xs text-slate-300">Pro</span>
+              <div className="w-2.5 h-2.5 rounded-full bg-amber-500 animate-pulse shadow-lg shadow-amber-500/50"></div>
+              <span className="text-[10px] sm:text-xs text-slate-300 font-medium">Pro</span>
             </div>
           </div>
         </div>
         <p className="text-xs text-slate-500 dark:text-slate-400 text-center mt-3">
-          Professional 3D visualization • {totalUsers} users worldwide • Click markers for detailed profiles
+          🌍 Live global visualization • {totalUsers} users • Drag to explore • Click markers for profiles
         </p>
       </Card>
 
@@ -778,26 +793,131 @@ export default function LiveAnalyticsDashboard() {
         </Card>
       )}
 
-      {/* Recent Users */}
-      <Card className="p-6">
-        <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-4">Recent Users</h3>
-        <div className="space-y-2 max-h-[300px] overflow-y-auto">
-          {users.slice(0, 20).map(user => (
-            <div key={user.id} className="flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-900 rounded-lg">
-              <div className="flex-1 min-w-0">
-                <p className="font-medium text-slate-900 dark:text-white truncate">{user.full_name || 'User'}</p>
-                <p className="text-xs text-slate-500 dark:text-slate-400">{user.email}</p>
-              </div>
-              <div className="flex items-center gap-2">
-                {user.plan === 'pro' && (
-                  <Badge className="bg-amber-500 text-white text-xs">PRO</Badge>
-                )}
-                <p className="text-xs text-slate-500">
-                  {new Date(user.created_date).toLocaleDateString()}
-                </p>
-              </div>
+      {/* Real-Time Activity Feed */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <Card className="p-6">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-semibold text-slate-900 dark:text-white">Live Activity Stream</h3>
+            <div className="flex items-center gap-2">
+              <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>
+              <span className="text-xs text-slate-500">Live</span>
             </div>
-          ))}
+          </div>
+          <div className="space-y-2 max-h-[400px] overflow-y-auto">
+            {recentActivity.length === 0 ? (
+              <p className="text-sm text-slate-500 dark:text-slate-400 text-center py-8">
+                Waiting for activity...
+              </p>
+            ) : (
+              recentActivity.map((stat, idx) => (
+                <div key={stat.id} className="flex items-center gap-3 p-3 bg-slate-50 dark:bg-slate-900 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
+                  <div className={`w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 ${
+                    stat.media_type === 'image' ? 'bg-blue-100 dark:bg-blue-900' :
+                    stat.media_type === 'video' ? 'bg-purple-100 dark:bg-purple-900' :
+                    'bg-amber-100 dark:bg-amber-900'
+                  }`}>
+                    {stat.media_type === 'image' ? '🖼️' : stat.media_type === 'video' ? '🎬' : '🎵'}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-slate-900 dark:text-white">
+                      {stat.media_type.charAt(0).toUpperCase() + stat.media_type.slice(1)} → {stat.output_format.toUpperCase()}
+                    </p>
+                    <p className="text-xs text-slate-500 dark:text-slate-400 truncate">{stat.created_by}</p>
+                  </div>
+                  <div className="text-right flex-shrink-0">
+                    <p className="text-xs font-semibold text-emerald-600 dark:text-emerald-400">
+                      -{formatBytes(Math.max(0, stat.original_size - stat.compressed_size))}
+                    </p>
+                    <p className="text-[10px] text-slate-500">
+                      {(() => {
+                        const now = new Date();
+                        const created = new Date(stat.created_date);
+                        const diffMs = now - created;
+                        const diffMins = Math.floor(diffMs / 60000);
+                        if (diffMins < 1) return 'Just now';
+                        if (diffMins < 60) return `${diffMins}m ago`;
+                        const diffHours = Math.floor(diffMins / 60);
+                        if (diffHours < 24) return `${diffHours}h ago`;
+                        return `${Math.floor(diffHours / 24)}d ago`;
+                      })()}
+                    </p>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        </Card>
+
+        {/* Top Performing Users */}
+        <Card className="p-6">
+          <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-4">Top Users (Last 7 Days)</h3>
+          <div className="space-y-2 max-h-[400px] overflow-y-auto">
+            {(() => {
+              const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+              const recentStats = allStats.filter(s => new Date(s.created_date) > weekAgo);
+              const userStats = {};
+              
+              recentStats.forEach(stat => {
+                if (!userStats[stat.created_by]) {
+                  userStats[stat.created_by] = { count: 0, saved: 0 };
+                }
+                userStats[stat.created_by].count++;
+                const saved = stat.original_size - stat.compressed_size;
+                userStats[stat.created_by].saved += Math.max(0, saved);
+              });
+
+              return Object.entries(userStats)
+                .sort((a, b) => b[1].count - a[1].count)
+                .slice(0, 10)
+                .map(([email, stats], idx) => {
+                  const user = users.find(u => u.email === email);
+                  return (
+                    <div key={email} className="flex items-center gap-3 p-3 bg-slate-50 dark:bg-slate-900 rounded-lg hover:bg-emerald-50 dark:hover:bg-emerald-950/30 transition-colors cursor-pointer" onClick={() => user && setSelectedUser(user)}>
+                      <div className="w-8 h-8 rounded-full bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center text-white text-sm font-bold flex-shrink-0">
+                        #{idx + 1}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium text-sm text-slate-900 dark:text-white truncate">{user?.full_name || email}</p>
+                        <div className="flex items-center gap-2 mt-0.5">
+                          <p className="text-xs text-slate-500 dark:text-slate-400">
+                            {stats.count} files • {formatBytes(stats.saved)}
+                          </p>
+                          {user?.plan === 'pro' && (
+                            <Badge className="bg-amber-500 text-white text-[9px] px-1.5 py-0">PRO</Badge>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                });
+            })()}
+          </div>
+        </Card>
+      </div>
+
+      {/* Format Breakdown */}
+      <Card className="p-6">
+        <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-4">Popular Formats (Last 24h)</h3>
+        <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 gap-3">
+          {(() => {
+            const dayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+            const recentStats = allStats.filter(s => new Date(s.created_date) > dayAgo);
+            const formatCounts = {};
+            
+            recentStats.forEach(stat => {
+              const format = stat.output_format.toUpperCase();
+              formatCounts[format] = (formatCounts[format] || 0) + 1;
+            });
+
+            return Object.entries(formatCounts)
+              .sort((a, b) => b[1] - a[1])
+              .map(([format, count]) => (
+                <div key={format} className="bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-950 rounded-lg p-4 border border-slate-200 dark:border-slate-800">
+                  <p className="text-2xl font-bold text-slate-900 dark:text-white mb-1">{count}</p>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">{format}</p>
+                </div>
+              ));
+          })()}
         </div>
       </Card>
 
