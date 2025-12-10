@@ -92,7 +92,7 @@ export default function LiveAnalyticsDashboard() {
     
     renderer.setSize(width, height);
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-    camera.position.set(0, 0, 2.5);
+    camera.position.set(0, 0, 3.2);
 
     // Add OrbitControls for interactivity
     const controls = new OrbitControls(camera, renderer.domElement);
@@ -123,24 +123,8 @@ export default function LiveAnalyticsDashboard() {
         shininess: 15,
         specular: new THREE.Color(0x333333)
       });
-    } else if (globeStyle === 'white') {
-      material = new THREE.MeshStandardMaterial({
-        color: 0xffffff,
-        metalness: 0.1,
-        roughness: 0.7,
-        emissive: 0xf8fafc,
-        emissiveIntensity: 0.2
-      });
-    } else if (globeStyle === 'black') {
-      material = new THREE.MeshStandardMaterial({
-        color: 0x0f172a,
-        metalness: 0.3,
-        roughness: 0.5,
-        emissive: 0x1e293b,
-        emissiveIntensity: 0.3
-      });
     } else {
-      // green style
+      // Matrix green style
       material = new THREE.MeshStandardMaterial({
         color: 0x10b981,
         metalness: 0.2,
@@ -154,20 +138,15 @@ export default function LiveAnalyticsDashboard() {
     sphere.userData = { isSphere: true };
     scene.add(sphere);
 
-    // Add wireframe overlay (only for non-earth styles)
+    // Add wireframe overlay (only for Matrix style)
     let wireframe = null;
-    if (globeStyle !== 'earth') {
+    if (globeStyle === 'matrix') {
       const wireframeGeometry = new THREE.SphereGeometry(1.005, 36, 36);
-      const wireframeColor = globeStyle === 'white' 
-        ? 0xd1d5db
-        : globeStyle === 'black' 
-        ? 0x475569 
-        : 0x059669;
       const wireframeMaterial = new THREE.MeshBasicMaterial({
-        color: wireframeColor,
+        color: 0x059669,
         wireframe: true,
         transparent: true,
-        opacity: 0.15
+        opacity: 0.2
       });
       wireframe = new THREE.Mesh(wireframeGeometry, wireframeMaterial);
       wireframe.userData = { isWireframe: true };
@@ -176,17 +155,11 @@ export default function LiveAnalyticsDashboard() {
 
     // Add atmosphere glow
     const atmosphereGeometry = new THREE.SphereGeometry(1.12, 64, 64);
-    const atmosphereColor = globeStyle === 'earth' 
-      ? 0x4a9eff
-      : globeStyle === 'white'
-      ? 0x94a3b8
-      : globeStyle === 'black'
-      ? 0x3b82f6
-      : 0x34d399;
+    const atmosphereColor = globeStyle === 'earth' ? 0x4a9eff : 0x34d399;
     const atmosphereMaterial = new THREE.MeshBasicMaterial({
       color: atmosphereColor,
       transparent: true,
-      opacity: globeStyle === 'earth' ? 0.12 : 0.08,
+      opacity: globeStyle === 'earth' ? 0.12 : 0.1,
       side: THREE.BackSide
     });
     const atmosphere = new THREE.Mesh(atmosphereGeometry, atmosphereMaterial);
@@ -226,10 +199,6 @@ export default function LiveAnalyticsDashboard() {
       context.font = `${isOcean ? 'italic' : 'bold'} ${fontSize}px Arial`;
       context.fillStyle = globeStyle === 'earth' 
         ? (isOcean ? '#4a9eff' : '#ffffff')
-        : globeStyle === 'white'
-        ? '#334155'
-        : globeStyle === 'black'
-        ? '#ffffff'
         : '#10b981';
       context.textAlign = 'center';
       context.textBaseline = 'middle';
@@ -244,8 +213,8 @@ export default function LiveAnalyticsDashboard() {
       const sprite = new THREE.Sprite(spriteMaterial);
       sprite.position.set(x, y, z);
       sprite.scale.set(isOcean ? 0.6 : 0.4, isOcean ? 0.15 : 0.1, 1);
-      sprite.userData = { isLabel: true };
-      scene.add(sprite);
+      sprite.userData = { isLabel: true, isOcean };
+      sphere.add(sprite); // Add to sphere so it rotates with it
       return sprite;
     };
 
@@ -395,19 +364,11 @@ export default function LiveAnalyticsDashboard() {
       // Update controls
       controls.update();
 
-      // Rotate sphere and labels together
-      if (controls.autoRotate) {
-        sphere.rotation.y += 0.001;
-        if (wireframe) wireframe.rotation.y += 0.001;
-        labelsRef.current.forEach(label => {
-          label.material.rotation += 0.001;
-        });
-      }
-
       // Update label opacity based on showLabels
       labelsRef.current.forEach(label => {
-        if (label.material.opacity !== (showLabels ? (label.userData.isOcean ? 0.5 : 0.8) : 0)) {
-          label.material.opacity = showLabels ? (label.userData.isOcean ? 0.5 : 0.8) : 0;
+        const targetOpacity = showLabels ? (label.userData.isOcean ? 0.5 : 0.8) : 0;
+        if (label.material.opacity !== targetOpacity) {
+          label.material.opacity = targetOpacity;
         }
       });
 
@@ -568,34 +529,14 @@ export default function LiveAnalyticsDashboard() {
                 🌍 Earth
               </button>
               <button
-                onClick={() => setGlobeStyle('white')}
+                onClick={() => setGlobeStyle('matrix')}
                 className={`px-3 py-1.5 rounded text-xs font-medium transition-all ${
-                  globeStyle === 'white'
+                  globeStyle === 'matrix'
                     ? 'bg-white dark:bg-slate-800 text-slate-900 dark:text-white shadow-sm'
                     : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
                 }`}
               >
-                ⚪ White
-              </button>
-              <button
-                onClick={() => setGlobeStyle('black')}
-                className={`px-3 py-1.5 rounded text-xs font-medium transition-all ${
-                  globeStyle === 'black'
-                    ? 'bg-white dark:bg-slate-800 text-slate-900 dark:text-white shadow-sm'
-                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-                }`}
-              >
-                ⚫ Black
-              </button>
-              <button
-                onClick={() => setGlobeStyle('green')}
-                className={`px-3 py-1.5 rounded text-xs font-medium transition-all ${
-                  globeStyle === 'green'
-                    ? 'bg-white dark:bg-slate-800 text-slate-900 dark:text-white shadow-sm'
-                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-                }`}
-              >
-                💚 Green
+                💎 Matrix
               </button>
             </div>
 
