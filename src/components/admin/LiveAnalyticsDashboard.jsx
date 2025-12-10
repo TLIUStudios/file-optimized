@@ -225,6 +225,30 @@ export default function LiveAnalyticsDashboard() {
     const scene = new THREE.Scene();
     sceneRef.current = scene;
     
+    // Add starfield background for space realism
+    const starGeometry = new THREE.BufferGeometry();
+    const starCount = 15000;
+    const starPositions = new Float32Array(starCount * 3);
+    
+    for (let i = 0; i < starCount * 3; i += 3) {
+      const radius = 50 + Math.random() * 50;
+      const theta = Math.random() * Math.PI * 2;
+      const phi = Math.random() * Math.PI;
+      starPositions[i] = radius * Math.sin(phi) * Math.cos(theta);
+      starPositions[i + 1] = radius * Math.sin(phi) * Math.sin(theta);
+      starPositions[i + 2] = radius * Math.cos(phi);
+    }
+    
+    starGeometry.setAttribute('position', new THREE.BufferAttribute(starPositions, 3));
+    const starMaterial = new THREE.PointsMaterial({
+      color: 0xffffff,
+      size: 0.15,
+      transparent: true,
+      opacity: 0.8
+    });
+    const stars = new THREE.Points(starGeometry, starMaterial);
+    scene.add(stars);
+    
     const width = containerRef.current.clientWidth;
     const height = containerRef.current.clientHeight;
     const camera = new THREE.PerspectiveCamera(50, width / height, 0.1, 1000);
@@ -361,18 +385,30 @@ export default function LiveAnalyticsDashboard() {
       scene.add(wireframe);
     }
 
-    // Add atmosphere glow
-    const atmosphereGeometry = new THREE.SphereGeometry(1.12, 64, 64);
+    // Add realistic atmosphere glow with multiple layers
+    const atmosphereGeometry1 = new THREE.SphereGeometry(1.08, 64, 64);
     const atmosphereColor = globeStyle === 'earth' ? 0x4a9eff : 0x34d399;
-    const atmosphereMaterial = new THREE.MeshBasicMaterial({
+    const atmosphereMaterial1 = new THREE.MeshBasicMaterial({
       color: atmosphereColor,
       transparent: true,
-      opacity: globeStyle === 'earth' ? 0.12 : 0.1,
+      opacity: globeStyle === 'earth' ? 0.15 : 0.12,
       side: THREE.BackSide
     });
-    const atmosphere = new THREE.Mesh(atmosphereGeometry, atmosphereMaterial);
-    atmosphere.userData = { isAtmosphere: true };
-    scene.add(atmosphere);
+    const atmosphere1 = new THREE.Mesh(atmosphereGeometry1, atmosphereMaterial1);
+    atmosphere1.userData = { isAtmosphere: true };
+    scene.add(atmosphere1);
+    
+    // Outer atmosphere glow
+    const atmosphereGeometry2 = new THREE.SphereGeometry(1.15, 64, 64);
+    const atmosphereMaterial2 = new THREE.MeshBasicMaterial({
+      color: atmosphereColor,
+      transparent: true,
+      opacity: globeStyle === 'earth' ? 0.08 : 0.06,
+      side: THREE.BackSide
+    });
+    const atmosphere2 = new THREE.Mesh(atmosphereGeometry2, atmosphereMaterial2);
+    atmosphere2.userData = { isAtmosphere: true };
+    scene.add(atmosphere2);
 
     // Add lights
     const ambientLight = new THREE.AmbientLight(0xffffff, globeStyle === 'earth' ? 0.4 : 0.6);
@@ -386,11 +422,11 @@ export default function LiveAnalyticsDashboard() {
     pointLight.position.set(-5, -3, -5);
     scene.add(pointLight);
 
-    // Google Earth-style label creation with text outline and sizing
+    // Google Earth-style label creation - labels ON the surface
     const createLabel = (text, lat, lon, zoomLevel, priority = 1) => {
       const phi = (90 - lat) * (Math.PI / 180);
       const theta = (lon + 180) * (Math.PI / 180);
-      const radius = 1.15;
+      const radius = 1.01; // Just slightly above surface for visibility
       const x = -radius * Math.sin(phi) * Math.cos(theta);
       const y = radius * Math.cos(phi);
       const z = radius * Math.sin(phi) * Math.sin(theta);
@@ -705,7 +741,7 @@ export default function LiveAnalyticsDashboard() {
       mouseRef.current.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
     };
 
-    // Click detection
+    // Click detection with Google Maps integration
     const handleClick = (event) => {
       const rect = canvasRef.current.getBoundingClientRect();
       mouseRef.current.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
@@ -719,6 +755,16 @@ export default function LiveAnalyticsDashboard() {
         if (clickedMarker.userData.isMarker) {
           setSelectedUser(clickedMarker.userData.user);
           controls.autoRotate = false;
+        }
+      } else {
+        // Check if clicked on globe for Google Maps integration
+        const globeIntersects = raycasterRef.current.intersectObject(sphere);
+        if (globeIntersects.length > 0 && cameraDistance < 2.0) {
+          const point = globeIntersects[0].point;
+          const lat = Math.asin(point.y) * (180 / Math.PI);
+          const lon = Math.atan2(point.z, -point.x) * (180 / Math.PI);
+          // Open Google Maps street view at this location
+          window.open(`https://www.google.com/maps/@${lat},${lon},14z`, '_blank');
         }
       }
     };
@@ -844,6 +890,11 @@ export default function LiveAnalyticsDashboard() {
           marker.scale.set(scale, scale, scale);
         }
       });
+      
+      // Rotate starfield slowly for depth
+      if (stars) {
+        stars.rotation.y += 0.0001;
+      }
 
       // Hover detection
       raycasterRef.current.setFromCamera(mouseRef.current, camera);
@@ -896,8 +947,12 @@ export default function LiveAnalyticsDashboard() {
         wireframe.geometry.dispose();
         wireframe.material.dispose();
       }
-      atmosphereGeometry.dispose();
-      atmosphereMaterial.dispose();
+      atmosphereGeometry1.dispose();
+      atmosphereMaterial1.dispose();
+      atmosphereGeometry2.dispose();
+      atmosphereMaterial2.dispose();
+      starGeometry.dispose();
+      starMaterial.dispose();
       markerGeometry.dispose();
       markerMaterialFree.dispose();
       markerMaterialHovered.dispose();
@@ -1138,9 +1193,18 @@ export default function LiveAnalyticsDashboard() {
           {/* Instructions */}
           <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-slate-900/90 backdrop-blur-sm border border-slate-700/50 rounded-lg px-3 py-2 sm:px-4 hidden sm:block">
             <p className="text-[10px] sm:text-xs text-slate-300 text-center whitespace-nowrap">
-              🖱️ Drag to rotate • 🔍 Scroll to zoom • 👆 Click markers for user details
+              🖱️ Drag to rotate • 🔍 Scroll to zoom • 👆 Click markers for details • 🗺️ Deep zoom + click for Google Maps
             </p>
           </div>
+          
+          {/* Google Maps Integration Hint */}
+          {cameraRef.current && sceneRef.current && cameraRef.current.position.distanceTo(sceneRef.current.position) < 2.0 && (
+            <div className="absolute top-20 left-1/2 -translate-x-1/2 bg-blue-600/90 backdrop-blur-sm border border-blue-400 rounded-lg px-4 py-2 shadow-xl animate-pulse">
+              <p className="text-xs text-white font-medium whitespace-nowrap">
+                🗺️ Click anywhere on globe to open Google Maps Street View
+              </p>
+            </div>
+          )}
 
           {/* Mobile instruction */}
           <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-slate-900/90 backdrop-blur-sm border border-slate-700/50 rounded-lg px-3 py-2 sm:hidden">
@@ -1207,8 +1271,9 @@ export default function LiveAnalyticsDashboard() {
             )}
           </div>
         </div>
-        <p className="text-xs text-slate-500 dark:text-slate-400 text-center mt-3">
-          🌍 Google Earth-style globe with intelligent label placement • Zoom levels: Oceans → Countries → States → Cities
+        <p className="text-xs text-slate-500 dark:text-slate-400 text-center mt-3 space-y-1">
+          <span className="block">🌍 Google Earth-style 3D globe with real-time data • Starfield background • Intelligent collision-free labels</span>
+          <span className="block">🗺️ Deep zoom reveals: Oceans → Countries → States → Cities • Click on surface when zoomed in for Google Maps Street View</span>
         </p>
       </Card>
 
