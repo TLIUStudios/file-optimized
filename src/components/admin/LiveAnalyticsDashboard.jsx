@@ -80,9 +80,9 @@ export default function LiveAnalyticsDashboard() {
 
     const scene = new THREE.Scene();
     
-    // Use square aspect ratio for perfectly round globe
-    const size = Math.min(canvasRef.current.clientWidth, canvasRef.current.clientHeight);
-    const camera = new THREE.PerspectiveCamera(45, 1, 0.1, 1000);
+    const width = containerRef.current.clientWidth;
+    const height = containerRef.current.clientHeight;
+    const camera = new THREE.PerspectiveCamera(50, width / height, 0.1, 1000);
     const renderer = new THREE.WebGLRenderer({ 
       canvas: canvasRef.current, 
       alpha: true,
@@ -90,10 +90,8 @@ export default function LiveAnalyticsDashboard() {
       powerPreference: "high-performance"
     });
     
-    renderer.setSize(size, size);
+    renderer.setSize(width, height);
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-    camera.aspect = 1;
-    camera.updateProjectionMatrix();
     camera.position.set(0, 0, 2.5);
 
     // Add OrbitControls for interactivity
@@ -449,13 +447,14 @@ export default function LiveAnalyticsDashboard() {
     };
     animate();
 
-    // Handle resize - maintain square aspect
+    // Handle resize
     const handleResize = () => {
       if (!canvasRef.current || !containerRef.current) return;
-      const size = Math.min(containerRef.current.clientWidth, containerRef.current.clientHeight);
-      camera.aspect = 1;
+      const width = containerRef.current.clientWidth;
+      const height = containerRef.current.clientHeight;
+      camera.aspect = width / height;
       camera.updateProjectionMatrix();
-      renderer.setSize(size, size);
+      renderer.setSize(width, height);
       renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     };
     window.addEventListener('resize', handleResize);
@@ -622,10 +621,8 @@ export default function LiveAnalyticsDashboard() {
             </Button>
           </div>
         </div>
-        <div ref={containerRef} className="relative w-full h-[400px] sm:h-[500px] md:h-[600px] bg-gradient-to-b from-slate-900 via-slate-950 to-black rounded-xl overflow-hidden shadow-2xl border border-slate-800">
-          <div className="absolute inset-0 flex items-center justify-center">
-            <canvas ref={canvasRef} className="cursor-grab active:cursor-grabbing touch-none" style={{ maxWidth: '100%', maxHeight: '100%' }} />
-          </div>
+        <div ref={containerRef} className="relative w-full h-[450px] sm:h-[550px] lg:h-[650px] bg-gradient-to-b from-slate-900 via-slate-950 to-black rounded-xl overflow-hidden shadow-2xl border border-slate-800">
+          <canvas ref={canvasRef} className="w-full h-full cursor-grab active:cursor-grabbing touch-none" />
           
           {/* Hover tooltip */}
           {hoveredMarker && (
