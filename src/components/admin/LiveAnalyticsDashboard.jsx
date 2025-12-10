@@ -252,6 +252,56 @@ export default function LiveAnalyticsDashboard() {
     const stars = new THREE.Points(starGeometry, starMaterial);
     scene.add(stars);
     
+    // Add sun or moon based on user's local time
+    const hour = new Date().getHours();
+    const isDay = hour >= 6 && hour < 18;
+    
+    if (isDay) {
+      // Add sun
+      const sunGeometry = new THREE.SphereGeometry(3, 32, 32);
+      const sunMaterial = new THREE.MeshBasicMaterial({
+        color: 0xfdb813,
+        emissive: 0xfdb813,
+        emissiveIntensity: 1
+      });
+      const sun = new THREE.Mesh(sunGeometry, sunMaterial);
+      sun.position.set(40, 20, -30);
+      scene.add(sun);
+      
+      // Sun glow
+      const sunGlowGeometry = new THREE.SphereGeometry(3.5, 32, 32);
+      const sunGlowMaterial = new THREE.MeshBasicMaterial({
+        color: 0xfdb813,
+        transparent: true,
+        opacity: 0.3
+      });
+      const sunGlow = new THREE.Mesh(sunGlowGeometry, sunGlowMaterial);
+      sunGlow.position.set(40, 20, -30);
+      scene.add(sunGlow);
+    } else {
+      // Add moon
+      const moonGeometry = new THREE.SphereGeometry(2, 32, 32);
+      const moonMaterial = new THREE.MeshBasicMaterial({
+        color: 0xe8e8e8,
+        emissive: 0xaaaaaa,
+        emissiveIntensity: 0.6
+      });
+      const moon = new THREE.Mesh(moonGeometry, moonMaterial);
+      moon.position.set(40, 20, -30);
+      scene.add(moon);
+      
+      // Moon glow
+      const moonGlowGeometry = new THREE.SphereGeometry(2.3, 32, 32);
+      const moonGlowMaterial = new THREE.MeshBasicMaterial({
+        color: 0xc8c8e8,
+        transparent: true,
+        opacity: 0.2
+      });
+      const moonGlow = new THREE.Mesh(moonGlowGeometry, moonGlowMaterial);
+      moonGlow.position.set(40, 20, -30);
+      scene.add(moonGlow);
+    }
+    
     const width = containerRef.current.clientWidth;
     const height = containerRef.current.clientHeight;
     const camera = new THREE.PerspectiveCamera(50, width / height, 0.1, 1000);
@@ -517,25 +567,81 @@ export default function LiveAnalyticsDashboard() {
         { name: 'Arctic Ocean', lat: 75, lon: 0, ocean: true, zoom: 1 },
         { name: 'Southern Ocean', lat: -60, lon: 0, ocean: true, zoom: 1 },
         
-        // Countries (zoom level 2 - far)
+        // Countries - ALL major countries (zoom level 2 - far)
         { name: 'United States', lat: 39, lon: -95, zoom: 2 },
         { name: 'Canada', lat: 56, lon: -106, zoom: 2 },
         { name: 'Mexico', lat: 23, lon: -102, zoom: 2 },
+        { name: 'Guatemala', lat: 15.5, lon: -90.25, zoom: 2 },
+        { name: 'Cuba', lat: 21.5, lon: -80, zoom: 2 },
         { name: 'Brazil', lat: -10, lon: -55, zoom: 2 },
         { name: 'Argentina', lat: -34, lon: -64, zoom: 2 },
+        { name: 'Chile', lat: -30, lon: -71, zoom: 2 },
+        { name: 'Colombia', lat: 4, lon: -72, zoom: 2 },
+        { name: 'Peru', lat: -10, lon: -76, zoom: 2 },
+        { name: 'Venezuela', lat: 8, lon: -66, zoom: 2 },
         { name: 'United Kingdom', lat: 54, lon: -2, zoom: 2 },
         { name: 'France', lat: 47, lon: 2, zoom: 2 },
         { name: 'Germany', lat: 51, lon: 10, zoom: 2 },
         { name: 'Spain', lat: 40, lon: -4, zoom: 2 },
         { name: 'Italy', lat: 42, lon: 12, zoom: 2 },
+        { name: 'Poland', lat: 52, lon: 20, zoom: 2 },
+        { name: 'Ukraine', lat: 49, lon: 32, zoom: 2 },
+        { name: 'Romania', lat: 46, lon: 25, zoom: 2 },
+        { name: 'Netherlands', lat: 52.5, lon: 5.75, zoom: 2 },
+        { name: 'Belgium', lat: 50.5, lon: 4.5, zoom: 2 },
+        { name: 'Greece', lat: 39, lon: 22, zoom: 2 },
+        { name: 'Portugal', lat: 39.5, lon: -8, zoom: 2 },
+        { name: 'Sweden', lat: 62, lon: 15, zoom: 2 },
+        { name: 'Norway', lat: 60.5, lon: 8.5, zoom: 2 },
+        { name: 'Finland', lat: 64, lon: 26, zoom: 2 },
+        { name: 'Denmark', lat: 56, lon: 10, zoom: 2 },
         { name: 'Russia', lat: 60, lon: 100, zoom: 2 },
         { name: 'China', lat: 35, lon: 105, zoom: 2 },
         { name: 'India', lat: 20, lon: 77, zoom: 2 },
         { name: 'Japan', lat: 36, lon: 138, zoom: 2 },
+        { name: 'South Korea', lat: 37, lon: 127.5, zoom: 2 },
+        { name: 'North Korea', lat: 40, lon: 127, zoom: 2 },
+        { name: 'Thailand', lat: 15, lon: 100, zoom: 2 },
+        { name: 'Vietnam', lat: 16, lon: 106, zoom: 2 },
+        { name: 'Indonesia', lat: -2, lon: 118, zoom: 2 },
+        { name: 'Philippines', lat: 13, lon: 122, zoom: 2 },
+        { name: 'Malaysia', lat: 2.5, lon: 112.5, zoom: 2 },
+        { name: 'Pakistan', lat: 30, lon: 70, zoom: 2 },
+        { name: 'Bangladesh', lat: 24, lon: 90, zoom: 2 },
+        { name: 'Turkey', lat: 39, lon: 35, zoom: 2 },
+        { name: 'Saudi Arabia', lat: 24, lon: 45, zoom: 2 },
+        { name: 'Iran', lat: 32, lon: 53, zoom: 2 },
+        { name: 'Iraq', lat: 33, lon: 44, zoom: 2 },
+        { name: 'Israel', lat: 31.5, lon: 34.75, zoom: 2 },
         { name: 'Australia', lat: -25, lon: 133, zoom: 2 },
+        { name: 'New Zealand', lat: -41, lon: 174, zoom: 2 },
         { name: 'South Africa', lat: -29, lon: 24, zoom: 2 },
         { name: 'Egypt', lat: 26, lon: 30, zoom: 2 },
         { name: 'Nigeria', lat: 9, lon: 8, zoom: 2 },
+        { name: 'Kenya', lat: 1, lon: 38, zoom: 2 },
+        { name: 'Ethiopia', lat: 8, lon: 38, zoom: 2 },
+        { name: 'Morocco', lat: 32, lon: -5, zoom: 2 },
+        { name: 'Algeria', lat: 28, lon: 3, zoom: 2 },
+        
+        // Canadian Provinces (zoom level 3)
+        { name: 'Ontario', lat: 50, lon: -85, zoom: 3 },
+        { name: 'Quebec', lat: 52, lon: -70, zoom: 3 },
+        { name: 'British Columbia', lat: 54, lon: -125, zoom: 3 },
+        { name: 'Alberta', lat: 55, lon: -115, zoom: 3 },
+        { name: 'Manitoba', lat: 55, lon: -98, zoom: 3 },
+        { name: 'Saskatchewan', lat: 55, lon: -106, zoom: 3 },
+        { name: 'Nova Scotia', lat: 45, lon: -63, zoom: 3 },
+        { name: 'New Brunswick', lat: 46.5, lon: -66, zoom: 3 },
+        { name: 'Newfoundland', lat: 53, lon: -60, zoom: 3 },
+        { name: 'Prince Edward Island', lat: 46.5, lon: -63.5, zoom: 3 },
+        
+        // Australian States (zoom level 3)
+        { name: 'New South Wales', lat: -32, lon: 147, zoom: 3 },
+        { name: 'Victoria', lat: -37, lon: 144, zoom: 3 },
+        { name: 'Queensland', lat: -20, lon: 145, zoom: 3 },
+        { name: 'Western Australia', lat: -25, lon: 122, zoom: 3 },
+        { name: 'South Australia', lat: -30, lon: 135, zoom: 3 },
+        { name: 'Tasmania', lat: -42, lon: 147, zoom: 3 },
         
         // Poles
         { name: 'North Pole', lat: 90, lon: 0, zoom: 2, priority: 2 },
@@ -629,6 +735,26 @@ export default function LiveAnalyticsDashboard() {
         { name: 'Athens', lat: 37.9838, lon: 23.7275, zoom: 4 },
         { name: 'Prague', lat: 50.0755, lon: 14.4378, zoom: 4 },
         { name: 'Warsaw', lat: 52.2297, lon: 21.0122, zoom: 4 },
+        { name: 'Budapest', lat: 47.4979, lon: 19.0402, zoom: 4 },
+        { name: 'Bucharest', lat: 44.4268, lon: 26.1025, zoom: 4 },
+        { name: 'Sofia', lat: 42.6977, lon: 23.3219, zoom: 4 },
+        { name: 'Oslo', lat: 59.9139, lon: 10.7522, zoom: 4 },
+        { name: 'Helsinki', lat: 60.1699, lon: 24.9384, zoom: 4 },
+        { name: 'Zurich', lat: 47.3769, lon: 8.5417, zoom: 4 },
+        { name: 'Geneva', lat: 46.2044, lon: 6.1432, zoom: 4 },
+        { name: 'Milan', lat: 45.4642, lon: 9.1900, zoom: 4 },
+        { name: 'Naples', lat: 40.8518, lon: 14.2681, zoom: 4 },
+        { name: 'Venice', lat: 45.4408, lon: 12.3155, zoom: 4 },
+        { name: 'Barcelona', lat: 41.3851, lon: 2.1734, zoom: 4 },
+        { name: 'Seville', lat: 37.3891, lon: -5.9845, zoom: 4 },
+        { name: 'Porto', lat: 41.1579, lon: -8.6291, zoom: 4 },
+        { name: 'Edinburgh', lat: 55.9533, lon: -3.1883, zoom: 4 },
+        { name: 'Manchester', lat: 53.4808, lon: -2.2426, zoom: 4 },
+        { name: 'Lyon', lat: 45.7640, lon: 4.8357, zoom: 4 },
+        { name: 'Marseille', lat: 43.2965, lon: 5.3698, zoom: 4 },
+        { name: 'Munich', lat: 48.1351, lon: 11.5820, zoom: 4 },
+        { name: 'Frankfurt', lat: 50.1109, lon: 8.6821, zoom: 4 },
+        { name: 'Hamburg', lat: 53.5511, lon: 9.9937, zoom: 4 },
         
         // Asia Cities
         { name: 'Tokyo', lat: 35.6762, lon: 139.6503, zoom: 4 },
@@ -647,6 +773,31 @@ export default function LiveAnalyticsDashboard() {
         { name: 'Manila', lat: 14.5995, lon: 120.9842, zoom: 4 },
         { name: 'Jakarta', lat: -6.2088, lon: 106.8456, zoom: 4 },
         { name: 'Kuala Lumpur', lat: 3.139, lon: 101.6869, zoom: 4 },
+        { name: 'Hanoi', lat: 21.0285, lon: 105.8542, zoom: 4 },
+        { name: 'Ho Chi Minh City', lat: 10.8231, lon: 106.6297, zoom: 4 },
+        { name: 'Taipei', lat: 25.0330, lon: 121.5654, zoom: 4 },
+        { name: 'Osaka', lat: 34.6937, lon: 135.5023, zoom: 4 },
+        { name: 'Kyoto', lat: 35.0116, lon: 135.7681, zoom: 4 },
+        { name: 'Busan', lat: 35.1796, lon: 129.0756, zoom: 4 },
+        { name: 'Chengdu', lat: 30.5728, lon: 104.0668, zoom: 4 },
+        { name: 'Shenzhen', lat: 22.5431, lon: 114.0579, zoom: 4 },
+        { name: 'Guangzhou', lat: 23.1291, lon: 113.2644, zoom: 4 },
+        { name: 'Kolkata', lat: 22.5726, lon: 88.3639, zoom: 4 },
+        { name: 'Chennai', lat: 13.0827, lon: 80.2707, zoom: 4 },
+        { name: 'Hyderabad', lat: 17.3850, lon: 78.4867, zoom: 4 },
+        { name: 'Pune', lat: 18.5204, lon: 73.8567, zoom: 4 },
+        { name: 'Karachi', lat: 24.8607, lon: 67.0011, zoom: 4 },
+        { name: 'Lahore', lat: 31.5497, lon: 74.3436, zoom: 4 },
+        { name: 'Dhaka', lat: 23.8103, lon: 90.4125, zoom: 4 },
+        { name: 'Kathmandu', lat: 27.7172, lon: 85.3240, zoom: 4 },
+        { name: 'Colombo', lat: 6.9271, lon: 79.8612, zoom: 4 },
+        { name: 'Riyadh', lat: 24.7136, lon: 46.6753, zoom: 4 },
+        { name: 'Jeddah', lat: 21.5433, lon: 39.1728, zoom: 4 },
+        { name: 'Tehran', lat: 35.6892, lon: 51.3890, zoom: 4 },
+        { name: 'Baghdad', lat: 33.3152, lon: 44.3661, zoom: 4 },
+        { name: 'Jerusalem', lat: 31.7683, lon: 35.2137, zoom: 4 },
+        { name: 'Ankara', lat: 39.9334, lon: 32.8597, zoom: 4 },
+        { name: 'Izmir', lat: 38.4192, lon: 27.1287, zoom: 4 },
         
         // South America Cities
         { name: 'São Paulo', lat: -23.5505, lon: -46.6333, zoom: 4 },
@@ -655,13 +806,31 @@ export default function LiveAnalyticsDashboard() {
         { name: 'Lima', lat: -12.0464, lon: -77.0428, zoom: 4 },
         { name: 'Bogotá', lat: 4.711, lon: -74.0721, zoom: 4 },
         { name: 'Santiago', lat: -33.4489, lon: -70.6693, zoom: 4 },
+        { name: 'Caracas', lat: 10.4806, lon: -66.9036, zoom: 4 },
+        { name: 'Montevideo', lat: -34.9011, lon: -56.1645, zoom: 4 },
+        { name: 'Quito', lat: -0.1807, lon: -78.4678, zoom: 4 },
+        { name: 'La Paz', lat: -16.5000, lon: -68.1500, zoom: 4 },
+        { name: 'Asunción', lat: -25.2637, lon: -57.5759, zoom: 4 },
         
-        // Africa & Middle East Cities
+        // Africa Cities
         { name: 'Cairo', lat: 30.0444, lon: 31.2357, zoom: 4 },
         { name: 'Lagos', lat: 6.5244, lon: 3.3792, zoom: 4 },
         { name: 'Johannesburg', lat: -26.2041, lon: 28.0473, zoom: 4 },
         { name: 'Cape Town', lat: -33.9249, lon: 18.4241, zoom: 4 },
         { name: 'Nairobi', lat: -1.2864, lon: 36.8172, zoom: 4 },
+        { name: 'Addis Ababa', lat: 9.0320, lon: 38.7469, zoom: 4 },
+        { name: 'Kinshasa', lat: -4.4419, lon: 15.2663, zoom: 4 },
+        { name: 'Accra', lat: 5.6037, lon: -0.1870, zoom: 4 },
+        { name: 'Casablanca', lat: 33.5731, lon: -7.5898, zoom: 4 },
+        { name: 'Algiers', lat: 36.7538, lon: 3.0588, zoom: 4 },
+        { name: 'Tunis', lat: 36.8065, lon: 10.1815, zoom: 4 },
+        { name: 'Tripoli', lat: 32.8872, lon: 13.1913, zoom: 4 },
+        { name: 'Khartoum', lat: 15.5007, lon: 32.5599, zoom: 4 },
+        { name: 'Dar es Salaam', lat: -6.7924, lon: 39.2083, zoom: 4 },
+        { name: 'Kampala', lat: 0.3476, lon: 32.5825, zoom: 4 },
+        { name: 'Lusaka', lat: -15.3875, lon: 28.3228, zoom: 4 },
+        { name: 'Harare', lat: -17.8252, lon: 31.0335, zoom: 4 },
+        { name: 'Maputo', lat: -25.9655, lon: 32.5832, zoom: 4 },
         
         // Oceania Cities
         { name: 'Sydney', lat: -33.8688, lon: 151.2093, zoom: 4 },
@@ -669,6 +838,13 @@ export default function LiveAnalyticsDashboard() {
         { name: 'Brisbane', lat: -27.4698, lon: 153.0251, zoom: 4 },
         { name: 'Perth', lat: -31.9505, lon: 115.8605, zoom: 4 },
         { name: 'Auckland', lat: -36.8485, lon: 174.7633, zoom: 4 },
+        { name: 'Wellington', lat: -41.2865, lon: 174.7762, zoom: 4 },
+        { name: 'Christchurch', lat: -43.5321, lon: 172.6362, zoom: 4 },
+        { name: 'Adelaide', lat: -34.9285, lon: 138.6007, zoom: 4 },
+        { name: 'Canberra', lat: -35.2809, lon: 149.1300, zoom: 4 },
+        { name: 'Gold Coast', lat: -28.0167, lon: 153.4000, zoom: 4 },
+        { name: 'Darwin', lat: -12.4634, lon: 130.8456, zoom: 4 },
+        { name: 'Hobart', lat: -42.8821, lon: 147.3272, zoom: 4 },
         
         // Additional US Cities (zoom level 4)
         { name: 'San Francisco', lat: 37.7749, lon: -122.4194, zoom: 4 },
@@ -817,7 +993,7 @@ export default function LiveAnalyticsDashboard() {
         }
       } else {
         // Check if clicked on disaster marker
-        const disasterIntersects = raycasterRef.current.intersectObjects(disasterMarkers);
+        const disasterIntersects = raycasterRef.current.intersectObjects(disasterMarkersRef.current);
         if (disasterIntersects.length > 0 && disasterIntersects[0].object.userData.isDisaster) {
           const disaster = disasterIntersects[0].object.userData.disaster;
           setSelectedLocation({
@@ -831,7 +1007,7 @@ export default function LiveAnalyticsDashboard() {
         }
 
         // Check for weather marker click
-        const weatherIntersects = raycasterRef.current.intersectObjects(weatherMarkers);
+        const weatherIntersects = raycasterRef.current.intersectObjects(weatherMarkersRef.current);
         if (weatherIntersects.length > 0 && weatherIntersects[0].object.userData.isWeather) {
           const weather = weatherIntersects[0].object.userData.weather;
           setSelectedLocation({
