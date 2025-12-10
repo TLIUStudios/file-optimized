@@ -521,6 +521,41 @@ export default function LiveAnalyticsDashboard() {
         .catch(err => console.error('Failed to load country borders:', err));
     }
 
+    // Add day/night terminator visualization
+    const terminatorGeometry = new THREE.SphereGeometry(1.002, 128, 128);
+    const terminatorMaterial = new THREE.ShaderMaterial({
+      uniforms: {
+        sunDirection: { value: new THREE.Vector3(1, 0.5, 0.5).normalize() }
+      },
+      vertexShader: `
+        varying vec3 vNormal;
+        varying vec3 vPosition;
+        void main() {
+          vNormal = normalize(normalMatrix * normal);
+          vPosition = position;
+          gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+        }
+      `,
+      fragmentShader: `
+        uniform vec3 sunDirection;
+        varying vec3 vNormal;
+        varying vec3 vPosition;
+        void main() {
+          float intensity = dot(normalize(vPosition), sunDirection);
+          float dayNight = smoothstep(-0.1, 0.1, intensity);
+          vec3 nightColor = vec3(0.05, 0.05, 0.15);
+          vec3 dayColor = vec3(0.0, 0.0, 0.0);
+          vec3 color = mix(nightColor, dayColor, dayNight);
+          gl_FragColor = vec4(color, 0.4);
+        }
+      `,
+      transparent: true,
+      side: THREE.FrontSide
+    });
+    const terminator = new THREE.Mesh(terminatorGeometry, terminatorMaterial);
+    terminator.userData = { isTerminator: true };
+    scene.add(terminator);
+
     // Add realistic atmosphere glow with multiple layers
     const atmosphereGeometry1 = new THREE.SphereGeometry(1.08, 64, 64);
     const atmosphereColor = globeStyle === 'earth' ? 0x4a9eff : 0x34d399;
@@ -621,8 +656,7 @@ export default function LiveAnalyticsDashboard() {
       const scaleMap = {
         1: { w: 1.0, h: 0.25 },  // Oceans - large
         2: { w: 0.7, h: 0.175 }, // Countries - medium
-        3: { w: 0.5, h: 0.125 }, // States - smaller
-        4: { w: 0.35, h: 0.0875 } // Cities - smallest
+        3: { w: 0.5, h: 0.125 }  // States - smaller
       };
       const scale = scaleMap[zoomLevel] || { w: 0.4, h: 0.1 };
       sprite.scale.set(scale.w, scale.h, 1);
@@ -894,6 +928,71 @@ export default function LiveAnalyticsDashboard() {
         { name: 'Siberia', lat: 60, lon: 105, zoom: 3 },
         { name: 'Far East Russia', lat: 62, lon: 150, zoom: 3 },
         
+        // Mexican States (zoom level 3) - ALL 32 states
+        { name: 'Aguascalientes', lat: 21.88, lon: -102.3, zoom: 3 },
+        { name: 'Baja California', lat: 30.84, lon: -115.28, zoom: 3 },
+        { name: 'Baja California Sur', lat: 26.04, lon: -111.67, zoom: 3 },
+        { name: 'Campeche', lat: 19.83, lon: -90.53, zoom: 3 },
+        { name: 'Chiapas', lat: 16.75, lon: -93.12, zoom: 3 },
+        { name: 'Chihuahua', lat: 28.63, lon: -106.08, zoom: 3 },
+        { name: 'Coahuila', lat: 27.06, lon: -101.71, zoom: 3 },
+        { name: 'Colima', lat: 19.24, lon: -103.72, zoom: 3 },
+        { name: 'Durango', lat: 24.56, lon: -104.66, zoom: 3 },
+        { name: 'Guanajuato', lat: 21.02, lon: -101.26, zoom: 3 },
+        { name: 'Guerrero', lat: 17.44, lon: -99.55, zoom: 3 },
+        { name: 'Hidalgo', lat: 20.09, lon: -98.76, zoom: 3 },
+        { name: 'Jalisco', lat: 20.66, lon: -103.35, zoom: 3 },
+        { name: 'Mexico City', lat: 19.43, lon: -99.13, zoom: 3 },
+        { name: 'State of Mexico', lat: 19.35, lon: -99.63, zoom: 3 },
+        { name: 'Michoacán', lat: 19.57, lon: -101.71, zoom: 3 },
+        { name: 'Morelos', lat: 18.68, lon: -99.1, zoom: 3 },
+        { name: 'Nayarit', lat: 21.75, lon: -104.84, zoom: 3 },
+        { name: 'Nuevo León', lat: 25.59, lon: -99.99, zoom: 3 },
+        { name: 'Oaxaca', lat: 17.05, lon: -96.72, zoom: 3 },
+        { name: 'Puebla', lat: 19.04, lon: -98.21, zoom: 3 },
+        { name: 'Querétaro', lat: 20.59, lon: -100.39, zoom: 3 },
+        { name: 'Quintana Roo', lat: 19.18, lon: -88.48, zoom: 3 },
+        { name: 'San Luis Potosí', lat: 22.15, lon: -100.98, zoom: 3 },
+        { name: 'Sinaloa', lat: 25.0, lon: -107.5, zoom: 3 },
+        { name: 'Sonora', lat: 29.3, lon: -110.33, zoom: 3 },
+        { name: 'Tabasco', lat: 17.98, lon: -92.93, zoom: 3 },
+        { name: 'Tamaulipas', lat: 24.27, lon: -98.83, zoom: 3 },
+        { name: 'Tlaxcala', lat: 19.32, lon: -98.24, zoom: 3 },
+        { name: 'Veracruz', lat: 19.54, lon: -96.91, zoom: 3 },
+        { name: 'Yucatán', lat: 20.71, lon: -89.09, zoom: 3 },
+        { name: 'Zacatecas', lat: 22.77, lon: -102.58, zoom: 3 },
+        
+        // German States (zoom level 3)
+        { name: 'Bavaria', lat: 48.79, lon: 11.5, zoom: 3 },
+        { name: 'Baden-Württemberg', lat: 48.66, lon: 9.35, zoom: 3 },
+        { name: 'North Rhine-Westphalia', lat: 51.43, lon: 7.66, zoom: 3 },
+        { name: 'Saxony', lat: 51.1, lon: 13.2, zoom: 3 },
+        { name: 'Lower Saxony', lat: 52.64, lon: 9.84, zoom: 3 },
+        
+        // French Regions (zoom level 3)
+        { name: 'Île-de-France', lat: 48.85, lon: 2.35, zoom: 3 },
+        { name: 'Provence', lat: 43.93, lon: 6.07, zoom: 3 },
+        { name: 'Normandy', lat: 49.18, lon: 0.37, zoom: 3 },
+        { name: 'Brittany', lat: 48.2, lon: -2.93, zoom: 3 },
+        
+        // Spanish Regions (zoom level 3)
+        { name: 'Catalonia', lat: 41.59, lon: 1.52, zoom: 3 },
+        { name: 'Andalusia', lat: 37.39, lon: -5.98, zoom: 3 },
+        { name: 'Madrid Region', lat: 40.42, lon: -3.7, zoom: 3 },
+        { name: 'Basque Country', lat: 43.0, lon: -2.64, zoom: 3 },
+        
+        // Italian Regions (zoom level 3)
+        { name: 'Lombardy', lat: 45.58, lon: 9.27, zoom: 3 },
+        { name: 'Lazio', lat: 41.9, lon: 12.5, zoom: 3 },
+        { name: 'Sicily', lat: 37.6, lon: 14.01, zoom: 3 },
+        { name: 'Tuscany', lat: 43.77, lon: 11.25, zoom: 3 },
+        
+        // Japanese Prefectures (zoom level 3) - Major ones
+        { name: 'Tokyo Prefecture', lat: 35.68, lon: 139.69, zoom: 3 },
+        { name: 'Osaka Prefecture', lat: 34.69, lon: 135.5, zoom: 3 },
+        { name: 'Hokkaido', lat: 43.06, lon: 141.35, zoom: 3 },
+        { name: 'Kyoto Prefecture', lat: 35.02, lon: 135.75, zoom: 3 },
+        
         // Poles
         { name: 'North Pole', lat: 90, lon: 0, zoom: 2, priority: 2 },
         { name: 'South Pole', lat: -90, lon: 0, zoom: 2, priority: 2 },
@@ -949,9 +1048,6 @@ export default function LiveAnalyticsDashboard() {
         { name: 'West Virginia', lat: 38.5, lon: -80.5, zoom: 3 },
         { name: 'Wisconsin', lat: 44.5, lon: -90, zoom: 3 },
         { name: 'Wyoming', lat: 43, lon: -107.5, zoom: 3 },
-        
-        // Major World Cities (zoom level 4 - close)
-        { name: 'New York City', lat: 40.7128, lon: -74.006, zoom: 4 },
         { name: 'Los Angeles', lat: 34.0522, lon: -118.2437, zoom: 4 },
         { name: 'Chicago', lat: 41.8781, lon: -87.6298, zoom: 4 },
         { name: 'Houston', lat: 29.7604, lon: -95.3698, zoom: 4 },
@@ -1005,10 +1101,7 @@ export default function LiveAnalyticsDashboard() {
         { name: 'Marseille', lat: 43.2965, lon: 5.3698, zoom: 4 },
         { name: 'Munich', lat: 48.1351, lon: 11.5820, zoom: 4 },
         { name: 'Frankfurt', lat: 50.1109, lon: 8.6821, zoom: 4 },
-        { name: 'Hamburg', lat: 53.5511, lon: 9.9937, zoom: 4 },
-        
-        // Asia Cities
-        { name: 'Tokyo', lat: 35.6762, lon: 139.6503, zoom: 4 },
+
         { name: 'Beijing', lat: 39.9042, lon: 116.4074, zoom: 4 },
         { name: 'Shanghai', lat: 31.2304, lon: 121.4737, zoom: 4 },
         { name: 'Seoul', lat: 37.5665, lon: 126.978, zoom: 4 },
@@ -1048,10 +1141,7 @@ export default function LiveAnalyticsDashboard() {
         { name: 'Baghdad', lat: 33.3152, lon: 44.3661, zoom: 4 },
         { name: 'Jerusalem', lat: 31.7683, lon: 35.2137, zoom: 4 },
         { name: 'Ankara', lat: 39.9334, lon: 32.8597, zoom: 4 },
-        { name: 'Izmir', lat: 38.4192, lon: 27.1287, zoom: 4 },
-        
-        // South America Cities
-        { name: 'São Paulo', lat: -23.5505, lon: -46.6333, zoom: 4 },
+
         { name: 'Rio de Janeiro', lat: -22.9068, lon: -43.1729, zoom: 4 },
         { name: 'Buenos Aires', lat: -34.6037, lon: -58.3816, zoom: 4 },
         { name: 'Lima', lat: -12.0464, lon: -77.0428, zoom: 4 },
@@ -1061,10 +1151,7 @@ export default function LiveAnalyticsDashboard() {
         { name: 'Montevideo', lat: -34.9011, lon: -56.1645, zoom: 4 },
         { name: 'Quito', lat: -0.1807, lon: -78.4678, zoom: 4 },
         { name: 'La Paz', lat: -16.5000, lon: -68.1500, zoom: 4 },
-        { name: 'Asunción', lat: -25.2637, lon: -57.5759, zoom: 4 },
-        
-        // Africa Cities
-        { name: 'Cairo', lat: 30.0444, lon: 31.2357, zoom: 4 },
+
         { name: 'Lagos', lat: 6.5244, lon: 3.3792, zoom: 4 },
         { name: 'Johannesburg', lat: -26.2041, lon: 28.0473, zoom: 4 },
         { name: 'Cape Town', lat: -33.9249, lon: 18.4241, zoom: 4 },
@@ -1081,10 +1168,7 @@ export default function LiveAnalyticsDashboard() {
         { name: 'Kampala', lat: 0.3476, lon: 32.5825, zoom: 4 },
         { name: 'Lusaka', lat: -15.3875, lon: 28.3228, zoom: 4 },
         { name: 'Harare', lat: -17.8252, lon: 31.0335, zoom: 4 },
-        { name: 'Maputo', lat: -25.9655, lon: 32.5832, zoom: 4 },
-        
-        // Oceania Cities
-        { name: 'Sydney', lat: -33.8688, lon: 151.2093, zoom: 4 },
+
         { name: 'Melbourne', lat: -37.8136, lon: 144.9631, zoom: 4 },
         { name: 'Brisbane', lat: -27.4698, lon: 153.0251, zoom: 4 },
         { name: 'Perth', lat: -31.9505, lon: 115.8605, zoom: 4 },
@@ -1095,9 +1179,7 @@ export default function LiveAnalyticsDashboard() {
         { name: 'Canberra', lat: -35.2809, lon: 149.1300, zoom: 4 },
         { name: 'Gold Coast', lat: -28.0167, lon: 153.4000, zoom: 4 },
         { name: 'Darwin', lat: -12.4634, lon: 130.8456, zoom: 4 },
-        { name: 'Hobart', lat: -42.8821, lon: 147.3272, zoom: 4 },
-        
-        // Additional US Cities (zoom level 4)
+      ];
         { name: 'San Francisco', lat: 37.7749, lon: -122.4194, zoom: 4 },
         { name: 'Detroit', lat: 42.3314, lon: -83.0458, zoom: 4 },
         { name: 'Nashville', lat: 36.1627, lon: -86.7816, zoom: 4 },
@@ -1121,9 +1203,7 @@ export default function LiveAnalyticsDashboard() {
         { name: 'Tampa', lat: 27.9506, lon: -82.4572, zoom: 4 },
         { name: 'New Orleans', lat: 29.9511, lon: -90.0715, zoom: 4 },
         { name: 'Cleveland', lat: 41.4993, lon: -81.6944, zoom: 4 },
-        { name: 'Honolulu', lat: 21.3099, lon: -157.8581, zoom: 4 },
-        { name: 'Anchorage', lat: 61.2181, lon: -149.9003, zoom: 4 },
-      ];
+
 
       locations.forEach(loc => {
         const label = createLabel(
@@ -1414,6 +1494,17 @@ export default function LiveAnalyticsDashboard() {
           marker.scale.set(scale, scale, scale);
         }
       });
+
+      // Update day/night terminator based on current time
+      if (terminator) {
+        const date = new Date();
+        const hours = date.getUTCHours();
+        const minutes = date.getUTCMinutes();
+        const timeAngle = ((hours + minutes / 60) / 24) * Math.PI * 2;
+        const sunX = Math.cos(timeAngle);
+        const sunZ = Math.sin(timeAngle);
+        terminator.material.uniforms.sunDirection.value.set(sunX, 0.3, sunZ).normalize();
+      }
       
       // Rotate starfield slowly for depth
       if (stars) {
@@ -1493,6 +1584,8 @@ export default function LiveAnalyticsDashboard() {
       atmosphereMaterial1.dispose();
       atmosphereGeometry2.dispose();
       atmosphereMaterial2.dispose();
+      if (terminatorGeometry) terminatorGeometry.dispose();
+      if (terminatorMaterial) terminatorMaterial.dispose();
       starGeometry.dispose();
       starMaterial.dispose();
       markerGeometry.dispose();
@@ -1835,8 +1928,8 @@ export default function LiveAnalyticsDashboard() {
           </div>
         </div>
         <p className="text-xs text-slate-500 dark:text-slate-400 text-center mt-3 space-y-1">
-          <span className="block">🌍 Comprehensive global coverage • 200+ countries • 100+ states/provinces • 300+ major cities</span>
-          <span className="block">📍 Real-time disasters, weather from 40+ stations • Click any marker for details • Matrix mode shows country borders</span>
+          <span className="block">🌍 Complete global coverage • 200+ countries • 200+ states/provinces worldwide</span>
+          <span className="block">📍 Real-time disasters, 40 weather stations, day/night terminator • Matrix mode: country borders • Click markers for details</span>
         </p>
       </Card>
 
