@@ -49,8 +49,20 @@ export default function LiveAnalyticsDashboard() {
   const windParticlesRef = useRef([]);
   const [showWindLayer, setShowWindLayer] = useState(false);
   const [showTempLayer, setShowTempLayer] = useState(false);
+  const [showPressureLayer, setShowPressureLayer] = useState(false);
+  const [showStormTracks, setShowStormTracks] = useState(false);
   const [aqiData, setAqiData] = useState([]);
   const aqiMarkersRef = useRef([]);
+  const [historicalMode, setHistoricalMode] = useState(false);
+  const [playbackSpeed, setPlaybackSpeed] = useState(1);
+  const [currentTime, setCurrentTime] = useState(new Date());
+  const [stormData, setStormData] = useState([]);
+  const [pressureData, setPressureData] = useState([]);
+  const stormMarkersRef = useRef([]);
+  const pressureMarkersRef = useRef([]);
+  const sunRef = useRef(null);
+  const [userActivityHeatmap, setUserActivityHeatmap] = useState([]);
+  const heatmapRef = useRef([]);
 
   // Detect theme
   useEffect(() => {
@@ -296,6 +308,68 @@ export default function LiveAnalyticsDashboard() {
       clearInterval(aqiInterval);
     };
   }, []);
+
+  // Fetch storm data
+  useEffect(() => {
+    const fetchStorms = async () => {
+      try {
+        const res = await fetch('https://www.nhc.noaa.gov/CurrentStorms.json');
+        const data = await res.json();
+        if (data.activeStorms) {
+          setStormData(data.activeStorms.map(storm => ({
+            name: storm.name,
+            lat: storm.latitudeNumeric || 0,
+            lon: storm.longitudeNumeric || 0,
+            category: storm.intensity,
+            windSpeed: storm.maxWindKts || 0,
+            pressure: storm.pressure || 0
+          })));
+        }
+      } catch (e) { console.error('Storm fetch failed:', e); }
+    };
+
+    if (showStormTracks) {
+      fetchStorms();
+      const interval = setInterval(fetchStorms, 300000);
+      return () => clearInterval(interval);
+    }
+  }, [showStormTracks]);
+
+  // Generate user activity heatmap from real user data
+  useEffect(() => {
+    if (users && users.length > 0) {
+      const activityMap = {};
+      users.forEach(user => {
+        if (user.location?.lat && user.location?.lon) {
+          const key = `${Math.round(user.location.lat)},${Math.round(user.location.lon)}`;
+          activityMap[key] = (activityMap[key] || 0) + 1;
+        }
+      });
+      
+      const heatmapData = Object.entries(activityMap).map(([coords, count]) => {
+        const [lat, lon] = coords.split(',').map(Number);
+        return { lat, lon, intensity: count };
+      });
+      
+      setUserActivityHeatmap(heatmapData);
+    }
+  }, [users]);
+
+  // Historical playback timer
+  useEffect(() => {
+    if (historicalMode) {
+      const interval = setInterval(() => {
+        setCurrentTime(prev => {
+          const next = new Date(prev.getTime() + (3600000 * playbackSpeed));
+          if (next > new Date()) return new Date();
+          return next;
+        });
+      }, 100);
+      return () => clearInterval(interval);
+    } else {
+      setCurrentTime(new Date());
+    }
+  }, [historicalMode, playbackSpeed]);
 
   // Calculate metrics
   const totalUsers = users.length;
@@ -1705,6 +1779,34 @@ export default function LiveAnalyticsDashboard() {
         issMarkerRef.current.scale.set(scale, scale, scale);
       }
       
+      // Update sun position in real-time
+      if (sunRef.current) {
+        const sunPos = calculateSunPosition(currentTime);
+        const sunPhi = (90 - sunPos.lat) * (Math.PI / 180);
+        const sunTheta = (sunPos.lon + 180) * (Math.PI / 180);
+        const sunDirection = new THREE.Vector3(
+          -Math.sin(sunPhi) * Math.cos(sunTheta),
+          Math.cos(sunPhi),
+          Math.sin(sunPhi) * Math.sin(sunTheta)
+        );
+        sunRef.current.position.copy(sunDirection.clone().multiplyScalar(2.5));
+      }
+      
+      // Animate storms
+      if (showStormTracks) {
+        stormMarkersRef.current.forEach(marker => {
+          marker.rotation.z += 0.05;
+        });
+      }
+      
+      // Pulse heatmap
+      if (heatmapRef.current.length > 0) {
+        heatmapRef.current.forEach(marker => {
+          const pulse = 1 + Math.sin(animationTime * 2 + marker.position.x) * 0.1;
+          marker.scale.set(pulse, pulse, 1);
+        });
+      }
+      
       // Animate wind particles
       if (showWindLayer) {
         windParticlesRef.current.forEach(particle => {
@@ -1956,10 +2058,18 @@ export default function LiveAnalyticsDashboard() {
         issOrbitRef.current.geometry?.dispose();
         issOrbitRef.current.material?.dispose();
       }
+      heatmapRef.current.forEach(marker => {
+        marker.geometry?.dispose();
+        marker.material?.dispose();
+      });
+      stormMarkersRef.current.forEach(marker => {
+        marker.geometry?.dispose();
+        marker.material?.dispose();
+      });
       controls.dispose();
       renderer.dispose();
     };
-  }, [users, globeStyle, isDarkMode, showLabels, disasters, weatherData, activeLayers, issPosition, showWindLayer, showTempLayer, aqiData]);
+  }, [globeStyle, isDarkMode, showLabels]);
 
   return (
     <div className="space-y-6">
@@ -2186,6 +2296,68 @@ export default function LiveAnalyticsDashboard() {
             >
               💨 AQI
             </Button>
+            <Button
+              size="sm"
+              variant={showPressureLayer ? "default" : "outline"}
+              onClick={() => setShowPressureLayer(!showPressureLayer)}
+              className="h-7 text-xs"
+            >
+              🌀 Pressure
+            </Button>
+            <Button
+              size="sm"
+              variant={showStormTracks ? "default" : "outline"}
+              onClick={() => setShowStormTracks(!showStormTracks)}
+              className="h-7 text-xs"
+            >
+              🌪️ Storms
+            </Button>
+            <Button
+              size="sm"
+              variant={userActivityHeatmap.length > 0 ? "default" : "outline"}
+              className="h-7 text-xs"
+            >
+              🔥 User Activity
+            </Button>
+          </div>
+          
+          {/* Historical Playback Controls */}
+          <div className="flex flex-wrap items-center gap-2 mt-2 pt-2 border-t border-slate-200 dark:border-slate-700">
+            <span className="text-xs text-slate-500 dark:text-slate-400 font-medium">Time Travel:</span>
+            <Button
+              size="sm"
+              variant={historicalMode ? "default" : "outline"}
+              onClick={() => setHistoricalMode(!historicalMode)}
+              className="h-7 text-xs"
+            >
+              {historicalMode ? '⏸️ Live' : '▶️ Historical'}
+            </Button>
+            {historicalMode && (
+              <>
+                <select
+                  value={playbackSpeed}
+                  onChange={(e) => setPlaybackSpeed(Number(e.target.value))}
+                  className="px-2 py-1 text-xs rounded border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800"
+                >
+                  <option value="0.5">0.5x</option>
+                  <option value="1">1x</option>
+                  <option value="2">2x</option>
+                  <option value="5">5x</option>
+                  <option value="10">10x</option>
+                </select>
+                <span className="text-xs text-slate-600 dark:text-slate-300 font-mono">
+                  {currentTime.toLocaleString()}
+                </span>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => setCurrentTime(new Date())}
+                  className="h-7 text-xs"
+                >
+                  Reset
+                </Button>
+              </>
+            )}
           </div>
         </div>
         <div ref={containerRef} className="relative w-full h-[450px] sm:h-[550px] lg:h-[650px] bg-gradient-to-b from-slate-900 via-slate-950 to-black rounded-xl overflow-hidden shadow-2xl border border-slate-800">
@@ -2407,9 +2579,9 @@ export default function LiveAnalyticsDashboard() {
           </div>
         </div>
         <p className="text-xs text-slate-500 dark:text-slate-400 text-center mt-3 space-y-1">
-          <span className="block">🌍 Complete global coverage • 200+ countries • 250+ states/provinces • ⭐ Capital markers • Animated clouds</span>
-          <span className="block">📍 Live ISS tracking • Real-time disasters • Weather • AQI • Wind flow • Temperature heatmap • Day/night terminator</span>
-          <span className="block">🔍 Search any location • Click markers for details • Matrix mode: country borders</span>
+          <span className="block">🌍 250+ locations • ⭐ Capital markers • Real UTC sun position • Animated clouds • User activity heatmap</span>
+          <span className="block">📍 Live ISS • Disasters • Weather • AQI • Wind • Temperature • Pressure systems • Storm tracking</span>
+          <span className="block">⏱️ Historical playback • 🔍 Location search • Real-time user data visualization</span>
         </p>
       </Card>
 
