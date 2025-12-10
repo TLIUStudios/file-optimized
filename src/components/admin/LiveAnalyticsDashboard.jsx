@@ -650,7 +650,7 @@ export default function LiveAnalyticsDashboard() {
         { name: 'Arctic Ocean', lat: 75, lon: 0, ocean: true, zoom: 1 },
         { name: 'Southern Ocean', lat: -60, lon: 0, ocean: true, zoom: 1 },
         
-        // Countries - ALL major countries (zoom level 2 - far)
+        // ALL Countries - Comprehensive Global Coverage (zoom level 2)
         { name: 'United States', lat: 39, lon: -95, zoom: 2 },
         { name: 'Canada', lat: 56, lon: -106, zoom: 2 },
         { name: 'Mexico', lat: 23, lon: -102, zoom: 2 },
