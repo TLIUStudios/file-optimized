@@ -314,12 +314,12 @@ export default function LiveAnalyticsDashboard() {
     }
     weatherMarkersRef.current = weatherMarkers;
 
-    // Create globe with different styles
-    const geometry = new THREE.SphereGeometry(1, 128, 128);
+    // Create high-detail globe with different styles
+    const geometry = new THREE.SphereGeometry(1, 256, 256);
     let material;
 
     if (globeStyle === 'earth') {
-      // Load realistic Earth texture
+      // Load realistic Earth texture with high quality
       const textureLoader = new THREE.TextureLoader();
       const earthTexture = textureLoader.load('https://unpkg.com/three-globe@2.31.1/example/img/earth-blue-marble.jpg');
       const bumpTexture = textureLoader.load('https://unpkg.com/three-globe@2.31.1/example/img/earth-topology.png');
@@ -327,18 +327,18 @@ export default function LiveAnalyticsDashboard() {
       material = new THREE.MeshPhongMaterial({
         map: earthTexture,
         bumpMap: bumpTexture,
-        bumpScale: 0.015,
-        shininess: 15,
-        specular: new THREE.Color(0x333333)
+        bumpScale: 0.02,
+        shininess: 20,
+        specular: new THREE.Color(0x444444)
       });
     } else {
-      // Matrix green style
+      // Matrix green style with enhanced detail
       material = new THREE.MeshStandardMaterial({
         color: 0x10b981,
-        metalness: 0.2,
-        roughness: 0.6,
+        metalness: 0.3,
+        roughness: 0.5,
         emissive: 0x059669,
-        emissiveIntensity: 0.25
+        emissiveIntensity: 0.3
       });
     }
 
@@ -346,15 +346,15 @@ export default function LiveAnalyticsDashboard() {
     sphere.userData = { isSphere: true };
     scene.add(sphere);
 
-    // Add wireframe overlay (only for Matrix style)
+    // Add wireframe overlay (only for Matrix style) - high detail
     let wireframe = null;
     if (globeStyle === 'matrix') {
-      const wireframeGeometry = new THREE.SphereGeometry(1.005, 36, 36);
+      const wireframeGeometry = new THREE.SphereGeometry(1.005, 64, 64);
       const wireframeMaterial = new THREE.MeshBasicMaterial({
         color: 0x059669,
         wireframe: true,
         transparent: true,
-        opacity: 0.2
+        opacity: 0.25
       });
       wireframe = new THREE.Mesh(wireframeGeometry, wireframeMaterial);
       wireframe.userData = { isWireframe: true };
@@ -426,51 +426,145 @@ export default function LiveAnalyticsDashboard() {
       return sprite;
     };
 
-    // Add major countries and cities
+    // Add comprehensive location labels (Google Earth style)
     const labels = [];
     if (showLabels) {
       const locations = [
-        // Countries/Regions
-        { name: 'United States of America', lat: 39, lon: -95, ocean: false },
-        { name: 'Canada', lat: 56, lon: -106, ocean: false },
-        { name: 'Mexico', lat: 23, lon: -102, ocean: false },
-        { name: 'Brazil', lat: -10, lon: -55, ocean: false },
-        { name: 'United Kingdom', lat: 54, lon: -2, ocean: false },
-        { name: 'France', lat: 47, lon: 2, ocean: false },
-        { name: 'Germany', lat: 51, lon: 10, ocean: false },
-        { name: 'Spain', lat: 40, lon: -4, ocean: false },
-        { name: 'Italy', lat: 42, lon: 12, ocean: false },
-        { name: 'Russia', lat: 60, lon: 100, ocean: false },
-        { name: 'China', lat: 35, lon: 105, ocean: false },
-        { name: 'India', lat: 20, lon: 77, ocean: false },
-        { name: 'Japan', lat: 36, lon: 138, ocean: false },
-        { name: 'South Korea', lat: 36, lon: 127, ocean: false },
-        { name: 'Australia', lat: -25, lon: 133, ocean: false },
-        { name: 'South Africa', lat: -29, lon: 24, ocean: false },
-        { name: 'Argentina', lat: -34, lon: -64, ocean: false },
-        { name: 'Egypt', lat: 26, lon: 30, ocean: false },
-        { name: 'Nigeria', lat: 9, lon: 8, ocean: false },
-        // Major Cities (shown on zoom)
-        { name: 'New York', lat: 40.7, lon: -74, ocean: false, city: true },
-        { name: 'Los Angeles', lat: 34, lon: -118, ocean: false, city: true },
-        { name: 'London', lat: 51.5, lon: -0.1, ocean: false, city: true },
-        { name: 'Paris', lat: 48.8, lon: 2.3, ocean: false, city: true },
-        { name: 'Tokyo', lat: 35.6, lon: 139.6, ocean: false, city: true },
-        { name: 'Sydney', lat: -33.8, lon: 151.2, ocean: false, city: true },
-        { name: 'Dubai', lat: 25.2, lon: 55.2, ocean: false, city: true },
-        { name: 'Singapore', lat: 1.3, lon: 103.8, ocean: false, city: true },
-        { name: 'Hong Kong', lat: 22.3, lon: 114.1, ocean: false, city: true },
-        { name: 'Mumbai', lat: 19, lon: 72.8, ocean: false, city: true },
-        { name: 'São Paulo', lat: -23.5, lon: -46.6, ocean: false, city: true },
-        // Oceans
-        { name: 'Pacific Ocean', lat: 0, lon: -160, ocean: true },
-        { name: 'Atlantic Ocean', lat: 15, lon: -30, ocean: true },
-        { name: 'Indian Ocean', lat: -20, lon: 80, ocean: true },
+        // Oceans (zoom level 1 - farthest)
+        { name: 'Pacific Ocean', lat: 0, lon: -160, ocean: true, zoom: 1 },
+        { name: 'Atlantic Ocean', lat: 15, lon: -30, ocean: true, zoom: 1 },
+        { name: 'Indian Ocean', lat: -20, lon: 80, ocean: true, zoom: 1 },
+        { name: 'Arctic Ocean', lat: 75, lon: 0, ocean: true, zoom: 1 },
+        { name: 'Southern Ocean', lat: -60, lon: 0, ocean: true, zoom: 1 },
+        
+        // Countries (zoom level 2 - far)
+        { name: 'United States', lat: 39, lon: -95, zoom: 2 },
+        { name: 'Canada', lat: 56, lon: -106, zoom: 2 },
+        { name: 'Mexico', lat: 23, lon: -102, zoom: 2 },
+        { name: 'Brazil', lat: -10, lon: -55, zoom: 2 },
+        { name: 'Argentina', lat: -34, lon: -64, zoom: 2 },
+        { name: 'United Kingdom', lat: 54, lon: -2, zoom: 2 },
+        { name: 'France', lat: 47, lon: 2, zoom: 2 },
+        { name: 'Germany', lat: 51, lon: 10, zoom: 2 },
+        { name: 'Spain', lat: 40, lon: -4, zoom: 2 },
+        { name: 'Italy', lat: 42, lon: 12, zoom: 2 },
+        { name: 'Russia', lat: 60, lon: 100, zoom: 2 },
+        { name: 'China', lat: 35, lon: 105, zoom: 2 },
+        { name: 'India', lat: 20, lon: 77, zoom: 2 },
+        { name: 'Japan', lat: 36, lon: 138, zoom: 2 },
+        { name: 'Australia', lat: -25, lon: 133, zoom: 2 },
+        { name: 'South Africa', lat: -29, lon: 24, zoom: 2 },
+        { name: 'Egypt', lat: 26, lon: 30, zoom: 2 },
+        { name: 'Nigeria', lat: 9, lon: 8, zoom: 2 },
+        
+        // US States (zoom level 3 - medium)
+        { name: 'California', lat: 36.7, lon: -119.7, zoom: 3 },
+        { name: 'Texas', lat: 31, lon: -100, zoom: 3 },
+        { name: 'Florida', lat: 27.6, lon: -81.5, zoom: 3 },
+        { name: 'New York', lat: 43, lon: -75, zoom: 3 },
+        { name: 'Pennsylvania', lat: 41, lon: -77.5, zoom: 3 },
+        { name: 'Illinois', lat: 40, lon: -89, zoom: 3 },
+        { name: 'Ohio', lat: 40.4, lon: -82.9, zoom: 3 },
+        { name: 'Georgia', lat: 33, lon: -83.5, zoom: 3 },
+        { name: 'North Carolina', lat: 35.5, lon: -80, zoom: 3 },
+        { name: 'Michigan', lat: 44.3, lon: -85.6, zoom: 3 },
+        { name: 'Arizona', lat: 34.3, lon: -111.7, zoom: 3 },
+        { name: 'Washington', lat: 47.5, lon: -120.5, zoom: 3 },
+        { name: 'Massachusetts', lat: 42.4, lon: -71.4, zoom: 3 },
+        { name: 'Virginia', lat: 37.5, lon: -78.6, zoom: 3 },
+        { name: 'Colorado', lat: 39, lon: -105.5, zoom: 3 },
+        
+        // Major World Cities (zoom level 4 - close)
+        { name: 'New York City', lat: 40.7128, lon: -74.006, zoom: 4 },
+        { name: 'Los Angeles', lat: 34.0522, lon: -118.2437, zoom: 4 },
+        { name: 'Chicago', lat: 41.8781, lon: -87.6298, zoom: 4 },
+        { name: 'Houston', lat: 29.7604, lon: -95.3698, zoom: 4 },
+        { name: 'Phoenix', lat: 33.4484, lon: -112.074, zoom: 4 },
+        { name: 'Philadelphia', lat: 39.9526, lon: -75.1652, zoom: 4 },
+        { name: 'San Antonio', lat: 29.4241, lon: -98.4936, zoom: 4 },
+        { name: 'San Diego', lat: 32.7157, lon: -117.1611, zoom: 4 },
+        { name: 'Dallas', lat: 32.7767, lon: -96.797, zoom: 4 },
+        { name: 'San Jose', lat: 37.3382, lon: -121.8863, zoom: 4 },
+        { name: 'Austin', lat: 30.2672, lon: -97.7431, zoom: 4 },
+        { name: 'Seattle', lat: 47.6062, lon: -122.3321, zoom: 4 },
+        { name: 'Miami', lat: 25.7617, lon: -80.1918, zoom: 4 },
+        { name: 'Boston', lat: 42.3601, lon: -71.0589, zoom: 4 },
+        { name: 'Atlanta', lat: 33.749, lon: -84.388, zoom: 4 },
+        { name: 'Denver', lat: 39.7392, lon: -104.9903, zoom: 4 },
+        { name: 'Las Vegas', lat: 36.1699, lon: -115.1398, zoom: 4 },
+        { name: 'Portland', lat: 45.5152, lon: -122.6784, zoom: 4 },
+        
+        // Europe Cities
+        { name: 'London', lat: 51.5074, lon: -0.1278, zoom: 4 },
+        { name: 'Paris', lat: 48.8566, lon: 2.3522, zoom: 4 },
+        { name: 'Berlin', lat: 52.52, lon: 13.405, zoom: 4 },
+        { name: 'Madrid', lat: 40.4168, lon: -3.7038, zoom: 4 },
+        { name: 'Rome', lat: 41.9028, lon: 12.4964, zoom: 4 },
+        { name: 'Amsterdam', lat: 52.3676, lon: 4.9041, zoom: 4 },
+        { name: 'Vienna', lat: 48.2082, lon: 16.3738, zoom: 4 },
+        { name: 'Brussels', lat: 50.8503, lon: 4.3517, zoom: 4 },
+        { name: 'Stockholm', lat: 59.3293, lon: 18.0686, zoom: 4 },
+        { name: 'Copenhagen', lat: 55.6761, lon: 12.5683, zoom: 4 },
+        { name: 'Dublin', lat: 53.3498, lon: -6.2603, zoom: 4 },
+        { name: 'Lisbon', lat: 38.7223, lon: -9.1393, zoom: 4 },
+        { name: 'Athens', lat: 37.9838, lon: 23.7275, zoom: 4 },
+        { name: 'Prague', lat: 50.0755, lon: 14.4378, zoom: 4 },
+        { name: 'Warsaw', lat: 52.2297, lon: 21.0122, zoom: 4 },
+        
+        // Asia Cities
+        { name: 'Tokyo', lat: 35.6762, lon: 139.6503, zoom: 4 },
+        { name: 'Beijing', lat: 39.9042, lon: 116.4074, zoom: 4 },
+        { name: 'Shanghai', lat: 31.2304, lon: 121.4737, zoom: 4 },
+        { name: 'Seoul', lat: 37.5665, lon: 126.978, zoom: 4 },
+        { name: 'Mumbai', lat: 19.076, lon: 72.8777, zoom: 4 },
+        { name: 'Delhi', lat: 28.7041, lon: 77.1025, zoom: 4 },
+        { name: 'Bangalore', lat: 12.9716, lon: 77.5946, zoom: 4 },
+        { name: 'Bangkok', lat: 13.7563, lon: 100.5018, zoom: 4 },
+        { name: 'Singapore', lat: 1.3521, lon: 103.8198, zoom: 4 },
+        { name: 'Hong Kong', lat: 22.3193, lon: 114.1694, zoom: 4 },
+        { name: 'Dubai', lat: 25.2048, lon: 55.2708, zoom: 4 },
+        { name: 'Tel Aviv', lat: 32.0853, lon: 34.7818, zoom: 4 },
+        { name: 'Istanbul', lat: 41.0082, lon: 28.9784, zoom: 4 },
+        { name: 'Manila', lat: 14.5995, lon: 120.9842, zoom: 4 },
+        { name: 'Jakarta', lat: -6.2088, lon: 106.8456, zoom: 4 },
+        { name: 'Kuala Lumpur', lat: 3.139, lon: 101.6869, zoom: 4 },
+        
+        // South America Cities
+        { name: 'São Paulo', lat: -23.5505, lon: -46.6333, zoom: 4 },
+        { name: 'Rio de Janeiro', lat: -22.9068, lon: -43.1729, zoom: 4 },
+        { name: 'Buenos Aires', lat: -34.6037, lon: -58.3816, zoom: 4 },
+        { name: 'Lima', lat: -12.0464, lon: -77.0428, zoom: 4 },
+        { name: 'Bogotá', lat: 4.711, lon: -74.0721, zoom: 4 },
+        { name: 'Santiago', lat: -33.4489, lon: -70.6693, zoom: 4 },
+        
+        // Africa & Middle East Cities
+        { name: 'Cairo', lat: 30.0444, lon: 31.2357, zoom: 4 },
+        { name: 'Lagos', lat: 6.5244, lon: 3.3792, zoom: 4 },
+        { name: 'Johannesburg', lat: -26.2041, lon: 28.0473, zoom: 4 },
+        { name: 'Cape Town', lat: -33.9249, lon: 18.4241, zoom: 4 },
+        { name: 'Nairobi', lat: -1.2864, lon: 36.8172, zoom: 4 },
+        
+        // Oceania Cities
+        { name: 'Sydney', lat: -33.8688, lon: 151.2093, zoom: 4 },
+        { name: 'Melbourne', lat: -37.8136, lon: 144.9631, zoom: 4 },
+        { name: 'Brisbane', lat: -27.4698, lon: 153.0251, zoom: 4 },
+        { name: 'Perth', lat: -31.9505, lon: 115.8605, zoom: 4 },
+        { name: 'Auckland', lat: -36.8485, lon: 174.7633, zoom: 4 },
+        
+        // Additional US Cities (zoom level 4)
+        { name: 'San Francisco', lat: 37.7749, lon: -122.4194, zoom: 4 },
+        { name: 'Detroit', lat: 42.3314, lon: -83.0458, zoom: 4 },
+        { name: 'Nashville', lat: 36.1627, lon: -86.7816, zoom: 4 },
+        { name: 'Charlotte', lat: 35.2271, lon: -80.8431, zoom: 4 },
+        { name: 'Indianapolis', lat: 39.7684, lon: -86.1581, zoom: 4 },
+        { name: 'Columbus', lat: 39.9612, lon: -82.9988, zoom: 4 },
+        { name: 'Minneapolis', lat: 44.9778, lon: -93.265, zoom: 4 },
+        { name: 'Salt Lake City', lat: 40.7608, lon: -111.891, zoom: 4 },
       ];
 
       locations.forEach(loc => {
         const label = createLabel(loc.name, loc.lat, loc.lon, loc.ocean);
-        label.userData.isCity = loc.city || false;
+        label.userData.zoomLevel = loc.zoom || 2;
         label.userData.isOcean = loc.ocean || false;
         labels.push(label);
       });
@@ -594,20 +688,27 @@ export default function LiveAnalyticsDashboard() {
       // Update controls
       controls.update();
 
-      // Update label opacity based on showLabels and zoom level
+      // Update label opacity based on showLabels and zoom level (Google Earth style)
       const cameraDistance = camera.position.distanceTo(scene.position);
       labelsRef.current.forEach(label => {
         let targetOpacity = 0;
         if (showLabels) {
+          const zoomLevel = label.userData.zoomLevel;
+          
+          // Google Earth style zoom levels:
+          // Distance > 4: Zoom 1 (Oceans only)
+          // Distance 3-4: Zoom 2 (Countries)
+          // Distance 2.3-3: Zoom 3 (States/Provinces)
+          // Distance < 2.3: Zoom 4 (Cities)
+          
           if (label.userData.isOcean) {
-            // Oceans fade out when zoomed in
-            targetOpacity = cameraDistance > 2.5 ? 0.5 : 0.2;
-          } else if (label.userData.isCity) {
-            // Cities show when zoomed in
-            targetOpacity = cameraDistance < 2.8 ? 0.85 : 0;
-          } else {
-            // Countries always visible
-            targetOpacity = 0.85;
+            targetOpacity = cameraDistance > 3.5 ? 0.5 : 0.1;
+          } else if (zoomLevel === 2) { // Countries
+            targetOpacity = cameraDistance > 2.8 ? 0.85 : (cameraDistance > 2.3 ? 0.5 : 0.2);
+          } else if (zoomLevel === 3) { // States
+            targetOpacity = (cameraDistance <= 3 && cameraDistance > 2.1) ? 0.85 : 0;
+          } else if (zoomLevel === 4) { // Cities
+            targetOpacity = cameraDistance < 2.4 ? 0.9 : 0;
           }
         }
         if (Math.abs(label.material.opacity - targetOpacity) > 0.01) {
@@ -994,7 +1095,7 @@ export default function LiveAnalyticsDashboard() {
           </div>
         </div>
         <p className="text-xs text-slate-500 dark:text-slate-400 text-center mt-3">
-          🌍 Live visualization • {totalUsers} users • {disasters.length} natural events • {weatherData.length} weather stations • Zoom for cities
+          🌍 Google Earth-style visualization • {totalUsers} users • {disasters.length} natural events • Zoom in to reveal states & cities
         </p>
       </Card>
 
