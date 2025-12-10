@@ -25,6 +25,8 @@ export default function LiveAnalyticsDashboard() {
   const [showLabels, setShowLabels] = useState(true);
   const labelsRef = useRef([]);
   const [recentActivity, setRecentActivity] = useState([]);
+  const [disasters, setDisasters] = useState([]);
+  const disasterMarkersRef = useRef([]);
 
   // Detect theme
   useEffect(() => {
@@ -56,6 +58,50 @@ export default function LiveAnalyticsDashboard() {
       }
     }
   });
+
+  // Fetch real-time natural disasters
+  useEffect(() => {
+    const fetchDisasters = async () => {
+      try {
+        const disasters = [];
+        
+        // Fetch earthquakes from USGS
+        const earthquakeRes = await fetch('https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/significant_week.geojson');
+        const earthquakeData = await earthquakeRes.json();
+        earthquakeData.features?.forEach(eq => {
+          disasters.push({
+            type: 'earthquake',
+            lat: eq.geometry.coordinates[1],
+            lon: eq.geometry.coordinates[0],
+            magnitude: eq.properties.mag,
+            place: eq.properties.place,
+            time: eq.properties.time
+          });
+        });
+
+        // Fetch active volcanoes
+        const volcanoRes = await fetch('https://earthquake.usgs.gov/fdsnws/event/1/query?format=geojson&starttime=2025-01-01&minmagnitude=1&eventtype=volcanic');
+        const volcanoData = await volcanoRes.json();
+        volcanoData.features?.slice(0, 10).forEach(vol => {
+          disasters.push({
+            type: 'volcano',
+            lat: vol.geometry.coordinates[1],
+            lon: vol.geometry.coordinates[0],
+            place: vol.properties.place,
+            time: vol.properties.time
+          });
+        });
+
+        setDisasters(disasters);
+      } catch (error) {
+        console.error('Error fetching disaster data:', error);
+      }
+    };
+
+    fetchDisasters();
+    const interval = setInterval(fetchDisasters, 300000); // Update every 5 minutes
+    return () => clearInterval(interval);
+  }, []);
 
   // Calculate metrics
   const totalUsers = users.length;
@@ -223,18 +269,37 @@ export default function LiveAnalyticsDashboard() {
     if (showLabels) {
       const locations = [
         // Countries/Regions
-        { name: 'USA', lat: 39, lon: -95, ocean: false },
+        { name: 'United States of America', lat: 39, lon: -95, ocean: false },
         { name: 'Canada', lat: 56, lon: -106, ocean: false },
+        { name: 'Mexico', lat: 23, lon: -102, ocean: false },
         { name: 'Brazil', lat: -10, lon: -55, ocean: false },
-        { name: 'UK', lat: 54, lon: -2, ocean: false },
+        { name: 'United Kingdom', lat: 54, lon: -2, ocean: false },
         { name: 'France', lat: 47, lon: 2, ocean: false },
         { name: 'Germany', lat: 51, lon: 10, ocean: false },
+        { name: 'Spain', lat: 40, lon: -4, ocean: false },
+        { name: 'Italy', lat: 42, lon: 12, ocean: false },
         { name: 'Russia', lat: 60, lon: 100, ocean: false },
         { name: 'China', lat: 35, lon: 105, ocean: false },
         { name: 'India', lat: 20, lon: 77, ocean: false },
         { name: 'Japan', lat: 36, lon: 138, ocean: false },
+        { name: 'South Korea', lat: 36, lon: 127, ocean: false },
         { name: 'Australia', lat: -25, lon: 133, ocean: false },
         { name: 'South Africa', lat: -29, lon: 24, ocean: false },
+        { name: 'Argentina', lat: -34, lon: -64, ocean: false },
+        { name: 'Egypt', lat: 26, lon: 30, ocean: false },
+        { name: 'Nigeria', lat: 9, lon: 8, ocean: false },
+        // Major Cities (shown on zoom)
+        { name: 'New York', lat: 40.7, lon: -74, ocean: false, city: true },
+        { name: 'Los Angeles', lat: 34, lon: -118, ocean: false, city: true },
+        { name: 'London', lat: 51.5, lon: -0.1, ocean: false, city: true },
+        { name: 'Paris', lat: 48.8, lon: 2.3, ocean: false, city: true },
+        { name: 'Tokyo', lat: 35.6, lon: 139.6, ocean: false, city: true },
+        { name: 'Sydney', lat: -33.8, lon: 151.2, ocean: false, city: true },
+        { name: 'Dubai', lat: 25.2, lon: 55.2, ocean: false, city: true },
+        { name: 'Singapore', lat: 1.3, lon: 103.8, ocean: false, city: true },
+        { name: 'Hong Kong', lat: 22.3, lon: 114.1, ocean: false, city: true },
+        { name: 'Mumbai', lat: 19, lon: 72.8, ocean: false, city: true },
+        { name: 'São Paulo', lat: -23.5, lon: -46.6, ocean: false, city: true },
         // Oceans
         { name: 'Pacific Ocean', lat: 0, lon: -160, ocean: true },
         { name: 'Atlantic Ocean', lat: 15, lon: -30, ocean: true },
@@ -242,7 +307,13 @@ export default function LiveAnalyticsDashboard() {
       ];
 
       locations.forEach(loc => {
-        labels.push(createLabel(loc.name, loc.lat, loc.lon, loc.ocean));
+        const label = createLabel(loc.name, loc.lat, loc.lon, loc.ocean);
+        label.userData.isCity = loc.city || false;
+        // Initially hide city labels (show only on zoom)
+        if (loc.city) {
+          label.material.opacity = 0;
+        }
+        labels.push(label);
       });
     }
     labelsRef.current = labels;
@@ -364,12 +435,28 @@ export default function LiveAnalyticsDashboard() {
       // Update controls
       controls.update();
 
-      // Update label opacity based on showLabels
+      // Update label opacity based on showLabels and zoom level
+      const cameraDistance = camera.position.distanceTo(scene.position);
       labelsRef.current.forEach(label => {
-        const targetOpacity = showLabels ? (label.userData.isOcean ? 0.5 : 0.8) : 0;
-        if (label.material.opacity !== targetOpacity) {
-          label.material.opacity = targetOpacity;
+        let targetOpacity = 0;
+        if (showLabels) {
+          if (label.userData.isCity) {
+            // Show cities only when zoomed in
+            targetOpacity = cameraDistance < 2.5 ? 0.7 : 0;
+          } else {
+            targetOpacity = label.userData.isOcean ? 0.5 : 0.8;
+          }
         }
+        if (Math.abs(label.material.opacity - targetOpacity) > 0.01) {
+          label.material.opacity += (targetOpacity - label.material.opacity) * 0.1;
+        }
+      });
+
+      // Pulse disaster markers
+      disasterMarkersRef.current.forEach(marker => {
+        marker.userData.pulsePhase += 0.08;
+        const scale = 1 + Math.sin(marker.userData.pulsePhase) * 0.5;
+        marker.scale.set(scale, scale, scale);
       });
 
       // Pulse Pro markers
@@ -435,7 +522,7 @@ export default function LiveAnalyticsDashboard() {
       atmosphereGeometry.dispose();
       atmosphereMaterial.dispose();
       markerGeometry.dispose();
-      markerMaterialNormal.dispose();
+      markerMaterialFree.dispose();
       markerMaterialHovered.dispose();
       markerMaterialPro.dispose();
       markers.forEach(m => m.geometry?.dispose());
@@ -443,10 +530,14 @@ export default function LiveAnalyticsDashboard() {
         label.material.map?.dispose();
         label.material.dispose();
       });
+      disasterMarkersRef.current.forEach(marker => {
+        marker.geometry?.dispose();
+        marker.material?.dispose();
+      });
       controls.dispose();
       renderer.dispose();
     };
-  }, [users, globeStyle, isDarkMode, showLabels]);
+  }, [users, globeStyle, isDarkMode, showLabels, disasters]);
 
   return (
     <div className="space-y-6">
@@ -530,13 +621,13 @@ export default function LiveAnalyticsDashboard() {
               </button>
               <button
                 onClick={() => setGlobeStyle('matrix')}
-                className={`px-3 py-1.5 rounded text-xs font-medium transition-all ${
+                className={`px-3 py-1.5 rounded text-xs font-medium transition-all flex items-center gap-1 ${
                   globeStyle === 'matrix'
                     ? 'bg-white dark:bg-slate-800 text-slate-900 dark:text-white shadow-sm'
                     : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
                 }`}
               >
-                💎 Matrix
+                <span className="text-emerald-500">💎</span> Matrix
               </button>
             </div>
 
@@ -597,17 +688,30 @@ export default function LiveAnalyticsDashboard() {
           {/* Legend */}
           <div className="absolute top-4 right-4 bg-slate-900/95 backdrop-blur-sm border border-slate-700 rounded-lg p-2 sm:p-3 space-y-1.5 sm:space-y-2 shadow-xl">
             <div className="flex items-center gap-2">
-              <div className="w-2.5 h-2.5 rounded-full bg-yellow-400 shadow-lg shadow-yellow-500/50"></div>
+              <div className="w-2.5 h-2.5 rounded-full bg-emerald-400 shadow-lg shadow-emerald-500/50"></div>
               <span className="text-[10px] sm:text-xs text-slate-300 font-medium">Free</span>
             </div>
             <div className="flex items-center gap-2">
               <div className="w-2.5 h-2.5 rounded-full bg-amber-500 animate-pulse shadow-lg shadow-amber-500/50"></div>
               <span className="text-[10px] sm:text-xs text-slate-300 font-medium">Pro</span>
             </div>
+            {disasters.length > 0 && (
+              <>
+                <div className="border-t border-slate-700 pt-1.5"></div>
+                <div className="flex items-center gap-2">
+                  <div className="w-2.5 h-2.5 rounded-full bg-red-500 animate-pulse shadow-lg shadow-red-500/50"></div>
+                  <span className="text-[10px] sm:text-xs text-slate-300 font-medium">Earthquake</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-2.5 h-2.5 rounded-full bg-orange-500 animate-pulse shadow-lg shadow-orange-500/50"></div>
+                  <span className="text-[10px] sm:text-xs text-slate-300 font-medium">Volcano</span>
+                </div>
+              </>
+            )}
           </div>
         </div>
         <p className="text-xs text-slate-500 dark:text-slate-400 text-center mt-3">
-          🌍 Live global visualization • {totalUsers} users • Drag to explore • Click markers for profiles
+          🌍 Live global visualization • {totalUsers} users • {disasters.length} active natural events • Zoom to see cities
         </p>
       </Card>
 
