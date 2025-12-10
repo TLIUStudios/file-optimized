@@ -388,9 +388,9 @@ export default function LiveAnalyticsDashboard() {
     return (bytes / (1024 * 1024 * 1024 * 1024)).toFixed(2) + ' TB';
   };
 
-  // Initialize 3D Globe with interactivity
+  // Initialize 3D Globe with interactivity - ONLY ONCE
   useEffect(() => {
-    if (!canvasRef.current || users.length === 0) return;
+    if (!canvasRef.current || users.length === 0 || globe) return;
 
     const scene = new THREE.Scene();
     sceneRef.current = scene;
@@ -1764,6 +1764,50 @@ export default function LiveAnalyticsDashboard() {
         clouds.rotation.y += 0.0002;
       }
       
+      // Update sun position based on real UTC time
+      if (sunRef.current) {
+        const currentSunPos = calculateSunPosition(currentTime);
+        const sunPhi = (90 - currentSunPos.lat) * (Math.PI / 180);
+        const sunTheta = (currentSunPos.lon + 180) * (Math.PI / 180);
+        const newSunDirection = new THREE.Vector3(
+          -Math.sin(sunPhi) * Math.cos(sunTheta),
+          Math.cos(sunPhi),
+          Math.sin(sunPhi) * Math.sin(sunTheta)
+        );
+        sunRef.current.position.copy(newSunDirection.clone().multiplyScalar(2.5));
+        
+        // Update terminator shader
+        if (terminator) {
+          terminator.material.uniforms.sunDirection.value.copy(newSunDirection);
+        }
+      }
+      
+      // Update ISS position
+      if (issMarkerRef.current && issPosition) {
+        const phi = (90 - issPosition.lat) * (Math.PI / 180);
+        const theta = (issPosition.lon + 180 + animationTime * 0.5) * (Math.PI / 180);
+        const radius = 1.1;
+        const x = -radius * Math.sin(phi) * Math.cos(theta);
+        const y = radius * Math.cos(phi);
+        const z = radius * Math.sin(phi) * Math.sin(theta);
+        issMarkerRef.current.position.set(x, y, z);
+        
+        // Pulse ISS
+        const scale = 1 + Math.sin(animationTime * 3) * 0.3;
+        issMarkerRef.current.scale.set(scale, scale, scale);
+      }
+      
+      // Animate storms rotating
+      stormMarkersRef.current.forEach(marker => {
+        marker.rotation.z += 0.05;
+      });
+      
+      // Pulse user activity heatmap
+      heatmapRef.current.forEach((marker, idx) => {
+        const pulse = 1 + Math.sin(animationTime * 2 + idx) * 0.15;
+        marker.scale.set(pulse, pulse, 1);
+      });
+      
       // Update ISS position
       if (issMarkerRef.current && issPosition) {
         const phi = (90 - issPosition.lat) * (Math.PI / 180);
@@ -1928,16 +1972,7 @@ export default function LiveAnalyticsDashboard() {
         }
       });
 
-      // Update day/night terminator based on current time
-      if (terminator) {
-        const date = new Date();
-        const hours = date.getUTCHours();
-        const minutes = date.getUTCMinutes();
-        const timeAngle = ((hours + minutes / 60) / 24) * Math.PI * 2;
-        const sunX = Math.cos(timeAngle);
-        const sunZ = Math.sin(timeAngle);
-        terminator.material.uniforms.sunDirection.value.set(sunX, 0.3, sunZ).normalize();
-      }
+
       
       // Rotate starfield slowly for depth
       if (stars) {
@@ -2068,8 +2103,9 @@ export default function LiveAnalyticsDashboard() {
       });
       controls.dispose();
       renderer.dispose();
+      setGlobe(null);
     };
-  }, [globeStyle, isDarkMode, showLabels]);
+  }, [users]);
 
   return (
     <div className="space-y-6">
