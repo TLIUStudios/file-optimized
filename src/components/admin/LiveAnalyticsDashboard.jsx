@@ -146,11 +146,35 @@ export default function LiveAnalyticsDashboard() {
     controls.dampingFactor = 0.05;
     controls.rotateSpeed = 0.5;
     controls.enableZoom = true;
-    controls.minDistance = 2;
+    controls.minDistance = 1.8;
     controls.maxDistance = 5;
     controls.autoRotate = true;
     controls.autoRotateSpeed = 0.5;
     controlsRef.current = controls;
+
+    // Add disaster markers
+    const disasterMarkers = [];
+    disasters.forEach(disaster => {
+      const phi = (90 - disaster.lat) * (Math.PI / 180);
+      const theta = (disaster.lon + 180) * (Math.PI / 180);
+      const radius = 1.03;
+      const x = -radius * Math.sin(phi) * Math.cos(theta);
+      const y = radius * Math.cos(phi);
+      const z = radius * Math.sin(phi) * Math.sin(theta);
+
+      const geometry = new THREE.SphereGeometry(0.015, 12, 12);
+      const material = new THREE.MeshBasicMaterial({
+        color: disaster.type === 'earthquake' ? 0xff4444 : 0xff6600,
+        transparent: true,
+        opacity: 0.8
+      });
+      const marker = new THREE.Mesh(geometry, material);
+      marker.position.set(x, y, z);
+      marker.userData = { disaster, pulsePhase: 0 };
+      scene.add(marker);
+      disasterMarkers.push(marker);
+    });
+    disasterMarkersRef.current = disasterMarkers;
 
     // Create globe with different styles
     const geometry = new THREE.SphereGeometry(1, 128, 128);
@@ -339,16 +363,16 @@ export default function LiveAnalyticsDashboard() {
 
     // Create user markers with data
     const markers = [];
-    const markerGeometry = new THREE.SphereGeometry(0.015, 16, 16);
-    const markerMaterialNormal = new THREE.MeshPhongMaterial({ 
-      color: 0xfbbf24,
-      emissive: 0xfbbf24,
+    const markerGeometry = new THREE.SphereGeometry(0.02, 16, 16);
+    const markerMaterialFree = new THREE.MeshPhongMaterial({ 
+      color: 0x10b981,
+      emissive: 0x10b981,
       emissiveIntensity: 0.5,
       shininess: 100
     });
     const markerMaterialHovered = new THREE.MeshPhongMaterial({ 
-      color: 0xef4444,
-      emissive: 0xef4444,
+      color: 0x059669,
+      emissive: 0x059669,
       emissiveIntensity: 1,
       shininess: 100
     });
@@ -382,7 +406,7 @@ export default function LiveAnalyticsDashboard() {
         const y = radius * Math.cos(phi);
         const z = radius * Math.sin(phi) * Math.sin(theta);
         
-        const material = user.plan === 'pro' ? markerMaterialPro.clone() : markerMaterialNormal.clone();
+        const material = user.plan === 'pro' ? markerMaterialPro.clone() : markerMaterialFree.clone();
         const marker = new THREE.Mesh(markerGeometry, material);
         marker.position.set(x, y, z);
         marker.userData = { user, isMarker: true };
