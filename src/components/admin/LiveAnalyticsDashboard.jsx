@@ -759,12 +759,15 @@ export default function LiveAnalyticsDashboard() {
       } else {
         // Check if clicked on globe for Google Maps integration
         const globeIntersects = raycasterRef.current.intersectObject(sphere);
-        if (globeIntersects.length > 0 && cameraDistance < 2.0) {
-          const point = globeIntersects[0].point;
-          const lat = Math.asin(point.y) * (180 / Math.PI);
-          const lon = Math.atan2(point.z, -point.x) * (180 / Math.PI);
-          // Open Google Maps street view at this location
-          window.open(`https://www.google.com/maps/@${lat},${lon},14z`, '_blank');
+        if (globeIntersects.length > 0) {
+          const cameraDistance = camera.position.distanceTo(scene.position);
+          if (cameraDistance < 2.0) {
+            const point = globeIntersects[0].point;
+            const lat = Math.asin(point.y) * (180 / Math.PI);
+            const lon = Math.atan2(point.z, -point.x) * (180 / Math.PI);
+            // Open Google Maps street view at this location
+            window.open(`https://www.google.com/maps/@${lat},${lon},14z`, '_blank');
+          }
         }
       }
     };
