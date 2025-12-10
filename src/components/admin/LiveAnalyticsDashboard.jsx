@@ -386,8 +386,8 @@ export default function LiveAnalyticsDashboard() {
     pointLight.position.set(-5, -3, -5);
     scene.add(pointLight);
 
-    // Add location labels
-    const createLabel = (text, lat, lon, isOcean = false) => {
+    // Google Earth-style label creation with text outline and sizing
+    const createLabel = (text, lat, lon, zoomLevel, priority = 1) => {
       const phi = (90 - lat) * (Math.PI / 180);
       const theta = (lon + 180) * (Math.PI / 180);
       const radius = 1.15;
@@ -397,32 +397,73 @@ export default function LiveAnalyticsDashboard() {
 
       const canvas = document.createElement('canvas');
       const context = canvas.getContext('2d');
-      canvas.width = 512;
-      canvas.height = 128;
+      canvas.width = 1024;
+      canvas.height = 256;
       
-      context.fillStyle = 'transparent';
-      context.fillRect(0, 0, canvas.width, canvas.height);
+      context.clearRect(0, 0, canvas.width, canvas.height);
       
-      const fontSize = isOcean ? 32 : 42;
-      context.font = `${isOcean ? 'italic' : 'bold'} ${fontSize}px Arial`;
-      context.fillStyle = globeStyle === 'earth' 
-        ? (isOcean ? '#4a9eff' : '#ffffff')
-        : '#10b981';
+      // Determine font size based on zoom level and priority
+      let fontSize, fontWeight, isItalic;
+      if (zoomLevel === 1) { // Oceans
+        fontSize = 48;
+        fontWeight = 'italic';
+        isItalic = true;
+      } else if (zoomLevel === 2) { // Countries
+        fontSize = 56;
+        fontWeight = 'bold';
+      } else if (zoomLevel === 3) { // States
+        fontSize = 44;
+        fontWeight = '600';
+      } else { // Cities
+        fontSize = 36;
+        fontWeight = 'normal';
+      }
+      
+      context.font = `${fontWeight} ${fontSize}px Arial, sans-serif`;
       context.textAlign = 'center';
       context.textBaseline = 'middle';
+      
+      // Add text outline for better readability (Google Earth style)
+      context.lineWidth = 6;
+      context.strokeStyle = globeStyle === 'earth' ? 'rgba(0, 0, 0, 0.8)' : 'rgba(0, 20, 10, 0.9)';
+      context.strokeText(text, canvas.width / 2, canvas.height / 2);
+      
+      // Fill text
+      context.fillStyle = globeStyle === 'earth' 
+        ? (isItalic ? '#88ccff' : '#ffffff')
+        : (isItalic ? '#34d399' : '#10b981');
       context.fillText(text, canvas.width / 2, canvas.height / 2);
 
       const texture = new THREE.CanvasTexture(canvas);
+      texture.needsUpdate = true;
       const spriteMaterial = new THREE.SpriteMaterial({ 
         map: texture, 
         transparent: true,
-        opacity: showLabels ? (isOcean ? 0.5 : 0.8) : 0
+        opacity: 0,
+        depthTest: false // Labels always on top
       });
       const sprite = new THREE.Sprite(spriteMaterial);
       sprite.position.set(x, y, z);
-      sprite.scale.set(isOcean ? 0.6 : 0.4, isOcean ? 0.15 : 0.1, 1);
-      sprite.userData = { isLabel: true, isOcean };
-      sphere.add(sprite); // Add to sphere so it rotates with it
+      
+      // Scale based on zoom level
+      const scaleMap = {
+        1: { w: 1.0, h: 0.25 },  // Oceans - large
+        2: { w: 0.7, h: 0.175 }, // Countries - medium
+        3: { w: 0.5, h: 0.125 }, // States - smaller
+        4: { w: 0.35, h: 0.0875 } // Cities - smallest
+      };
+      const scale = scaleMap[zoomLevel] || { w: 0.4, h: 0.1 };
+      sprite.scale.set(scale.w, scale.h, 1);
+      
+      sprite.userData = { 
+        isLabel: true, 
+        zoomLevel, 
+        priority,
+        text,
+        lat,
+        lon
+      };
+      sphere.add(sprite);
       return sprite;
     };
 
@@ -563,8 +604,13 @@ export default function LiveAnalyticsDashboard() {
       ];
 
       locations.forEach(loc => {
-        const label = createLabel(loc.name, loc.lat, loc.lon, loc.ocean);
-        label.userData.zoomLevel = loc.zoom || 2;
+        const label = createLabel(
+          loc.name, 
+          loc.lat, 
+          loc.lon, 
+          loc.zoom || 2,
+          loc.priority || 1
+        );
         label.userData.isOcean = loc.ocean || false;
         labels.push(label);
       });
@@ -688,33 +734,100 @@ export default function LiveAnalyticsDashboard() {
       // Update controls
       controls.update();
 
-      // Update label opacity based on showLabels and zoom level (Google Earth style)
+      // Google Earth-style intelligent label visibility with collision detection
       const cameraDistance = camera.position.distanceTo(scene.position);
-      labelsRef.current.forEach(label => {
-        let targetOpacity = 0;
-        if (showLabels) {
+      
+      if (showLabels) {
+        // Step 1: Determine which labels should be visible based on zoom
+        const visibleLabels = [];
+        labelsRef.current.forEach(label => {
           const zoomLevel = label.userData.zoomLevel;
+          let shouldShow = false;
           
-          // Google Earth style zoom levels:
-          // Distance > 4: Zoom 1 (Oceans only)
-          // Distance 3-4: Zoom 2 (Countries)
-          // Distance 2.3-3: Zoom 3 (States/Provinces)
-          // Distance < 2.3: Zoom 4 (Cities)
-          
+          // Precise zoom thresholds (Google Earth style)
           if (label.userData.isOcean) {
-            targetOpacity = cameraDistance > 3.5 ? 0.5 : 0.1;
+            shouldShow = cameraDistance > 3.8;
           } else if (zoomLevel === 2) { // Countries
-            targetOpacity = cameraDistance > 2.8 ? 0.85 : (cameraDistance > 2.3 ? 0.5 : 0.2);
+            shouldShow = cameraDistance > 2.6;
           } else if (zoomLevel === 3) { // States
-            targetOpacity = (cameraDistance <= 3 && cameraDistance > 2.1) ? 0.85 : 0;
+            shouldShow = cameraDistance <= 2.8 && cameraDistance > 2.0;
           } else if (zoomLevel === 4) { // Cities
-            targetOpacity = cameraDistance < 2.4 ? 0.9 : 0;
+            shouldShow = cameraDistance <= 2.2;
           }
-        }
-        if (Math.abs(label.material.opacity - targetOpacity) > 0.01) {
-          label.material.opacity += (targetOpacity - label.material.opacity) * 0.1;
-        }
-      });
+          
+          if (shouldShow) {
+            // Check if label is facing camera
+            const labelPos = new THREE.Vector3();
+            label.getWorldPosition(labelPos);
+            const dirToCamera = new THREE.Vector3().subVectors(camera.position, labelPos).normalize();
+            const labelNormal = labelPos.clone().normalize();
+            const dot = dirToCamera.dot(labelNormal);
+            
+            if (dot > 0.3) { // Label is facing camera
+              visibleLabels.push({
+                label,
+                screenPos: labelPos.clone().project(camera),
+                priority: label.userData.priority || 1
+              });
+            }
+          }
+        });
+        
+        // Step 2: Sort by priority (higher priority = show first)
+        visibleLabels.sort((a, b) => b.priority - a.priority);
+        
+        // Step 3: Collision detection - prevent label overlap
+        const occupiedAreas = [];
+        const labelSpacing = 0.15; // Minimum distance between labels on screen
+        
+        visibleLabels.forEach(({ label, screenPos }) => {
+          let hasCollision = false;
+          
+          // Check against already shown labels
+          for (const occupied of occupiedAreas) {
+            const dist = Math.sqrt(
+              Math.pow(screenPos.x - occupied.x, 2) + 
+              Math.pow(screenPos.y - occupied.y, 2)
+            );
+            if (dist < labelSpacing) {
+              hasCollision = true;
+              break;
+            }
+          }
+          
+          // Set target opacity
+          const targetOpacity = hasCollision ? 0 : 0.95;
+          
+          if (!hasCollision) {
+            occupiedAreas.push({ x: screenPos.x, y: screenPos.y });
+          }
+          
+          // Smooth transition
+          if (Math.abs(label.material.opacity - targetOpacity) > 0.02) {
+            label.material.opacity += (targetOpacity - label.material.opacity) * 0.15;
+          }
+        });
+        
+        // Step 4: Hide labels not in visible list
+        labelsRef.current.forEach(label => {
+          if (!visibleLabels.find(v => v.label === label)) {
+            if (label.material.opacity > 0.02) {
+              label.material.opacity *= 0.85;
+            } else {
+              label.material.opacity = 0;
+            }
+          }
+        });
+      } else {
+        // Hide all labels when showLabels is false
+        labelsRef.current.forEach(label => {
+          if (label.material.opacity > 0.02) {
+            label.material.opacity *= 0.9;
+          } else {
+            label.material.opacity = 0;
+          }
+        });
+      }
 
       // Pulse disaster markers
       disasterMarkersRef.current.forEach(marker => {
@@ -1095,7 +1208,7 @@ export default function LiveAnalyticsDashboard() {
           </div>
         </div>
         <p className="text-xs text-slate-500 dark:text-slate-400 text-center mt-3">
-          🌍 Google Earth-style visualization • {totalUsers} users • {disasters.length} natural events • Zoom in to reveal states & cities
+          🌍 Google Earth-style globe with intelligent label placement • Zoom levels: Oceans → Countries → States → Cities
         </p>
       </Card>
 
