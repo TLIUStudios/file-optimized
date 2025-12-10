@@ -53,14 +53,11 @@ export default function LiveAnalyticsDashboard() {
   const [showStormTracks, setShowStormTracks] = useState(false);
   const [aqiData, setAqiData] = useState([]);
   const aqiMarkersRef = useRef([]);
-  const [historicalMode, setHistoricalMode] = useState(false);
-  const [playbackSpeed, setPlaybackSpeed] = useState(1);
-  const [currentTime, setCurrentTime] = useState(new Date());
   const [stormData, setStormData] = useState([]);
-  const [pressureData, setPressureData] = useState([]);
   const stormMarkersRef = useRef([]);
   const pressureMarkersRef = useRef([]);
   const sunRef = useRef(null);
+  const terminatorRef = useRef(null);
   const [userActivityHeatmap, setUserActivityHeatmap] = useState([]);
   const heatmapRef = useRef([]);
 
@@ -354,22 +351,6 @@ export default function LiveAnalyticsDashboard() {
       setUserActivityHeatmap(heatmapData);
     }
   }, [users]);
-
-  // Historical playback timer
-  useEffect(() => {
-    if (historicalMode) {
-      const interval = setInterval(() => {
-        setCurrentTime(prev => {
-          const next = new Date(prev.getTime() + (3600000 * playbackSpeed));
-          if (next > new Date()) return new Date();
-          return next;
-        });
-      }, 100);
-      return () => clearInterval(interval);
-    } else {
-      setCurrentTime(new Date());
-    }
-  }, [historicalMode, playbackSpeed]);
 
   // Calculate metrics
   const totalUsers = users.length;
@@ -862,6 +843,7 @@ export default function LiveAnalyticsDashboard() {
     const terminator = new THREE.Mesh(terminatorGeometry, terminatorMaterial);
     terminator.userData = { isTerminator: true };
     scene.add(terminator);
+    terminatorRef.current = terminator;
 
     // Add realistic atmosphere glow with multiple layers
     const atmosphereGeometry1 = new THREE.SphereGeometry(1.08, 64, 64);
@@ -1213,82 +1195,101 @@ export default function LiveAnalyticsDashboard() {
         { name: 'Newfoundland', lat: 53, lon: -60, zoom: 3 },
         { name: 'Prince Edward Island', lat: 46.5, lon: -63.5, zoom: 3 },
         
-        // Australian States (zoom level 3)
-        { name: 'New South Wales', lat: -32, lon: 147, zoom: 3 },
-        { name: 'Victoria', lat: -37, lon: 144, zoom: 3 },
-        { name: 'Queensland', lat: -20, lon: 145, zoom: 3 },
-        { name: 'Western Australia', lat: -25, lon: 122, zoom: 3 },
-        { name: 'South Australia', lat: -30, lon: 135, zoom: 3 },
-        { name: 'Tasmania', lat: -42, lon: 147, zoom: 3 },
-        { name: 'Northern Territory', lat: -19.5, lon: 133.5, zoom: 3 },
+        // Australian States - ALL with capitals
+        { name: 'New South Wales', lat: -32, lon: 147, zoom: 3, capital: true },
+        { name: 'Victoria', lat: -37, lon: 144, zoom: 3, capital: true },
+        { name: 'Queensland', lat: -20, lon: 145, zoom: 3, capital: true },
+        { name: 'Western Australia', lat: -25, lon: 122, zoom: 3, capital: true },
+        { name: 'South Australia', lat: -30, lon: 135, zoom: 3, capital: true },
+        { name: 'Tasmania', lat: -42, lon: 147, zoom: 3, capital: true },
+        { name: 'Northern Territory', lat: -19.5, lon: 133.5, zoom: 3, capital: true },
         
-        // Chinese Provinces (zoom level 3)
-        { name: 'Beijing', lat: 39.9, lon: 116.4, zoom: 3 },
-        { name: 'Shanghai', lat: 31.2, lon: 121.5, zoom: 3 },
-        { name: 'Guangdong', lat: 23.4, lon: 113.4, zoom: 3 },
-        { name: 'Sichuan', lat: 30.6, lon: 103.7, zoom: 3 },
-        { name: 'Xinjiang', lat: 41.8, lon: 87, zoom: 3 },
-        { name: 'Tibet', lat: 30, lon: 88, zoom: 3 },
-        { name: 'Inner Mongolia', lat: 43.7, lon: 111.7, zoom: 3 },
+        // Chinese Provinces - ALL with capitals
+        { name: 'Beijing', lat: 39.9, lon: 116.4, zoom: 3, capital: true },
+        { name: 'Shanghai', lat: 31.2, lon: 121.5, zoom: 3, capital: true },
+        { name: 'Guangdong', lat: 23.4, lon: 113.4, zoom: 3, capital: true },
+        { name: 'Sichuan', lat: 30.6, lon: 103.7, zoom: 3, capital: true },
+        { name: 'Xinjiang', lat: 41.8, lon: 87, zoom: 3, capital: true },
+        { name: 'Tibet', lat: 30, lon: 88, zoom: 3, capital: true },
+        { name: 'Inner Mongolia', lat: 43.7, lon: 111.7, zoom: 3, capital: true },
+        { name: 'Zhejiang', lat: 29.5, lon: 120.0, zoom: 3, capital: true },
+        { name: 'Jiangsu', lat: 32.97, lon: 119.46, zoom: 3, capital: true },
+        { name: 'Hubei', lat: 30.55, lon: 114.34, zoom: 3, capital: true },
+        { name: 'Hunan', lat: 27.61, lon: 111.71, zoom: 3, capital: true },
+        { name: 'Fujian', lat: 26.1, lon: 117.98, zoom: 3, capital: true },
+        { name: 'Yunnan', lat: 25.04, lon: 101.49, zoom: 3, capital: true },
         
-        // Indian States (zoom level 3)
-        { name: 'Maharashtra', lat: 19.8, lon: 75.5, zoom: 3 },
-        { name: 'Uttar Pradesh', lat: 27, lon: 80.5, zoom: 3 },
-        { name: 'Karnataka', lat: 15.3, lon: 75.7, zoom: 3 },
-        { name: 'Tamil Nadu', lat: 11, lon: 78.5, zoom: 3 },
-        { name: 'West Bengal', lat: 23.5, lon: 87.5, zoom: 3 },
-        { name: 'Gujarat', lat: 22.5, lon: 72, zoom: 3 },
-        { name: 'Rajasthan', lat: 26.5, lon: 73.5, zoom: 3 },
-        { name: 'Kerala', lat: 10.5, lon: 76.5, zoom: 3 },
-        { name: 'Punjab', lat: 31, lon: 75.5, zoom: 3 },
+        // Indian States - ALL with capitals
+        { name: 'Maharashtra', lat: 19.8, lon: 75.5, zoom: 3, capital: true },
+        { name: 'Uttar Pradesh', lat: 27, lon: 80.5, zoom: 3, capital: true },
+        { name: 'Karnataka', lat: 15.3, lon: 75.7, zoom: 3, capital: true },
+        { name: 'Tamil Nadu', lat: 11, lon: 78.5, zoom: 3, capital: true },
+        { name: 'West Bengal', lat: 23.5, lon: 87.5, zoom: 3, capital: true },
+        { name: 'Gujarat', lat: 22.5, lon: 72, zoom: 3, capital: true },
+        { name: 'Rajasthan', lat: 26.5, lon: 73.5, zoom: 3, capital: true },
+        { name: 'Kerala', lat: 10.5, lon: 76.5, zoom: 3, capital: true },
+        { name: 'Punjab', lat: 31, lon: 75.5, zoom: 3, capital: true },
+        { name: 'Telangana', lat: 18.11, lon: 79.02, zoom: 3, capital: true },
+        { name: 'Madhya Pradesh', lat: 22.97, lon: 78.66, zoom: 3, capital: true },
+        { name: 'Bihar', lat: 25.1, lon: 85.31, zoom: 3, capital: true },
+        { name: 'Odisha', lat: 20.95, lon: 85.1, zoom: 3, capital: true },
+        { name: 'Assam', lat: 26.2, lon: 92.94, zoom: 3, capital: true },
         
-        // Brazilian States (zoom level 3)
-        { name: 'São Paulo State', lat: -23, lon: -48, zoom: 3 },
-        { name: 'Rio de Janeiro State', lat: -22, lon: -43, zoom: 3 },
-        { name: 'Minas Gerais', lat: -18.5, lon: -44, zoom: 3 },
-        { name: 'Bahia', lat: -12.5, lon: -41.5, zoom: 3 },
-        { name: 'Amazonas', lat: -3.5, lon: -64, zoom: 3 },
-        { name: 'Pará', lat: -3, lon: -52, zoom: 3 },
+        // Brazilian States - ALL with capitals
+        { name: 'São Paulo State', lat: -23, lon: -48, zoom: 3, capital: true },
+        { name: 'Rio de Janeiro State', lat: -22, lon: -43, zoom: 3, capital: true },
+        { name: 'Minas Gerais', lat: -18.5, lon: -44, zoom: 3, capital: true },
+        { name: 'Bahia', lat: -12.5, lon: -41.5, zoom: 3, capital: true },
+        { name: 'Amazonas', lat: -3.5, lon: -64, zoom: 3, capital: true },
+        { name: 'Pará', lat: -3, lon: -52, zoom: 3, capital: true },
+        { name: 'Rio Grande do Sul', lat: -30.03, lon: -51.23, zoom: 3, capital: true },
+        { name: 'Paraná', lat: -25.25, lon: -52.02, zoom: 3, capital: true },
+        { name: 'Santa Catarina', lat: -27.33, lon: -49.44, zoom: 3, capital: true },
+        { name: 'Pernambuco', lat: -8.28, lon: -35.07, zoom: 3, capital: true },
         
-        // Russian Regions (zoom level 3)
-        { name: 'Moscow Oblast', lat: 55.5, lon: 37.5, zoom: 3 },
-        { name: 'Saint Petersburg Oblast', lat: 60, lon: 30.5, zoom: 3 },
-        { name: 'Siberia', lat: 60, lon: 105, zoom: 3 },
-        { name: 'Far East Russia', lat: 62, lon: 150, zoom: 3 },
+        // Russian Regions - ALL with capitals
+        { name: 'Moscow Oblast', lat: 55.5, lon: 37.5, zoom: 3, capital: true },
+        { name: 'Saint Petersburg', lat: 60, lon: 30.5, zoom: 3, capital: true },
+        { name: 'Siberia', lat: 60, lon: 105, zoom: 3, capital: true },
+        { name: 'Far East Russia', lat: 62, lon: 150, zoom: 3, capital: true },
+        { name: 'Tatarstan', lat: 55.8, lon: 49.1, zoom: 3, capital: true },
+        { name: 'Bashkortostan', lat: 54.74, lon: 56.0, zoom: 3, capital: true },
+        { name: 'Krasnoyarsk Krai', lat: 64.0, lon: 95.0, zoom: 3, capital: true },
+        { name: 'Sakha Republic', lat: 66.0, lon: 129.0, zoom: 3, capital: true },
         
-        // Mexican States (zoom level 3) - ALL 32 states
-        { name: 'Aguascalientes', lat: 21.88, lon: -102.3, zoom: 3 },
-        { name: 'Baja California', lat: 30.84, lon: -115.28, zoom: 3 },
-        { name: 'Baja California Sur', lat: 26.04, lon: -111.67, zoom: 3 },
-        { name: 'Campeche', lat: 19.83, lon: -90.53, zoom: 3 },
-        { name: 'Chiapas', lat: 16.75, lon: -93.12, zoom: 3 },
-        { name: 'Chihuahua', lat: 28.63, lon: -106.08, zoom: 3 },
-        { name: 'Coahuila', lat: 27.06, lon: -101.71, zoom: 3 },
-        { name: 'Colima', lat: 19.24, lon: -103.72, zoom: 3 },
-        { name: 'Durango', lat: 24.56, lon: -104.66, zoom: 3 },
-        { name: 'Guanajuato', lat: 21.02, lon: -101.26, zoom: 3 },
-        { name: 'Guerrero', lat: 17.44, lon: -99.55, zoom: 3 },
-        { name: 'Hidalgo', lat: 20.09, lon: -98.76, zoom: 3 },
-        { name: 'Jalisco', lat: 20.66, lon: -103.35, zoom: 3 },
-        { name: 'Mexico City', lat: 19.43, lon: -99.13, zoom: 3 },
-        { name: 'State of Mexico', lat: 19.35, lon: -99.63, zoom: 3 },
-        { name: 'Michoacán', lat: 19.57, lon: -101.71, zoom: 3 },
-        { name: 'Morelos', lat: 18.68, lon: -99.1, zoom: 3 },
-        { name: 'Nayarit', lat: 21.75, lon: -104.84, zoom: 3 },
-        { name: 'Nuevo León', lat: 25.59, lon: -99.99, zoom: 3 },
-        { name: 'Oaxaca', lat: 17.05, lon: -96.72, zoom: 3 },
-        { name: 'Puebla', lat: 19.04, lon: -98.21, zoom: 3 },
-        { name: 'Querétaro', lat: 20.59, lon: -100.39, zoom: 3 },
-        { name: 'Quintana Roo', lat: 19.18, lon: -88.48, zoom: 3 },
-        { name: 'San Luis Potosí', lat: 22.15, lon: -100.98, zoom: 3 },
-        { name: 'Sinaloa', lat: 25.0, lon: -107.5, zoom: 3 },
-        { name: 'Sonora', lat: 29.3, lon: -110.33, zoom: 3 },
-        { name: 'Tabasco', lat: 17.98, lon: -92.93, zoom: 3 },
-        { name: 'Tamaulipas', lat: 24.27, lon: -98.83, zoom: 3 },
-        { name: 'Tlaxcala', lat: 19.32, lon: -98.24, zoom: 3 },
-        { name: 'Veracruz', lat: 19.54, lon: -96.91, zoom: 3 },
-        { name: 'Yucatán', lat: 20.71, lon: -89.09, zoom: 3 },
-        { name: 'Zacatecas', lat: 22.77, lon: -102.58, zoom: 3 },
+        // Mexican States - ALL 32 with capitals
+        { name: 'Aguascalientes', lat: 21.88, lon: -102.3, zoom: 3, capital: true },
+        { name: 'Baja California', lat: 30.84, lon: -115.28, zoom: 3, capital: true },
+        { name: 'Baja California Sur', lat: 26.04, lon: -111.67, zoom: 3, capital: true },
+        { name: 'Campeche', lat: 19.83, lon: -90.53, zoom: 3, capital: true },
+        { name: 'Chiapas', lat: 16.75, lon: -93.12, zoom: 3, capital: true },
+        { name: 'Chihuahua', lat: 28.63, lon: -106.08, zoom: 3, capital: true },
+        { name: 'Coahuila', lat: 27.06, lon: -101.71, zoom: 3, capital: true },
+        { name: 'Colima', lat: 19.24, lon: -103.72, zoom: 3, capital: true },
+        { name: 'Durango', lat: 24.56, lon: -104.66, zoom: 3, capital: true },
+        { name: 'Guanajuato', lat: 21.02, lon: -101.26, zoom: 3, capital: true },
+        { name: 'Guerrero', lat: 17.44, lon: -99.55, zoom: 3, capital: true },
+        { name: 'Hidalgo', lat: 20.09, lon: -98.76, zoom: 3, capital: true },
+        { name: 'Jalisco', lat: 20.66, lon: -103.35, zoom: 3, capital: true },
+        { name: 'Mexico City', lat: 19.43, lon: -99.13, zoom: 3, capital: true },
+        { name: 'State of Mexico', lat: 19.35, lon: -99.63, zoom: 3, capital: true },
+        { name: 'Michoacán', lat: 19.57, lon: -101.71, zoom: 3, capital: true },
+        { name: 'Morelos', lat: 18.68, lon: -99.1, zoom: 3, capital: true },
+        { name: 'Nayarit', lat: 21.75, lon: -104.84, zoom: 3, capital: true },
+        { name: 'Nuevo León', lat: 25.59, lon: -99.99, zoom: 3, capital: true },
+        { name: 'Oaxaca', lat: 17.05, lon: -96.72, zoom: 3, capital: true },
+        { name: 'Puebla', lat: 19.04, lon: -98.21, zoom: 3, capital: true },
+        { name: 'Querétaro', lat: 20.59, lon: -100.39, zoom: 3, capital: true },
+        { name: 'Quintana Roo', lat: 19.18, lon: -88.48, zoom: 3, capital: true },
+        { name: 'San Luis Potosí', lat: 22.15, lon: -100.98, zoom: 3, capital: true },
+        { name: 'Sinaloa', lat: 25.0, lon: -107.5, zoom: 3, capital: true },
+        { name: 'Sonora', lat: 29.3, lon: -110.33, zoom: 3, capital: true },
+        { name: 'Tabasco', lat: 17.98, lon: -92.93, zoom: 3, capital: true },
+        { name: 'Tamaulipas', lat: 24.27, lon: -98.83, zoom: 3, capital: true },
+        { name: 'Tlaxcala', lat: 19.32, lon: -98.24, zoom: 3, capital: true },
+        { name: 'Veracruz', lat: 19.54, lon: -96.91, zoom: 3, capital: true },
+        { name: 'Yucatán', lat: 20.71, lon: -89.09, zoom: 3, capital: true },
+        { name: 'Zacatecas', lat: 22.77, lon: -102.58, zoom: 3, capital: true },
         
         // German States (zoom level 3)
         { name: 'Bavaria', lat: 48.79, lon: 11.5, zoom: 3 },
@@ -1355,107 +1356,153 @@ export default function LiveAnalyticsDashboard() {
         { name: 'Krasnoyarsk Krai', lat: 64.0, lon: 95.0, zoom: 3 },
         { name: 'Sakha Republic', lat: 66.0, lon: 129.0, zoom: 3 },
         
-        // Additional Chinese Provinces (zoom level 3)
-        { name: 'Zhejiang', lat: 29.5, lon: 120.0, zoom: 3 },
-        { name: 'Jiangsu', lat: 32.97, lon: 119.46, zoom: 3 },
-        { name: 'Hubei', lat: 30.55, lon: 114.34, zoom: 3 },
-        { name: 'Hunan', lat: 27.61, lon: 111.71, zoom: 3 },
-        { name: 'Fujian', lat: 26.1, lon: 117.98, zoom: 3 },
-        { name: 'Yunnan', lat: 25.04, lon: 101.49, zoom: 3 },
+
         
-        // Additional Indian States (zoom level 3)
-        { name: 'Telangana', lat: 18.11, lon: 79.02, zoom: 3 },
-        { name: 'Madhya Pradesh', lat: 22.97, lon: 78.66, zoom: 3 },
-        { name: 'Bihar', lat: 25.1, lon: 85.31, zoom: 3 },
-        { name: 'Odisha', lat: 20.95, lon: 85.1, zoom: 3 },
-        { name: 'Assam', lat: 26.2, lon: 92.94, zoom: 3 },
+        // Chilean Regions - with capitals
+        { name: 'Santiago Metropolitan', lat: -33.45, lon: -70.67, zoom: 3, capital: true },
+        { name: 'Valparaíso', lat: -33.05, lon: -71.62, zoom: 3, capital: true },
         
-        // Additional Brazilian States (zoom level 3)
-        { name: 'Rio Grande do Sul', lat: -30.03, lon: -51.23, zoom: 3 },
-        { name: 'Paraná', lat: -25.25, lon: -52.02, zoom: 3 },
-        { name: 'Santa Catarina', lat: -27.33, lon: -49.44, zoom: 3 },
-        { name: 'Pernambuco', lat: -8.28, lon: -35.07, zoom: 3 },
+        // Peruvian Regions - with capitals
+        { name: 'Lima Region', lat: -12.05, lon: -77.04, zoom: 3, capital: true },
+        { name: 'Cusco', lat: -13.53, lon: -71.97, zoom: 3, capital: true },
         
-        // Chilean Regions (zoom level 3)
-        { name: 'Santiago Metropolitan', lat: -33.45, lon: -70.67, zoom: 3 },
-        { name: 'Valparaíso', lat: -33.05, lon: -71.62, zoom: 3 },
+        // Polish Voivodeships - with capitals
+        { name: 'Masovian', lat: 51.92, lon: 21.07, zoom: 3, capital: true },
+        { name: 'Silesian', lat: 50.81, lon: 19.02, zoom: 3, capital: true },
         
-        // Peruvian Regions (zoom level 3)
-        { name: 'Lima Region', lat: -12.05, lon: -77.04, zoom: 3 },
-        { name: 'Cusco', lat: -13.53, lon: -71.97, zoom: 3 },
+        // Ukrainian Oblasts - with capitals
+        { name: 'Kyiv Oblast', lat: 50.45, lon: 30.52, zoom: 3, capital: true },
+        { name: 'Lviv Oblast', lat: 49.84, lon: 24.03, zoom: 3, capital: true },
         
-        // Polish Voivodeships (zoom level 3)
-        { name: 'Masovian', lat: 51.92, lon: 21.07, zoom: 3 },
-        { name: 'Silesian', lat: 50.81, lon: 19.02, zoom: 3 },
+        // Turkish Provinces - with capitals
+        { name: 'Istanbul Province', lat: 41.01, lon: 28.98, zoom: 3, capital: true },
+        { name: 'Ankara Province', lat: 39.93, lon: 32.86, zoom: 3, capital: true },
         
-        // Ukrainian Oblasts (zoom level 3)
-        { name: 'Kyiv Oblast', lat: 50.45, lon: 30.52, zoom: 3 },
-        { name: 'Lviv Oblast', lat: 49.84, lon: 24.03, zoom: 3 },
+        // Indonesian Provinces - with capitals
+        { name: 'Java', lat: -7.5, lon: 110.0, zoom: 3, capital: true },
+        { name: 'Sumatra', lat: 0.5, lon: 101.5, zoom: 3, capital: true },
+        { name: 'Bali', lat: -8.34, lon: 115.09, zoom: 3, capital: true },
         
-        // Turkish Provinces (zoom level 3)
-        { name: 'Istanbul Province', lat: 41.01, lon: 28.98, zoom: 3 },
-        { name: 'Ankara Province', lat: 39.93, lon: 32.86, zoom: 3 },
+        // Argentina Provinces - with capitals
+        { name: 'Buenos Aires Province', lat: -36.68, lon: -60.56, zoom: 3, capital: true },
+        { name: 'Córdoba', lat: -31.42, lon: -64.19, zoom: 3, capital: true },
+        { name: 'Santa Fe', lat: -31.62, lon: -60.69, zoom: 3, capital: true },
+        { name: 'Mendoza', lat: -32.89, lon: -68.84, zoom: 3, capital: true },
         
-        // Indonesian Provinces (zoom level 3)
-        { name: 'Java', lat: -7.5, lon: 110.0, zoom: 3 },
-        { name: 'Sumatra', lat: 0.5, lon: 101.5, zoom: 3 },
-        { name: 'Bali', lat: -8.34, lon: 115.09, zoom: 3 },
+        // Colombian Departments - with capitals
+        { name: 'Cundinamarca', lat: 5.03, lon: -74.03, zoom: 3, capital: true },
+        { name: 'Antioquia', lat: 7.0, lon: -75.5, zoom: 3, capital: true },
+        { name: 'Valle del Cauca', lat: 3.8, lon: -76.5, zoom: 3, capital: true },
+        
+        // UK Regions - with capitals
+        { name: 'England', lat: 52.5, lon: -1.5, zoom: 3, capital: true },
+        { name: 'Scotland', lat: 56.49, lon: -4.2, zoom: 3, capital: true },
+        { name: 'Wales', lat: 52.13, lon: -3.78, zoom: 3, capital: true },
+        { name: 'Northern Ireland', lat: 54.6, lon: -6.5, zoom: 3, capital: true },
+        
+        // South African Provinces - with capitals
+        { name: 'Gauteng', lat: -26.27, lon: 28.11, zoom: 3, capital: true },
+        { name: 'Western Cape', lat: -33.92, lon: 18.42, zoom: 3, capital: true },
+        { name: 'KwaZulu-Natal', lat: -28.53, lon: 30.9, zoom: 3, capital: true },
+        
+        // Nigerian States - with capitals
+        { name: 'Lagos State', lat: 6.52, lon: 3.38, zoom: 3, capital: true },
+        { name: 'Kano State', lat: 12.0, lon: 8.52, zoom: 3, capital: true },
+        { name: 'Rivers State', lat: 4.82, lon: 6.91, zoom: 3, capital: true },
+        
+        // German States - with capitals
+        { name: 'Bavaria', lat: 48.79, lon: 11.5, zoom: 3, capital: true },
+        { name: 'Baden-Württemberg', lat: 48.66, lon: 9.35, zoom: 3, capital: true },
+        { name: 'North Rhine-Westphalia', lat: 51.43, lon: 7.66, zoom: 3, capital: true },
+        { name: 'Saxony', lat: 51.1, lon: 13.2, zoom: 3, capital: true },
+        { name: 'Lower Saxony', lat: 52.64, lon: 9.84, zoom: 3, capital: true },
+        
+        // French Regions - with capitals
+        { name: 'Île-de-France', lat: 48.85, lon: 2.35, zoom: 3, capital: true },
+        { name: 'Provence', lat: 43.93, lon: 6.07, zoom: 3, capital: true },
+        { name: 'Normandy', lat: 49.18, lon: 0.37, zoom: 3, capital: true },
+        { name: 'Brittany', lat: 48.2, lon: -2.93, zoom: 3, capital: true },
+        
+        // Spanish Regions - with capitals
+        { name: 'Catalonia', lat: 41.59, lon: 1.52, zoom: 3, capital: true },
+        { name: 'Andalusia', lat: 37.39, lon: -5.98, zoom: 3, capital: true },
+        { name: 'Madrid Region', lat: 40.42, lon: -3.7, zoom: 3, capital: true },
+        { name: 'Basque Country', lat: 43.0, lon: -2.64, zoom: 3, capital: true },
+        
+        // Italian Regions - with capitals
+        { name: 'Lombardy', lat: 45.58, lon: 9.27, zoom: 3, capital: true },
+        { name: 'Lazio', lat: 41.9, lon: 12.5, zoom: 3, capital: true },
+        { name: 'Sicily', lat: 37.6, lon: 14.01, zoom: 3, capital: true },
+        { name: 'Tuscany', lat: 43.77, lon: 11.25, zoom: 3, capital: true },
+        
+        // Japanese Prefectures - with capitals
+        { name: 'Tokyo Prefecture', lat: 35.68, lon: 139.69, zoom: 3, capital: true },
+        { name: 'Osaka Prefecture', lat: 34.69, lon: 135.5, zoom: 3, capital: true },
+        { name: 'Hokkaido', lat: 43.06, lon: 141.35, zoom: 3, capital: true },
+        { name: 'Kyoto Prefecture', lat: 35.02, lon: 135.75, zoom: 3, capital: true },
+        { name: 'Aichi Prefecture', lat: 35.18, lon: 136.91, zoom: 3, capital: true },
+        { name: 'Fukuoka Prefecture', lat: 33.61, lon: 130.42, zoom: 3, capital: true },
         
         // Poles
         { name: 'North Pole', lat: 90, lon: 0, zoom: 2, priority: 2 },
         { name: 'South Pole', lat: -90, lon: 0, zoom: 2, priority: 2 },
+        { name: 'Greenland', lat: 72, lon: -40, zoom: 2 },
+        { name: 'Iceland', lat: 65, lon: -18, zoom: 2 },
+        { name: 'Antarctica', lat: -80, lon: 0, zoom: 2 },
+        { name: 'Svalbard', lat: 78, lon: 20, zoom: 2 },
         
         // All 50 US States with Capitals (zoom level 3)
+        // All 50 US States - ALL with capital markers
         { name: 'Alabama', lat: 32.8, lon: -86.9, zoom: 3, capital: true },
-        { name: 'Alaska', lat: 64, lon: -153, zoom: 3 },
-        { name: 'Arizona', lat: 34.3, lon: -111.7, zoom: 3 },
-        { name: 'Arkansas', lat: 35, lon: -92.4, zoom: 3 },
+        { name: 'Alaska', lat: 64, lon: -153, zoom: 3, capital: true },
+        { name: 'Arizona', lat: 34.3, lon: -111.7, zoom: 3, capital: true },
+        { name: 'Arkansas', lat: 35, lon: -92.4, zoom: 3, capital: true },
         { name: 'California', lat: 36.7, lon: -119.7, zoom: 3, capital: true },
-        { name: 'Colorado', lat: 39, lon: -105.5, zoom: 3 },
-        { name: 'Connecticut', lat: 41.6, lon: -72.7, zoom: 3 },
-        { name: 'Delaware', lat: 39, lon: -75.5, zoom: 3 },
+        { name: 'Colorado', lat: 39, lon: -105.5, zoom: 3, capital: true },
+        { name: 'Connecticut', lat: 41.6, lon: -72.7, zoom: 3, capital: true },
+        { name: 'Delaware', lat: 39, lon: -75.5, zoom: 3, capital: true },
         { name: 'Florida', lat: 27.6, lon: -81.5, zoom: 3, capital: true },
-        { name: 'Georgia', lat: 33, lon: -83.5, zoom: 3 },
-        { name: 'Hawaii', lat: 20.5, lon: -157, zoom: 3 },
-        { name: 'Idaho', lat: 44.5, lon: -114.5, zoom: 3 },
-        { name: 'Illinois', lat: 40, lon: -89, zoom: 3 },
-        { name: 'Indiana', lat: 40, lon: -86.3, zoom: 3 },
-        { name: 'Iowa', lat: 42, lon: -93.5, zoom: 3 },
-        { name: 'Kansas', lat: 38.5, lon: -98, zoom: 3 },
-        { name: 'Kentucky', lat: 37.5, lon: -85, zoom: 3 },
-        { name: 'Louisiana', lat: 31, lon: -92, zoom: 3 },
-        { name: 'Maine', lat: 45, lon: -69, zoom: 3 },
-        { name: 'Maryland', lat: 39, lon: -76.8, zoom: 3 },
-        { name: 'Massachusetts', lat: 42.4, lon: -71.4, zoom: 3 },
-        { name: 'Michigan', lat: 44.3, lon: -85.6, zoom: 3 },
-        { name: 'Minnesota', lat: 46, lon: -94.5, zoom: 3 },
-        { name: 'Mississippi', lat: 33, lon: -90, zoom: 3 },
-        { name: 'Missouri', lat: 38.5, lon: -92.5, zoom: 3 },
-        { name: 'Montana', lat: 47, lon: -110, zoom: 3 },
-        { name: 'Nebraska', lat: 41.5, lon: -99.9, zoom: 3 },
-        { name: 'Nevada', lat: 39, lon: -117, zoom: 3 },
-        { name: 'New Hampshire', lat: 44, lon: -71.5, zoom: 3 },
-        { name: 'New Jersey', lat: 40, lon: -74.5, zoom: 3 },
-        { name: 'New Mexico', lat: 34.5, lon: -106, zoom: 3 },
+        { name: 'Georgia', lat: 33, lon: -83.5, zoom: 3, capital: true },
+        { name: 'Hawaii', lat: 20.5, lon: -157, zoom: 3, capital: true },
+        { name: 'Idaho', lat: 44.5, lon: -114.5, zoom: 3, capital: true },
+        { name: 'Illinois', lat: 40, lon: -89, zoom: 3, capital: true },
+        { name: 'Indiana', lat: 40, lon: -86.3, zoom: 3, capital: true },
+        { name: 'Iowa', lat: 42, lon: -93.5, zoom: 3, capital: true },
+        { name: 'Kansas', lat: 38.5, lon: -98, zoom: 3, capital: true },
+        { name: 'Kentucky', lat: 37.5, lon: -85, zoom: 3, capital: true },
+        { name: 'Louisiana', lat: 31, lon: -92, zoom: 3, capital: true },
+        { name: 'Maine', lat: 45, lon: -69, zoom: 3, capital: true },
+        { name: 'Maryland', lat: 39, lon: -76.8, zoom: 3, capital: true },
+        { name: 'Massachusetts', lat: 42.4, lon: -71.4, zoom: 3, capital: true },
+        { name: 'Michigan', lat: 44.3, lon: -85.6, zoom: 3, capital: true },
+        { name: 'Minnesota', lat: 46, lon: -94.5, zoom: 3, capital: true },
+        { name: 'Mississippi', lat: 33, lon: -90, zoom: 3, capital: true },
+        { name: 'Missouri', lat: 38.5, lon: -92.5, zoom: 3, capital: true },
+        { name: 'Montana', lat: 47, lon: -110, zoom: 3, capital: true },
+        { name: 'Nebraska', lat: 41.5, lon: -99.9, zoom: 3, capital: true },
+        { name: 'Nevada', lat: 39, lon: -117, zoom: 3, capital: true },
+        { name: 'New Hampshire', lat: 44, lon: -71.5, zoom: 3, capital: true },
+        { name: 'New Jersey', lat: 40, lon: -74.5, zoom: 3, capital: true },
+        { name: 'New Mexico', lat: 34.5, lon: -106, zoom: 3, capital: true },
         { name: 'New York', lat: 43, lon: -75, zoom: 3, capital: true },
-        { name: 'North Carolina', lat: 35.5, lon: -80, zoom: 3 },
-        { name: 'North Dakota', lat: 47.5, lon: -100.5, zoom: 3 },
-        { name: 'Ohio', lat: 40.4, lon: -82.9, zoom: 3 },
-        { name: 'Oklahoma', lat: 36, lon: -97.5, zoom: 3 },
-        { name: 'Oregon', lat: 44, lon: -120.5, zoom: 3 },
-        { name: 'Pennsylvania', lat: 41, lon: -77.5, zoom: 3 },
-        { name: 'Rhode Island', lat: 41.7, lon: -71.5, zoom: 3 },
-        { name: 'South Carolina', lat: 34, lon: -81, zoom: 3 },
-        { name: 'South Dakota', lat: 44.5, lon: -100, zoom: 3 },
-        { name: 'Tennessee', lat: 36, lon: -86, zoom: 3 },
+        { name: 'North Carolina', lat: 35.5, lon: -80, zoom: 3, capital: true },
+        { name: 'North Dakota', lat: 47.5, lon: -100.5, zoom: 3, capital: true },
+        { name: 'Ohio', lat: 40.4, lon: -82.9, zoom: 3, capital: true },
+        { name: 'Oklahoma', lat: 36, lon: -97.5, zoom: 3, capital: true },
+        { name: 'Oregon', lat: 44, lon: -120.5, zoom: 3, capital: true },
+        { name: 'Pennsylvania', lat: 41, lon: -77.5, zoom: 3, capital: true },
+        { name: 'Rhode Island', lat: 41.7, lon: -71.5, zoom: 3, capital: true },
+        { name: 'South Carolina', lat: 34, lon: -81, zoom: 3, capital: true },
+        { name: 'South Dakota', lat: 44.5, lon: -100, zoom: 3, capital: true },
+        { name: 'Tennessee', lat: 36, lon: -86, zoom: 3, capital: true },
         { name: 'Texas', lat: 31, lon: -100, zoom: 3, capital: true },
-        { name: 'Utah', lat: 39.5, lon: -111.5, zoom: 3 },
-        { name: 'Vermont', lat: 44, lon: -72.7, zoom: 3 },
-        { name: 'Virginia', lat: 37.5, lon: -78.6, zoom: 3 },
-        { name: 'Washington', lat: 47.5, lon: -120.5, zoom: 3 },
-        { name: 'West Virginia', lat: 38.5, lon: -80.5, zoom: 3 },
-        { name: 'Wisconsin', lat: 44.5, lon: -90, zoom: 3 },
-        { name: 'Wyoming', lat: 43, lon: -107.5, zoom: 3 },
+        { name: 'Utah', lat: 39.5, lon: -111.5, zoom: 3, capital: true },
+        { name: 'Vermont', lat: 44, lon: -72.7, zoom: 3, capital: true },
+        { name: 'Virginia', lat: 37.5, lon: -78.6, zoom: 3, capital: true },
+        { name: 'Washington', lat: 47.5, lon: -120.5, zoom: 3, capital: true },
+        { name: 'West Virginia', lat: 38.5, lon: -80.5, zoom: 3, capital: true },
+        { name: 'Wisconsin', lat: 44.5, lon: -90, zoom: 3, capital: true },
+        { name: 'Wyoming', lat: 43, lon: -107.5, zoom: 3, capital: true },
         { name: 'Los Angeles', lat: 34.0522, lon: -118.2437, zoom: 4 },
         { name: 'Chicago', lat: 41.8781, lon: -87.6298, zoom: 4 },
         { name: 'Houston', lat: 29.7604, lon: -95.3698, zoom: 4 },
@@ -1788,6 +1835,29 @@ export default function LiveAnalyticsDashboard() {
       // Animate clouds slowly
       if (clouds && globeStyle === 'earth') {
         clouds.rotation.y += 0.0002;
+      }
+      
+      // Update sun and terminator in real-time
+      if (sunRef.current && terminatorRef.current) {
+        const now = new Date();
+        const dayOfYear = Math.floor((now - new Date(now.getFullYear(), 0, 0)) / 86400000);
+        const declination = 23.45 * Math.sin((360/365) * (dayOfYear - 81) * Math.PI / 180);
+        const hours = now.getUTCHours();
+        const minutes = now.getUTCMinutes();
+        const seconds = now.getUTCSeconds();
+        const timeDecimal = hours + minutes/60 + seconds/3600;
+        const longitude = (timeDecimal - 12) * 15;
+        
+        const sunPhi = (90 - declination) * (Math.PI / 180);
+        const sunTheta = (longitude + 180) * (Math.PI / 180);
+        const newSunDirection = new THREE.Vector3(
+          -Math.sin(sunPhi) * Math.cos(sunTheta),
+          Math.cos(sunPhi),
+          Math.sin(sunPhi) * Math.sin(sunTheta)
+        );
+        
+        sunRef.current.position.copy(newSunDirection.clone().multiplyScalar(2.5));
+        terminatorRef.current.material.uniforms.sunDirection.value.copy(newSunDirection);
       }
       
       // Update sun position based on real UTC time
@@ -2131,7 +2201,7 @@ export default function LiveAnalyticsDashboard() {
       renderer.dispose();
       setGlobe(null);
     };
-  }, [users]);
+  }, [users.length]);
 
   return (
     <div className="space-y-6">
@@ -2383,44 +2453,7 @@ export default function LiveAnalyticsDashboard() {
             </Button>
           </div>
           
-          {/* Historical Playback Controls */}
-          <div className="flex flex-wrap items-center gap-2 mt-2 pt-2 border-t border-slate-200 dark:border-slate-700">
-            <span className="text-xs text-slate-500 dark:text-slate-400 font-medium">Time Travel:</span>
-            <Button
-              size="sm"
-              variant={historicalMode ? "default" : "outline"}
-              onClick={() => setHistoricalMode(!historicalMode)}
-              className="h-7 text-xs"
-            >
-              {historicalMode ? '⏸️ Live' : '▶️ Historical'}
-            </Button>
-            {historicalMode && (
-              <>
-                <select
-                  value={playbackSpeed}
-                  onChange={(e) => setPlaybackSpeed(Number(e.target.value))}
-                  className="px-2 py-1 text-xs rounded border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800"
-                >
-                  <option value="0.5">0.5x</option>
-                  <option value="1">1x</option>
-                  <option value="2">2x</option>
-                  <option value="5">5x</option>
-                  <option value="10">10x</option>
-                </select>
-                <span className="text-xs text-slate-600 dark:text-slate-300 font-mono">
-                  {currentTime.toLocaleString()}
-                </span>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => setCurrentTime(new Date())}
-                  className="h-7 text-xs"
-                >
-                  Reset
-                </Button>
-              </>
-            )}
-          </div>
+
         </div>
         <div ref={containerRef} className="relative w-full h-[450px] sm:h-[550px] lg:h-[650px] bg-gradient-to-b from-slate-900 via-slate-950 to-black rounded-xl overflow-hidden shadow-2xl border border-slate-800">
           {isGlobeLoading && (
@@ -2641,9 +2674,9 @@ export default function LiveAnalyticsDashboard() {
           </div>
         </div>
         <p className="text-xs text-slate-500 dark:text-slate-400 text-center mt-3 space-y-1">
-          <span className="block">🌍 250+ locations • ⭐ Capital markers • Real UTC sun position • Animated clouds • User activity heatmap</span>
-          <span className="block">📍 Live ISS • Disasters • Weather • AQI • Wind • Temperature • Pressure systems • Storm tracking</span>
-          <span className="block">⏱️ Historical playback • 🔍 Location search • Real-time user data visualization</span>
+          <span className="block">🌍 200+ countries • 250+ states/provinces • ⭐ All capital cities marked with gold stars</span>
+          <span className="block">📍 Live ISS orbit • Natural disasters • Weather stations • Air quality • Wind flow • Temperature zones • Pressure systems • Storm tracking</span>
+          <span className="block">🔍 Search any location • Real UTC day/night cycle • User activity heatmap • Interactive layers</span>
         </p>
       </Card>
 
