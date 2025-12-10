@@ -16,6 +16,7 @@ export default function LiveAnalyticsDashboard() {
   const [globe, setGlobe] = useState(null);
   const [selectedUser, setSelectedUser] = useState(null);
   const [hoveredMarker, setHoveredMarker] = useState(null);
+  const [hoveredDisaster, setHoveredDisaster] = useState(null);
   const controlsRef = useRef(null);
   const cameraRef = useRef(null);
   const sceneRef = useRef(null);
@@ -34,10 +35,12 @@ export default function LiveAnalyticsDashboard() {
   const [activeLayers, setActiveLayers] = useState({
     users: true,
     disasters: true,
-    weather: false,
-    clouds: false,
-    wind: false
+    weather: true,
+    temperature: false,
+    precipitation: false,
+    windSpeed: false
   });
+  const [selectedLocation, setSelectedLocation] = useState(null);
 
   // Detect theme
   useEffect(() => {
@@ -534,22 +537,61 @@ export default function LiveAnalyticsDashboard() {
         { name: 'Egypt', lat: 26, lon: 30, zoom: 2 },
         { name: 'Nigeria', lat: 9, lon: 8, zoom: 2 },
         
-        // US States (zoom level 3 - medium)
-        { name: 'California', lat: 36.7, lon: -119.7, zoom: 3 },
-        { name: 'Texas', lat: 31, lon: -100, zoom: 3 },
-        { name: 'Florida', lat: 27.6, lon: -81.5, zoom: 3 },
-        { name: 'New York', lat: 43, lon: -75, zoom: 3 },
-        { name: 'Pennsylvania', lat: 41, lon: -77.5, zoom: 3 },
-        { name: 'Illinois', lat: 40, lon: -89, zoom: 3 },
-        { name: 'Ohio', lat: 40.4, lon: -82.9, zoom: 3 },
-        { name: 'Georgia', lat: 33, lon: -83.5, zoom: 3 },
-        { name: 'North Carolina', lat: 35.5, lon: -80, zoom: 3 },
-        { name: 'Michigan', lat: 44.3, lon: -85.6, zoom: 3 },
+        // Poles
+        { name: 'North Pole', lat: 90, lon: 0, zoom: 2, priority: 2 },
+        { name: 'South Pole', lat: -90, lon: 0, zoom: 2, priority: 2 },
+        
+        // All 50 US States (zoom level 3)
+        { name: 'Alabama', lat: 32.8, lon: -86.9, zoom: 3 },
+        { name: 'Alaska', lat: 64, lon: -153, zoom: 3 },
         { name: 'Arizona', lat: 34.3, lon: -111.7, zoom: 3 },
-        { name: 'Washington', lat: 47.5, lon: -120.5, zoom: 3 },
-        { name: 'Massachusetts', lat: 42.4, lon: -71.4, zoom: 3 },
-        { name: 'Virginia', lat: 37.5, lon: -78.6, zoom: 3 },
+        { name: 'Arkansas', lat: 35, lon: -92.4, zoom: 3 },
+        { name: 'California', lat: 36.7, lon: -119.7, zoom: 3 },
         { name: 'Colorado', lat: 39, lon: -105.5, zoom: 3 },
+        { name: 'Connecticut', lat: 41.6, lon: -72.7, zoom: 3 },
+        { name: 'Delaware', lat: 39, lon: -75.5, zoom: 3 },
+        { name: 'Florida', lat: 27.6, lon: -81.5, zoom: 3 },
+        { name: 'Georgia', lat: 33, lon: -83.5, zoom: 3 },
+        { name: 'Hawaii', lat: 20.5, lon: -157, zoom: 3 },
+        { name: 'Idaho', lat: 44.5, lon: -114.5, zoom: 3 },
+        { name: 'Illinois', lat: 40, lon: -89, zoom: 3 },
+        { name: 'Indiana', lat: 40, lon: -86.3, zoom: 3 },
+        { name: 'Iowa', lat: 42, lon: -93.5, zoom: 3 },
+        { name: 'Kansas', lat: 38.5, lon: -98, zoom: 3 },
+        { name: 'Kentucky', lat: 37.5, lon: -85, zoom: 3 },
+        { name: 'Louisiana', lat: 31, lon: -92, zoom: 3 },
+        { name: 'Maine', lat: 45, lon: -69, zoom: 3 },
+        { name: 'Maryland', lat: 39, lon: -76.8, zoom: 3 },
+        { name: 'Massachusetts', lat: 42.4, lon: -71.4, zoom: 3 },
+        { name: 'Michigan', lat: 44.3, lon: -85.6, zoom: 3 },
+        { name: 'Minnesota', lat: 46, lon: -94.5, zoom: 3 },
+        { name: 'Mississippi', lat: 33, lon: -90, zoom: 3 },
+        { name: 'Missouri', lat: 38.5, lon: -92.5, zoom: 3 },
+        { name: 'Montana', lat: 47, lon: -110, zoom: 3 },
+        { name: 'Nebraska', lat: 41.5, lon: -99.9, zoom: 3 },
+        { name: 'Nevada', lat: 39, lon: -117, zoom: 3 },
+        { name: 'New Hampshire', lat: 44, lon: -71.5, zoom: 3 },
+        { name: 'New Jersey', lat: 40, lon: -74.5, zoom: 3 },
+        { name: 'New Mexico', lat: 34.5, lon: -106, zoom: 3 },
+        { name: 'New York', lat: 43, lon: -75, zoom: 3 },
+        { name: 'North Carolina', lat: 35.5, lon: -80, zoom: 3 },
+        { name: 'North Dakota', lat: 47.5, lon: -100.5, zoom: 3 },
+        { name: 'Ohio', lat: 40.4, lon: -82.9, zoom: 3 },
+        { name: 'Oklahoma', lat: 36, lon: -97.5, zoom: 3 },
+        { name: 'Oregon', lat: 44, lon: -120.5, zoom: 3 },
+        { name: 'Pennsylvania', lat: 41, lon: -77.5, zoom: 3 },
+        { name: 'Rhode Island', lat: 41.7, lon: -71.5, zoom: 3 },
+        { name: 'South Carolina', lat: 34, lon: -81, zoom: 3 },
+        { name: 'South Dakota', lat: 44.5, lon: -100, zoom: 3 },
+        { name: 'Tennessee', lat: 36, lon: -86, zoom: 3 },
+        { name: 'Texas', lat: 31, lon: -100, zoom: 3 },
+        { name: 'Utah', lat: 39.5, lon: -111.5, zoom: 3 },
+        { name: 'Vermont', lat: 44, lon: -72.7, zoom: 3 },
+        { name: 'Virginia', lat: 37.5, lon: -78.6, zoom: 3 },
+        { name: 'Washington', lat: 47.5, lon: -120.5, zoom: 3 },
+        { name: 'West Virginia', lat: 38.5, lon: -80.5, zoom: 3 },
+        { name: 'Wisconsin', lat: 44.5, lon: -90, zoom: 3 },
+        { name: 'Wyoming', lat: 43, lon: -107.5, zoom: 3 },
         
         // Major World Cities (zoom level 4 - close)
         { name: 'New York City', lat: 40.7128, lon: -74.006, zoom: 4 },
@@ -637,6 +679,23 @@ export default function LiveAnalyticsDashboard() {
         { name: 'Columbus', lat: 39.9612, lon: -82.9988, zoom: 4 },
         { name: 'Minneapolis', lat: 44.9778, lon: -93.265, zoom: 4 },
         { name: 'Salt Lake City', lat: 40.7608, lon: -111.891, zoom: 4 },
+        { name: 'Milwaukee', lat: 43.0389, lon: -87.9065, zoom: 4 },
+        { name: 'Albuquerque', lat: 35.0844, lon: -106.6504, zoom: 4 },
+        { name: 'Tucson', lat: 32.2226, lon: -110.9747, zoom: 4 },
+        { name: 'Fresno', lat: 36.7378, lon: -119.7871, zoom: 4 },
+        { name: 'Sacramento', lat: 38.5816, lon: -121.4944, zoom: 4 },
+        { name: 'Kansas City', lat: 39.0997, lon: -94.5786, zoom: 4 },
+        { name: 'Mesa', lat: 33.4152, lon: -111.8315, zoom: 4 },
+        { name: 'Atlanta', lat: 33.749, lon: -84.388, zoom: 4 },
+        { name: 'Omaha', lat: 41.2565, lon: -95.9345, zoom: 4 },
+        { name: 'Raleigh', lat: 35.7796, lon: -78.6382, zoom: 4 },
+        { name: 'Miami Beach', lat: 25.7907, lon: -80.13, zoom: 4 },
+        { name: 'Oakland', lat: 37.8044, lon: -122.2712, zoom: 4 },
+        { name: 'Tampa', lat: 27.9506, lon: -82.4572, zoom: 4 },
+        { name: 'New Orleans', lat: 29.9511, lon: -90.0715, zoom: 4 },
+        { name: 'Cleveland', lat: 41.4993, lon: -81.6944, zoom: 4 },
+        { name: 'Honolulu', lat: 21.3099, lon: -157.8581, zoom: 4 },
+        { name: 'Anchorage', lat: 61.2181, lon: -149.9003, zoom: 4 },
       ];
 
       locations.forEach(loc => {
@@ -757,16 +816,51 @@ export default function LiveAnalyticsDashboard() {
           controls.autoRotate = false;
         }
       } else {
-        // Check if clicked on globe for Google Maps integration
-        const globeIntersects = raycasterRef.current.intersectObject(sphere);
-        if (globeIntersects.length > 0) {
-          const cameraDistance = camera.position.distanceTo(scene.position);
-          if (cameraDistance < 2.0) {
-            const point = globeIntersects[0].point;
-            const lat = Math.asin(point.y) * (180 / Math.PI);
-            const lon = Math.atan2(point.z, -point.x) * (180 / Math.PI);
-            // Open Google Maps street view at this location
-            window.open(`https://www.google.com/maps/@${lat},${lon},14z`, '_blank');
+        // Check if clicked on disaster marker
+        const disasterIntersects = raycasterRef.current.intersectObjects(disasterMarkers);
+        if (disasterIntersects.length > 0 && disasterIntersects[0].object.userData.isDisaster) {
+          const disaster = disasterIntersects[0].object.userData.disaster;
+          setSelectedLocation({
+            type: 'disaster',
+            data: disaster,
+            lat: disaster.lat,
+            lon: disaster.lon
+          });
+          controls.autoRotate = false;
+          return;
+        }
+
+        // Check for weather marker click
+        const weatherIntersects = raycasterRef.current.intersectObjects(weatherMarkers);
+        if (weatherIntersects.length > 0 && weatherIntersects[0].object.userData.isWeather) {
+          const weather = weatherIntersects[0].object.userData.weather;
+          setSelectedLocation({
+            type: 'weather',
+            data: weather,
+            lat: weather.lat,
+            lon: weather.lon
+          });
+          controls.autoRotate = false;
+          return;
+        }
+
+        // Check for label click
+        const labelIntersects = raycasterRef.current.intersectObjects(labelsRef.current, true);
+        if (labelIntersects.length > 0) {
+          const label = labelIntersects[0].object;
+          if (label.userData.isLabel) {
+            setSelectedLocation({
+              type: 'location',
+              data: {
+                name: label.userData.text,
+                lat: label.userData.lat,
+                lon: label.userData.lon
+              },
+              lat: label.userData.lat,
+              lon: label.userData.lon
+            });
+            controls.autoRotate = false;
+            return;
           }
         }
       }
@@ -899,27 +993,39 @@ export default function LiveAnalyticsDashboard() {
         stars.rotation.y += 0.0001;
       }
 
-      // Hover detection
+      // Hover detection for users, disasters, weather
       raycasterRef.current.setFromCamera(mouseRef.current, camera);
-      const intersects = raycasterRef.current.intersectObjects(markers);
       
-      // Reset all markers to normal
-      markers.forEach(marker => {
-        if (marker !== hoveredMarker) {
-          marker.scale.set(1, 1, 1);
-        }
-      });
-
-      if (intersects.length > 0) {
-        const newHover = intersects[0].object;
-        if (newHover.userData.isMarker) {
-          newHover.scale.set(1.5, 1.5, 1.5);
-          setHoveredMarker(newHover);
-          canvasRef.current.style.cursor = 'pointer';
-        }
-      } else {
+      // Check disaster markers first
+      const disasterIntersects = raycasterRef.current.intersectObjects(disasterMarkersRef.current);
+      if (disasterIntersects.length > 0 && disasterIntersects[0].object.userData.isDisaster) {
+        setHoveredDisaster(disasterIntersects[0].object.userData.disaster);
         setHoveredMarker(null);
-        canvasRef.current.style.cursor = 'grab';
+        canvasRef.current.style.cursor = 'pointer';
+      } else {
+        setHoveredDisaster(null);
+        
+        // Check user markers
+        const userIntersects = raycasterRef.current.intersectObjects(markers);
+        
+        // Reset all markers to normal
+        markers.forEach(marker => {
+          if (marker !== hoveredMarker) {
+            marker.scale.set(1, 1, 1);
+          }
+        });
+
+        if (userIntersects.length > 0) {
+          const newHover = userIntersects[0].object;
+          if (newHover.userData.isMarker) {
+            newHover.scale.set(1.5, 1.5, 1.5);
+            setHoveredMarker(newHover);
+            canvasRef.current.style.cursor = 'pointer';
+          }
+        } else {
+          setHoveredMarker(null);
+          canvasRef.current.style.cursor = 'grab';
+        }
       }
 
       renderer.render(scene, camera);
@@ -1117,7 +1223,7 @@ export default function LiveAnalyticsDashboard() {
               onClick={() => setActiveLayers(prev => ({ ...prev, weather: !prev.weather }))}
               className="h-7 text-xs"
             >
-              Weather
+              Weather Data
             </Button>
           </div>
         </div>
@@ -1178,8 +1284,8 @@ export default function LiveAnalyticsDashboard() {
             </Button>
           </div>
           
-          {/* Hover tooltip */}
-          {hoveredMarker && (
+          {/* User hover tooltip */}
+          {hoveredMarker && !hoveredDisaster && (
             <div className="absolute top-4 left-4 bg-slate-900/95 backdrop-blur-sm border border-slate-700 rounded-lg p-3 shadow-xl pointer-events-none z-10">
               <p className="text-sm font-semibold text-white">{hoveredMarker.userData.user.full_name || 'User'}</p>
               <p className="text-xs text-slate-400 mt-0.5">{hoveredMarker.userData.user.email}</p>
@@ -1193,21 +1299,42 @@ export default function LiveAnalyticsDashboard() {
             </div>
           )}
 
+          {/* Disaster hover tooltip */}
+          {hoveredDisaster && (
+            <div className="absolute top-4 left-4 bg-slate-900/95 backdrop-blur-sm border border-slate-700 rounded-lg p-3 shadow-xl pointer-events-none z-10 min-w-[200px]">
+              <div className="flex items-center gap-2 mb-1">
+                <div className={`w-3 h-3 rounded-full ${
+                  hoveredDisaster.type === 'earthquake' ? 'bg-red-500' :
+                  hoveredDisaster.type === 'volcano' ? 'bg-orange-500' :
+                  hoveredDisaster.type === 'hurricane' ? 'bg-blue-400' :
+                  hoveredDisaster.type === 'tsunami' ? 'bg-blue-600' :
+                  hoveredDisaster.type === 'tornado' ? 'bg-purple-500' :
+                  'bg-slate-300'
+                } animate-pulse`}></div>
+                <p className="text-sm font-bold text-white capitalize">{hoveredDisaster.type}</p>
+              </div>
+              <p className="text-xs text-slate-300">{hoveredDisaster.place || 'Unknown Location'}</p>
+              {hoveredDisaster.magnitude && (
+                <p className="text-xs text-amber-400 mt-1">Magnitude: {hoveredDisaster.magnitude}</p>
+              )}
+              {hoveredDisaster.category && (
+                <p className="text-xs text-amber-400 mt-1">{hoveredDisaster.category}</p>
+              )}
+              {hoveredDisaster.time && (
+                <p className="text-[10px] text-slate-500 mt-1.5">
+                  {new Date(hoveredDisaster.time).toLocaleDateString()}
+                </p>
+              )}
+              <p className="text-[10px] text-slate-500 mt-2">Click for details</p>
+            </div>
+          )}
+
           {/* Instructions */}
           <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-slate-900/90 backdrop-blur-sm border border-slate-700/50 rounded-lg px-3 py-2 sm:px-4 hidden sm:block">
             <p className="text-[10px] sm:text-xs text-slate-300 text-center whitespace-nowrap">
-              🖱️ Drag to rotate • 🔍 Scroll to zoom • 👆 Click markers for details • 🗺️ Deep zoom + click for Google Maps
+              🖱️ Drag to rotate • 🔍 Scroll to zoom • 👆 Click markers/locations for details • 🌍 Explore the world
             </p>
           </div>
-          
-          {/* Google Maps Integration Hint */}
-          {cameraRef.current && sceneRef.current && cameraRef.current.position.distanceTo(sceneRef.current.position) < 2.0 && (
-            <div className="absolute top-20 left-1/2 -translate-x-1/2 bg-blue-600/90 backdrop-blur-sm border border-blue-400 rounded-lg px-4 py-2 shadow-xl animate-pulse">
-              <p className="text-xs text-white font-medium whitespace-nowrap">
-                🗺️ Click anywhere on globe to open Google Maps Street View
-              </p>
-            </div>
-          )}
 
           {/* Mobile instruction */}
           <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-slate-900/90 backdrop-blur-sm border border-slate-700/50 rounded-lg px-3 py-2 sm:hidden">
@@ -1275,10 +1402,90 @@ export default function LiveAnalyticsDashboard() {
           </div>
         </div>
         <p className="text-xs text-slate-500 dark:text-slate-400 text-center mt-3 space-y-1">
-          <span className="block">🌍 Google Earth-style 3D globe with real-time data • Starfield background • Intelligent collision-free labels</span>
-          <span className="block">🗺️ Deep zoom reveals: Oceans → Countries → States → Cities • Click on surface when zoomed in for Google Maps Street View</span>
+          <span className="block">🌍 Google Earth-style globe • All 50 US states, 100+ cities, poles • Real-time disasters & weather</span>
+          <span className="block">📍 Click any location, disaster, or user marker for detailed information</span>
         </p>
       </Card>
+
+      {/* Selected Location Detail Panel */}
+      {selectedLocation && (
+        <Card className="p-4 sm:p-6 border-2 border-blue-500 dark:border-blue-600 bg-gradient-to-br from-blue-50 to-cyan-50 dark:from-blue-950/30 dark:to-cyan-950/30 shadow-xl">
+          <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
+            <div className="flex-1">
+              {selectedLocation.type === 'disaster' && (
+                <>
+                  <div className="flex items-center gap-2 mb-2">
+                    <div className={`w-4 h-4 rounded-full ${
+                      selectedLocation.data.type === 'earthquake' ? 'bg-red-500' :
+                      selectedLocation.data.type === 'volcano' ? 'bg-orange-500' :
+                      selectedLocation.data.type === 'hurricane' ? 'bg-blue-400' :
+                      selectedLocation.data.type === 'tsunami' ? 'bg-blue-600' :
+                      selectedLocation.data.type === 'tornado' ? 'bg-purple-500' :
+                      'bg-slate-300'
+                    } animate-pulse shadow-lg`}></div>
+                    <h3 className="text-lg sm:text-xl font-bold text-slate-900 dark:text-white capitalize">{selectedLocation.data.type}</h3>
+                  </div>
+                  <p className="text-sm text-slate-700 dark:text-slate-300 mb-2">{selectedLocation.data.place || 'Unknown Location'}</p>
+                  {selectedLocation.data.magnitude && (
+                    <p className="text-sm text-amber-600 dark:text-amber-400">Magnitude: <span className="font-bold">{selectedLocation.data.magnitude}</span></p>
+                  )}
+                  {selectedLocation.data.category && (
+                    <p className="text-sm text-blue-600 dark:text-blue-400">Category: <span className="font-bold">{selectedLocation.data.category}</span></p>
+                  )}
+                  {selectedLocation.data.time && (
+                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-2">
+                      {new Date(selectedLocation.data.time).toLocaleString()}
+                    </p>
+                  )}
+                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                    📍 {selectedLocation.lat.toFixed(4)}°, {selectedLocation.lon.toFixed(4)}°
+                  </p>
+                </>
+              )}
+
+              {selectedLocation.type === 'weather' && (
+                <>
+                  <h3 className="text-lg sm:text-xl font-bold text-slate-900 dark:text-white mb-2">{selectedLocation.data.name}</h3>
+                  <div className="space-y-1">
+                    {selectedLocation.data.temp !== undefined && (
+                      <p className="text-sm text-slate-700 dark:text-slate-300">🌡️ Temperature: <span className="font-semibold">{selectedLocation.data.temp}°C</span></p>
+                    )}
+                    {selectedLocation.data.precipitation !== undefined && (
+                      <p className="text-sm text-slate-700 dark:text-slate-300">🌧️ Precipitation: <span className="font-semibold">{selectedLocation.data.precipitation} mm</span></p>
+                    )}
+                    {selectedLocation.data.clouds !== undefined && (
+                      <p className="text-sm text-slate-700 dark:text-slate-300">☁️ Cloud Cover: <span className="font-semibold">{selectedLocation.data.clouds}%</span></p>
+                    )}
+                    {selectedLocation.data.windSpeed !== undefined && (
+                      <p className="text-sm text-slate-700 dark:text-slate-300">💨 Wind Speed: <span className="font-semibold">{selectedLocation.data.windSpeed} km/h</span></p>
+                    )}
+                  </div>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-2">
+                    📍 {selectedLocation.lat.toFixed(4)}°, {selectedLocation.lon.toFixed(4)}°
+                  </p>
+                </>
+              )}
+
+              {selectedLocation.type === 'location' && (
+                <>
+                  <h3 className="text-lg sm:text-xl font-bold text-slate-900 dark:text-white mb-2">{selectedLocation.data.name}</h3>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">
+                    📍 {selectedLocation.lat.toFixed(4)}°, {selectedLocation.lon.toFixed(4)}°
+                  </p>
+                </>
+              )}
+            </div>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setSelectedLocation(null)}
+              className="h-8 w-8 flex-shrink-0"
+            >
+              <X className="w-4 h-4" />
+            </Button>
+          </div>
+        </Card>
+      )}
 
       {/* Selected User Detail Panel */}
       {selectedUser && (
