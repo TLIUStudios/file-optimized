@@ -41,6 +41,7 @@ export default function LiveAnalyticsDashboard() {
     windSpeed: false
   });
   const [selectedLocation, setSelectedLocation] = useState(null);
+  const [isGlobeLoading, setIsGlobeLoading] = useState(true);
 
   // Detect theme
   useEffect(() => {
@@ -361,10 +362,12 @@ export default function LiveAnalyticsDashboard() {
     controls.dampingFactor = 0.05;
     controls.rotateSpeed = 0.5;
     controls.enableZoom = true;
+    controls.zoomSpeed = 0.8;
     controls.minDistance = 1.8;
     controls.maxDistance = 5;
     controls.autoRotate = true;
     controls.autoRotateSpeed = 0.5;
+    controls.enablePan = false; // Disable panning for better UX
     controlsRef.current = controls;
 
     // Add disaster markers
@@ -459,7 +462,21 @@ export default function LiveAnalyticsDashboard() {
 
     const sphere = new THREE.Mesh(geometry, material);
     sphere.userData = { isSphere: true };
+    sphere.scale.set(0.8, 0.8, 0.8); // Start smaller for animation
     scene.add(sphere);
+    
+    // Add animated cloud layer for realism
+    const cloudGeometry = new THREE.SphereGeometry(1.01, 128, 128);
+    const cloudTexture = new THREE.TextureLoader().load('https://unpkg.com/three-globe@2.31.1/example/img/earth-water.png');
+    const cloudMaterial = new THREE.MeshPhongMaterial({
+      map: cloudTexture,
+      transparent: true,
+      opacity: globeStyle === 'earth' ? 0.15 : 0,
+      depthWrite: false
+    });
+    const clouds = new THREE.Mesh(cloudGeometry, cloudMaterial);
+    clouds.userData = { isClouds: true };
+    scene.add(clouds);
 
     // Add wireframe overlay and country borders (only for Matrix style)
     let wireframe = null;
@@ -987,11 +1004,91 @@ export default function LiveAnalyticsDashboard() {
         { name: 'Sicily', lat: 37.6, lon: 14.01, zoom: 3 },
         { name: 'Tuscany', lat: 43.77, lon: 11.25, zoom: 3 },
         
-        // Japanese Prefectures (zoom level 3) - Major ones
+        // Japanese Prefectures (zoom level 3)
         { name: 'Tokyo Prefecture', lat: 35.68, lon: 139.69, zoom: 3 },
         { name: 'Osaka Prefecture', lat: 34.69, lon: 135.5, zoom: 3 },
         { name: 'Hokkaido', lat: 43.06, lon: 141.35, zoom: 3 },
         { name: 'Kyoto Prefecture', lat: 35.02, lon: 135.75, zoom: 3 },
+        { name: 'Aichi Prefecture', lat: 35.18, lon: 136.91, zoom: 3 },
+        { name: 'Fukuoka Prefecture', lat: 33.61, lon: 130.42, zoom: 3 },
+        
+        // Argentina Provinces (zoom level 3)
+        { name: 'Buenos Aires Province', lat: -36.68, lon: -60.56, zoom: 3 },
+        { name: 'Córdoba', lat: -31.42, lon: -64.19, zoom: 3 },
+        { name: 'Santa Fe', lat: -31.62, lon: -60.69, zoom: 3 },
+        { name: 'Mendoza', lat: -32.89, lon: -68.84, zoom: 3 },
+        { name: 'Patagonia', lat: -41, lon: -69, zoom: 3 },
+        
+        // Colombian Departments (zoom level 3)
+        { name: 'Cundinamarca', lat: 5.03, lon: -74.03, zoom: 3 },
+        { name: 'Antioquia', lat: 7.0, lon: -75.5, zoom: 3 },
+        { name: 'Valle del Cauca', lat: 3.8, lon: -76.5, zoom: 3 },
+        
+        // UK Regions (zoom level 3)
+        { name: 'England', lat: 52.5, lon: -1.5, zoom: 3 },
+        { name: 'Northern Ireland', lat: 54.6, lon: -6.5, zoom: 3 },
+        
+        // South African Provinces (zoom level 3)
+        { name: 'Gauteng', lat: -26.27, lon: 28.11, zoom: 3 },
+        { name: 'Western Cape', lat: -33.92, lon: 18.42, zoom: 3 },
+        { name: 'KwaZulu-Natal', lat: -28.53, lon: 30.9, zoom: 3 },
+        
+        // Nigerian States (zoom level 3)
+        { name: 'Lagos State', lat: 6.52, lon: 3.38, zoom: 3 },
+        { name: 'Kano State', lat: 12.0, lon: 8.52, zoom: 3 },
+        { name: 'Rivers State', lat: 4.82, lon: 6.91, zoom: 3 },
+        
+        // Additional Russian Regions (zoom level 3)
+        { name: 'Tatarstan', lat: 55.8, lon: 49.1, zoom: 3 },
+        { name: 'Bashkortostan', lat: 54.74, lon: 56.0, zoom: 3 },
+        { name: 'Krasnoyarsk Krai', lat: 64.0, lon: 95.0, zoom: 3 },
+        { name: 'Sakha Republic', lat: 66.0, lon: 129.0, zoom: 3 },
+        
+        // Additional Chinese Provinces (zoom level 3)
+        { name: 'Zhejiang', lat: 29.5, lon: 120.0, zoom: 3 },
+        { name: 'Jiangsu', lat: 32.97, lon: 119.46, zoom: 3 },
+        { name: 'Hubei', lat: 30.55, lon: 114.34, zoom: 3 },
+        { name: 'Hunan', lat: 27.61, lon: 111.71, zoom: 3 },
+        { name: 'Fujian', lat: 26.1, lon: 117.98, zoom: 3 },
+        { name: 'Yunnan', lat: 25.04, lon: 101.49, zoom: 3 },
+        
+        // Additional Indian States (zoom level 3)
+        { name: 'Telangana', lat: 18.11, lon: 79.02, zoom: 3 },
+        { name: 'Madhya Pradesh', lat: 22.97, lon: 78.66, zoom: 3 },
+        { name: 'Bihar', lat: 25.1, lon: 85.31, zoom: 3 },
+        { name: 'Odisha', lat: 20.95, lon: 85.1, zoom: 3 },
+        { name: 'Assam', lat: 26.2, lon: 92.94, zoom: 3 },
+        
+        // Additional Brazilian States (zoom level 3)
+        { name: 'Rio Grande do Sul', lat: -30.03, lon: -51.23, zoom: 3 },
+        { name: 'Paraná', lat: -25.25, lon: -52.02, zoom: 3 },
+        { name: 'Santa Catarina', lat: -27.33, lon: -49.44, zoom: 3 },
+        { name: 'Pernambuco', lat: -8.28, lon: -35.07, zoom: 3 },
+        
+        // Chilean Regions (zoom level 3)
+        { name: 'Santiago Metropolitan', lat: -33.45, lon: -70.67, zoom: 3 },
+        { name: 'Valparaíso', lat: -33.05, lon: -71.62, zoom: 3 },
+        
+        // Peruvian Regions (zoom level 3)
+        { name: 'Lima Region', lat: -12.05, lon: -77.04, zoom: 3 },
+        { name: 'Cusco', lat: -13.53, lon: -71.97, zoom: 3 },
+        
+        // Polish Voivodeships (zoom level 3)
+        { name: 'Masovian', lat: 51.92, lon: 21.07, zoom: 3 },
+        { name: 'Silesian', lat: 50.81, lon: 19.02, zoom: 3 },
+        
+        // Ukrainian Oblasts (zoom level 3)
+        { name: 'Kyiv Oblast', lat: 50.45, lon: 30.52, zoom: 3 },
+        { name: 'Lviv Oblast', lat: 49.84, lon: 24.03, zoom: 3 },
+        
+        // Turkish Provinces (zoom level 3)
+        { name: 'Istanbul Province', lat: 41.01, lon: 28.98, zoom: 3 },
+        { name: 'Ankara Province', lat: 39.93, lon: 32.86, zoom: 3 },
+        
+        // Indonesian Provinces (zoom level 3)
+        { name: 'Java', lat: -7.5, lon: 110.0, zoom: 3 },
+        { name: 'Sumatra', lat: 0.5, lon: 101.5, zoom: 3 },
+        { name: 'Bali', lat: -8.34, lon: 115.09, zoom: 3 },
         
         // Poles
         { name: 'North Pole', lat: 90, lon: 0, zoom: 2, priority: 2 },
@@ -1275,6 +1372,11 @@ export default function LiveAnalyticsDashboard() {
 
     markersRef.current = markers;
     setGlobe({ scene, camera, renderer, sphere, wireframe, controls });
+    
+    // Smooth fade-in animation after everything loads
+    setTimeout(() => {
+      setIsGlobeLoading(false);
+    }, 300);
 
     // Mouse move for hover detection
     const handleMouseMove = (event) => {
@@ -1354,11 +1456,27 @@ export default function LiveAnalyticsDashboard() {
 
     // Animation loop
     let animationId;
+    let animationTime = 0;
     const animate = () => {
       animationId = requestAnimationFrame(animate);
+      animationTime += 0.016; // ~60fps
+      
+      // Smooth entry animation
+      if (animationTime < 1.5) {
+        const progress = Math.min(animationTime / 1.5, 1);
+        const easeProgress = 1 - Math.pow(1 - progress, 3); // Ease out cubic
+        sphere.scale.set(0.8 + easeProgress * 0.2, 0.8 + easeProgress * 0.2, 0.8 + easeProgress * 0.2);
+        atmosphere1.scale.set(easeProgress, easeProgress, easeProgress);
+        atmosphere2.scale.set(easeProgress, easeProgress, easeProgress);
+      }
       
       // Update controls
       controls.update();
+      
+      // Animate clouds slowly
+      if (clouds && globeStyle === 'earth') {
+        clouds.rotation.y += 0.0002;
+      }
 
       // Google Earth-style intelligent label visibility with collision detection
       const cameraDistance = camera.position.distanceTo(scene.position);
@@ -1554,12 +1672,16 @@ export default function LiveAnalyticsDashboard() {
           if (child.material) child.material.dispose();
         });
       }
+      if (clouds) {
+        clouds.geometry.dispose();
+        clouds.material.dispose();
+      }
       atmosphereGeometry1.dispose();
       atmosphereMaterial1.dispose();
       atmosphereGeometry2.dispose();
       atmosphereMaterial2.dispose();
-      if (terminatorGeometry) terminatorGeometry.dispose();
-      if (terminatorMaterial) terminatorMaterial.dispose();
+      terminatorGeometry.dispose();
+      terminatorMaterial.dispose();
       starGeometry.dispose();
       starMaterial.dispose();
       markerGeometry.dispose();
@@ -1696,6 +1818,20 @@ export default function LiveAnalyticsDashboard() {
             >
               {controlsRef.current?.autoRotate ? 'Pause' : 'Auto-Rotate'}
             </Button>
+            
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => {
+                if (cameraRef.current && controlsRef.current) {
+                  cameraRef.current.position.set(0, 0, 3.2);
+                  controlsRef.current.target.set(0, 0, 0);
+                  controlsRef.current.update();
+                }
+              }}
+            >
+              Reset View
+            </Button>
           </div>
 
           {/* Layer Toggles */}
@@ -1728,7 +1864,15 @@ export default function LiveAnalyticsDashboard() {
           </div>
         </div>
         <div ref={containerRef} className="relative w-full h-[450px] sm:h-[550px] lg:h-[650px] bg-gradient-to-b from-slate-900 via-slate-950 to-black rounded-xl overflow-hidden shadow-2xl border border-slate-800">
-          <canvas ref={canvasRef} className="w-full h-full cursor-grab active:cursor-grabbing touch-none" />
+          {isGlobeLoading && (
+            <div className="absolute inset-0 flex items-center justify-center bg-slate-950/80 backdrop-blur-sm z-10">
+              <div className="text-center space-y-3">
+                <div className="w-12 h-12 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin mx-auto"></div>
+                <p className="text-sm text-slate-300 font-medium">Initializing Globe...</p>
+              </div>
+            </div>
+          )}
+          <canvas ref={canvasRef} className={`w-full h-full cursor-grab active:cursor-grabbing touch-none transition-opacity duration-1000 ${isGlobeLoading ? 'opacity-0' : 'opacity-100'}`} />
 
           {/* Mobile Zoom Controls */}
           <div className="absolute left-4 top-1/2 -translate-y-1/2 flex flex-col gap-2 lg:hidden">
@@ -1902,8 +2046,8 @@ export default function LiveAnalyticsDashboard() {
           </div>
         </div>
         <p className="text-xs text-slate-500 dark:text-slate-400 text-center mt-3 space-y-1">
-          <span className="block">🌍 Complete global coverage • 200+ countries • 200+ states/provinces worldwide</span>
-          <span className="block">📍 Real-time disasters, 40 weather stations, day/night terminator • Matrix mode: country borders • Click markers for details</span>
+          <span className="block">🌍 Complete global coverage • 200+ countries • 250+ states/provinces worldwide • Animated clouds</span>
+          <span className="block">📍 Real-time disasters • 40 weather stations • Day/night terminator • Matrix mode: country borders</span>
         </p>
       </Card>
 
