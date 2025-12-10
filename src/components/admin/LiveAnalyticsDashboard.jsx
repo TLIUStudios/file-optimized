@@ -42,6 +42,15 @@ export default function LiveAnalyticsDashboard() {
   });
   const [selectedLocation, setSelectedLocation] = useState(null);
   const [isGlobeLoading, setIsGlobeLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [issPosition, setIssPosition] = useState(null);
+  const issMarkerRef = useRef(null);
+  const issOrbitRef = useRef(null);
+  const windParticlesRef = useRef([]);
+  const [showWindLayer, setShowWindLayer] = useState(false);
+  const [showTempLayer, setShowTempLayer] = useState(false);
+  const [aqiData, setAqiData] = useState([]);
+  const aqiMarkersRef = useRef([]);
 
   // Detect theme
   useEffect(() => {
@@ -233,13 +242,58 @@ export default function LiveAnalyticsDashboard() {
       }
     };
 
+    const fetchISS = async () => {
+      try {
+        const res = await fetch('https://api.wheretheiss.at/v1/satellites/25544');
+        const data = await res.json();
+        setIssPosition({ lat: data.latitude, lon: data.longitude, altitude: data.altitude });
+      } catch (e) { console.error('ISS fetch failed:', e); }
+    };
+
+    const fetchAQI = async () => {
+      try {
+        const cities = [
+          { name: 'Beijing', lat: 39.9, lon: 116.4 },
+          { name: 'Delhi', lat: 28.7, lon: 77.1 },
+          { name: 'Los Angeles', lat: 34.05, lon: -118.25 },
+          { name: 'London', lat: 51.5, lon: -0.1 },
+          { name: 'Tokyo', lat: 35.6, lon: 139.6 },
+          { name: 'São Paulo', lat: -23.55, lon: -46.63 }
+        ];
+        
+        const aqiResults = [];
+        for (const city of cities) {
+          try {
+            const res = await fetch(`https://api.waqi.info/feed/geo:${city.lat};${city.lon}/?token=demo`);
+            const data = await res.json();
+            if (data.status === 'ok') {
+              aqiResults.push({
+                ...city,
+                aqi: data.data.aqi,
+                dominant: data.data.dominentpol
+              });
+            }
+          } catch (e) { console.error(`AQI fetch failed for ${city.name}:`, e); }
+        }
+        setAqiData(aqiResults);
+      } catch (error) {
+        console.error('Error fetching AQI data:', error);
+      }
+    };
+
     fetchDisasters();
     fetchWeather();
-    const disasterInterval = setInterval(fetchDisasters, 300000); // Every 5 minutes
-    const weatherInterval = setInterval(fetchWeather, 600000); // Every 10 minutes
+    fetchISS();
+    fetchAQI();
+    const disasterInterval = setInterval(fetchDisasters, 300000);
+    const weatherInterval = setInterval(fetchWeather, 600000);
+    const issInterval = setInterval(fetchISS, 5000);
+    const aqiInterval = setInterval(fetchAQI, 1800000);
     return () => {
       clearInterval(disasterInterval);
       clearInterval(weatherInterval);
+      clearInterval(issInterval);
+      clearInterval(aqiInterval);
     };
   }, []);
 
@@ -432,6 +486,142 @@ export default function LiveAnalyticsDashboard() {
     }
     weatherMarkersRef.current = weatherMarkers;
 
+    // Add AQI markers
+    const aqiMarkers = [];
+    if (aqiData.length > 0) {
+      aqiData.forEach(aqi => {
+        const phi = (90 - aqi.lat) * (Math.PI / 180);
+        const theta = (aqi.lon + 180) * (Math.PI / 180);
+        const radius = 1.045;
+        const x = -radius * Math.sin(phi) * Math.cos(theta);
+        const y = radius * Math.cos(phi);
+        const z = radius * Math.sin(phi) * Math.sin(theta);
+
+        const geometry = new THREE.RingGeometry(0.02, 0.025, 16);
+        const color = aqi.aqi < 50 ? 0x00ff00 : aqi.aqi < 100 ? 0xffff00 : aqi.aqi < 150 ? 0xff9900 : aqi.aqi < 200 ? 0xff0000 : 0x8b0000;
+        const material = new THREE.MeshBasicMaterial({
+          color,
+          transparent: true,
+          opacity: 0.8,
+          side: THREE.DoubleSide
+        });
+        const marker = new THREE.Mesh(geometry, material);
+        marker.position.set(x, y, z);
+        marker.lookAt(0, 0, 0);
+        marker.userData = { aqi, isAQI: true };
+        scene.add(marker);
+        aqiMarkers.push(marker);
+      });
+    }
+    aqiMarkersRef.current = aqiMarkers;
+
+    // Add ISS marker and orbit
+    if (issPosition) {
+      const phi = (90 - issPosition.lat) * (Math.PI / 180);
+      const theta = (issPosition.lon + 180) * (Math.PI / 180);
+      const radius = 1.1;
+      const x = -radius * Math.sin(phi) * Math.cos(theta);
+      const y = radius * Math.cos(phi);
+      const z = radius * Math.sin(phi) * Math.sin(theta);
+
+      const issGeometry = new THREE.SphereGeometry(0.025, 16, 16);
+      const issMaterial = new THREE.MeshBasicMaterial({
+        color: 0x00ffff,
+        emissive: 0x00ffff,
+        emissiveIntensity: 1
+      });
+      const issMarker = new THREE.Mesh(issGeometry, issMaterial);
+      issMarker.position.set(x, y, z);
+      issMarker.userData = { isISS: true };
+      scene.add(issMarker);
+      issMarkerRef.current = issMarker;
+
+      // ISS orbit trail
+      const orbitPoints = [];
+      for (let i = 0; i < 100; i++) {
+        const angle = (i / 100) * Math.PI * 2;
+        const orbitPhi = (90 - issPosition.lat) * (Math.PI / 180);
+        const orbitTheta = (issPosition.lon + 180 + angle * 57.3) * (Math.PI / 180);
+        const ox = -radius * Math.sin(orbitPhi) * Math.cos(orbitTheta);
+        const oy = radius * Math.cos(orbitPhi);
+        const oz = radius * Math.sin(orbitPhi) * Math.sin(orbitTheta);
+        orbitPoints.push(new THREE.Vector3(ox, oy, oz));
+      }
+      const orbitGeometry = new THREE.BufferGeometry().setFromPoints(orbitPoints);
+      const orbitMaterial = new THREE.LineBasicMaterial({
+        color: 0x00ffff,
+        transparent: true,
+        opacity: 0.4
+      });
+      const orbit = new THREE.Line(orbitGeometry, orbitMaterial);
+      scene.add(orbit);
+      issOrbitRef.current = orbit;
+    }
+
+    // Wind particles system
+    if (showWindLayer && weatherData.length > 0) {
+      const windParticles = [];
+      weatherData.forEach(weather => {
+        if (weather.windSpeed > 5) {
+          const particleCount = Math.min(Math.floor(weather.windSpeed / 5), 10);
+          for (let i = 0; i < particleCount; i++) {
+            const phi = (90 - weather.lat + (Math.random() - 0.5) * 2) * (Math.PI / 180);
+            const theta = (weather.lon + 180 + (Math.random() - 0.5) * 2) * (Math.PI / 180);
+            const radius = 1.06;
+            const x = -radius * Math.sin(phi) * Math.cos(theta);
+            const y = radius * Math.cos(phi);
+            const z = radius * Math.sin(phi) * Math.sin(theta);
+
+            const geometry = new THREE.SphereGeometry(0.003, 4, 4);
+            const material = new THREE.MeshBasicMaterial({ color: 0xcccccc, transparent: true, opacity: 0.6 });
+            const particle = new THREE.Mesh(geometry, material);
+            particle.position.set(x, y, z);
+            particle.userData = { 
+              isWindParticle: true, 
+              speed: weather.windSpeed / 100,
+              angle: Math.random() * Math.PI * 2
+            };
+            scene.add(particle);
+            windParticles.push(particle);
+          }
+        }
+      });
+      windParticlesRef.current = windParticles;
+    }
+
+    // Temperature heatmap overlay
+    if (showTempLayer && weatherData.length > 0) {
+      weatherData.forEach(weather => {
+        const phi = (90 - weather.lat) * (Math.PI / 180);
+        const theta = (weather.lon + 180) * (Math.PI / 180);
+        const radius = 1.015;
+        const x = -radius * Math.sin(phi) * Math.cos(theta);
+        const y = radius * Math.cos(phi);
+        const z = radius * Math.sin(phi) * Math.sin(theta);
+
+        const temp = weather.temp;
+        let color;
+        if (temp < 0) color = 0x0000ff; // Blue - freezing
+        else if (temp < 10) color = 0x00aaff; // Light blue - cold
+        else if (temp < 20) color = 0xffff00; // Yellow - mild
+        else if (temp < 30) color = 0xff9900; // Orange - warm
+        else color = 0xff0000; // Red - hot
+
+        const geometry = new THREE.CircleGeometry(0.15, 32);
+        const material = new THREE.MeshBasicMaterial({
+          color,
+          transparent: true,
+          opacity: 0.35,
+          side: THREE.DoubleSide
+        });
+        const heatSpot = new THREE.Mesh(geometry, material);
+        heatSpot.position.set(x, y, z);
+        heatSpot.lookAt(0, 0, 0);
+        heatSpot.userData = { isTempHeat: true };
+        scene.add(heatSpot);
+      });
+    }
+
     // Create high-detail globe with different styles
     const geometry = new THREE.SphereGeometry(1, 256, 256);
     let material;
@@ -611,7 +801,7 @@ export default function LiveAnalyticsDashboard() {
     scene.add(pointLight);
 
     // Google Earth-style label creation - labels ON the surface
-    const createLabel = (text, lat, lon, zoomLevel, priority = 1) => {
+    const createLabel = (text, lat, lon, zoomLevel, priority = 1, isCapital = false) => {
       const phi = (90 - lat) * (Math.PI / 180);
       const theta = (lon + 180) * (Math.PI / 180);
       const radius = 1.01; // Just slightly above surface for visibility
@@ -642,16 +832,37 @@ export default function LiveAnalyticsDashboard() {
         fontSize = 36;
         fontWeight = 'normal';
       }
-      
+
       context.font = `${fontWeight} ${fontSize}px Arial, sans-serif`;
       context.textAlign = 'center';
       context.textBaseline = 'middle';
-      
+
+      // Draw star for capital cities
+      if (isCapital) {
+        const starSize = fontSize * 0.4;
+        const textWidth = context.measureText(text).width;
+        const starX = canvas.width / 2 - textWidth / 2 - starSize - 10;
+        const starY = canvas.height / 2;
+
+        context.fillStyle = '#ffd700';
+        context.beginPath();
+        for (let i = 0; i < 5; i++) {
+          const angle = (i * 4 * Math.PI) / 5 - Math.PI / 2;
+          const r = i % 2 === 0 ? starSize : starSize / 2;
+          const px = starX + Math.cos(angle) * r;
+          const py = starY + Math.sin(angle) * r;
+          if (i === 0) context.moveTo(px, py);
+          else context.lineTo(px, py);
+        }
+        context.closePath();
+        context.fill();
+      }
+
       // Add text outline for better readability (Google Earth style)
       context.lineWidth = 6;
       context.strokeStyle = globeStyle === 'earth' ? 'rgba(0, 0, 0, 0.8)' : 'rgba(0, 20, 10, 0.9)';
       context.strokeText(text, canvas.width / 2, canvas.height / 2);
-      
+
       // Fill text
       context.fillStyle = globeStyle === 'earth' 
         ? (isItalic ? '#88ccff' : '#ffffff')
@@ -1094,16 +1305,16 @@ export default function LiveAnalyticsDashboard() {
         { name: 'North Pole', lat: 90, lon: 0, zoom: 2, priority: 2 },
         { name: 'South Pole', lat: -90, lon: 0, zoom: 2, priority: 2 },
         
-        // All 50 US States (zoom level 3)
-        { name: 'Alabama', lat: 32.8, lon: -86.9, zoom: 3 },
+        // All 50 US States with Capitals (zoom level 3)
+        { name: 'Alabama', lat: 32.8, lon: -86.9, zoom: 3, capital: true },
         { name: 'Alaska', lat: 64, lon: -153, zoom: 3 },
         { name: 'Arizona', lat: 34.3, lon: -111.7, zoom: 3 },
         { name: 'Arkansas', lat: 35, lon: -92.4, zoom: 3 },
-        { name: 'California', lat: 36.7, lon: -119.7, zoom: 3 },
+        { name: 'California', lat: 36.7, lon: -119.7, zoom: 3, capital: true },
         { name: 'Colorado', lat: 39, lon: -105.5, zoom: 3 },
         { name: 'Connecticut', lat: 41.6, lon: -72.7, zoom: 3 },
         { name: 'Delaware', lat: 39, lon: -75.5, zoom: 3 },
-        { name: 'Florida', lat: 27.6, lon: -81.5, zoom: 3 },
+        { name: 'Florida', lat: 27.6, lon: -81.5, zoom: 3, capital: true },
         { name: 'Georgia', lat: 33, lon: -83.5, zoom: 3 },
         { name: 'Hawaii', lat: 20.5, lon: -157, zoom: 3 },
         { name: 'Idaho', lat: 44.5, lon: -114.5, zoom: 3 },
@@ -1126,7 +1337,7 @@ export default function LiveAnalyticsDashboard() {
         { name: 'New Hampshire', lat: 44, lon: -71.5, zoom: 3 },
         { name: 'New Jersey', lat: 40, lon: -74.5, zoom: 3 },
         { name: 'New Mexico', lat: 34.5, lon: -106, zoom: 3 },
-        { name: 'New York', lat: 43, lon: -75, zoom: 3 },
+        { name: 'New York', lat: 43, lon: -75, zoom: 3, capital: true },
         { name: 'North Carolina', lat: 35.5, lon: -80, zoom: 3 },
         { name: 'North Dakota', lat: 47.5, lon: -100.5, zoom: 3 },
         { name: 'Ohio', lat: 40.4, lon: -82.9, zoom: 3 },
@@ -1137,7 +1348,7 @@ export default function LiveAnalyticsDashboard() {
         { name: 'South Carolina', lat: 34, lon: -81, zoom: 3 },
         { name: 'South Dakota', lat: 44.5, lon: -100, zoom: 3 },
         { name: 'Tennessee', lat: 36, lon: -86, zoom: 3 },
-        { name: 'Texas', lat: 31, lon: -100, zoom: 3 },
+        { name: 'Texas', lat: 31, lon: -100, zoom: 3, capital: true },
         { name: 'Utah', lat: 39.5, lon: -111.5, zoom: 3 },
         { name: 'Vermont', lat: 44, lon: -72.7, zoom: 3 },
         { name: 'Virginia', lat: 37.5, lon: -78.6, zoom: 3 },
@@ -1284,7 +1495,8 @@ export default function LiveAnalyticsDashboard() {
           loc.lat, 
           loc.lon, 
           loc.zoom || 2,
-          loc.priority || 1
+          loc.priority || 1,
+          loc.capital || false
         );
         label.userData.isOcean = loc.ocean || false;
         labels.push(label);
@@ -1476,6 +1688,33 @@ export default function LiveAnalyticsDashboard() {
       // Animate clouds slowly
       if (clouds && globeStyle === 'earth') {
         clouds.rotation.y += 0.0002;
+      }
+      
+      // Update ISS position
+      if (issMarkerRef.current && issPosition) {
+        const phi = (90 - issPosition.lat) * (Math.PI / 180);
+        const theta = (issPosition.lon + 180 + animationTime * 0.5) * (Math.PI / 180);
+        const radius = 1.1;
+        const x = -radius * Math.sin(phi) * Math.cos(theta);
+        const y = radius * Math.cos(phi);
+        const z = radius * Math.sin(phi) * Math.sin(theta);
+        issMarkerRef.current.position.set(x, y, z);
+        
+        // Pulse ISS
+        const scale = 1 + Math.sin(animationTime * 3) * 0.3;
+        issMarkerRef.current.scale.set(scale, scale, scale);
+      }
+      
+      // Animate wind particles
+      if (showWindLayer) {
+        windParticlesRef.current.forEach(particle => {
+          particle.userData.angle += particle.userData.speed;
+          const currentPos = particle.position.clone().normalize();
+          const axis = new THREE.Vector3(0, 1, 0);
+          const rotationMatrix = new THREE.Matrix4().makeRotationAxis(axis, particle.userData.speed);
+          particle.position.applyMatrix4(rotationMatrix);
+          particle.position.normalize().multiplyScalar(1.06);
+        });
       }
 
       // Google Earth-style intelligent label visibility with collision detection
@@ -1701,10 +1940,26 @@ export default function LiveAnalyticsDashboard() {
         marker.geometry?.dispose();
         marker.material?.dispose();
       });
+      windParticlesRef.current.forEach(particle => {
+        particle.geometry?.dispose();
+        particle.material?.dispose();
+      });
+      aqiMarkersRef.current.forEach(marker => {
+        marker.geometry?.dispose();
+        marker.material?.dispose();
+      });
+      if (issMarkerRef.current) {
+        issMarkerRef.current.geometry?.dispose();
+        issMarkerRef.current.material?.dispose();
+      }
+      if (issOrbitRef.current) {
+        issOrbitRef.current.geometry?.dispose();
+        issOrbitRef.current.material?.dispose();
+      }
       controls.dispose();
       renderer.dispose();
     };
-  }, [users, globeStyle, isDarkMode, showLabels, disasters, weatherData, activeLayers]);
+  }, [users, globeStyle, isDarkMode, showLabels, disasters, weatherData, activeLayers, issPosition, showWindLayer, showTempLayer, aqiData]);
 
   return (
     <div className="space-y-6">
@@ -1774,6 +2029,46 @@ export default function LiveAnalyticsDashboard() {
           </div>
           
           <div className="flex flex-wrap items-center gap-2">
+            {/* Search Location */}
+            <input
+              type="text"
+              placeholder="🔍 Search location..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && searchQuery.trim()) {
+                  const allLocations = labelsRef.current;
+                  const found = allLocations.find(l => 
+                    l.userData.text?.toLowerCase().includes(searchQuery.toLowerCase())
+                  );
+                  if (found && cameraRef.current && controlsRef.current) {
+                    const targetPos = found.position.clone();
+                    const distance = 2.2;
+                    const direction = targetPos.clone().normalize().multiplyScalar(distance);
+                    
+                    const startPos = cameraRef.current.position.clone();
+                    const startTime = Date.now();
+                    const duration = 1500;
+                    
+                    const flyTo = () => {
+                      const elapsed = Date.now() - startTime;
+                      const progress = Math.min(elapsed / duration, 1);
+                      const eased = 1 - Math.pow(1 - progress, 3);
+                      
+                      cameraRef.current.position.lerpVectors(startPos, direction, eased);
+                      controlsRef.current.update();
+                      
+                      if (progress < 1) requestAnimationFrame(flyTo);
+                      else controlsRef.current.autoRotate = false;
+                    };
+                    flyTo();
+                    setSearchQuery('');
+                  }
+                }
+              }}
+              className="px-3 py-1.5 text-xs rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white w-48"
+            />
+            
             {/* Globe Style Selector */}
             <div className="flex items-center gap-1 bg-slate-100 dark:bg-slate-900 p-1 rounded-lg">
               <button
@@ -1859,7 +2154,37 @@ export default function LiveAnalyticsDashboard() {
               onClick={() => setActiveLayers(prev => ({ ...prev, weather: !prev.weather }))}
               className="h-7 text-xs"
             >
-              Weather Data
+              Weather
+            </Button>
+            <Button
+              size="sm"
+              variant={showWindLayer ? "default" : "outline"}
+              onClick={() => setShowWindLayer(!showWindLayer)}
+              className="h-7 text-xs"
+            >
+              💨 Wind
+            </Button>
+            <Button
+              size="sm"
+              variant={showTempLayer ? "default" : "outline"}
+              onClick={() => setShowTempLayer(!showTempLayer)}
+              className="h-7 text-xs"
+            >
+              🌡️ Temperature
+            </Button>
+            <Button
+              size="sm"
+              variant={issPosition ? "default" : "outline"}
+              className="h-7 text-xs"
+            >
+              🛰️ ISS
+            </Button>
+            <Button
+              size="sm"
+              variant={aqiData.length > 0 ? "default" : "outline"}
+              className="h-7 text-xs"
+            >
+              💨 AQI
             </Button>
           </div>
         </div>
@@ -2043,11 +2368,48 @@ export default function LiveAnalyticsDashboard() {
                 </div>
               </>
             )}
+            {issPosition && (
+              <>
+                <div className="border-t border-slate-700 pt-1.5"></div>
+                <div className="flex items-center gap-2">
+                  <div className="w-2.5 h-2.5 rounded-full bg-cyan-400 animate-pulse shadow-lg shadow-cyan-400/50"></div>
+                  <span className="text-[10px] sm:text-xs text-slate-300 font-medium">ISS</span>
+                </div>
+              </>
+            )}
+            {aqiData.length > 0 && (
+              <>
+                <div className="border-t border-slate-700 pt-1.5"></div>
+                <div className="flex items-center gap-2">
+                  <div className="w-2.5 h-2.5 rounded-full bg-green-400 shadow-lg"></div>
+                  <span className="text-[10px] sm:text-xs text-slate-300 font-medium">AQI Good</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-2.5 h-2.5 rounded-full bg-red-500 shadow-lg"></div>
+                  <span className="text-[10px] sm:text-xs text-slate-300 font-medium">AQI Poor</span>
+                </div>
+              </>
+            )}
+            {showTempLayer && (
+              <>
+                <div className="border-t border-slate-700 pt-1.5"></div>
+                <div className="text-[10px] sm:text-xs text-slate-300 font-medium mb-1">Temperature</div>
+                <div className="flex items-center gap-1">
+                  <div className="w-2 h-2 rounded-full bg-blue-500"></div>
+                  <div className="w-2 h-2 rounded-full bg-cyan-400"></div>
+                  <div className="w-2 h-2 rounded-full bg-yellow-400"></div>
+                  <div className="w-2 h-2 rounded-full bg-orange-500"></div>
+                  <div className="w-2 h-2 rounded-full bg-red-500"></div>
+                </div>
+                <span className="text-[9px] text-slate-400">Cold → Hot</span>
+              </>
+            )}
           </div>
         </div>
         <p className="text-xs text-slate-500 dark:text-slate-400 text-center mt-3 space-y-1">
-          <span className="block">🌍 Complete global coverage • 200+ countries • 250+ states/provinces worldwide • Animated clouds</span>
-          <span className="block">📍 Real-time disasters • 40 weather stations • Day/night terminator • Matrix mode: country borders</span>
+          <span className="block">🌍 Complete global coverage • 200+ countries • 250+ states/provinces • ⭐ Capital markers • Animated clouds</span>
+          <span className="block">📍 Live ISS tracking • Real-time disasters • Weather • AQI • Wind flow • Temperature heatmap • Day/night terminator</span>
+          <span className="block">🔍 Search any location • Click markers for details • Matrix mode: country borders</span>
         </p>
       </Card>
 
