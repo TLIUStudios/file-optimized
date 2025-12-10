@@ -17,6 +17,19 @@ export default function LiveAnalyticsDashboard() {
   const raycasterRef = useRef(new THREE.Raycaster());
   const mouseRef = useRef(new THREE.Vector2());
   const markersRef = useRef([]);
+  const [globeStyle, setGlobeStyle] = useState('realistic');
+  const [isDarkMode, setIsDarkMode] = useState(false);
+
+  // Detect theme
+  useEffect(() => {
+    const checkTheme = () => {
+      setIsDarkMode(document.documentElement.classList.contains('dark'));
+    };
+    checkTheme();
+    const observer = new MutationObserver(checkTheme);
+    observer.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
+    return () => observer.disconnect();
+  }, []);
 
   // Fetch all users
   const { data: users = [] } = useQuery({
@@ -78,36 +91,85 @@ export default function LiveAnalyticsDashboard() {
     controls.autoRotateSpeed = 0.5;
     controlsRef.current = controls;
 
-    // Create globe
+    // Create globe with different styles
     const geometry = new THREE.SphereGeometry(1, 64, 64);
-    const material = new THREE.MeshPhongMaterial({
-      color: 0x10b981,
-      emissive: 0x072f1f,
-      shininess: 100,
-      wireframe: false,
-      transparent: true,
-      opacity: 0.95
-    });
+    let material;
+
+    if (globeStyle === 'realistic') {
+      // Load realistic Earth texture
+      const textureLoader = new THREE.TextureLoader();
+      const earthTexture = textureLoader.load('https://cdn.jsdelivr.net/gh/mrdoob/three.js@r128/examples/textures/planets/earth_atmos_2048.jpg');
+      material = new THREE.MeshPhongMaterial({
+        map: earthTexture,
+        shininess: 25,
+        transparent: false
+      });
+    } else if (globeStyle === 'modern-light') {
+      material = new THREE.MeshPhongMaterial({
+        color: isDarkMode ? 0x1e293b : 0xf8fafc,
+        emissive: isDarkMode ? 0x0f172a : 0xe2e8f0,
+        shininess: 80,
+        wireframe: false,
+        transparent: true,
+        opacity: 0.95
+      });
+    } else if (globeStyle === 'neon') {
+      material = new THREE.MeshPhongMaterial({
+        color: 0x06b6d4,
+        emissive: 0x0891b2,
+        emissiveIntensity: 0.5,
+        shininess: 100,
+        wireframe: false,
+        transparent: true,
+        opacity: 0.9
+      });
+    } else {
+      // emerald style
+      material = new THREE.MeshPhongMaterial({
+        color: 0x10b981,
+        emissive: 0x072f1f,
+        shininess: 100,
+        wireframe: false,
+        transparent: true,
+        opacity: 0.95
+      });
+    }
+
     const sphere = new THREE.Mesh(geometry, material);
     scene.add(sphere);
 
-    // Add wireframe overlay
-    const wireframeGeometry = new THREE.SphereGeometry(1.01, 24, 24);
-    const wireframeMaterial = new THREE.MeshBasicMaterial({
-      color: 0x059669,
-      wireframe: true,
-      transparent: true,
-      opacity: 0.2
-    });
-    const wireframe = new THREE.Mesh(wireframeGeometry, wireframeMaterial);
-    scene.add(wireframe);
+    // Add wireframe overlay (only for non-realistic styles)
+    let wireframe = null;
+    if (globeStyle !== 'realistic') {
+      const wireframeGeometry = new THREE.SphereGeometry(1.01, 24, 24);
+      const wireframeColor = globeStyle === 'modern-light' 
+        ? (isDarkMode ? 0x475569 : 0x94a3b8)
+        : globeStyle === 'neon' 
+        ? 0x22d3ee 
+        : 0x059669;
+      const wireframeMaterial = new THREE.MeshBasicMaterial({
+        color: wireframeColor,
+        wireframe: true,
+        transparent: true,
+        opacity: globeStyle === 'modern-light' ? 0.15 : 0.2
+      });
+      wireframe = new THREE.Mesh(wireframeGeometry, wireframeMaterial);
+      scene.add(wireframe);
+    }
 
     // Add atmosphere glow
     const atmosphereGeometry = new THREE.SphereGeometry(1.15, 32, 32);
+    const atmosphereColor = globeStyle === 'realistic' 
+      ? 0x4a9eff
+      : globeStyle === 'modern-light'
+      ? (isDarkMode ? 0x3b82f6 : 0x60a5fa)
+      : globeStyle === 'neon'
+      ? 0x06b6d4
+      : 0x10b981;
     const atmosphereMaterial = new THREE.MeshBasicMaterial({
-      color: 0x10b981,
+      color: atmosphereColor,
       transparent: true,
-      opacity: 0.1,
+      opacity: globeStyle === 'realistic' ? 0.15 : 0.1,
       side: THREE.BackSide
     });
     const atmosphere = new THREE.Mesh(atmosphereGeometry, atmosphereMaterial);
@@ -297,8 +359,10 @@ export default function LiveAnalyticsDashboard() {
       canvasRef.current?.removeEventListener('click', handleClick);
       geometry.dispose();
       material.dispose();
-      wireframeGeometry.dispose();
-      wireframeMaterial.dispose();
+      if (wireframe) {
+        wireframe.geometry.dispose();
+        wireframe.material.dispose();
+      }
       atmosphereGeometry.dispose();
       atmosphereMaterial.dispose();
       markerGeometry.dispose();
@@ -309,7 +373,7 @@ export default function LiveAnalyticsDashboard() {
       controls.dispose();
       renderer.dispose();
     };
-  }, [users]);
+  }, [users, globeStyle, isDarkMode]);
 
   return (
     <div className="space-y-6">
@@ -371,23 +435,70 @@ export default function LiveAnalyticsDashboard() {
 
       {/* Interactive Globe Visualization */}
       <Card className="p-6">
-        <div className="flex items-center justify-between mb-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
           <div className="flex items-center gap-2">
             <Globe className="w-5 h-5 text-slate-600 dark:text-slate-400" />
             <h3 className="text-lg font-semibold text-slate-900 dark:text-white">Interactive User Globe</h3>
             <Badge variant="outline" className="text-xs">Live</Badge>
           </div>
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={() => {
-              if (controlsRef.current) {
-                controlsRef.current.autoRotate = !controlsRef.current.autoRotate;
-              }
-            }}
-          >
-            {controlsRef.current?.autoRotate ? 'Pause' : 'Auto-Rotate'}
-          </Button>
+          
+          <div className="flex items-center gap-2">
+            {/* Globe Style Selector */}
+            <div className="flex items-center gap-1 bg-slate-100 dark:bg-slate-900 p-1 rounded-lg">
+              <button
+                onClick={() => setGlobeStyle('realistic')}
+                className={`px-2 py-1 rounded text-xs font-medium transition-all ${
+                  globeStyle === 'realistic'
+                    ? 'bg-white dark:bg-slate-800 text-slate-900 dark:text-white shadow-sm'
+                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                }`}
+              >
+                🌍 Earth
+              </button>
+              <button
+                onClick={() => setGlobeStyle('modern-light')}
+                className={`px-2 py-1 rounded text-xs font-medium transition-all ${
+                  globeStyle === 'modern-light'
+                    ? 'bg-white dark:bg-slate-800 text-slate-900 dark:text-white shadow-sm'
+                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                }`}
+              >
+                ⚪ Minimal
+              </button>
+              <button
+                onClick={() => setGlobeStyle('neon')}
+                className={`px-2 py-1 rounded text-xs font-medium transition-all ${
+                  globeStyle === 'neon'
+                    ? 'bg-white dark:bg-slate-800 text-slate-900 dark:text-white shadow-sm'
+                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                }`}
+              >
+                💎 Neon
+              </button>
+              <button
+                onClick={() => setGlobeStyle('emerald')}
+                className={`px-2 py-1 rounded text-xs font-medium transition-all ${
+                  globeStyle === 'emerald'
+                    ? 'bg-white dark:bg-slate-800 text-slate-900 dark:text-white shadow-sm'
+                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                }`}
+              >
+                💚 Emerald
+              </button>
+            </div>
+
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => {
+                if (controlsRef.current) {
+                  controlsRef.current.autoRotate = !controlsRef.current.autoRotate;
+                }
+              }}
+            >
+              {controlsRef.current?.autoRotate ? 'Pause' : 'Auto-Rotate'}
+            </Button>
+          </div>
         </div>
         <div className="relative w-full h-[500px] bg-gradient-to-b from-slate-900 to-slate-950 rounded-lg overflow-hidden shadow-2xl border border-slate-800">
           <canvas ref={canvasRef} className="w-full h-full cursor-grab active:cursor-grabbing" />
