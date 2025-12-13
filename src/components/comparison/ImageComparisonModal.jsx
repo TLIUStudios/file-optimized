@@ -1070,20 +1070,21 @@ export default function ImageComparisonModal({
                     <Badge className="bg-emerald-600 text-white text-[10px]">Active</Badge>
                   </DropdownMenuItem>
                   <DropdownMenuItem disabled className="opacity-50 cursor-not-allowed">
-                    <svg className="w-4 h-4 mr-2 opacity-40" viewBox="0 0 512 512">
-                      <path fill="#0061FF" d="M128 256l-128 96 128 96 128-96z"/>
-                      <path fill="#0061FF" d="M128 64L0 160l128 96 128-96z"/>
-                      <path fill="#0061FF" d="M256 160l128-96 128 96-128 96z"/>
-                      <path fill="#0061FF" d="M256 352l128 96 128-96-128-96z"/>
+                    <svg className="w-4 h-4 mr-2" viewBox="0 0 235 175" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M58.5 45L0 87.5 58.5 130l58.5-42.5z" fill="#0061FF"/>
+                      <path d="M58.5 0L0 42.5l58.5 42.5L117 42.5z" fill="#0061FF"/>
+                      <path d="M176.5 42.5L117 0l-58.5 42.5L117 85z" fill="#0061FF"/>
+                      <path d="M176.5 130L117 172.5 58.5 130l58.5-42.5z" fill="#0061FF"/>
+                      <path d="M117 87.5l58.5 42.5L235 87.5l-59.5-42.5z" fill="#0061FF"/>
                     </svg>
                     <span className="flex-1 text-slate-400">Dropbox</span>
                     <Badge variant="outline" className="text-[10px]">Soon</Badge>
                   </DropdownMenuItem>
                   <DropdownMenuItem disabled className="opacity-50 cursor-not-allowed">
-                    <svg className="w-4 h-4 mr-2 opacity-40" viewBox="0 0 24 24">
-                      <path fill="#0078D4" d="M13.8 0L0 13.5 4.7 24H24v-9.7L13.8 0z"/>
-                      <path fill="#0078D4" opacity="0.8" d="M13.8 0v14.3H24V0z"/>
-                      <path fill="#28A8EA" d="M0 13.5L4.7 24H24l-10.2-9.7z"/>
+                    <svg className="w-4 h-4 mr-2" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                      <path fill="#0078D4" d="M13.986 0L0 13.5 4.668 24H24v-9.685L13.986 0z"/>
+                      <path fill="#1490DF" d="M13.986 0v14.302H24V0h-10.014z"/>
+                      <path fill="#28A8EA" d="M0 13.5L4.668 24H24L13.986 14.302H0z"/>
                     </svg>
                     <span className="flex-1 text-slate-400">OneDrive</span>
                     <Badge variant="outline" className="text-[10px]">Soon</Badge>
