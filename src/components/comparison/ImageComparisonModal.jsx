@@ -1070,21 +1070,15 @@ export default function ImageComparisonModal({
                     <Badge className="bg-emerald-600 text-white text-[10px]">Active</Badge>
                   </DropdownMenuItem>
                   <DropdownMenuItem disabled className="opacity-50 cursor-not-allowed">
-                    <svg className="w-4 h-4 mr-2" viewBox="0 0 235 175" xmlns="http://www.w3.org/2000/svg">
-                      <path d="M58.5 45L0 87.5 58.5 130l58.5-42.5z" fill="#0061FF"/>
-                      <path d="M58.5 0L0 42.5l58.5 42.5L117 42.5z" fill="#0061FF"/>
-                      <path d="M176.5 42.5L117 0l-58.5 42.5L117 85z" fill="#0061FF"/>
-                      <path d="M176.5 130L117 172.5 58.5 130l58.5-42.5z" fill="#0061FF"/>
-                      <path d="M117 87.5l58.5 42.5L235 87.5l-59.5-42.5z" fill="#0061FF"/>
+                    <svg className="w-4 h-4 mr-2" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                      <path fill="#0061FF" d="M6 1.807L0 5.629l6 3.822 6.001-3.822L6 1.807zM18 1.807l-6 3.822 6 3.822 6-3.822-6-3.822zM0 13.274l6 3.822 6.001-3.822L6 9.452 0 13.274zM18 9.452l-6 3.822 6 3.822 6-3.822-6-3.822zM6 18.371l6.001 3.822 6-3.822-6-3.822L6 18.371z"/>
                     </svg>
                     <span className="flex-1 text-slate-400">Dropbox</span>
                     <Badge variant="outline" className="text-[10px]">Soon</Badge>
                   </DropdownMenuItem>
                   <DropdownMenuItem disabled className="opacity-50 cursor-not-allowed">
                     <svg className="w-4 h-4 mr-2" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                      <path fill="#0078D4" d="M13.986 0L0 13.5 4.668 24H24v-9.685L13.986 0z"/>
-                      <path fill="#1490DF" d="M13.986 0v14.302H24V0h-10.014z"/>
-                      <path fill="#28A8EA" d="M0 13.5L4.668 24H24L13.986 14.302H0z"/>
+                      <path fill="#0078D4" d="M13.977 5.998c2.382 0 4.438 1.382 5.414 3.386a4.746 4.746 0 013.608 4.599c0 2.626-2.131 4.756-4.757 4.756H5.758C2.579 18.739 0 16.16 0 12.98c0-2.812 2.018-5.157 4.688-5.659a6.99 6.99 0 016.289-1.323z"/>
                     </svg>
                     <span className="flex-1 text-slate-400">OneDrive</span>
                     <Badge variant="outline" className="text-[10px]">Soon</Badge>
