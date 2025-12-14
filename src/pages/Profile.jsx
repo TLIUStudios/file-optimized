@@ -364,13 +364,13 @@ export default function Profile() {
     }
     setSavingName(true);
     try {
-      await base44.auth.updateMe({ display_name: editedName.trim() });
-      setUser(prev => ({ ...prev, display_name: editedName.trim() }));
+      await base44.auth.updateMe({ full_name: editedName.trim() });
+      setUser(prev => ({ ...prev, full_name: editedName.trim() }));
       setIsEditingName(false);
-      toast.success('Display name updated successfully!');
+      toast.success('Name updated successfully!');
     } catch (error) {
-      console.error('Error updating display name:', error);
-      toast.error('Failed to update display name');
+      console.error('Error updating name:', error);
+      toast.error('Failed to update name');
     } finally {
       setSavingName(false);
     }
@@ -434,24 +434,21 @@ export default function Profile() {
             <Card className="p-6">
               <div className="flex items-start gap-4">
                 <div className="w-16 h-16 rounded-full bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center text-white text-2xl font-bold">
-                  {(user.display_name || user.full_name)?.charAt(0) || user.email.charAt(0).toUpperCase()}
+                  {user.full_name?.charAt(0) || user.email.charAt(0).toUpperCase()}
                 </div>
                 <div className="flex-1">
                   {isEditingName ? (
                     <div className="space-y-3">
                       <div>
-                        <label className="text-xs font-medium text-slate-600 dark:text-slate-400 mb-1 block">Display Name</label>
+                        <label className="text-xs font-medium text-slate-600 dark:text-slate-400 mb-1 block">Full Name</label>
                         <input
                           type="text"
                           value={editedName}
                           onChange={(e) => setEditedName(e.target.value)}
                           className="w-full px-3 py-2 border border-slate-300 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-950 text-slate-900 dark:text-white"
-                          placeholder="Enter your display name"
+                          placeholder="Enter your full name"
                           autoFocus
                         />
-                        <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-                          This will be shown instead of "{user.full_name || 'User'}"
-                        </p>
                       </div>
                       <div className="flex gap-2">
                         <Button
@@ -485,7 +482,7 @@ export default function Profile() {
                   ) : (
                     <>
                       <div className="flex items-center gap-2">
-                        <h2 className="text-xl font-bold text-slate-900 dark:text-white">{user.display_name || user.full_name || 'User'}</h2>
+                        <h2 className="text-xl font-bold text-slate-900 dark:text-white">{user.full_name || 'User'}</h2>
                         {isPro && (
                           <Badge className="bg-gradient-to-r from-amber-500 to-orange-500 text-white">
                             <Crown className="w-3 h-3 mr-1" />
@@ -496,7 +493,7 @@ export default function Profile() {
                           variant="ghost"
                           size="icon"
                           onClick={() => {
-                            setEditedName(user.display_name || user.full_name || '');
+                            setEditedName(user.full_name || '');
                             setIsEditingName(true);
                           }}
                           className="h-6 w-6 ml-1"
@@ -505,11 +502,6 @@ export default function Profile() {
                         </Button>
                       </div>
                       <p className="text-slate-600 dark:text-slate-400">{user.email}</p>
-                      {user.display_name && (
-                        <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-                          Base44 name: {user.full_name}
-                        </p>
-                      )}
                       <div className="flex items-center gap-2 mt-2 text-sm text-slate-500 dark:text-slate-400">
                         <Calendar className="w-4 h-4" />
                         <span>Joined {new Date(user.created_date).toLocaleDateString()}</span>

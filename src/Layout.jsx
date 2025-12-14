@@ -233,12 +233,12 @@ export default function Layout({ children }) {
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-56">
                   <div className="px-2 py-1.5">
-                      <p className="text-sm font-medium text-slate-900 dark:text-white">
-                        {user.display_name || user.full_name || 'User'}
-                      </p>
-                      <p className="text-xs text-slate-500 dark:text-slate-400">
-                        {user.email}
-                      </p>
+                    <p className="text-sm font-medium text-slate-900 dark:text-white">
+                      {user.full_name || 'User'}
+                    </p>
+                    <p className="text-xs text-slate-500 dark:text-slate-400">
+                      {user.email}
+                    </p>
                     <div className="mt-1">
                       {isPro ? (
                         <Badge className="bg-gradient-to-r from-amber-500 to-orange-500 text-white text-xs">
