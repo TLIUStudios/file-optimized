@@ -55,6 +55,9 @@ export default function Profile() {
   const [achievementFilter, setAchievementFilter] = useState('personal'); // 'personal' or 'global'
   const [achievementStatusFilter, setAchievementStatusFilter] = useState('all'); // 'all', 'completed', 'uncompleted'
   const [checkingAchievements, setCheckingAchievements] = useState(false);
+  const [isEditingName, setIsEditingName] = useState(false);
+  const [editedName, setEditedName] = useState('');
+  const [savingName, setSavingName] = useState(false);
 
   // Load achievements
   const { data: achievements = [] } = useQuery({
@@ -354,6 +357,25 @@ export default function Profile() {
     }
   };
 
+  const handleSaveName = async () => {
+    if (!editedName.trim()) {
+      toast.error('Name cannot be empty');
+      return;
+    }
+    setSavingName(true);
+    try {
+      await base44.auth.updateMe({ full_name: editedName.trim() });
+      setUser(prev => ({ ...prev, full_name: editedName.trim() }));
+      setIsEditingName(false);
+      toast.success('Name updated successfully!');
+    } catch (error) {
+      console.error('Error updating name:', error);
+      toast.error('Failed to update name');
+    } finally {
+      setSavingName(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -415,20 +437,77 @@ export default function Profile() {
                   {user.full_name?.charAt(0) || user.email.charAt(0).toUpperCase()}
                 </div>
                 <div className="flex-1">
-                  <div className="flex items-center gap-2">
-                    <h2 className="text-xl font-bold text-slate-900 dark:text-white">{user.full_name || 'User'}</h2>
-                    {isPro && (
-                      <Badge className="bg-gradient-to-r from-amber-500 to-orange-500 text-white">
-                        <Crown className="w-3 h-3 mr-1" />
-                        PRO
-                      </Badge>
-                    )}
-                  </div>
-                  <p className="text-slate-600 dark:text-slate-400">{user.email}</p>
-                  <div className="flex items-center gap-2 mt-2 text-sm text-slate-500 dark:text-slate-400">
-                    <Calendar className="w-4 h-4" />
-                    <span>Joined {new Date(user.created_date).toLocaleDateString()}</span>
-                  </div>
+                  {isEditingName ? (
+                    <div className="space-y-3">
+                      <div>
+                        <label className="text-xs font-medium text-slate-600 dark:text-slate-400 mb-1 block">Full Name</label>
+                        <input
+                          type="text"
+                          value={editedName}
+                          onChange={(e) => setEditedName(e.target.value)}
+                          className="w-full px-3 py-2 border border-slate-300 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-950 text-slate-900 dark:text-white"
+                          placeholder="Enter your full name"
+                          autoFocus
+                        />
+                      </div>
+                      <div className="flex gap-2">
+                        <Button
+                          onClick={handleSaveName}
+                          disabled={savingName}
+                          className="bg-emerald-600 hover:bg-emerald-700 text-white"
+                          size="sm"
+                        >
+                          {savingName ? (
+                            <>
+                              <Loader2 className="w-3 h-3 mr-1 animate-spin" />
+                              Saving...
+                            </>
+                          ) : (
+                            'Save'
+                          )}
+                        </Button>
+                        <Button
+                          onClick={() => {
+                            setIsEditingName(false);
+                            setEditedName('');
+                          }}
+                          variant="outline"
+                          size="sm"
+                          disabled={savingName}
+                        >
+                          Cancel
+                        </Button>
+                      </div>
+                    </div>
+                  ) : (
+                    <>
+                      <div className="flex items-center gap-2">
+                        <h2 className="text-xl font-bold text-slate-900 dark:text-white">{user.full_name || 'User'}</h2>
+                        {isPro && (
+                          <Badge className="bg-gradient-to-r from-amber-500 to-orange-500 text-white">
+                            <Crown className="w-3 h-3 mr-1" />
+                            PRO
+                          </Badge>
+                        )}
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => {
+                            setEditedName(user.full_name || '');
+                            setIsEditingName(true);
+                          }}
+                          className="h-6 w-6 ml-1"
+                        >
+                          <Settings className="w-3 h-3" />
+                        </Button>
+                      </div>
+                      <p className="text-slate-600 dark:text-slate-400">{user.email}</p>
+                      <div className="flex items-center gap-2 mt-2 text-sm text-slate-500 dark:text-slate-400">
+                        <Calendar className="w-4 h-4" />
+                        <span>Joined {new Date(user.created_date).toLocaleDateString()}</span>
+                      </div>
+                    </>
+                  )}
                 </div>
               </div>
             </Card>
