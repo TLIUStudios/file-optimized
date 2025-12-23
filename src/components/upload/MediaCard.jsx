@@ -506,7 +506,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
         codec: codecString,
         width: targetWidth,
         height: targetHeight,
-        bitrate: (videoBitrate || 1000) * 1000,
+        bitrate: (videoBitrate || 2500) * 1000,
         framerate: frameRate || 30,
       });
       
@@ -651,6 +651,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
         if (audioProcessingPromise) {
           console.log('⏳ Waiting for audio processing...');
           await audioProcessingPromise;
+          console.log('✓ Audio processing complete');
         }
         
         // Flush and close audio encoder
