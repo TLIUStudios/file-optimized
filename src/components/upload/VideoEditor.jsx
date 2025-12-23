@@ -524,13 +524,18 @@ Rules:
           height: canvas.height,
           frameRate: fps,
         },
+        audio: {
+          codec: 'aac',
+          sampleRate: 48000,
+          numberOfChannels: 2,
+        },
         fastStart: 'in-memory',
       });
 
       const videoEncoder = new VideoEncoder({
         output: (chunk, meta) => muxer.addVideoChunk(chunk, meta),
         error: (e) => {
-          console.error('Encoder error:', e);
+          console.error('Video encoder error:', e);
           throw new Error(`Video encoding failed: ${e.message}`);
         },
       });
@@ -541,6 +546,22 @@ Rules:
         height: canvas.height,
         bitrate: 2_000_000,
         framerate: fps,
+      });
+
+      // Setup audio encoding
+      const audioEncoder = new AudioEncoder({
+        output: (chunk, meta) => muxer.addAudioChunk(chunk, meta),
+        error: (e) => {
+          console.error('Audio encoder error:', e);
+          throw new Error(`Audio encoding failed: ${e.message}`);
+        },
+      });
+
+      audioEncoder.configure({
+        codec: 'mp4a.40.2',
+        sampleRate: 48000,
+        numberOfChannels: 2,
+        bitrate: 128000,
       });
 
       video.currentTime = trimStart;
@@ -657,6 +678,11 @@ Rules:
         await videoEncoder.flush();
       }
       videoEncoder.close();
+
+      if (audioEncoder.state === 'configured') {
+        await audioEncoder.flush();
+      }
+      audioEncoder.close();
 
       muxer.finalize();
       const buffer = target.buffer;
