@@ -564,11 +564,42 @@ Rules:
         bitrate: 128000,
       });
 
+      // Extract audio from video
+      const audioContext = new AudioContext({ sampleRate: 48000 });
+      const mediaElement = video;
+      const source = audioContext.createMediaElementSource(mediaElement);
+      const destination = audioContext.createMediaStreamDestination();
+      source.connect(destination);
+      source.connect(audioContext.destination);
+
+      const audioTrack = destination.stream.getAudioTracks()[0];
+      const audioProcessor = new MediaStreamTrackProcessor({ track: audioTrack });
+      const audioReader = audioProcessor.readable.getReader();
+
       video.currentTime = trimStart;
       await new Promise(resolve => { video.onseeked = resolve; });
 
       const frameInterval = 1 / fps;
       let frameCount = 0;
+      let audioFrameCount = 0;
+
+      // Start audio processing
+      const audioProcessingPromise = (async () => {
+        try {
+          while (true) {
+            const { done, value } = await audioReader.read();
+            if (done) break;
+            
+            if (audioEncoder.state === 'configured') {
+              audioEncoder.encode(value);
+              audioFrameCount++;
+            }
+            value.close();
+          }
+        } catch (error) {
+          console.warn('Audio processing ended:', error);
+        }
+      })();
 
       for (let time = trimStart; time < trimEnd; time += frameInterval) {
         video.currentTime = time;
@@ -674,6 +705,10 @@ Rules:
         }
       }
 
+      // Stop audio processing
+      audioTrack.stop();
+      await audioProcessingPromise;
+
       if (videoEncoder.state === 'configured') {
         await videoEncoder.flush();
       }
@@ -683,6 +718,8 @@ Rules:
         await audioEncoder.flush();
       }
       audioEncoder.close();
+      
+      audioContext.close();
 
       muxer.finalize();
       const buffer = target.buffer;
