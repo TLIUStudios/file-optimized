@@ -1475,6 +1475,12 @@ export default function Profile() {
                     Royalty Free Assets
                   </a>
                 </Button>
+                <Button variant="outline" className="w-full justify-start" asChild>
+                  <a href="https://filegenerated.com/" target="_blank" rel="noopener noreferrer">
+                    <Sparkles className="w-4 h-4 mr-2" />
+                    File Generated
+                  </a>
+                </Button>
               </div>
             </Card>
           </motion.div>
