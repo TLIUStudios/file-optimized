@@ -735,9 +735,14 @@ export default function Profile() {
                 </p>
                 <div className="space-y-2">
                   <Button
-                    onClick={() => {
-                      const authUrl = base44.connectors.getAuthorizationURL('googledrive', ['https://www.googleapis.com/auth/drive.file']);
-                      window.location.href = authUrl;
+                    onClick={async () => {
+                      try {
+                        const authUrl = await base44.connectors.getAuthorizationURL('googledrive', ['https://www.googleapis.com/auth/drive.file']);
+                        window.location.href = authUrl;
+                      } catch (error) {
+                        console.error('Error getting auth URL:', error);
+                        toast.error('Failed to connect Google Drive. Please try again.');
+                      }
                     }}
                     className="w-full"
                     variant="outline"
