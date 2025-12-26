@@ -30,7 +30,8 @@ import {
   Trophy,
   ChevronLeft,
   ChevronRight,
-  RefreshCcw
+  RefreshCcw,
+  Box
 } from "lucide-react";
 import { ACHIEVEMENTS, GLOBAL_ACHIEVEMENTS } from "../components/AchievementNotification";
 import { cn } from "@/lib/utils";
@@ -1477,7 +1478,7 @@ export default function Profile() {
                 </Button>
                 <Button variant="outline" className="w-full justify-start" asChild>
                   <a href="https://filegenerated.com/" target="_blank" rel="noopener noreferrer">
-                    <Sparkles className="w-4 h-4 mr-2" />
+                    <Box className="w-4 h-4 mr-2" />
                     File Generated
                   </a>
                 </Button>
