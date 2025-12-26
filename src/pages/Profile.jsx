@@ -31,7 +31,8 @@ import {
   ChevronLeft,
   ChevronRight,
   RefreshCcw,
-  Box
+  Box,
+  Image
 } from "lucide-react";
 import { ACHIEVEMENTS, GLOBAL_ACHIEVEMENTS } from "../components/AchievementNotification";
 import { cn } from "@/lib/utils";
@@ -1472,7 +1473,7 @@ export default function Profile() {
               <div className="space-y-2">
                 <Button variant="outline" className="w-full justify-start" asChild>
                   <a href="https://www.tliu.co/royalty-free-assets/photos" target="_blank" rel="noopener noreferrer">
-                    <Package className="w-4 h-4 mr-2" />
+                    <Image className="w-4 h-4 mr-2" />
                     Royalty Free Assets
                   </a>
                 </Button>
