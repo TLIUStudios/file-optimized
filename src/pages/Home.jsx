@@ -384,7 +384,7 @@ export default function Home() {
   return (
     <>
       <SEOHead 
-        title="File Optimized - Compress, Upscale & Convert Media Files"
+        title="File Optimized: Compress, Upscale, and Convert Media Files!"
         description="Professional file optimization tool. Compress images up to 90%, upscale photos with AI, convert between formats. Fast, secure, and privacy-focused. Free & Pro plans available."
       />
       <div className="max-w-7xl mx-auto">
