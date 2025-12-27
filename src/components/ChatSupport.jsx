@@ -114,7 +114,7 @@ Provide a helpful, accurate, and concise response. If the question is about tech
                   onMouseLeave={() => setShowTooltip(false)}
                   className="h-16 w-16 rounded-full bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 shadow-lg hover:shadow-xl transition-all relative p-0"
                 >
-                  <MessageCircle className="text-white" style={{ width: '40px', height: '40px' }} />
+                  <MessageCircle className="w-7 h-7 text-white" />
                   {/* Pulse animation */}
                   <span className="absolute inset-0 rounded-full bg-emerald-400 animate-ping opacity-20" style={{ animationDuration: '3.5s' }} />
                 </Button>
