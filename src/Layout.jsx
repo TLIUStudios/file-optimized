@@ -405,7 +405,8 @@ export default function Layout({ children }) {
               </a>
             </div>
 
-            <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400">© TLIU Studios 2026, All Rights Reserved.
+            <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400">
+              © <a href="https://www.tliu.co/" target="_blank" rel="noopener noreferrer" className="hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors">TLIU Studios</a> 2026, All Rights Reserved.
 
             </p>
           </div>
