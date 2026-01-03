@@ -14,12 +14,12 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+  DropdownMenuTrigger } from
+"@/components/ui/dropdown-menu";
 import GoogleAds from "./components/GoogleAds";
 import ChatSupport from "./components/ChatSupport";
 
-      const LoginPromptModal = lazy(() => import("./components/LoginPromptModal"));
+const LoginPromptModal = lazy(() => import("./components/LoginPromptModal"));
 
 const SnowEffect = lazy(() => import("./components/themes/SnowEffect"));
 const FireworksEffect = lazy(() => import("./components/themes/FireworksEffect"));
@@ -31,18 +31,18 @@ const ConfettiEffect = lazy(() => import("./components/themes/ConfettiEffect"));
 const BubblesEffect = lazy(() => import("./components/themes/BubblesEffect"));
 
 export default function Layout({ children }) {
-    const location = useLocation();
-    const [theme, setTheme] = useState(() => {
-      if (typeof window !== 'undefined') {
-        return localStorage.getItem('theme') || 'dark';
-      }
-      return 'dark';
-    });
+  const location = useLocation();
+  const [theme, setTheme] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('theme') || 'dark';
+    }
+    return 'dark';
+  });
 
-    // Scroll to top on route change
-    useEffect(() => {
-      window.scrollTo(0, 0);
-    }, [location.pathname]);
+  // Scroll to top on route change
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [location.pathname]);
   const [user, setUser] = useState(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [authLoading, setAuthLoading] = useState(true);
@@ -63,14 +63,14 @@ export default function Layout({ children }) {
       meta.content = 'ca-pub-9768118657510940';
       document.head.appendChild(meta);
     }
-    
+
     // Load AdSense script only once
     if (!window.adsenseLoaded && !document.querySelector('script[src*="adsbygoogle.js"]')) {
       const script = document.createElement('script');
       script.src = 'https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9768118657510940';
       script.async = true;
       script.crossOrigin = 'anonymous';
-      script.onload = () => { window.adsenseLoaded = true; };
+      script.onload = () => {window.adsenseLoaded = true;};
       document.head.appendChild(script);
     }
   }, []);
@@ -80,7 +80,7 @@ export default function Layout({ children }) {
       try {
         const isAuth = await base44.auth.isAuthenticated();
         setIsAuthenticated(isAuth);
-        
+
         if (isAuth) {
           const currentUser = await base44.auth.me();
           setUser(currentUser);
@@ -110,7 +110,7 @@ export default function Layout({ children }) {
   }, []);
 
   const toggleTheme = () => {
-    setTheme(prev => prev === 'light' ? 'dark' : 'light');
+    setTheme((prev) => prev === 'light' ? 'dark' : 'light');
   };
 
   const handleLoginClick = () => {
@@ -133,46 +133,46 @@ export default function Layout({ children }) {
       <Toaster position="top-center" richColors />
       
       {/* Theme Effects */}
-      {userTheme === 'snow' && (
-        <Suspense fallback={null}>
+      {userTheme === 'snow' &&
+      <Suspense fallback={null}>
           <SnowEffect />
         </Suspense>
-      )}
-      {userTheme === 'fireworks' && (
-        <Suspense fallback={null}>
+      }
+      {userTheme === 'fireworks' &&
+      <Suspense fallback={null}>
           <FireworksEffect />
         </Suspense>
-      )}
-      {userTheme === 'halloween' && (
-        <Suspense fallback={null}>
+      }
+      {userTheme === 'halloween' &&
+      <Suspense fallback={null}>
           <HalloweenEffect />
         </Suspense>
-      )}
-      {userTheme === 'hearts' && (
-        <Suspense fallback={null}>
+      }
+      {userTheme === 'hearts' &&
+      <Suspense fallback={null}>
           <HeartsEffect />
         </Suspense>
-      )}
-      {userTheme === 'sakura' && (
-        <Suspense fallback={null}>
+      }
+      {userTheme === 'sakura' &&
+      <Suspense fallback={null}>
           <SakuraEffect />
         </Suspense>
-      )}
-      {userTheme === 'autumn' && (
-        <Suspense fallback={null}>
+      }
+      {userTheme === 'autumn' &&
+      <Suspense fallback={null}>
           <AutumnEffect />
         </Suspense>
-      )}
-      {userTheme === 'confetti' && (
-        <Suspense fallback={null}>
+      }
+      {userTheme === 'confetti' &&
+      <Suspense fallback={null}>
           <ConfettiEffect />
         </Suspense>
-      )}
-      {userTheme === 'bubbles' && (
-        <Suspense fallback={null}>
+      }
+      {userTheme === 'bubbles' &&
+      <Suspense fallback={null}>
           <BubblesEffect />
         </Suspense>
-      )}
+      }
       <style>{`
         :root {
           --primary: 142 76% 36%;
@@ -209,26 +209,26 @@ export default function Layout({ children }) {
           </Link>
           
           <div className="flex items-center gap-1.5 sm:gap-2 md:gap-3">
-            {authLoading ? (
-              <Button variant="ghost" className="gap-1.5 sm:gap-2 h-9 sm:h-10 px-2 sm:px-3 text-sm opacity-50">
+            {authLoading ?
+            <Button variant="ghost" className="gap-1.5 sm:gap-2 h-9 sm:h-10 px-2 sm:px-3 text-sm opacity-50">
                 <LogIn className="w-4 h-4" />
                 <span className="hidden sm:inline">Sign In</span>
-              </Button>
-            ) : isAuthenticated && user ? (
-              <DropdownMenu>
+              </Button> :
+            isAuthenticated && user ?
+            <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                     <Button variant="ghost" className="gap-1.5 sm:gap-2 h-11 sm:h-10 px-3 sm:px-3 min-w-[44px] min-h-[44px] touch-manipulation">
                       <User className="w-5 h-5 sm:w-4 sm:h-4" />
                     <span className="hidden md:inline text-sm">{user.full_name || user.email}</span>
-                    {isPro ? (
-                      <Badge className="bg-gradient-to-r from-amber-500 to-orange-500 text-white text-[10px] sm:text-xs px-1.5 sm:px-2 py-0.5 font-bold">
+                    {isPro ?
+                  <Badge className="bg-gradient-to-r from-amber-500 to-orange-500 text-white text-[10px] sm:text-xs px-1.5 sm:px-2 py-0.5 font-bold">
                         PRO
-                      </Badge>
-                    ) : (
-                      <Badge variant="outline" className="text-[10px] sm:text-xs px-1.5 sm:px-2 py-0.5">
+                      </Badge> :
+
+                  <Badge variant="outline" className="text-[10px] sm:text-xs px-1.5 sm:px-2 py-0.5">
                         FREE
                       </Badge>
-                    )}
+                  }
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-56">
@@ -240,15 +240,15 @@ export default function Layout({ children }) {
                       {user.email}
                     </p>
                     <div className="mt-1">
-                      {isPro ? (
-                        <Badge className="bg-gradient-to-r from-amber-500 to-orange-500 text-white text-xs">
+                      {isPro ?
+                    <Badge className="bg-gradient-to-r from-amber-500 to-orange-500 text-white text-xs">
                           PRO PLAN
-                        </Badge>
-                      ) : (
-                        <Badge variant="outline" className="text-xs">
+                        </Badge> :
+
+                    <Badge variant="outline" className="text-xs">
                           FREE PLAN
                         </Badge>
-                      )}
+                    }
                     </div>
                   </div>
                   <DropdownMenuSeparator />
@@ -258,42 +258,42 @@ export default function Layout({ children }) {
                       Profile & Settings
                     </Link>
                   </DropdownMenuItem>
-                  {user?.role === 'admin' && (
-                    <DropdownMenuItem asChild>
+                  {user?.role === 'admin' &&
+                <DropdownMenuItem asChild>
                       <Link to={createPageUrl('Admin')} className="cursor-pointer">
-                        <svg className="w-4 h-4 mr-2" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1Z"/></svg>
+                        <svg className="w-4 h-4 mr-2" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z" /><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1Z" /></svg>
                         Admin Dashboard
                       </Link>
                     </DropdownMenuItem>
-                  )}
+                }
                   <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={handleLogout} className="text-red-600 dark:text-red-400 cursor-pointer">
                     <LogOut className="w-4 h-4 mr-2" />
                     Log Out
                   </DropdownMenuItem>
                 </DropdownMenuContent>
-              </DropdownMenu>
-            ) : (
-              <Button
-                onClick={handleLoginClick}
-                variant="ghost"
-                className="gap-1.5 sm:gap-2 h-11 sm:h-10 px-3 sm:px-3 text-sm min-w-[44px] min-h-[44px] touch-manipulation"
-              >
+              </DropdownMenu> :
+
+            <Button
+              onClick={handleLoginClick}
+              variant="ghost"
+              className="gap-1.5 sm:gap-2 h-11 sm:h-10 px-3 sm:px-3 text-sm min-w-[44px] min-h-[44px] touch-manipulation">
+
                 <LogIn className="w-5 h-5 sm:w-4 sm:h-4" />
                 <span className="hidden sm:inline">Sign In</span>
               </Button>
-            )}
+            }
                 <Button
-                variant="ghost"
-                size="icon"
-                onClick={toggleTheme}
-                className="rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 h-11 w-11 sm:h-10 sm:w-10 min-w-[44px] min-h-[44px] touch-manipulation"
-                >
-                {theme === 'light' ? (
-                <Moon className="w-5 h-5 text-slate-700 dark:text-slate-300" />
-                ) : (
-                <Sun className="w-5 h-5 text-slate-300" />
-                )}
+              variant="ghost"
+              size="icon"
+              onClick={toggleTheme}
+              className="rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 h-11 w-11 sm:h-10 sm:w-10 min-w-[44px] min-h-[44px] touch-manipulation">
+
+                {theme === 'light' ?
+              <Moon className="w-5 h-5 text-slate-700 dark:text-slate-300" /> :
+
+              <Sun className="w-5 h-5 text-slate-300" />
+              }
                 </Button>
                 </div>
         </div>
@@ -303,11 +303,11 @@ export default function Layout({ children }) {
         {children}
         
         {/* Show Google Ads only for Free users */}
-        {!authLoading && (!isAuthenticated || userPlan === 'free') && (
-          <div className="mt-12">
+        {!authLoading && (!isAuthenticated || userPlan === 'free') &&
+        <div className="mt-12">
             <GoogleAds adSlot="1234567890" />
           </div>
-        )}
+        }
       </main>
       
       <footer className="border-t border-slate-200 dark:border-slate-800 mt-12 sm:mt-16 md:mt-20">
@@ -356,29 +356,29 @@ export default function Layout({ children }) {
             <div>
               <h4 className="font-semibold text-slate-900 dark:text-white mb-4 text-sm">Credits</h4>
               <ul className="space-y-2">
-                <li><a href="https://www.tliu.co/" target="_blank" rel="noopener noreferrer" className="text-sm text-slate-500 dark:text-slate-400 hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors flex items-center gap-1.5"><svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>Created by TLIU Studios</a></li>
-                <li><a href="https://www.google.com/maps/place//data=!4m3!3m2!1s0x65e4dd3088ab3acb:0x47b7719db967d156!12e1?source=g.page.m.kd._&laa=lu-desktop-review-solicitation" target="_blank" rel="noopener noreferrer" className="text-sm text-slate-500 dark:text-slate-400 hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors flex items-center gap-1.5"><svg className="w-3 h-3" viewBox="0 0 24 24"><path fill="currentColor" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="currentColor" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="currentColor" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="currentColor" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>Leave a Google Review</a></li>
-                <li><a href="https://www.facebook.com/profile.php?id=61577274854116&sk=reviews" target="_blank" rel="noopener noreferrer" className="text-sm text-slate-500 dark:text-slate-400 hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors flex items-center gap-1.5"><svg className="w-3 h-3" viewBox="0 0 24 24" fill="currentColor"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>Leave a Facebook Review</a></li>
+                <li><a href="https://www.tliu.co/" target="_blank" rel="noopener noreferrer" className="text-sm text-slate-500 dark:text-slate-400 hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors flex items-center gap-1.5"><svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" /><polyline points="15 3 21 3 21 9" /><line x1="10" y1="14" x2="21" y2="3" /></svg>Created by TLIU Studios</a></li>
+                <li><a href="https://www.google.com/maps/place//data=!4m3!3m2!1s0x65e4dd3088ab3acb:0x47b7719db967d156!12e1?source=g.page.m.kd._&laa=lu-desktop-review-solicitation" target="_blank" rel="noopener noreferrer" className="text-sm text-slate-500 dark:text-slate-400 hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors flex items-center gap-1.5"><svg className="w-3 h-3" viewBox="0 0 24 24"><path fill="currentColor" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" /><path fill="currentColor" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" /><path fill="currentColor" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" /><path fill="currentColor" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" /></svg>Leave a Google Review</a></li>
+                <li><a href="https://www.facebook.com/profile.php?id=61577274854116&sk=reviews" target="_blank" rel="noopener noreferrer" className="text-sm text-slate-500 dark:text-slate-400 hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors flex items-center gap-1.5"><svg className="w-3 h-3" viewBox="0 0 24 24" fill="currentColor"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" /></svg>Leave a Facebook Review</a></li>
               </ul>
             </div>
             <div>
               <h4 className="font-semibold text-slate-900 dark:text-white mb-4 text-sm">More</h4>
               <ul className="space-y-2">
-                <li><a href="https://www.tliu.co/royalty-free-assets/photos" target="_blank" rel="noopener noreferrer" className="text-sm text-slate-500 dark:text-slate-400 hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors flex items-center gap-1.5"><svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>Royalty Free Assets</a></li>
-                <li><a href="https://filegenerated.com/" target="_blank" rel="noopener noreferrer" className="text-sm text-slate-500 dark:text-slate-400 hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors flex items-center gap-1.5"><svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.29 7 12 12 20.71 7"/><line x1="12" y1="22" x2="12" y2="12"/></svg>File Generated</a></li>
-                <li><a href="https://shop.tliu.co/" target="_blank" rel="noopener noreferrer" className="text-sm text-slate-500 dark:text-slate-400 hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors flex items-center gap-1.5"><svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>TLIU Store</a></li>
-                <li><a href="https://www.tliu.co/donate" target="_blank" rel="noopener noreferrer" className="text-sm text-slate-500 dark:text-slate-400 hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors flex items-center gap-1.5"><svg className="w-3 h-3" viewBox="0 0 24 24" fill="currentColor"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>Support Us</a></li>
+                <li><a href="https://www.tliu.co/royalty-free-assets/photos" target="_blank" rel="noopener noreferrer" className="text-sm text-slate-500 dark:text-slate-400 hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors flex items-center gap-1.5"><svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2" /><circle cx="8.5" cy="8.5" r="1.5" /><polyline points="21 15 16 10 5 21" /></svg>Royalty Free Assets</a></li>
+                <li><a href="https://filegenerated.com/" target="_blank" rel="noopener noreferrer" className="text-sm text-slate-500 dark:text-slate-400 hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors flex items-center gap-1.5"><svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" /><polyline points="3.29 7 12 12 20.71 7" /><line x1="12" y1="22" x2="12" y2="12" /></svg>File Generated</a></li>
+                <li><a href="https://shop.tliu.co/" target="_blank" rel="noopener noreferrer" className="text-sm text-slate-500 dark:text-slate-400 hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors flex items-center gap-1.5"><svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="9" cy="21" r="1" /><circle cx="20" cy="21" r="1" /><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6" /></svg>TLIU Store</a></li>
+                <li><a href="https://www.tliu.co/donate" target="_blank" rel="noopener noreferrer" className="text-sm text-slate-500 dark:text-slate-400 hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors flex items-center gap-1.5"><svg className="w-3 h-3" viewBox="0 0 24 24" fill="currentColor"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" /></svg>Support Us</a></li>
               </ul>
             </div>
           </div>
 
           <div className="border-t border-slate-200 dark:border-slate-800 pt-8 text-center space-y-4">
-            <img 
-              src="https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/69100dedd17537e37249237a/cd98bb516_image.png" 
-              alt="TLIU Studios Logo" 
+            <img
+              src="https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/69100dedd17537e37249237a/cd98bb516_image.png"
+              alt="TLIU Studios Logo"
               className="w-12 h-12 sm:w-14 sm:h-14 mx-auto"
-              loading="lazy"
-            />
+              loading="lazy" />
+
 
             {/* Social Media Icons */}
             <div className="flex items-center justify-center gap-3 sm:gap-4 md:gap-5 flex-wrap">
@@ -405,27 +405,27 @@ export default function Layout({ children }) {
               </a>
             </div>
 
-            <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400">
-              © <a href="https://www.tliu.co/" target="_blank" rel="noopener noreferrer" className="hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors">TLIU Studios</a> 2025, All Rights Reserved.
+            <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400">© TLIU Studios 2026, All Rights Reserved.
+
             </p>
           </div>
         </div>
       </footer>
 
       {/* Login Prompt Modal */}
-      {showLoginPrompt && (
-        <Suspense fallback={null}>
+      {showLoginPrompt &&
+      <Suspense fallback={null}>
           <LoginPromptModal
-            isOpen={showLoginPrompt}
-            onClose={() => setShowLoginPrompt(false)}
-            onLogin={handleLoginConfirm}
-            context="general"
-          />
+          isOpen={showLoginPrompt}
+          onClose={() => setShowLoginPrompt(false)}
+          onLogin={handleLoginConfirm}
+          context="general" />
+
         </Suspense>
-      )}
+      }
 
       {/* AI Chat Support */}
       <ChatSupport />
-      </div>
-      );
-      }
+      </div>);
+
+}
