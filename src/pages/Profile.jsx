@@ -1458,12 +1458,8 @@ export default function Profile() {
                 </Button>
                 <Button variant="outline" className="w-full justify-start" asChild>
                   <a href="https://music.amazon.ca/artists/B0FPC89Q2D/tliu-studios" target="_blank" rel="noopener noreferrer">
-                    <svg className="w-4 h-4 mr-2" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
-                      <rect width="512" height="512" rx="115" fill="#1DD3E0"/>
-                      <circle cx="200" cy="240" r="30" fill="#001E2B"/>
-                      <circle cx="312" cy="240" r="30" fill="#001E2B"/>
-                      <path d="M160 300c10 50 60 75 96 75s86-25 96-75" stroke="#001E2B" strokeWidth="20" strokeLinecap="round" fill="none"/>
-                      <path d="M140 340c30 10 120 20 232 0" stroke="#FF9900" strokeWidth="18" strokeLinecap="round" fill="none"/>
+                    <svg className="w-4 h-4 mr-2" viewBox="0 0 24 24" fill="#1DD3E0" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M2.5 2C2.22 2 2 2.22 2 2.5v19c0 .28.22.5.5.5h19c.28 0 .5-.22.5-.5v-19c0-.28-.22-.5-.5-.5h-19zm14.85 14.91c-1.75.96-3.99 1.48-6.02 1.48-2.85 0-5.42-.97-7.37-2.59-.15-.13-.02-.32.17-.21 2.11 1.15 4.72 1.84 7.42 1.84 1.82 0 3.82-.35 5.66-1.07.28-.11.51.16.28.42l-.14.13zM18 15.6c-.22-.29-1.46-.14-2.02-.07-.17.02-.2-.12-.04-.23.99-.65 2.61-.46 2.8-.24.19.22-.05 1.74-1 2.47-.15.11-.29.05-.22-.1.21-.49.67-1.54.48-1.83z"/>
                     </svg>
                     Amazon Music
                   </a>

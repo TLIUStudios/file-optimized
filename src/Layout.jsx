@@ -400,24 +400,13 @@ export default function Layout({ children }) {
                 </svg>
               </a>
               <a href="https://music.apple.com/us/artist/tliu-studios/1836817405" target="_blank" rel="noopener noreferrer" className="text-slate-500 dark:text-slate-500 hover:text-white dark:hover:text-white transition-colors" aria-label="Apple Music">
-                <svg className="w-6 h-6" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
-                  <defs>
-                    <linearGradient id="appleMusicFooterGrad" x1="0%" y1="0%" x2="0%" y2="100%">
-                      <stop offset="0%" style={{stopColor: '#FA233B'}} />
-                      <stop offset="100%" style={{stopColor: '#FB5C74'}} />
-                    </linearGradient>
-                  </defs>
-                  <rect width="512" height="512" rx="115" fill="url(#appleMusicFooterGrad)"/>
-                  <path d="M390 125v155c0 27-22 50-50 50s-50-22-50-50 22-50 50-50c9 0 17 2 25 5v-95l-150 43v145c0 27-22 50-50 50s-50-22-50-50 22-50 50-50c9 0 17 2 25 5V175c0-8 6-15 14-16l136-39c11-3 19 4 19 17z" fill="white"/>
+                <svg className="w-6 h-6" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M23.994 6.124a9.23 9.23 0 0 0-.24-2.19c-.317-1.31-1.062-2.31-2.18-3.043a5.022 5.022 0 0 0-1.877-.726 10.496 10.496 0 0 0-1.564-.15c-.04-.003-.083-.01-.124-.013H5.986c-.152.01-.303.017-.455.026-.747.043-1.49.123-2.193.4-1.336.53-2.3 1.452-2.865 2.78-.192.448-.292.925-.363 1.408a10.61 10.61 0 0 0-.1 1.18c-.01.193-.01.386-.01.578v11.196c.01.057.01.114.013.17.02.467.053.93.145 1.382.293 1.44 1.123 2.48 2.433 3.15.582.297 1.207.436 1.85.518.222.028.444.046.667.06.166.012.333.018.5.02h12.026c.194 0 .387-.01.58-.018.73-.034 1.457-.1 2.153-.36 1.12-.42 1.943-1.18 2.49-2.28.36-.718.53-1.49.605-2.28.025-.27.043-.54.043-.81V6.124zM7.874 16.18c-1.16 0-2.1-.945-2.1-2.103 0-1.16.945-2.102 2.1-2.102.48 0 .913.16 1.27.428l.005-5.263 6.997-1.553v5.936c-.054-.043-.105-.088-.162-.127-.543-.368-1.14-.57-1.785-.57-1.16 0-2.1.944-2.1 2.102 0 1.158.945 2.102 2.1 2.102 1.118 0 2.03-.876 2.095-1.975V5.064l-8.497 1.88v9.236z"/>
                 </svg>
               </a>
               <a href="https://music.amazon.ca/artists/B0FPC89Q2D/tliu-studios" target="_blank" rel="noopener noreferrer" className="text-slate-500 dark:text-slate-500 hover:text-white dark:hover:text-white transition-colors" aria-label="Amazon Music">
-                <svg className="w-6 h-6" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
-                  <rect width="512" height="512" rx="115" fill="#1DD3E0"/>
-                  <circle cx="200" cy="240" r="30" fill="#001E2B"/>
-                  <circle cx="312" cy="240" r="30" fill="#001E2B"/>
-                  <path d="M160 300c10 50 60 75 96 75s86-25 96-75" stroke="#001E2B" strokeWidth="20" strokeLinecap="round" fill="none"/>
-                  <path d="M140 340c30 10 120 20 232 0" stroke="#FF9900" strokeWidth="18" strokeLinecap="round" fill="none"/>
+                <svg className="w-6 h-6" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M2.5 2C2.22 2 2 2.22 2 2.5v19c0 .28.22.5.5.5h19c.28 0 .5-.22.5-.5v-19c0-.28-.22-.5-.5-.5h-19zm14.85 14.91c-1.75.96-3.99 1.48-6.02 1.48-2.85 0-5.42-.97-7.37-2.59-.15-.13-.02-.32.17-.21 2.11 1.15 4.72 1.84 7.42 1.84 1.82 0 3.82-.35 5.66-1.07.28-.11.51.16.28.42l-.14.13zM18 15.6c-.22-.29-1.46-.14-2.02-.07-.17.02-.2-.12-.04-.23.99-.65 2.61-.46 2.8-.24.19.22-.05 1.74-1 2.47-.15.11-.29.05-.22-.1.21-.49.67-1.54.48-1.83z"/>
                 </svg>
               </a>
               <a href="https://www.facebook.com/profile.php?id=61577274854116" target="_blank" rel="noopener noreferrer" className="text-slate-500 dark:text-slate-500 hover:text-white dark:hover:text-white transition-colors" aria-label="Facebook">
