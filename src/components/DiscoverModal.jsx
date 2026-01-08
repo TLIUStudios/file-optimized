@@ -20,9 +20,9 @@ export default function DiscoverModal() {
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogOverlay className="bg-black/70 backdrop-blur-md" />
+      <DialogOverlay className="bg-black/80 backdrop-blur-sm" />
       <DialogContent 
-        className="sm:max-w-[620px] p-0 bg-white/98 dark:bg-slate-900/98 backdrop-blur-xl border-2 border-amber-200 dark:border-amber-800/50 shadow-2xl [&>button]:hidden" 
+        className="sm:max-w-[620px] p-0 bg-white/95 dark:bg-slate-900/90 backdrop-blur-md border-2 border-amber-200 dark:border-amber-800/50 shadow-2xl [&>button]:hidden" 
         onPointerDownOutside={handleClose}
       >
         {/* Header with gradient */}
@@ -36,7 +36,7 @@ export default function DiscoverModal() {
                 <Sparkles className="w-7 h-7 text-white" />
               </div>
               <div>
-                <h2 className="text-2xl font-bold text-white drop-shadow-sm">Discover TLIU Studios</h2>
+                <h2 className="text-2xl font-bold text-white drop-shadow-sm">Built by TLIU Studios</h2>
                 <p className="text-amber-50 text-sm">Explore our creative ecosystem</p>
               </div>
             </div>
@@ -99,7 +99,7 @@ export default function DiscoverModal() {
                 <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-orange-500 to-amber-600 flex items-center justify-center shadow-md">
                   <Sparkles className="w-4 h-4 text-white" />
                 </div>
-                More
+                More Apps
               </h3>
               <div className="space-y-1.5">
                 <a href="https://www.tliu.co/royalty-free-assets/photos" target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 p-2.5 rounded-lg bg-white/50 dark:bg-slate-800/30 hover:bg-orange-100 dark:hover:bg-orange-950/20 border border-transparent hover:border-orange-300 dark:hover:border-orange-700/50 transition-all group">
