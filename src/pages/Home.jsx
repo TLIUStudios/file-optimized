@@ -47,6 +47,7 @@ export default function Home() {
   const [userPlan, setUserPlan] = useState('free');
   const [showProModal, setShowProModal] = useState(false);
   const [user, setUser] = useState(null);
+  const [authLoading, setAuthLoading] = useState(true);
   const [processingCheckout, setProcessingCheckout] = useState(false);
   const [upgradeError, setUpgradeError] = useState(null);
   const [showLoginPrompt, setShowLoginPrompt] = useState(false);
@@ -64,6 +65,8 @@ export default function Home() {
       } catch (error) {
         console.log('User not logged in or error loading user:', error);
         setUserPlan('free');
+      } finally {
+        setAuthLoading(false);
       }
     };
     loadUser();
