@@ -1443,24 +1443,23 @@ export default function Profile() {
                 </Button>
                 <Button variant="outline" className="w-full justify-start" asChild>
                   <a href="https://music.apple.com/us/artist/tliu-studios/1836817405" target="_blank" rel="noopener noreferrer">
-                    <svg className="w-4 h-4 mr-2" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
-                      <defs>
-                        <linearGradient id="appleMusicGrad" x1="0%" y1="0%" x2="0%" y2="100%">
-                          <stop offset="0%" style={{stopColor: '#FA233B'}} />
-                          <stop offset="100%" style={{stopColor: '#FB5C74'}} />
-                        </linearGradient>
-                      </defs>
-                      <rect width="512" height="512" rx="115" fill="url(#appleMusicGrad)"/>
-                      <path d="M390 125v155c0 27-22 50-50 50s-50-22-50-50 22-50 50-50c9 0 17 2 25 5v-95l-150 43v145c0 27-22 50-50 50s-50-22-50-50 22-50 50-50c9 0 17 2 25 5V175c0-8 6-15 14-16l136-39c11-3 19 4 19 17z" fill="white"/>
-                    </svg>
+                    <div className="w-4 h-4 mr-2 flex items-center justify-center rounded bg-gradient-to-b from-[#FA233B] to-[#FB5C74] flex-shrink-0">
+                      <svg className="w-3 h-3" viewBox="0 0 168 168" fill="white" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M79.5 21c-3.7 0-6.8 3-6.8 6.8v59c-2.5-2.5-6-4-10-4-7.7 0-14 6.3-14 14s6.3 14 14 14 14-6.3 14-14V48.3l42-13.2v36.5c-2.5-2.5-6-4-10-4-7.7 0-14 6.3-14 14s6.3 14 14 14 14-6.3 14-14V27.8c0-3.8-3-6.8-6.8-6.8H79.5z"/>
+                      </svg>
+                    </div>
                     Apple Music
                   </a>
                 </Button>
                 <Button variant="outline" className="w-full justify-start" asChild>
                   <a href="https://music.amazon.ca/artists/B0FPC89Q2D/tliu-studios" target="_blank" rel="noopener noreferrer">
-                    <svg className="w-4 h-4 mr-2" viewBox="0 0 24 24" fill="#1DD3E0" xmlns="http://www.w3.org/2000/svg">
-                      <path d="M2.5 2C2.22 2 2 2.22 2 2.5v19c0 .28.22.5.5.5h19c.28 0 .5-.22.5-.5v-19c0-.28-.22-.5-.5-.5h-19zm14.85 14.91c-1.75.96-3.99 1.48-6.02 1.48-2.85 0-5.42-.97-7.37-2.59-.15-.13-.02-.32.17-.21 2.11 1.15 4.72 1.84 7.42 1.84 1.82 0 3.82-.35 5.66-1.07.28-.11.51.16.28.42l-.14.13zM18 15.6c-.22-.29-1.46-.14-2.02-.07-.17.02-.2-.12-.04-.23.99-.65 2.61-.46 2.8-.24.19.22-.05 1.74-1 2.47-.15.11-.29.05-.22-.1.21-.49.67-1.54.48-1.83z"/>
-                    </svg>
+                    <div className="w-4 h-4 mr-2 flex items-center justify-center rounded bg-[#1DD3E0] flex-shrink-0">
+                      <svg className="w-3.5 h-3.5" viewBox="0 0 200 200" fill="white" xmlns="http://www.w3.org/2000/svg">
+                        <text x="100" y="90" font-size="60" font-weight="bold" text-anchor="middle" font-family="Arial, sans-serif">music</text>
+                        <path d="M40 120 Q100 150 160 120" stroke="white" stroke-width="8" fill="none" stroke-linecap="round"/>
+                        <path d="M150 115 L160 120 L150 125" fill="white"/>
+                      </svg>
+                    </div>
                     Amazon Music
                   </a>
                 </Button>
