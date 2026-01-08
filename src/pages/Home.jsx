@@ -191,6 +191,12 @@ export default function Home() {
         ...prev,
         [id]: data
       };
+      
+      // Dispatch event on first optimization
+      if (Object.keys(prev).length === 0) {
+        window.dispatchEvent(new CustomEvent('firstOptimizationComplete'));
+      }
+      
       return newProcessed;
     });
 
