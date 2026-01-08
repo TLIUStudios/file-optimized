@@ -26,7 +26,7 @@ export default function BetaBanner() {
           <div className="flex items-center gap-3 flex-1 min-w-0">
             <AlertCircle className="w-5 h-5 flex-shrink-0" />
             <p className="text-sm sm:text-base">
-              File Optimized is being developed! Found a bug or have feedback? <a href="https://support.tliu.co/" target="_blank" rel="noopener noreferrer" className="underline hover:text-amber-100 transition-colors">Let us know!</a>
+              File Optimized is being developed. Found a bug or have feedback? <a href="https://support.tliu.co/" target="_blank" rel="noopener noreferrer" className="underline hover:text-amber-100 transition-colors">Let us know!</a>
             </p>
           </div>
           <Button
