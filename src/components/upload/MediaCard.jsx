@@ -2071,7 +2071,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
   };
 
   const handleCompare = () => {
-    if (processed && compressedPreview && (isImage || isGif)) {
+    if (processed && compressedPreview) {
       onCompare({
         original: preview,
         compressed: compressedPreview,
@@ -2198,7 +2198,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
       <div className="relative">
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 p-3 sm:p-4 bg-slate-50 dark:bg-slate-950">
           {preview && (
-            <div className="relative aspect-square rounded-lg overflow-hidden bg-slate-200 dark:bg-slate-800 cursor-pointer group" onClick={(isImage || isGif) && processed ? handleCompare : undefined}>
+            <div className="relative aspect-square rounded-lg overflow-hidden bg-slate-200 dark:bg-slate-800 cursor-pointer group" onClick={processed ? handleCompare : undefined}>
               {isImage ? <LazyImage src={preview} alt="Original" className="w-full h-full object-cover transition-transform group-hover:scale-105" /> : isVideo ? (
                 <>
                   <video src={preview} controls loop className="w-full h-full object-cover" />
@@ -2233,7 +2233,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
             </div>
           )}
           {compressedPreview ? (
-            <div className="relative aspect-square rounded-lg overflow-hidden bg-slate-200 dark:bg-slate-800 cursor-pointer group" onClick={(isImage || isGif || outputFormat === 'gif') ? handleCompare : undefined}>
+            <div className="relative aspect-square rounded-lg overflow-hidden bg-slate-200 dark:bg-slate-800 cursor-pointer group" onClick={handleCompare}>
               {(isImage || outputFormat === 'gif') ? <LazyImage src={compressedPreview} alt="Compressed" className="w-full h-full object-cover transition-transform group-hover:scale-105" /> : (outputFormat === 'mp4' || (isVideo && outputFormat !== 'gif')) ? <video src={compressedPreview} controls loop className="w-full h-full object-cover" /> : isAudio ? (
                 <div className="w-full h-full flex flex-col items-center justify-center p-4">
                   <Music className="w-16 h-16 text-emerald-500 mb-2" />
