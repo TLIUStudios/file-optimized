@@ -1459,13 +1459,27 @@ export default function Profile() {
                 </Button>
                 <Button variant="outline" className="w-full justify-start" asChild>
                   <a href="https://music.apple.com/us/artist/tliu-studios/1836817405" target="_blank" rel="noopener noreferrer">
-                    <img src="https://upload.wikimedia.org/wikipedia/commons/2/2a/Apple_Music_logo.svg" alt="Apple Music" className="w-4 h-4 mr-2" />
+                    <svg className="w-4 h-4 mr-2" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+                      <defs>
+                        <linearGradient id="appleMusicGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+                          <stop offset="0%" style={{stopColor: '#FA233B'}} />
+                          <stop offset="100%" style={{stopColor: '#FB5C74'}} />
+                        </linearGradient>
+                      </defs>
+                      <rect width="512" height="512" rx="115" fill="url(#appleMusicGrad)"/>
+                      <path d="M390 125v155c0 27-22 50-50 50s-50-22-50-50 22-50 50-50c9 0 17 2 25 5v-95l-150 43v145c0 27-22 50-50 50s-50-22-50-50 22-50 50-50c9 0 17 2 25 5V175c0-8 6-15 14-16l136-39c11-3 19 4 19 17z" fill="white"/>
+                    </svg>
                     Apple Music
                   </a>
                 </Button>
                 <Button variant="outline" className="w-full justify-start" asChild>
                   <a href="https://music.amazon.ca/artists/B0FPC89Q2D/tliu-studios" target="_blank" rel="noopener noreferrer">
-                    <img src="https://upload.wikimedia.org/wikipedia/commons/0/02/Amazon_Music_logo.svg" alt="Amazon Music" className="w-4 h-4 mr-2" />
+                    <svg className="w-4 h-4 mr-2" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+                      <rect width="512" height="512" rx="115" fill="#1AD3E1"/>
+                      <circle cx="195" cy="230" r="25" fill="#001E2B"/>
+                      <circle cx="317" cy="230" r="25" fill="#001E2B"/>
+                      <path d="M165 295c3 45 63 80 91 80s88-35 91-80" stroke="#001E2B" strokeWidth="18" strokeLinecap="round" fill="none"/>
+                    </svg>
                     Amazon Music
                   </a>
                 </Button>
