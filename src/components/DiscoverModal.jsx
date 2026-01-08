@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { X, ExternalLink, ShoppingBag, Heart, Image, Box, Sparkles } from "lucide-react";
+import { X, ExternalLink, ShoppingBag, Heart, Image, Box, Sparkles, Mail } from "lucide-react";
 import { Dialog, DialogContent, DialogOverlay } from "@/components/ui/dialog";
 import { motion } from "framer-motion";
 
@@ -22,22 +22,22 @@ export default function DiscoverModal() {
     <Dialog open={isOpen} onOpenChange={handleClose}>
       <DialogOverlay className="bg-black/80 backdrop-blur-sm" />
       <DialogContent 
-        className="sm:max-w-[620px] p-0 bg-white/95 dark:bg-slate-900/90 backdrop-blur-md border-2 border-amber-200 dark:border-amber-800/50 shadow-2xl [&>button]:hidden" 
+        className="sm:max-w-[620px] max-w-[95vw] max-h-[90vh] overflow-y-auto p-0 bg-white/95 dark:bg-slate-900/90 backdrop-blur-md border-2 border-amber-200 dark:border-amber-800/50 shadow-2xl [&>button]:hidden" 
         onPointerDownOutside={handleClose}
       >
         {/* Header with gradient */}
-        <div className="relative bg-gradient-to-r from-amber-500 via-orange-500 to-amber-600 p-6 overflow-hidden">
+        <div className="relative bg-gradient-to-r from-amber-500 via-orange-500 to-amber-600 p-4 sm:p-6 overflow-hidden">
           <div className="absolute inset-0 opacity-20">
             <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_120%,rgba(255,255,255,0.3),transparent)]"></div>
           </div>
-          <div className="relative flex items-center justify-between pr-8">
-            <div className="flex items-center gap-3">
-              <div className="w-12 h-12 rounded-xl bg-white/20 backdrop-blur-sm flex items-center justify-center shadow-lg">
-                <Sparkles className="w-7 h-7 text-white" />
+          <div className="relative flex items-center justify-between pr-10">
+            <div className="flex items-center gap-2 sm:gap-3">
+              <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-white/20 backdrop-blur-sm flex items-center justify-center shadow-lg">
+                <Sparkles className="w-5 h-5 sm:w-7 sm:h-7 text-white" />
               </div>
               <div>
-                <h2 className="text-2xl font-bold text-white drop-shadow-sm">Built by TLIU Studios</h2>
-                <p className="text-amber-50 text-sm">Explore our creative ecosystem</p>
+                <h2 className="text-lg sm:text-2xl font-bold text-white drop-shadow-sm">Built by TLIU Studios</h2>
+                <p className="text-amber-50 text-xs sm:text-sm">Explore our creative ecosystem</p>
               </div>
             </div>
             <button
@@ -50,14 +50,14 @@ export default function DiscoverModal() {
         </div>
 
         {/* Content */}
-        <div className="p-6 bg-gradient-to-b from-transparent to-amber-50/30 dark:to-amber-950/10">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+        <div className="p-4 sm:p-6 bg-gradient-to-b from-transparent to-amber-50/30 dark:to-amber-950/10">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-5">
             {/* Credits */}
             <motion.div 
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.1 }}
-              className="bg-gradient-to-br from-white to-amber-50/50 dark:from-slate-800/80 dark:to-slate-900/80 rounded-xl p-5 border border-amber-200/50 dark:border-amber-700/30 shadow-lg"
+              className="bg-gradient-to-br from-white to-amber-50/50 dark:from-slate-800/80 dark:to-slate-900/80 rounded-xl p-4 sm:p-5 border border-amber-200/50 dark:border-amber-700/30 shadow-lg"
             >
               <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-4 flex items-center gap-2">
                 <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center shadow-md">
@@ -93,7 +93,7 @@ export default function DiscoverModal() {
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.15 }}
-              className="bg-gradient-to-br from-white to-amber-50/50 dark:from-slate-800/80 dark:to-slate-900/80 rounded-xl p-5 border border-amber-200/50 dark:border-amber-700/30 shadow-lg"
+              className="bg-gradient-to-br from-white to-amber-50/50 dark:from-slate-800/80 dark:to-slate-900/80 rounded-xl p-4 sm:p-5 border border-amber-200/50 dark:border-amber-700/30 shadow-lg"
             >
               <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-4 flex items-center gap-2">
                 <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-orange-500 to-amber-600 flex items-center justify-center shadow-md">
@@ -121,6 +121,33 @@ export default function DiscoverModal() {
               </div>
             </motion.div>
           </div>
+
+          {/* Contact Info */}
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.2 }}
+            className="mt-5 pt-4 border-t border-amber-200 dark:border-amber-700/30"
+          >
+            <div className="flex flex-wrap items-center justify-center gap-3 sm:gap-4">
+              <a href="https://discord.gg/gRJesCUYz9" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-xs sm:text-sm text-slate-600 dark:text-slate-400 hover:text-amber-600 dark:hover:text-amber-400 transition-colors">
+                <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515a.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0a12.64 12.64 0 0 0-.617-1.25a.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 0 0 .031.057a19.9 19.9 0 0 0 5.993 3.03a.078.078 0 0 0 .084-.028a14.09 14.09 0 0 0 1.226-1.994a.076.076 0 0 0-.041-.106a13.107 13.107 0 0 1-1.872-.892a.077.077 0 0 1-.008-.128a10.2 10.2 0 0 0 .372-.292a.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127a12.299 12.299 0 0 1-1.873.892a.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028a19.839 19.839 0 0 0 6.002-3.03a.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.03zM8.02 15.33c-1.183 0-2.157-1.085-2.157-2.419c0-1.333.956-2.419 2.157-2.419c1.21 0 2.176 1.096 2.157 2.42c0 1.333-.956 2.418-2.157 2.418zm7.975 0c-1.183 0-2.157-1.085-2.157-2.419c0-1.333.955-2.419 2.157-2.419c1.21 0 2.176 1.096 2.157 2.42c0 1.333-.946 2.418-2.157 2.418z"/>
+                </svg>
+                Discord
+              </a>
+              <span className="text-slate-300 dark:text-slate-600">•</span>
+              <a href="https://support.tliu.co/" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-xs sm:text-sm text-slate-600 dark:text-slate-400 hover:text-amber-600 dark:hover:text-amber-400 transition-colors">
+                <ExternalLink className="w-4 h-4" />
+                support.tliu.co
+              </a>
+              <span className="text-slate-300 dark:text-slate-600">•</span>
+              <a href="mailto:Office@TLIU.co" className="flex items-center gap-2 text-xs sm:text-sm text-slate-600 dark:text-slate-400 hover:text-amber-600 dark:hover:text-amber-400 transition-colors">
+                <Mail className="w-4 h-4" />
+                Office@TLIU.co
+              </a>
+            </div>
+          </motion.div>
         </div>
       </DialogContent>
     </Dialog>
