@@ -2884,7 +2884,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
       />
       {showMetadataViewer && fileMetadata && (
         <Dialog open={showMetadataViewer} onOpenChange={setShowMetadataViewer}>
-          <DialogContent className="sm:max-w-[425px] [&>button]:hidden">
+          <DialogContent className="sm:max-w-[425px] max-w-[95vw] [&>button]:hidden overflow-hidden">
             <div className="absolute top-4 right-4 z-50">
               <Button
                 variant="ghost"
@@ -2899,11 +2899,11 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
               <DialogTitle>File Metadata</DialogTitle>
               <DialogDescription>Detailed information about your file.</DialogDescription>
             </DialogHeader>
-            <div className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-2 text-sm">
+            <div className="grid grid-cols-[minmax(80px,auto)_1fr] gap-x-4 gap-y-2 text-sm max-w-full overflow-hidden">
               {Object.entries(fileMetadata).map(([key, value]) => (
                 <div key={key} className="contents">
-                  <span className="font-medium text-slate-600 dark:text-slate-400">{key.replace(/([A-Z])/g, ' $1').trim().split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')}:</span>
-                  <span className="text-slate-900 dark:text-white break-words overflow-wrap-anywhere">{String(value)}</span>
+                  <span className="font-medium text-slate-600 dark:text-slate-400 text-left whitespace-nowrap">{key.replace(/([A-Z])/g, ' $1').trim().split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')}:</span>
+                  <span className="text-slate-900 dark:text-white break-words break-all min-w-0">{String(value)}</span>
                 </div>
               ))}
             </div>
