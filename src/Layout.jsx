@@ -400,12 +400,12 @@ export default function Layout({ children }) {
                 </svg>
               </a>
               <a href="https://music.apple.com/us/artist/tliu-studios/1836817405" target="_blank" rel="noopener noreferrer" className="text-slate-500 dark:text-slate-500 hover:text-white dark:hover:text-white transition-colors" aria-label="Apple Music">
-                <svg className="w-6 h-6" viewBox="0 0 168 168" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+                <svg className="w-7 h-7" viewBox="0 0 168 168" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
                   <path d="M79.5 21c-3.7 0-6.8 3-6.8 6.8v59c-2.5-2.5-6-4-10-4-7.7 0-14 6.3-14 14s6.3 14 14 14 14-6.3 14-14V48.3l42-13.2v36.5c-2.5-2.5-6-4-10-4-7.7 0-14 6.3-14 14s6.3 14 14 14 14-6.3 14-14V27.8c0-3.8-3-6.8-6.8-6.8H79.5z"/>
                 </svg>
               </a>
               <a href="https://music.amazon.ca/artists/B0FPC89Q2D/tliu-studios" target="_blank" rel="noopener noreferrer" className="text-slate-500 dark:text-slate-500 hover:text-white dark:hover:text-white transition-colors" aria-label="Amazon Music">
-                <svg className="w-6 h-6" viewBox="0 0 200 200" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+                <svg className="w-7 h-7" viewBox="0 0 200 200" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
                   <text x="100" y="90" font-size="60" font-weight="bold" text-anchor="middle" font-family="Arial, sans-serif">music</text>
                   <path d="M40 120 Q100 150 160 120" stroke="currentColor" stroke-width="8" fill="none" stroke-linecap="round"/>
                   <path d="M150 115 L160 120 L150 125" fill="currentColor"/>
