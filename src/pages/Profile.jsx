@@ -1459,26 +1459,32 @@ export default function Profile() {
                 </Button>
                 <Button variant="outline" className="w-full justify-start" asChild>
                   <a href="https://music.apple.com/us/artist/tliu-studios/1836817405" target="_blank" rel="noopener noreferrer">
-                    <svg className="w-4 h-4 mr-2" viewBox="0 0 50 50" xmlns="http://www.w3.org/2000/svg">
-                      <circle cx="25" cy="25" r="25" fill="#FA243C"/>
-                      <path d="M35.5 15.5v15.36c0 2.64-2.14 4.64-4.64 4.64s-4.64-2-4.64-4.64 2-4.64 4.64-4.64c.71 0 1.36.14 2 .36V20.79l-12 3.43v11.64c0 2.64-2.14 4.64-4.64 4.64s-4.64-2-4.64-4.64 2-4.64 4.64-4.64c.71 0 1.36.14 2 .36V18.5c0-.79.57-1.43 1.36-1.57l13.64-3.86c.93-.29 1.86.43 1.86 1.43z" fill="white"/>
+                    <svg className="w-4 h-4 mr-2" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+                      <defs>
+                        <linearGradient id="appleMusicGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                          <stop offset="0%" style={{stopColor: '#FA233B', stopOpacity: 1}} />
+                          <stop offset="100%" style={{stopColor: '#FB5C74', stopOpacity: 1}} />
+                        </linearGradient>
+                      </defs>
+                      <rect width="512" height="512" rx="115" fill="url(#appleMusicGradient)"/>
+                      <path d="M381 153v151c0 36-29 65-65 65s-65-29-65-65 29-65 65-65c9 0 18 2 26 5v-97l-162 46v138c0 36-29 65-65 65s-65-29-65-65 29-65 65-65c9 0 18 2 26 5V185c0-11 8-20 19-22l177-50c13-4 25 6 25 20z" fill="white"/>
                     </svg>
                     Apple Music
                   </a>
                 </Button>
                 <Button variant="outline" className="w-full justify-start" asChild>
                   <a href="https://music.amazon.ca/artists/B0FPC89Q2D/tliu-studios" target="_blank" rel="noopener noreferrer">
-                    <svg className="w-4 h-4 mr-2" viewBox="0 0 50 50" xmlns="http://www.w3.org/2000/svg">
+                    <svg className="w-4 h-4 mr-2" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
                       <defs>
-                        <linearGradient id="amGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <linearGradient id="amazonMusicGradient" x1="0%" y1="0%" x2="100%" y2="100%">
                           <stop offset="0%" style={{stopColor: '#5EDBFF', stopOpacity: 1}} />
-                          <stop offset="100%" style={{stopColor: '#6D3BFF', stopOpacity: 1}} />
+                          <stop offset="100%" style={{stopColor: '#2DCCFF', stopOpacity: 1}} />
                         </linearGradient>
                       </defs>
-                      <circle cx="25" cy="25" r="25" fill="url(#amGradient)"/>
-                      <path d="M32 27c-.5 4-4 7-8 7s-7.5-3-8-7c0-.3.2-.5.5-.5s.5.2.5.5c.4 3.5 3.5 6 7 6s6.6-2.5 7-6c0-.3.2-.5.5-.5s.5.2.5.5z" fill="white"/>
-                      <path d="M17 27.5c.1.1.1.2 0 .3-.6.6-1 .8-1.5.8-.8 0-1.5-.7-1.5-1.5s.7-1.5 1.5-1.5c.5 0 .9.2 1.5.8.1.1.1.2 0 .3l-1 1z" fill="white"/>
-                      <circle cx="34" cy="20" r="2" fill="white"/>
+                      <rect width="512" height="512" rx="115" fill="url(#amazonMusicGradient)"/>
+                      <path d="M365 310c-5 40-45 70-90 70-45 0-85-30-90-70-1-3 2-5 5-5s5 2 5 5c5 35 40 60 80 60s75-25 80-60c0-3 2-5 5-5s6 2 5 5z" fill="white"/>
+                      <path d="M206 310l-12 12c-2 2-2 5 0 7 7 7 12 9 18 9 9 0 17-8 17-17s-8-17-17-17c-6 0-11 2-18 9-2 2-2 5 0 7l12 12c2 2 5 2 7 0l12-12c2-2 2-5 0-7-2-2-5-2-7 0l-6 6-6-6c-2-2-2-5 0-7 2-2 5-2 7 0z" fill="white"/>
+                      <circle cx="380" cy="200" r="20" fill="white"/>
                     </svg>
                     Amazon Music
                   </a>
