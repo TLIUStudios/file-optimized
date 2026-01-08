@@ -1459,32 +1459,33 @@ export default function Profile() {
                 </Button>
                 <Button variant="outline" className="w-full justify-start" asChild>
                   <a href="https://music.apple.com/us/artist/tliu-studios/1836817405" target="_blank" rel="noopener noreferrer">
-                    <svg className="w-4 h-4 mr-2" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+                    <svg className="w-4 h-4 mr-2" viewBox="0 0 168 168" xmlns="http://www.w3.org/2000/svg">
                       <defs>
                         <linearGradient id="appleMusicGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                          <stop offset="0%" style={{stopColor: '#FA233B', stopOpacity: 1}} />
-                          <stop offset="100%" style={{stopColor: '#FB5C74', stopOpacity: 1}} />
+                          <stop offset="0%" style={{stopColor: '#FA2D48', stopOpacity: 1}} />
+                          <stop offset="50%" style={{stopColor: '#FA446C', stopOpacity: 1}} />
+                          <stop offset="100%" style={{stopColor: '#FB5C82', stopOpacity: 1}} />
                         </linearGradient>
                       </defs>
-                      <rect width="512" height="512" rx="115" fill="url(#appleMusicGradient)"/>
-                      <path d="M381 153v151c0 36-29 65-65 65s-65-29-65-65 29-65 65-65c9 0 18 2 26 5v-97l-162 46v138c0 36-29 65-65 65s-65-29-65-65 29-65 65-65c9 0 18 2 26 5V185c0-11 8-20 19-22l177-50c13-4 25 6 25 20z" fill="white"/>
+                      <rect width="168" height="168" rx="38" fill="url(#appleMusicGradient)"/>
+                      <path d="M124.5 49.833v50.084c0 8.75-7.084 17.5-17.5 17.5s-17.5-6.75-17.5-17.5 7.084-17.5 17.5-17.5c2.917 0 5.584.583 8.334 1.5V71.25l-50 14.25v38.417c0 8.75-7.084 17.5-17.5 17.5s-17.5-6.75-17.5-17.5 7.084-17.5 17.5-17.5c2.917 0 5.584.583 8.334 1.5V61.917c0-2.584 1.916-4.667 4.583-5.167l45-12.75c3.834-1.084 6.25 1.417 6.25 5.833z" fill="white"/>
                     </svg>
                     Apple Music
                   </a>
                 </Button>
                 <Button variant="outline" className="w-full justify-start" asChild>
                   <a href="https://music.amazon.ca/artists/B0FPC89Q2D/tliu-studios" target="_blank" rel="noopener noreferrer">
-                    <svg className="w-4 h-4 mr-2" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+                    <svg className="w-4 h-4 mr-2" viewBox="0 0 168 168" xmlns="http://www.w3.org/2000/svg">
                       <defs>
                         <linearGradient id="amazonMusicGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                          <stop offset="0%" style={{stopColor: '#5EDBFF', stopOpacity: 1}} />
-                          <stop offset="100%" style={{stopColor: '#2DCCFF', stopOpacity: 1}} />
+                          <stop offset="0%" style={{stopColor: '#1BD7DC', stopOpacity: 1}} />
+                          <stop offset="100%" style={{stopColor: '#1DD3E0', stopOpacity: 1}} />
                         </linearGradient>
                       </defs>
-                      <rect width="512" height="512" rx="115" fill="url(#amazonMusicGradient)"/>
-                      <path d="M365 310c-5 40-45 70-90 70-45 0-85-30-90-70-1-3 2-5 5-5s5 2 5 5c5 35 40 60 80 60s75-25 80-60c0-3 2-5 5-5s6 2 5 5z" fill="white"/>
-                      <path d="M206 310l-12 12c-2 2-2 5 0 7 7 7 12 9 18 9 9 0 17-8 17-17s-8-17-17-17c-6 0-11 2-18 9-2 2-2 5 0 7l12 12c2 2 5 2 7 0l12-12c2-2 2-5 0-7-2-2-5-2-7 0l-6 6-6-6c-2-2-2-5 0-7 2-2 5-2 7 0z" fill="white"/>
-                      <circle cx="380" cy="200" r="20" fill="white"/>
+                      <rect width="168" height="168" rx="38" fill="url(#amazonMusicGradient)"/>
+                      <path d="M119 98c-1.5 12-13.5 21-27 21s-25.5-9-27-21c-.3-.9.6-1.5 1.5-1.5s1.5.6 1.5 1.5c1.5 10.5 12 18 24 18s22.5-7.5 24-18c0-.9.6-1.5 1.5-1.5s1.8.6 1.5 1.5z" fill="white"/>
+                      <circle cx="56" cy="85" r="6" fill="white"/>
+                      <circle cx="112" cy="85" r="6" fill="white"/>
                     </svg>
                     Amazon Music
                   </a>
