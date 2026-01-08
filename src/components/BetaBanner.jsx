@@ -6,7 +6,7 @@ export default function BetaBanner() {
   const [isVisible, setIsVisible] = useState(false);
 
   useEffect(() => {
-    const dismissed = localStorage.getItem('betaBannerDismissed');
+    const dismissed = sessionStorage.getItem('betaBannerDismissed');
     if (!dismissed) {
       setIsVisible(true);
     }
@@ -14,7 +14,7 @@ export default function BetaBanner() {
 
   const handleDismiss = () => {
     setIsVisible(false);
-    localStorage.setItem('betaBannerDismissed', 'true');
+    sessionStorage.setItem('betaBannerDismissed', 'true');
   };
 
   if (!isVisible) return null;
