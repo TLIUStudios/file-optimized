@@ -18,6 +18,7 @@ import {
 "@/components/ui/dropdown-menu";
 import GoogleAds from "./components/GoogleAds";
 import ChatSupport from "./components/ChatSupport";
+import BetaBanner from "./components/BetaBanner";
 
 const LoginPromptModal = lazy(() => import("./components/LoginPromptModal"));
 
@@ -298,7 +299,9 @@ export default function Layout({ children }) {
                 </div>
         </div>
       </header>
-      
+
+      <BetaBanner />
+
       <main className="container mx-auto px-3 sm:px-4 py-4 sm:py-6 md:py-8">
         {children}
         
