@@ -400,13 +400,15 @@ export default function Layout({ children }) {
                 </svg>
               </a>
               <a href="https://music.apple.com/us/artist/tliu-studios/1836817405" target="_blank" rel="noopener noreferrer" className="text-slate-500 dark:text-slate-500 hover:text-white dark:hover:text-white transition-colors" aria-label="Apple Music">
-                <svg className="w-6 h-6" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M12.5 3c-1.1 0-2 .9-2 2v11c-.6-.6-1.4-1-2.5-1-2.2 0-4 1.8-4 4s1.8 4 4 4 4-1.8 4-4V8.5l8-2.5V13c-.6-.6-1.4-1-2.5-1-2.2 0-4 1.8-4 4s1.8 4 4 4 4-1.8 4-4V5c0-1.1-.9-2-2-2h-.5l-6.5 2V3z"/>
+                <svg className="w-6 h-6" viewBox="0 0 168 168" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M79.5 21c-3.7 0-6.8 3-6.8 6.8v59c-2.5-2.5-6-4-10-4-7.7 0-14 6.3-14 14s6.3 14 14 14 14-6.3 14-14V48.3l42-13.2v36.5c-2.5-2.5-6-4-10-4-7.7 0-14 6.3-14 14s6.3 14 14 14 14-6.3 14-14V27.8c0-3.8-3-6.8-6.8-6.8H79.5z"/>
                 </svg>
               </a>
               <a href="https://music.amazon.ca/artists/B0FPC89Q2D/tliu-studios" target="_blank" rel="noopener noreferrer" className="text-slate-500 dark:text-slate-500 hover:text-white dark:hover:text-white transition-colors" aria-label="Amazon Music">
-                <svg className="w-6 h-6" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M2 10.5h2.5L6 6l1.5 4.5H10l-2 1.5 1 3-2-1.5-2 1.5 1-3-2-1.5zm8 0V9h1.5c.8 0 1.5.7 1.5 1.5s-.7 1.5-1.5 1.5H10zm0 3v-1.5h1.5c.8 0 1.5.7 1.5 1.5s-.7 1.5-1.5 1.5H10v-1.5zm4.5-3V9h1.5c.8 0 1.5.7 1.5 1.5s-.7 1.5-1.5 1.5h-1.5zm0 3v-1.5h1.5c.8 0 1.5.7 1.5 1.5s-.7 1.5-1.5 1.5h-1.5v-1.5zm4 0V9h1.5c.8 0 1.5.7 1.5 1.5s-.7 1.5-1.5 1.5h-1.5v2h-1zm-14 3c4.5 2.5 10.5 2.5 15 0 .2-.1.5 0 .5.2s-.2.5-.5.6c-4.8 2.7-11.2 2.7-16 0-.3-.1-.4-.4-.3-.6.1-.2.3-.3.3-.2z"/>
+                <svg className="w-6 h-6" viewBox="0 0 200 200" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+                  <text x="100" y="90" font-size="60" font-weight="bold" text-anchor="middle" font-family="Arial, sans-serif">music</text>
+                  <path d="M40 120 Q100 150 160 120" stroke="currentColor" stroke-width="8" fill="none" stroke-linecap="round"/>
+                  <path d="M150 115 L160 120 L150 125" fill="currentColor"/>
                 </svg>
               </a>
               <a href="https://www.facebook.com/profile.php?id=61577274854116" target="_blank" rel="noopener noreferrer" className="text-slate-500 dark:text-slate-500 hover:text-white dark:hover:text-white transition-colors" aria-label="Facebook">
