@@ -1024,7 +1024,7 @@ export default function ImageComparisonModal({
             </Button>
 
             {/* Download All Formats as ZIP */}
-            {mediaType === 'image' && !isAnimationVariations && (
+            {!isAnimationVariations && (
               <Button
                 onClick={downloadAllImageFormatsAsZip}
                 variant="outline"
@@ -1036,7 +1036,7 @@ export default function ImageComparisonModal({
             )}
 
             {/* Save to Cloud Storage */}
-            {isPro && mediaType === 'image' && !isAnimationVariations && (
+            {isPro && !isAnimationVariations && (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button 
