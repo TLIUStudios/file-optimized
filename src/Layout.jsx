@@ -385,25 +385,48 @@ export default function Layout({ children }) {
 
             {/* Social Media Icons */}
             <div className="flex items-center justify-center gap-3 sm:gap-4 md:gap-5 flex-wrap">
-              <a href="https://discord.gg/gRJesCUYz9" target="_blank" rel="noopener noreferrer" className="text-slate-500 dark:text-slate-500 hover:text-[#5865F2] dark:hover:text-[#5865F2] transition-colors" aria-label="Discord">
+              <a href="https://discord.gg/gRJesCUYz9" target="_blank" rel="noopener noreferrer" className="text-slate-500 dark:text-slate-500 hover:text-white dark:hover:text-white transition-colors" aria-label="Discord">
                 <DiscordIcon />
               </a>
-              <a href="https://www.google.com/maps/place//data=!4m3!3m2!1s0x65e4dd3088ab3acb:0x47b7719db967d156!12e1?source=g.page.m.kd._&laa=lu-desktop-review-solicitation" target="_blank" rel="noopener noreferrer" className="transition-colors group" aria-label="Google Reviews">
-                <GoogleIcon />
-              </a>
-              <a href="https://www.facebook.com/profile.php?id=61577274854116&sk=reviews" target="_blank" rel="noopener noreferrer" className="text-slate-500 dark:text-slate-500 hover:text-[#1877F2] dark:hover:text-[#1877F2] transition-colors" aria-label="Facebook">
-                <FacebookIcon />
-              </a>
-              <a href="https://www.youtube.com/@TLIUStudios" target="_blank" rel="noopener noreferrer" className="text-slate-500 dark:text-slate-500 hover:text-[#FF0000] dark:hover:text-[#FF0000] transition-colors" aria-label="YouTube">
+              <a href="https://www.youtube.com/@TLIUStudios" target="_blank" rel="noopener noreferrer" className="text-slate-500 dark:text-slate-500 hover:text-white dark:hover:text-white transition-colors" aria-label="YouTube">
                 <YouTubeIcon />
               </a>
-              <a href="https://www.tiktok.com/@TLIUStudios" target="_blank" rel="noopener noreferrer" className="text-slate-500 dark:text-slate-500 hover:text-[#00f2ea] dark:hover:text-[#00f2ea] transition-colors" aria-label="TikTok">
+              <a href="https://open.spotify.com/artist/6ABnEPhBJPnwZwoal3xyMM" target="_blank" rel="noopener noreferrer" className="text-slate-500 dark:text-slate-500 hover:text-white dark:hover:text-white transition-colors" aria-label="Spotify">
+                <svg className="w-6 h-6" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.66 0 12 0zm5.521 17.34c-.24.359-.66.48-1.021.24-2.82-1.74-6.36-2.101-10.561-1.141-.418.122-.779-.179-.899-.539-.12-.421.18-.78.54-.9 4.56-1.021 8.52-.6 11.64 1.32.42.18.479.659.301 1.02zm1.44-3.3c-.301.42-.841.6-1.262.3-3.239-1.98-8.159-2.58-11.939-1.38-.479.12-1.02-.12-1.14-.6-.12-.48.12-1.021.6-1.141C9.6 9.9 15 10.561 18.72 12.84c.361.181.54.78.241 1.2zm.12-3.36C15.24 8.4 8.82 8.16 5.16 9.301c-.6.179-1.2-.181-1.38-.721-.18-.601.18-1.2.72-1.381 4.26-1.26 11.28-1.02 15.721 1.621.539.3.719 1.02.419 1.56-.299.421-1.02.599-1.559.3z"/>
+                </svg>
+              </a>
+              <a href="https://music.apple.com/us/artist/tliu-studios/1836817405" target="_blank" rel="noopener noreferrer" className="text-slate-500 dark:text-slate-500 hover:text-white dark:hover:text-white transition-colors" aria-label="Apple Music">
+                <svg className="w-6 h-6" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+                  <defs>
+                    <linearGradient id="appleMusicFooterGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+                      <stop offset="0%" style={{stopColor: '#FA233B'}} />
+                      <stop offset="100%" style={{stopColor: '#FB5C74'}} />
+                    </linearGradient>
+                  </defs>
+                  <rect width="512" height="512" rx="115" fill="url(#appleMusicFooterGrad)"/>
+                  <path d="M390 125v155c0 27-22 50-50 50s-50-22-50-50 22-50 50-50c9 0 17 2 25 5v-95l-150 43v145c0 27-22 50-50 50s-50-22-50-50 22-50 50-50c9 0 17 2 25 5V175c0-8 6-15 14-16l136-39c11-3 19 4 19 17z" fill="white"/>
+                </svg>
+              </a>
+              <a href="https://music.amazon.ca/artists/B0FPC89Q2D/tliu-studios" target="_blank" rel="noopener noreferrer" className="text-slate-500 dark:text-slate-500 hover:text-white dark:hover:text-white transition-colors" aria-label="Amazon Music">
+                <svg className="w-6 h-6" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+                  <rect width="512" height="512" rx="115" fill="#1DD3E0"/>
+                  <circle cx="200" cy="240" r="30" fill="#001E2B"/>
+                  <circle cx="312" cy="240" r="30" fill="#001E2B"/>
+                  <path d="M160 300c10 50 60 75 96 75s86-25 96-75" stroke="#001E2B" strokeWidth="20" strokeLinecap="round" fill="none"/>
+                  <path d="M140 340c30 10 120 20 232 0" stroke="#FF9900" strokeWidth="18" strokeLinecap="round" fill="none"/>
+                </svg>
+              </a>
+              <a href="https://www.tiktok.com/@TLIUStudios" target="_blank" rel="noopener noreferrer" className="text-slate-500 dark:text-slate-500 hover:text-white dark:hover:text-white transition-colors" aria-label="TikTok">
                 <TikTokIcon />
               </a>
-              <a href="https://www.instagram.com/TLIUStudios/" target="_blank" rel="noopener noreferrer" className="text-slate-500 dark:text-slate-500 hover:text-[#E4405F] dark:hover:text-[#E4405F] transition-colors" aria-label="Instagram">
+              <a href="https://www.facebook.com/profile.php?id=61577274854116" target="_blank" rel="noopener noreferrer" className="text-slate-500 dark:text-slate-500 hover:text-white dark:hover:text-white transition-colors" aria-label="Facebook">
+                <FacebookIcon />
+              </a>
+              <a href="https://www.instagram.com/TLIUStudios/" target="_blank" rel="noopener noreferrer" className="text-slate-500 dark:text-slate-500 hover:text-white dark:hover:text-white transition-colors" aria-label="Instagram">
                 <InstagramIcon />
               </a>
-              <a href="https://x.com/TLIUStudios" target="_blank" rel="noopener noreferrer" className="text-slate-500 dark:text-slate-500 hover:text-slate-900 dark:hover:text-slate-200 transition-colors" aria-label="X (Twitter)">
+              <a href="https://x.com/TLIUStudios" target="_blank" rel="noopener noreferrer" className="text-slate-500 dark:text-slate-500 hover:text-white dark:hover:text-white transition-colors" aria-label="X (Twitter)">
                 <XIcon />
               </a>
             </div>
