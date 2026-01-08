@@ -694,52 +694,10 @@ export default function ImageComparisonModal({
         } else {
           setSelectedFormat(previewFormat);
         }
-      } else if (mediaType === 'audio') {
-        // Audio format conversion
-        toast.info(`Converting to ${format.toUpperCase()}...`);
-        
-        const response = await fetch(compressedImage);
-        const audioBlob = await response.blob();
-        
-        // Create audio context for conversion
-        const audioContext = new (window.AudioContext || window.webkitAudioContext)();
-        const arrayBuffer = await audioBlob.arrayBuffer();
-        const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
-        
-        // Convert to target format
-        let convertedAudioBlob;
-        
-        if (format === 'wav') {
-          // Convert to WAV
-          convertedAudioBlob = await audioBufferToWav(audioBuffer);
-        } else if (format === 'mp3') {
-          // Convert to MP3 using MediaRecorder
-          convertedAudioBlob = await audioBufferToMp3(audioBuffer);
-        }
-        
-        if (convertedAudioBlob) {
-          const newUrl = URL.createObjectURL(convertedAudioBlob);
-          setConvertedBlob(convertedAudioBlob);
-          setPreviewSize(convertedAudioBlob.size);
-          setPreviewFormat(format);
-          
-          // Update the audio player
-          const audioElement = document.querySelector('audio');
-          if (audioElement) {
-            audioElement.src = newUrl;
-          }
-          
-          const sizeDiff = convertedAudioBlob.size - originalSize;
-          const percentChange = ((sizeDiff / originalSize) * 100).toFixed(1);
-          
-          if (convertedAudioBlob.size > originalSize) {
-            toast.info(`${format.toUpperCase()}: ${formatFileSize(convertedAudioBlob.size)} (+${percentChange}% larger)`);
-          } else {
-            toast.success(`${format.toUpperCase()}: ${formatFileSize(convertedAudioBlob.size)} (${Math.abs(percentChange)}% smaller)`);
-          }
-        }
       } else {
+        // For non-image media (video, audio), just update the format display
         setPreviewFormat(format);
+        toast.success(`Format switched to ${format.toUpperCase()}`);
       }
     } catch (error) {
       console.error('❌ Conversion error:', error);
