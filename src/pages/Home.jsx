@@ -400,13 +400,13 @@ export default function Home() {
             <Shield className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
             <span className="whitespace-nowrap">100% Private & Secure</span>
           </div>
-          {isPro &&
+          {!authLoading && isPro &&
           <div className="inline-flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-1.5 sm:py-2 rounded-full bg-gradient-to-r from-amber-500 to-orange-500 text-white text-xs sm:text-sm font-bold shadow-lg">
               <Zap className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
               PRO
             </div>
           }
-          {!isPro &&
+          {!authLoading && !isPro &&
           <div className="relative">
               <div className="absolute -inset-1 bg-gradient-to-r from-yellow-400 via-amber-500 to-orange-500 rounded-lg opacity-75 blur animate-pulse" style={{ animationDuration: '2s' }}></div>
               <Button
