@@ -1459,21 +1459,13 @@ export default function Profile() {
                 </Button>
                 <Button variant="outline" className="w-full justify-start" asChild>
                   <a href="https://music.apple.com/us/artist/tliu-studios/1836817405" target="_blank" rel="noopener noreferrer">
-                    <svg className="w-4 h-4 mr-2" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-                      <rect width="100" height="100" rx="22" fill="#FA233B"/>
-                      <path d="M73 29v31c0 5.5-4.5 10-10 10s-10-4.5-10-10 4.5-10 10-10c1.8 0 3.5.4 5 1V43L38 51v23c0 5.5-4.5 10-10 10s-10-4.5-10-10 4.5-10 10-10c1.8 0 3.5.4 5 1V39c0-1.7 1.2-3.2 2.8-3.5L63 28c2.5-.7 4.5 1 4.5 3.5z" fill="white"/>
-                    </svg>
+                    <img src="https://upload.wikimedia.org/wikipedia/commons/2/2a/Apple_Music_logo.svg" alt="Apple Music" className="w-4 h-4 mr-2" />
                     Apple Music
                   </a>
                 </Button>
                 <Button variant="outline" className="w-full justify-start" asChild>
                   <a href="https://music.amazon.ca/artists/B0FPC89Q2D/tliu-studios" target="_blank" rel="noopener noreferrer">
-                    <svg className="w-4 h-4 mr-2" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-                      <rect width="100" height="100" rx="22" fill="#1CD1E0"/>
-                      <circle cx="35" cy="45" r="4" fill="white"/>
-                      <circle cx="65" cy="45" r="4" fill="white"/>
-                      <path d="M30 60c2 8 11 13 20 13s18-5 20-13" stroke="white" strokeWidth="3" strokeLinecap="round" fill="none"/>
-                    </svg>
+                    <img src="https://upload.wikimedia.org/wikipedia/commons/0/02/Amazon_Music_logo.svg" alt="Amazon Music" className="w-4 h-4 mr-2" />
                     Amazon Music
                   </a>
                 </Button>
