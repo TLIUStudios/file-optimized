@@ -29,15 +29,13 @@ export default function BetaBanner() {
               File Optimized is being developed. Found a bug or have feedback? <a href="https://support.tliu.co/" target="_blank" rel="noopener noreferrer" className="underline hover:text-amber-100 transition-colors">Let us know!</a>
             </p>
           </div>
-          <Button
-            variant="ghost"
-            size="icon"
+          <button
             onClick={handleDismiss}
-            className="h-8 w-8 flex-shrink-0 bg-amber-600/50 hover:bg-amber-700/50 text-white rounded-lg transition-colors"
+            className="w-8 h-8 flex items-center justify-center rounded-lg bg-slate-800/80 hover:bg-red-600 transition-colors"
             aria-label="Dismiss banner"
           >
-            <X className="w-4 h-4" />
-          </Button>
+            <X className="w-4 h-4 text-white" />
+          </button>
         </div>
       </div>
     </div>
