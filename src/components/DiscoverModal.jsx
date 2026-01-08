@@ -7,10 +7,18 @@ export default function DiscoverModal() {
   const [isOpen, setIsOpen] = useState(false);
 
   useEffect(() => {
-    const dismissed = sessionStorage.getItem('discoverModalDismissed');
-    if (!dismissed) {
-      setIsOpen(true);
-    }
+    const handleOptimization = () => {
+      const dismissed = sessionStorage.getItem('discoverModalDismissed');
+      if (!dismissed) {
+        setIsOpen(true);
+      }
+    };
+
+    window.addEventListener('firstOptimizationComplete', handleOptimization);
+    
+    return () => {
+      window.removeEventListener('firstOptimizationComplete', handleOptimization);
+    };
   }, []);
 
   const handleClose = () => {
