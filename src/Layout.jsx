@@ -19,6 +19,7 @@ import {
 import GoogleAds from "./components/GoogleAds";
 import ChatSupport from "./components/ChatSupport";
 import BetaBanner from "./components/BetaBanner";
+import DiscoverModal from "./components/DiscoverModal";
 
 const LoginPromptModal = lazy(() => import("./components/LoginPromptModal"));
 
@@ -449,6 +450,9 @@ export default function Layout({ children }) {
 
       {/* AI Chat Support */}
       <ChatSupport />
+
+      {/* Discover Modal */}
+      <DiscoverModal />
       </div>);
 
 }
