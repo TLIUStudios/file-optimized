@@ -2903,7 +2903,7 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
               {Object.entries(fileMetadata).map(([key, value]) => (
                 <div key={key} className="contents">
                   <span className="font-medium text-slate-600 dark:text-slate-400">{key.replace(/([A-Z])/g, ' $1').trim().split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')}:</span>
-                  <span className="text-slate-900 dark:text-white">{String(value)}</span>
+                  <span className="text-slate-900 dark:text-white break-words overflow-wrap-anywhere">{String(value)}</span>
                 </div>
               ))}
             </div>
