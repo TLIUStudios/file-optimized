@@ -20,7 +20,7 @@ export default function DiscoverModal() {
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogOverlay className="bg-black/40 backdrop-blur-md" />
+      <DialogOverlay className="bg-black/20 backdrop-blur-sm" />
       <DialogContent 
         className="sm:max-w-[620px] max-w-[95vw] max-h-[90vh] overflow-y-auto p-0 bg-white/95 dark:bg-slate-900/90 backdrop-blur-md border-2 border-amber-200 dark:border-amber-800/50 shadow-2xl [&>button]:hidden" 
         onPointerDownOutside={handleClose}
