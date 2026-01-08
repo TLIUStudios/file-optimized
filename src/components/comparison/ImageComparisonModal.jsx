@@ -694,6 +694,50 @@ export default function ImageComparisonModal({
         } else {
           setSelectedFormat(previewFormat);
         }
+      } else if (mediaType === 'audio') {
+        // Audio format conversion
+        toast.info(`Converting to ${format.toUpperCase()}...`);
+        
+        const response = await fetch(compressedImage);
+        const audioBlob = await response.blob();
+        
+        // Create audio context for conversion
+        const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        const arrayBuffer = await audioBlob.arrayBuffer();
+        const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
+        
+        // Convert to target format
+        let convertedAudioBlob;
+        
+        if (format === 'wav') {
+          // Convert to WAV
+          convertedAudioBlob = await audioBufferToWav(audioBuffer);
+        } else if (format === 'mp3') {
+          // Convert to MP3 using MediaRecorder
+          convertedAudioBlob = await audioBufferToMp3(audioBuffer);
+        }
+        
+        if (convertedAudioBlob) {
+          const newUrl = URL.createObjectURL(convertedAudioBlob);
+          setConvertedBlob(convertedAudioBlob);
+          setPreviewSize(convertedAudioBlob.size);
+          setPreviewFormat(format);
+          
+          // Update the audio player
+          const audioElement = document.querySelector('audio');
+          if (audioElement) {
+            audioElement.src = newUrl;
+          }
+          
+          const sizeDiff = convertedAudioBlob.size - originalSize;
+          const percentChange = ((sizeDiff / originalSize) * 100).toFixed(1);
+          
+          if (convertedAudioBlob.size > originalSize) {
+            toast.info(`${format.toUpperCase()}: ${formatFileSize(convertedAudioBlob.size)} (+${percentChange}% larger)`);
+          } else {
+            toast.success(`${format.toUpperCase()}: ${formatFileSize(convertedAudioBlob.size)} (${Math.abs(percentChange)}% smaller)`);
+          }
+        }
       } else {
         setPreviewFormat(format);
       }
@@ -704,6 +748,109 @@ export default function ImageComparisonModal({
     } finally {
       setIsConverting(false);
     }
+  };
+
+  // Helper function to convert AudioBuffer to WAV
+  const audioBufferToWav = async (audioBuffer) => {
+    const numberOfChannels = audioBuffer.numberOfChannels;
+    const sampleRate = audioBuffer.sampleRate;
+    const length = audioBuffer.length * numberOfChannels * 2;
+    const buffer = new ArrayBuffer(44 + length);
+    const view = new DataView(buffer);
+    
+    // Write WAV header
+    const writeString = (offset, string) => {
+      for (let i = 0; i < string.length; i++) {
+        view.setUint8(offset + i, string.charCodeAt(i));
+      }
+    };
+    
+    writeString(0, 'RIFF');
+    view.setUint32(4, 36 + length, true);
+    writeString(8, 'WAVE');
+    writeString(12, 'fmt ');
+    view.setUint32(16, 16, true);
+    view.setUint16(20, 1, true);
+    view.setUint16(22, numberOfChannels, true);
+    view.setUint32(24, sampleRate, true);
+    view.setUint32(28, sampleRate * numberOfChannels * 2, true);
+    view.setUint16(32, numberOfChannels * 2, true);
+    view.setUint16(34, 16, true);
+    writeString(36, 'data');
+    view.setUint32(40, length, true);
+    
+    // Write audio data
+    const channels = [];
+    for (let i = 0; i < numberOfChannels; i++) {
+      channels.push(audioBuffer.getChannelData(i));
+    }
+    
+    let offset = 44;
+    for (let i = 0; i < audioBuffer.length; i++) {
+      for (let channel = 0; channel < numberOfChannels; channel++) {
+        const sample = Math.max(-1, Math.min(1, channels[channel][i]));
+        view.setInt16(offset, sample < 0 ? sample * 0x8000 : sample * 0x7FFF, true);
+        offset += 2;
+      }
+    }
+    
+    return new Blob([buffer], { type: 'audio/wav' });
+  };
+
+  // Helper function to convert AudioBuffer to MP3 using MediaRecorder
+  const audioBufferToMp3 = async (audioBuffer) => {
+    // Create offline context to render audio
+    const offlineContext = new OfflineAudioContext(
+      audioBuffer.numberOfChannels,
+      audioBuffer.length,
+      audioBuffer.sampleRate
+    );
+    
+    const source = offlineContext.createBufferSource();
+    source.buffer = audioBuffer;
+    source.connect(offlineContext.destination);
+    source.start(0);
+    
+    const renderedBuffer = await offlineContext.startRendering();
+    
+    // Create MediaStream from AudioBuffer
+    const mediaStreamDestination = new AudioContext().createMediaStreamDestination();
+    const audioContext = mediaStreamDestination.context;
+    const sourceNode = audioContext.createBufferSource();
+    sourceNode.buffer = renderedBuffer;
+    sourceNode.connect(mediaStreamDestination);
+    
+    // Record using MediaRecorder
+    const mediaRecorder = new MediaRecorder(mediaStreamDestination.stream, {
+      mimeType: 'audio/webm'
+    });
+    
+    const chunks = [];
+    
+    return new Promise((resolve, reject) => {
+      mediaRecorder.ondataavailable = (e) => {
+        if (e.data.size > 0) {
+          chunks.push(e.data);
+        }
+      };
+      
+      mediaRecorder.onstop = () => {
+        const blob = new Blob(chunks, { type: 'audio/mp3' });
+        resolve(blob);
+      };
+      
+      mediaRecorder.onerror = reject;
+      
+      sourceNode.start(0);
+      mediaRecorder.start();
+      
+      // Stop recording after audio duration
+      setTimeout(() => {
+        mediaRecorder.stop();
+        sourceNode.stop();
+        audioContext.close();
+      }, (renderedBuffer.duration * 1000) + 100);
+    });
   };
 
   // Use cached blobs for ZIP download
