@@ -401,12 +401,12 @@ export default function Layout({ children }) {
               </a>
               <a href="https://music.apple.com/us/artist/tliu-studios/1836817405" target="_blank" rel="noopener noreferrer" className="text-slate-500 dark:text-slate-500 hover:text-white dark:hover:text-white transition-colors" aria-label="Apple Music">
                 <svg className="w-6 h-6" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm4.5 17.25c0 .69-.56 1.25-1.25 1.25s-1.25-.56-1.25-1.25v-7.5c0-.207-.168-.375-.375-.375s-.375.168-.375.375v7.5c0 .69-.56 1.25-1.25 1.25S11 17.94 11 17.25V8.625l7-1.556v10.181zm1-10.625l-8 1.778V3.75L17.5 2v4.625z"/>
+                  <path d="M23.997 12.145c0 6.627-5.373 12-12 12s-12-5.373-12-12 5.373-12 12-12 12 5.373 12 12zm-11.5 7.38c-1.104 0-2-.897-2-2.001 0-1.104.896-2 2-2 .384 0 .744.104 1.052.285l.015-4.875 6.394-1.428v5.513c-.016.012-.033.024-.05.036-.486.344-1.073.54-1.711.54-1.104 0-2-.896-2-2 0-1.104.896-2 2-2 .384 0 .744.103 1.052.285V5.647l-7.752 1.731v9.966c0 1.104-.896 2.001-2 2.001z"/>
                 </svg>
               </a>
               <a href="https://music.amazon.ca/artists/B0FPC89Q2D/tliu-studios" target="_blank" rel="noopener noreferrer" className="text-slate-500 dark:text-slate-500 hover:text-white dark:hover:text-white transition-colors" aria-label="Amazon Music">
                 <svg className="w-6 h-6" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M2.25 18.75c4.5 3 10.5 3 15 0m-15 0c-.375-.25-.375-.5 0-.75m15 .75c.375-.25.375-.5 0-.75m-15 0C6.75 15 12.75 15 17.25 18m-15 0L0 16.5m17.25 1.5L19.5 16.5M12 3v12m0 0c-1.5 0-2.25-1.5-2.25-2.25M12 15c1.5 0 2.25-1.5 2.25-2.25M12 3l6 1.5v9m0-9L12 6m6-1.5v9"/>
+                  <path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm6.177 17.997c-.352.193-.77.085-.923-.241-.956-.998-1.137-1.448-1.67-2.388-.997 2.008-2.456 2.618-4.32 2.618-2.208 0-3.928-1.363-3.928-4.086 0-2.129 1.152-3.577 2.791-4.284 1.424-.614 3.408-.723 4.926-.89v-.332c0-.61.047-1.332-.312-1.861-.312-.473-.909-.669-1.438-.669-1.139 0-2.15.614-2.394 1.891-.047.269-.231.53-.5.55l-2.622-.284c-.231-.047-.5-.231-.431-.585.643-3.386 3.697-4.406 6.437-4.406 1.396 0 3.227.379 4.328 1.449 1.396 1.306 1.264 3.041 1.264 4.937v4.484c0 1.355.563 1.949 1.088 2.685.185.269.231.592-.016.785-.618.531-1.719 1.472-2.326 2.008l-.009-.005z"/>
                 </svg>
               </a>
               <a href="https://www.facebook.com/profile.php?id=61577274854116" target="_blank" rel="noopener noreferrer" className="text-slate-500 dark:text-slate-500 hover:text-white dark:hover:text-white transition-colors" aria-label="Facebook">
