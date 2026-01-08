@@ -77,8 +77,11 @@ export default function Accessibility() {
             <h2 className="text-xl font-bold text-slate-900 dark:text-white mb-4">
               Standards Compliance
             </h2>
+            <p className="text-slate-600 dark:text-slate-400 mb-4">
+              We strive to conform to the Web Content Accessibility Guidelines (WCAG) 2.1 Level AA standards. These guidelines help make web content more accessible for people with disabilities and improve usability for everyone.
+            </p>
             <p className="text-slate-600 dark:text-slate-400">
-              We aim to conform to the Web Content Accessibility Guidelines (WCAG) 2.1 Level AA standards. These guidelines explain how to make web content more accessible for people with disabilities and more user-friendly for everyone.
+              While we work continuously to improve accessibility, we acknowledge that some areas may not yet fully meet all WCAG 2.1 Level AA criteria. We are actively working to address any gaps and welcome feedback to help us improve.
             </p>
           </section>
 
@@ -94,7 +97,7 @@ export default function Accessibility() {
               <li><strong>Discord:</strong> <a href="https://discord.gg/gRJesCUYz9" className="text-emerald-600 hover:underline">Join our community</a></li>
             </ul>
             <p className="text-slate-500 dark:text-slate-500 text-sm mt-4">
-              Last updated: November 2025
+              Last updated: January 2026
             </p>
           </section>
         </div>
