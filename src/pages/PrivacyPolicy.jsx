@@ -14,7 +14,7 @@ export default function PrivacyPolicy() {
             Privacy Policy
           </h1>
           <p className="text-slate-600 dark:text-slate-400">
-            Last updated: November 29, 2025
+            Last updated: January 8, 2026
           </p>
         </div>
 
@@ -58,9 +58,12 @@ export default function PrivacyPolicy() {
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="text-emerald-600 font-bold">✓</span>
-                  No file data is transmitted to any server
+                  No file data is transmitted to any server during core compression operations
                 </li>
               </ul>
+              <p className="text-slate-600 dark:text-slate-400 mt-4">
+                <strong>Note:</strong> Some optional features (such as AI-powered metadata generation and cloud storage integrations) may upload files to third-party services with your explicit consent. These features are clearly labeled and always optional.
+              </p>
             </div>
           </section>
 
@@ -83,19 +86,27 @@ export default function PrivacyPolicy() {
 
             <h3 className="font-semibold text-slate-900 dark:text-white mt-6 mb-3">Payment Information (Pro Users)</h3>
             <p className="text-slate-600 dark:text-slate-400">
-              For Pro subscriptions, payment processing is handled securely by Stripe. We do not store your credit card numbers or banking information. We only receive confirmation of successful payments and subscription status.
+              For Pro subscriptions, payment processing is handled securely by Stripe, a PCI-DSS compliant payment processor. We do not store, process, or have access to your credit card numbers or banking information. We only receive:
             </p>
+            <ul className="list-disc pl-6 text-slate-600 dark:text-slate-400 space-y-1 mt-2">
+              <li>Payment confirmation status</li>
+              <li>Subscription status and billing period</li>
+              <li>Last 4 digits of card (for display purposes only, provided by Stripe)</li>
+            </ul>
 
             <h3 className="font-semibold text-slate-900 dark:text-white mt-6 mb-3">Usage Analytics</h3>
             <p className="text-slate-600 dark:text-slate-400">
-              We collect anonymous usage statistics to improve our service, including:
+              We may collect aggregated, anonymous usage statistics to improve our service, including:
             </p>
             <ul className="list-disc pl-6 text-slate-600 dark:text-slate-400 space-y-1">
               <li>Page views and feature usage (anonymized)</li>
               <li>Browser type and device information</li>
-              <li>General geographic location (country/region level)</li>
-              <li>Error reports to fix bugs</li>
+              <li>General geographic location (country/region level only)</li>
+              <li>Error reports to fix bugs (no personal data included)</li>
             </ul>
+            <p className="text-slate-600 dark:text-slate-400 mt-3">
+              This data is aggregated and cannot be used to identify individual users.
+            </p>
           </section>
 
           {/* Cookies */}
@@ -124,12 +135,12 @@ export default function PrivacyPolicy() {
               We use the following third-party services:
             </p>
             <ul className="list-disc pl-6 text-slate-600 dark:text-slate-400 space-y-2">
-              <li><strong>Stripe:</strong> For secure payment processing</li>
-              <li><strong>Google Analytics:</strong> For anonymous usage statistics</li>
-              <li><strong>Google AdSense:</strong> For displaying advertisements to free users</li>
+              <li><strong>Stripe:</strong> For secure payment processing (PCI-DSS compliant). View their <a href="https://stripe.com/privacy" target="_blank" rel="noopener noreferrer" className="text-emerald-600 hover:underline">privacy policy</a>.</li>
+              <li><strong>Google Analytics:</strong> For anonymous usage statistics (if enabled). View their <a href="https://policies.google.com/privacy" target="_blank" rel="noopener noreferrer" className="text-emerald-600 hover:underline">privacy policy</a>.</li>
+              <li><strong>Google AdSense:</strong> For displaying advertisements to free users. View their <a href="https://policies.google.com/privacy" target="_blank" rel="noopener noreferrer" className="text-emerald-600 hover:underline">privacy policy</a>.</li>
             </ul>
             <p className="text-slate-600 dark:text-slate-400 mt-4">
-              Each of these services has their own privacy policy governing their use of your data.
+              Each of these third-party services has their own privacy policies governing how they handle data. We recommend reviewing their policies for complete information.
             </p>
           </section>
 
@@ -145,29 +156,55 @@ export default function PrivacyPolicy() {
               <li>Regular security audits and updates</li>
               <li>Access controls and authentication for all systems</li>
             </ul>
+            <p className="text-slate-600 dark:text-slate-400 mt-4">
+              However, no method of transmission over the internet or electronic storage is 100% secure. While we strive to protect your personal information, we cannot guarantee its absolute security.
+            </p>
           </section>
 
           {/* Your Rights */}
           <section>
             <h2 className="text-2xl font-bold text-slate-900 dark:text-white">Your Rights</h2>
             <p className="text-slate-600 dark:text-slate-400 mt-4">
-              You have the right to:
+              Depending on your location, you may have certain rights regarding your personal data, including:
             </p>
             <ul className="list-disc pl-6 text-slate-600 dark:text-slate-400 space-y-1">
-              <li>Access your personal data</li>
-              <li>Correct inaccurate data</li>
-              <li>Delete your account and associated data</li>
-              <li>Export your data</li>
+              <li>Access your personal data we hold</li>
+              <li>Request correction of inaccurate data</li>
+              <li>Request deletion of your account and associated data</li>
+              <li>Request data portability (export your data)</li>
               <li>Opt out of marketing communications</li>
-              <li>Disable non-essential cookies</li>
+              <li>Object to or restrict certain data processing</li>
+              <li>Withdraw consent where processing is based on consent</li>
             </ul>
+            <p className="text-slate-600 dark:text-slate-400 mt-4">
+              To exercise any of these rights, please contact us through our support portal. We will respond to valid requests within 30 days.
+            </p>
           </section>
 
           {/* Children */}
           <section>
             <h2 className="text-2xl font-bold text-slate-900 dark:text-white">Children's Privacy</h2>
             <p className="text-slate-600 dark:text-slate-400 mt-4">
-              File Optimized is not intended for children under 13 years of age. We do not knowingly collect personal information from children under 13. If you believe we have collected such information, please contact us immediately.
+              File Optimized is not directed to children under 13 years of age (or the applicable age of digital consent in your jurisdiction). We do not knowingly collect personal information from children under 13. If you are a parent or guardian and believe your child has provided us with personal information, please contact us immediately and we will delete such information.
+            </p>
+          </section>
+
+          {/* International Data Transfers */}
+          <section>
+            <h2 className="text-2xl font-bold text-slate-900 dark:text-white">International Data Transfers</h2>
+            <p className="text-slate-600 dark:text-slate-400 mt-4">
+              Since file processing happens in your browser, your files are never transferred internationally. Account data may be stored and processed in servers located in different countries as part of our hosting infrastructure. We ensure appropriate safeguards are in place when transferring data across borders.
+            </p>
+          </section>
+
+          {/* Data Retention */}
+          <section>
+            <h2 className="text-2xl font-bold text-slate-900 dark:text-white">Data Retention</h2>
+            <p className="text-slate-600 dark:text-slate-400 mt-4">
+              We retain your account information for as long as your account is active or as needed to provide you services. If you delete your account, we will delete your personal data within 30 days, except where we are required to retain it for legal, tax, or regulatory purposes.
+            </p>
+            <p className="text-slate-600 dark:text-slate-400 mt-3">
+              Remember: Your actual media files are never stored on our servers, so there is nothing to retain or delete regarding your file content.
             </p>
           </section>
 
@@ -175,7 +212,15 @@ export default function PrivacyPolicy() {
           <section>
             <h2 className="text-2xl font-bold text-slate-900 dark:text-white">Changes to This Policy</h2>
             <p className="text-slate-600 dark:text-slate-400 mt-4">
-              We may update this privacy policy from time to time. We will notify you of any significant changes by posting a notice on our website or sending you an email. Your continued use of File Optimized after changes constitutes acceptance of the updated policy.
+              We may update this privacy policy from time to time to reflect changes in our practices or for legal, operational, or regulatory reasons. We will notify you of any material changes by:
+            </p>
+            <ul className="list-disc pl-6 text-slate-600 dark:text-slate-400 space-y-1 mt-2">
+              <li>Posting a prominent notice on our website</li>
+              <li>Sending an email notification to registered users (for significant changes)</li>
+              <li>Updating the "Last updated" date at the top of this policy</li>
+            </ul>
+            <p className="text-slate-600 dark:text-slate-400 mt-3">
+              Your continued use of File Optimized after such changes indicates your acceptance of the updated policy.
             </p>
           </section>
 

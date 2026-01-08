@@ -14,7 +14,7 @@ export default function TermsOfService() {
             Terms of Service
           </h1>
           <p className="text-slate-600 dark:text-slate-400">
-            Last updated: November 29, 2025
+            Last updated: January 8, 2026
           </p>
         </div>
 
@@ -53,7 +53,7 @@ export default function TermsOfService() {
               <li>Batch file processing</li>
             </ul>
             <p className="text-slate-600 dark:text-slate-400 mt-4">
-              All file processing occurs locally in your browser. We do not upload, store, or have access to your files.
+              Core file processing occurs locally in your browser for compression and format conversion. We do not upload, store, or have access to your files during these operations. Some optional features (clearly labeled) may use third-party services with your consent.
             </p>
           </section>
 
@@ -95,11 +95,12 @@ export default function TermsOfService() {
 
             <h3 className="font-semibold text-slate-900 dark:text-white mt-6 mb-3">Billing and Cancellation</h3>
             <ul className="list-disc pl-6 text-slate-600 dark:text-slate-400 space-y-1">
-              <li>Pro subscriptions automatically renew unless cancelled</li>
-              <li>You may cancel your subscription at any time through your account settings</li>
-              <li>Cancellation takes effect at the end of the current billing period</li>
-              <li>No refunds are provided for partial billing periods</li>
-              <li>We reserve the right to change pricing with 30 days notice</li>
+              <li>Pro subscriptions automatically renew at the end of each billing period unless cancelled</li>
+              <li>You may cancel your subscription at any time through your account settings or the Stripe customer portal</li>
+              <li>Cancellation takes effect at the end of the current billing period—you retain Pro access until then</li>
+              <li>Refunds are handled on a case-by-case basis; generally, no refunds are provided for partial billing periods</li>
+              <li>We reserve the right to change pricing with 30 days advance notice to existing subscribers</li>
+              <li>Failed payments may result in suspension of Pro features after a grace period</li>
             </ul>
           </section>
 
@@ -152,7 +153,10 @@ export default function TermsOfService() {
 
             <h3 className="font-semibold text-slate-900 dark:text-white mt-6 mb-3">Limitation of Liability</h3>
             <p className="text-slate-600 dark:text-slate-400">
-              To the maximum extent permitted by law, TLIU Studios and File Optimized shall not be liable for any indirect, incidental, special, consequential, or punitive damages, including but not limited to loss of data, profits, or business opportunities.
+              To the maximum extent permitted by applicable law, TLIU Studios and File Optimized shall not be liable for any indirect, incidental, special, consequential, or punitive damages, including but not limited to loss of data, profits, or business opportunities, arising out of or related to your use or inability to use the service.
+            </p>
+            <p className="text-slate-600 dark:text-slate-400 mt-3">
+              In jurisdictions that do not allow the exclusion or limitation of liability for consequential or incidental damages, our liability shall be limited to the maximum extent permitted by law.
             </p>
 
             <h3 className="font-semibold text-slate-900 dark:text-white mt-6 mb-3">File Processing</h3>
@@ -198,7 +202,10 @@ export default function TermsOfService() {
               11. Termination
             </h2>
             <p className="text-slate-600 dark:text-slate-400 mt-4">
-              We may terminate or suspend your access to File Optimized immediately, without prior notice, for conduct that we believe violates these Terms of Service or is harmful to other users, us, or third parties, or for any other reason at our sole discretion.
+              We reserve the right to terminate or suspend your access to File Optimized immediately, with or without prior notice, for conduct that we believe violates these Terms of Service, is harmful to other users, us, or third parties, or for any other reason in our sole discretion.
+            </p>
+            <p className="text-slate-600 dark:text-slate-400 mt-3">
+              Upon termination, your right to use the service will immediately cease. Provisions that by their nature should survive termination (including disclaimers, limitations of liability, and indemnification) will remain in effect.
             </p>
           </section>
 
