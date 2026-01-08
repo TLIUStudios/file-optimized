@@ -5,12 +5,13 @@ import { motion } from "framer-motion";
 
 export default function DiscoverModal() {
   const [isOpen, setIsOpen] = useState(false);
+  const [hasShown, setHasShown] = useState(false);
 
   useEffect(() => {
     const handleOptimization = () => {
-      const dismissed = sessionStorage.getItem('discoverModalDismissed');
-      if (!dismissed) {
+      if (!hasShown) {
         setIsOpen(true);
+        setHasShown(true);
       }
     };
 
@@ -19,11 +20,10 @@ export default function DiscoverModal() {
     return () => {
       window.removeEventListener('firstOptimizationComplete', handleOptimization);
     };
-  }, []);
+  }, [hasShown]);
 
   const handleClose = () => {
     setIsOpen(false);
-    sessionStorage.setItem('discoverModalDismissed', 'true');
   };
 
   return (
