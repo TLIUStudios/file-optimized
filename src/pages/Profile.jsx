@@ -1451,7 +1451,7 @@ export default function Profile() {
                         </linearGradient>
                         <mask id="appleMusicMask">
                           <rect width="168" height="168" fill="white"/>
-                          <path d="M79.5 21c-3.7 0-6.8 3-6.8 6.8v59c-2.5-2.5-6-4-10-4-7.7 0-14 6.3-14 14s6.3 14 14 14 14-6.3 14-14V48.3l42-13.2v36.5c-2.5-2.5-6-4-10-4-7.7 0-14 6.3-14 14s6.3 14 14 14 14-6.3 14-14V27.8c0-3.8-3-6.8-6.8-6.8H79.5z" fill="black"/>
+                          <path d="M73.5 21c-3.7 0-6.8 3-6.8 6.8v59c-2.5-2.5-6-4-10-4-7.7 0-14 6.3-14 14s6.3 14 14 14 14-6.3 14-14V48.3l42-13.2v36.5c-2.5-2.5-6-4-10-4-7.7 0-14 6.3-14 14s6.3 14 14 14 14-6.3 14-14V27.8c0-3.8-3-6.8-6.8-6.8H73.5z" fill="black"/>
                         </mask>
                       </defs>
                       <rect width="168" height="168" rx="20" fill="url(#appleMusicGradProfile)" mask="url(#appleMusicMask)"/>
