@@ -1411,7 +1411,12 @@ export default function ImageComparisonModal({
                     <video controls src={compressedImage} className="max-w-full max-h-full object-contain" />
                   )}
                   {mediaType === 'audio' && (
-                    <audio controls src={compressedImage} className="max-w-full max-h-full" />
+                   <audio 
+                     controls 
+                     src={convertedBlob ? URL.createObjectURL(convertedBlob) : compressedImage} 
+                     className="max-w-full max-h-full"
+                     key={previewFormat}
+                   />
                   )}
                 </div>
                 <div className="h-16 w-full flex items-center justify-between px-6 bg-slate-100/80 dark:bg-slate-900/80 backdrop-blur-sm border-t border-slate-200 dark:border-slate-800">
