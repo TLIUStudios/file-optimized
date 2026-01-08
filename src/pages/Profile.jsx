@@ -1459,33 +1459,20 @@ export default function Profile() {
                 </Button>
                 <Button variant="outline" className="w-full justify-start" asChild>
                   <a href="https://music.apple.com/us/artist/tliu-studios/1836817405" target="_blank" rel="noopener noreferrer">
-                    <svg className="w-4 h-4 mr-2" viewBox="0 0 168 168" xmlns="http://www.w3.org/2000/svg">
-                      <defs>
-                        <linearGradient id="appleMusicGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                          <stop offset="0%" style={{stopColor: '#FA2D48', stopOpacity: 1}} />
-                          <stop offset="50%" style={{stopColor: '#FA446C', stopOpacity: 1}} />
-                          <stop offset="100%" style={{stopColor: '#FB5C82', stopOpacity: 1}} />
-                        </linearGradient>
-                      </defs>
-                      <rect width="168" height="168" rx="38" fill="url(#appleMusicGradient)"/>
-                      <path d="M124.5 49.833v50.084c0 8.75-7.084 17.5-17.5 17.5s-17.5-6.75-17.5-17.5 7.084-17.5 17.5-17.5c2.917 0 5.584.583 8.334 1.5V71.25l-50 14.25v38.417c0 8.75-7.084 17.5-17.5 17.5s-17.5-6.75-17.5-17.5 7.084-17.5 17.5-17.5c2.917 0 5.584.583 8.334 1.5V61.917c0-2.584 1.916-4.667 4.583-5.167l45-12.75c3.834-1.084 6.25 1.417 6.25 5.833z" fill="white"/>
+                    <svg className="w-4 h-4 mr-2" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+                      <rect width="100" height="100" rx="22" fill="#FA233B"/>
+                      <path d="M73 29v31c0 5.5-4.5 10-10 10s-10-4.5-10-10 4.5-10 10-10c1.8 0 3.5.4 5 1V43L38 51v23c0 5.5-4.5 10-10 10s-10-4.5-10-10 4.5-10 10-10c1.8 0 3.5.4 5 1V39c0-1.7 1.2-3.2 2.8-3.5L63 28c2.5-.7 4.5 1 4.5 3.5z" fill="white"/>
                     </svg>
                     Apple Music
                   </a>
                 </Button>
                 <Button variant="outline" className="w-full justify-start" asChild>
                   <a href="https://music.amazon.ca/artists/B0FPC89Q2D/tliu-studios" target="_blank" rel="noopener noreferrer">
-                    <svg className="w-4 h-4 mr-2" viewBox="0 0 168 168" xmlns="http://www.w3.org/2000/svg">
-                      <defs>
-                        <linearGradient id="amazonMusicGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                          <stop offset="0%" style={{stopColor: '#1BD7DC', stopOpacity: 1}} />
-                          <stop offset="100%" style={{stopColor: '#1DD3E0', stopOpacity: 1}} />
-                        </linearGradient>
-                      </defs>
-                      <rect width="168" height="168" rx="38" fill="url(#amazonMusicGradient)"/>
-                      <path d="M119 98c-1.5 12-13.5 21-27 21s-25.5-9-27-21c-.3-.9.6-1.5 1.5-1.5s1.5.6 1.5 1.5c1.5 10.5 12 18 24 18s22.5-7.5 24-18c0-.9.6-1.5 1.5-1.5s1.8.6 1.5 1.5z" fill="white"/>
-                      <circle cx="56" cy="85" r="6" fill="white"/>
-                      <circle cx="112" cy="85" r="6" fill="white"/>
+                    <svg className="w-4 h-4 mr-2" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+                      <rect width="100" height="100" rx="22" fill="#1CD1E0"/>
+                      <circle cx="35" cy="45" r="4" fill="white"/>
+                      <circle cx="65" cy="45" r="4" fill="white"/>
+                      <path d="M30 60c2 8 11 13 20 13s18-5 20-13" stroke="white" strokeWidth="3" strokeLinecap="round" fill="none"/>
                     </svg>
                     Amazon Music
                   </a>
