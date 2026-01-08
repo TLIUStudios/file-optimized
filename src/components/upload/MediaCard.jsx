@@ -2839,22 +2839,22 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
                           <path fill="#2684fc" d="m59.8 53h-32.3l-13.75 23.8c1.35.8 2.9 1.2 4.5 1.2h50.8c1.6 0 3.15-.45 4.5-1.2z"/>
                           <path fill="#ffba00" d="m73.4 26.5-12.7-22c-.8-1.4-1.95-2.5-3.3-3.3l-13.75 23.8 16.15 28h27.45c0-1.55-.4-3.1-1.2-4.5z"/>
                         </svg>
-                        <span className="text-slate-400 whitespace-nowrap">Google Drive</span>
-                        <Badge variant="outline" className="text-[10px] flex-shrink-0 ml-auto">Coming Soon</Badge>
+                        <span className="text-slate-400 whitespace-nowrap w-28">Google Drive</span>
+                        <Badge variant="outline" className="text-[10px] flex-shrink-0">Coming Soon</Badge>
                       </DropdownMenuItem>
                       <DropdownMenuItem disabled className="opacity-50 cursor-not-allowed">
                         <svg className="w-4 h-4 mr-2 opacity-40 flex-shrink-0" viewBox="0 0 24 24" fill="#0061FF">
                           <path d="M6 1.807L0 5.629l6 3.822 6.001-3.822L6 1.807zM18 1.807l-6 3.822 6 3.822 6-3.822-6-3.822zM0 13.274l6 3.822 6.001-3.822L6 9.452 0 13.274zM18 9.452l-6 3.822 6 3.822 6-3.822-6-3.822zM6 18.371l6.001 3.822 6-3.822-6-3.822L6 18.371z"/>
                         </svg>
-                        <span className="text-slate-400 whitespace-nowrap">Dropbox</span>
-                        <Badge variant="outline" className="text-[10px] flex-shrink-0 ml-auto">Coming Soon</Badge>
+                        <span className="text-slate-400 whitespace-nowrap w-28">Dropbox</span>
+                        <Badge variant="outline" className="text-[10px] flex-shrink-0">Coming Soon</Badge>
                       </DropdownMenuItem>
                       <DropdownMenuItem disabled className="opacity-50 cursor-not-allowed">
                         <svg className="w-4 h-4 mr-2 opacity-40 flex-shrink-0" viewBox="0 0 24 24">
                           <path fill="#0078D4" d="M13.977 5.998c2.382 0 4.438 1.382 5.414 3.386a4.746 4.746 0 013.608 4.599c0 2.626-2.131 4.756-4.757 4.756H5.758C2.579 18.739 0 16.16 0 12.98c0-2.812 2.018-5.157 4.688-5.659a6.99 6.99 0 016.289-1.323z"/>
                         </svg>
-                        <span className="text-slate-400 whitespace-nowrap">OneDrive</span>
-                        <Badge variant="outline" className="text-[10px] flex-shrink-0 ml-auto">Coming Soon</Badge>
+                        <span className="text-slate-400 whitespace-nowrap w-28">OneDrive</span>
+                        <Badge variant="outline" className="text-[10px] flex-shrink-0">Coming Soon</Badge>
                       </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
