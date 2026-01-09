@@ -22,12 +22,17 @@ export default function BetaBanner() {
   return (
     <div className="bg-gradient-to-r from-amber-500 to-orange-500 text-white border-b border-orange-600">
       <div className="container mx-auto px-4 py-3">
-        <div className="flex items-center justify-center gap-4 relative">
-          <div className="flex items-center gap-3 justify-center">
-            <AlertCircle className="w-5 h-5 flex-shrink-0" />
-            <p className="text-sm sm:text-base">
+        <div className="flex items-center justify-center gap-3 relative">
+          <AlertCircle className="w-5 h-5 flex-shrink-0" />
+          <div className="text-center text-sm sm:text-base">
+            <p className="hidden sm:inline">
               File Optimized is being developed. Found a bug or have feedback? <a href="https://support.tliu.co/" target="_blank" rel="noopener noreferrer" className="underline hover:text-amber-100 transition-colors">Let us know!</a>
             </p>
+            <div className="sm:hidden space-y-0.5">
+              <p>File Optimized is being developed.</p>
+              <p>Found a bug or have feedback?</p>
+              <p><a href="https://support.tliu.co/" target="_blank" rel="noopener noreferrer" className="underline hover:text-amber-100 transition-colors">Let us know!</a></p>
+            </div>
           </div>
           <button
             onClick={handleDismiss}
