@@ -198,8 +198,8 @@ export default function Layout({ children }) {
         }
       `}</style>
       
-      <header className="sticky top-0 z-[60] w-full border-b border-slate-200/50 dark:border-slate-800/50 bg-white/80 dark:bg-slate-950/80 backdrop-blur-lg">
-        <div className="container mx-auto px-3 sm:px-4 h-16 flex items-center justify-between">
+      <header className="sticky top-0 z-[60] w-full border-b border-slate-200/50 dark:border-slate-800/50 bg-white/80 dark:bg-slate-950/80 backdrop-blur-lg safe-top">
+        <div className="container mx-auto px-3 sm:px-4 h-16 flex items-center justify-between relative">
           <Link to={createPageUrl('Home')} className="flex items-center gap-2 hover:opacity-80 transition-opacity min-w-0">
             <div className="w-8 h-8 sm:w-9 sm:h-9 md:w-10 md:h-10 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-xl flex items-center justify-center shadow-lg flex-shrink-0">
               <AnimatedMediaIcon className="w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6 text-white" />
