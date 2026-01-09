@@ -289,12 +289,12 @@ export default function Layout({ children }) {
               variant="ghost"
               size="icon"
               onClick={toggleTheme}
-              className="rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 h-11 w-11 sm:h-10 sm:w-10 min-w-[44px] min-h-[44px] touch-manipulation">
+              className="rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 h-11 w-11 sm:h-10 sm:w-10 min-w-[44px] min-h-[44px] touch-manipulation flex items-center justify-center">
 
                 {theme === 'light' ?
-              <Moon className="w-5 h-5 text-slate-700 dark:text-slate-300" /> :
+              <Moon className="w-5 h-5 text-slate-700 dark:text-slate-300 pointer-events-none" /> :
 
-              <Sun className="w-5 h-5 text-slate-300" />
+              <Sun className="w-5 h-5 text-slate-300 pointer-events-none" />
               }
                 </Button>
                 </div>
