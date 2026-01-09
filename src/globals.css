@@ -1,3 +1,4 @@
+css
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -65,18 +66,8 @@
     padding-bottom: env(safe-area-inset-bottom);
   }
   .safe-top {
-    padding-top: max(env(safe-area-inset-top), 0px);
+    padding-top: env(safe-area-inset-top);
   }
-}
-
-/* Ensure header elements are clickable on mobile */
-header * {
-  touch-action: manipulation;
-}
-
-header button {
-  position: relative;
-  z-index: 1;
 }
 
 /* Touch optimization */
