@@ -301,9 +301,7 @@ export default function Layout({ children }) {
         </div>
       </header>
 
-      <div className="relative z-40">
       <BetaBanner />
-      </div>
 
       <main className="container mx-auto px-3 sm:px-4 py-4 sm:py-6 md:py-8">
         {children}
