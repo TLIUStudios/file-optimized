@@ -22,8 +22,8 @@ export default function BetaBanner() {
   return (
     <div className="bg-gradient-to-r from-amber-500 to-orange-500 text-white border-b border-orange-600">
       <div className="container mx-auto px-4 py-3">
-        <div className="flex items-center justify-between gap-4">
-          <div className="flex items-center gap-3 flex-1 min-w-0">
+        <div className="flex items-center justify-center gap-4 relative">
+          <div className="flex items-center gap-3 justify-center">
             <AlertCircle className="w-5 h-5 flex-shrink-0" />
             <p className="text-sm sm:text-base">
               File Optimized is being developed. Found a bug or have feedback? <a href="https://support.tliu.co/" target="_blank" rel="noopener noreferrer" className="underline hover:text-amber-100 transition-colors">Let us know!</a>
@@ -31,7 +31,7 @@ export default function BetaBanner() {
           </div>
           <button
             onClick={handleDismiss}
-            className="w-8 h-8 flex items-center justify-center rounded-lg bg-slate-800/80 hover:bg-red-600 transition-colors"
+            className="absolute right-0 w-8 h-8 flex items-center justify-center rounded-lg bg-slate-800/80 hover:bg-red-600 transition-colors"
             aria-label="Dismiss banner"
           >
             <X className="w-4 h-4 text-white" />
