@@ -279,9 +279,9 @@ export default function Layout({ children }) {
             <Button
               onClick={handleLoginClick}
               variant="ghost"
-              className="gap-1.5 sm:gap-2 h-11 sm:h-10 px-3 sm:px-3 text-sm min-w-[44px] min-h-[44px] touch-manipulation">
+              className="gap-1.5 sm:gap-2 h-11 sm:h-10 px-3 sm:px-3 text-sm min-w-[44px] min-h-[44px] touch-manipulation flex items-center justify-center">
 
-                <LogIn className="w-5 h-5 sm:w-4 sm:h-4" />
+                <LogIn className="w-5 h-5 sm:w-4 sm:h-4 pointer-events-none" />
                 <span className="hidden sm:inline">Sign In</span>
               </Button>
             }
