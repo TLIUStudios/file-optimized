@@ -219,8 +219,8 @@ export default function Layout({ children }) {
             isAuthenticated && user ?
             <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" className="gap-1.5 sm:gap-2 h-11 sm:h-10 px-3 sm:px-3 min-w-[44px] min-h-[44px] touch-manipulation">
-                      <User className="w-5 h-5 sm:w-4 sm:h-4" />
+                    <Button variant="ghost" className="gap-1.5 sm:gap-2 h-11 sm:h-10 px-3 sm:px-3 min-w-[44px] min-h-[44px] touch-manipulation flex items-center justify-center">
+                      <User className="w-5 h-5 sm:w-4 sm:h-4 pointer-events-none" />
                     <span className="hidden md:inline text-sm">{user.full_name || user.email}</span>
                     {isPro ?
                   <Badge className="bg-gradient-to-r from-amber-500 to-orange-500 text-white text-[10px] sm:text-xs px-1.5 sm:px-2 py-0.5 font-bold">
