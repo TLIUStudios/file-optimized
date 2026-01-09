@@ -65,8 +65,18 @@
     padding-bottom: env(safe-area-inset-bottom);
   }
   .safe-top {
-    padding-top: env(safe-area-inset-top);
+    padding-top: max(env(safe-area-inset-top), 0px);
   }
+}
+
+/* Ensure header elements are clickable on mobile */
+header * {
+  touch-action: manipulation;
+}
+
+header button {
+  position: relative;
+  z-index: 1;
 }
 
 /* Touch optimization */
