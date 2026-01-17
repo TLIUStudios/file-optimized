@@ -1527,14 +1527,20 @@ export default function Profile() {
                   </a>
                 </Button>
                 <Button variant="outline" className="w-full justify-start" asChild>
-                  <a href="https://filegenerated.com/" target="_blank" rel="noopener noreferrer">
-                    <Box className="w-4 h-4 mr-2" />
-                    File Generated
-                  </a>
-                </Button>
-              </div>
-            </Card>
-          </motion.div>
+                   <a href="https://filegenerated.com/" target="_blank" rel="noopener noreferrer">
+                     <Box className="w-4 h-4 mr-2" />
+                     File Generated
+                   </a>
+                 </Button>
+                 <Button variant="outline" className="w-full justify-start" asChild>
+                   <a href="https://linkorbs.com/" target="_blank" rel="noopener noreferrer">
+                     <Box className="w-4 h-4 mr-2" />
+                     Link Orbs
+                   </a>
+                 </Button>
+                </div>
+                </Card>
+                </motion.div>
 
           {/* Shop Card */}
           <motion.div
