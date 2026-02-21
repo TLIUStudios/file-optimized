@@ -109,11 +109,7 @@ export default function HomepageContent() {
     <div className="mt-16 space-y-20">
 
       {/* Divider */}
-      <div className="flex items-center gap-4 max-w-5xl mx-auto">
-        <div className="flex-1 h-px bg-slate-200 dark:bg-slate-800" />
-        <span className="text-xs text-slate-400 dark:text-slate-600 font-medium uppercase tracking-widest whitespace-nowrap">How It Works</span>
-        <div className="flex-1 h-px bg-slate-200 dark:bg-slate-800" />
-      </div>
+      <div className="w-full h-px bg-slate-200 dark:bg-slate-800" />
 
       {/* How It Works */}
       <section>
