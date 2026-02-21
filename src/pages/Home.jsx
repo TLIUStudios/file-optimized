@@ -712,7 +712,7 @@ export default function Home() {
       }
 
       {/* Homepage Content - How It Works, Formats, Why Us, FAQ */}
-      {images.length === 0 && <HomepageContent />}
+          <HomepageContent />
 
       {/* Comparison Modal */}
       {comparisonData &&
