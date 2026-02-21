@@ -240,12 +240,12 @@ You can see size breakdowns for every format available before you download.
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 max-w-5xl mx-auto">
           {[
-          { icon: Shield, title: "Zero Data Collection", desc: "Files never leave your browser. No uploads, no servers, no tracking of your content.", color: "text-emerald-600" },
-          { icon: Zap, title: "Instant Processing", desc: "Client-side compression means results in seconds, not minutes. No upload wait time.", color: "text-amber-500" },
-          { icon: CheckCircle2, title: "No Watermarks", desc: "Both Free and Pro plans produce clean output with zero watermarks on your files.", color: "text-blue-600" },
-          { icon: Globe, title: "No Software Install", desc: "Works entirely in your browser. No downloads, no plugins, no app installations needed.", color: "text-violet-600" },
-          { icon: Image, title: "Side-by-Side Comparison", desc: "Use our interactive comparison slider to see original vs. compressed quality before downloading.", color: "text-pink-600" },
-          { icon: Film, title: "Multi-Format Support", desc: "Images, videos, and audio - all in one tool. Convert and compress any format with ease.", color: "text-teal-600" }].
+          { icon: Shield, title: "Zero Data Collection", desc: "Files never leave your browser. No uploads, no servers, no tracking of your content.", color: "text-orange-500" },
+          { icon: Zap, title: "Instant Processing", desc: "Client-side compression means results in seconds, not minutes. No upload wait time.", color: "text-orange-500" },
+          { icon: CheckCircle2, title: "No Watermarks", desc: "Both Free and Pro plans produce clean output with zero watermarks on your files.", color: "text-orange-500" },
+          { icon: Globe, title: "No Software Install", desc: "Works entirely in your browser. No downloads, no plugins, no app installations needed.", color: "text-orange-500" },
+          { icon: Image, title: "Side-by-Side Comparison", desc: "Use our interactive comparison slider to see original vs. compressed quality before downloading.", color: "text-orange-500" },
+          { icon: Film, title: "Multi-Format Support", desc: "Images, videos, and audio - all in one tool. Convert and compress any format with ease.", color: "text-orange-500" }].
           map((item, i) =>
           <motion.div
             key={item.title}
