@@ -30,7 +30,7 @@ const faqs = [
 },
 {
   q: "Does compression reduce image quality?",
-  a: "It depends on the format and settings. Lossless formats like PNG retain 100% quality. Lossy formats like JPEG and WebP reduce some quality to achieve smaller sizes. We let you set the quality level (1–100) so you have full control over the trade-off."
+  a: "It depends on the format and settings. Lossy formats like JPEG and WEBP reduce some quality to achieve smaller sizes. We let you set the quality level (1-100) so you have full control over the trade-off. Lossless formats like PNG retain 100% quality. So it ultimately varies depending on file type."
 },
 {
   q: "Do I need to create an account?",
