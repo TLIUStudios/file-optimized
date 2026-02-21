@@ -26,7 +26,7 @@ const faqs = [
 },
 {
   q: "What is the difference between compression formats?",
-  a: "WebP offers excellent compression with broad browser support — great for web. AVIF offers the best compression ratios but has slightly lower compatibility. PNG is lossless (no quality loss). JPEG is lossy and best for photos. We show you the file size for each format so you can pick the best one."
+  a: "JPEG is lossy and best for photos. PNG is lossless (no quality loss). WEBP offers excellent compression with broad browser support - great for web. AVIF offers the best compression ratios but has slightly lower compatibility. We show you the file size for each format so you can pick the best one that suites your needs."
 },
 {
   q: "Does compression reduce image quality?",
