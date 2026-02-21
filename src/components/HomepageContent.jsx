@@ -152,7 +152,7 @@ export default function HomepageContent() {
           </p>
         </motion.div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-5xl mx-auto">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-5xl mx-auto mt-0">
           {steps.map((step, i) => (
             <motion.div
               key={step.step}
