@@ -43,21 +43,21 @@ const steps = [
   icon: Upload,
   title: "Upload Your Files",
   desc: "Drag & drop or click to select images, videos, or audio files.",
-  color: "from-emerald-500 to-teal-600",
+  color: "from-orange-500 to-amber-600",
   step: "01"
 },
 {
   icon: Settings2,
   title: "Choose Format & Quality",
   desc: "Pick your file output format and adjust quality settings to balance size vs. quality.",
-  color: "from-blue-500 to-indigo-600",
+  color: "from-orange-500 to-amber-600",
   step: "02"
 },
 {
   icon: Download,
   title: "Download Optimized Files",
   desc: "Download your compressed files individually or as a ZIP.",
-  color: "from-violet-500 to-purple-600",
+  color: "from-orange-500 to-amber-600",
   step: "03"
 }];
 
