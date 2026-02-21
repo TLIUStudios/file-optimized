@@ -14,7 +14,7 @@ const faqs = [
 },
 {
   q: "What file formats are supported?",
-  a: "We support a wide range of formats. Images: JPEG, PNG, WebP, AVIF, GIF. Video: MP4 (H.264/H.265). Audio: MP3, WAV. You can also convert between formats — for example, convert PNG to WebP or WAV to MP3."
+  a: "We support a wide range of formats. Images: JPEG, PNG, WEBP, AVIF, GIF. Video: MP4. Audio: MP3, WAV. You can also convert between formats - for example, convert JPEG to WEBP or MP3 to WAV."
 },
 {
   q: "How much compression can I expect?",
