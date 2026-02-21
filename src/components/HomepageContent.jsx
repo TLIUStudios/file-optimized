@@ -303,8 +303,58 @@ You can see size breakdowns for every format available before you download.
             Visit our Support Portal
           </a>
         </motion.p>
-      </section>
+        </section>
 
-    </div>);
+        {/* Animated Footer Divider */}
+        <motion.div
+        initial={{ opacity: 0 }}
+        whileInView={{ opacity: 1 }}
+        viewport={{ once: true }}
+        transition={{ duration: 1 }}
+        className="relative flex items-center justify-center py-8 overflow-hidden"
+        >
+        {/* Left line */}
+        <motion.div
+          initial={{ scaleX: 0 }}
+          whileInView={{ scaleX: 1 }}
+          viewport={{ once: true }}
+          transition={{ duration: 1, ease: "easeOut" }}
+          className="flex-1 h-px bg-gradient-to-r from-transparent via-slate-300 dark:via-slate-700 to-emerald-400 dark:to-emerald-600 origin-left"
+        />
+
+        {/* Center icon/orb */}
+        <motion.div
+          initial={{ scale: 0, rotate: -180 }}
+          whileInView={{ scale: 1, rotate: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.6, delay: 0.4, type: "spring", stiffness: 200 }}
+          className="mx-4 relative"
+        >
+          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-emerald-400 to-teal-600 flex items-center justify-center shadow-lg shadow-emerald-500/30">
+            <motion.div
+              animate={{ rotate: 360 }}
+              transition={{ duration: 8, repeat: Infinity, ease: "linear" }}
+              className="w-3 h-3 rounded-full border-2 border-white/60 border-t-white"
+            />
+          </div>
+          {/* Pulse ring */}
+          <motion.div
+            animate={{ scale: [1, 1.8, 1], opacity: [0.5, 0, 0.5] }}
+            transition={{ duration: 2.5, repeat: Infinity, ease: "easeInOut" }}
+            className="absolute inset-0 rounded-full bg-emerald-400/30"
+          />
+        </motion.div>
+
+        {/* Right line */}
+        <motion.div
+          initial={{ scaleX: 0 }}
+          whileInView={{ scaleX: 1 }}
+          viewport={{ once: true }}
+          transition={{ duration: 1, ease: "easeOut" }}
+          className="flex-1 h-px bg-gradient-to-l from-transparent via-slate-300 dark:via-slate-700 to-emerald-400 dark:to-emerald-600 origin-right"
+        />
+        </motion.div>
+
+        </div>);
 
 }
