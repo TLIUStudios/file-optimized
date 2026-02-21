@@ -56,7 +56,7 @@ const steps = [
 {
   icon: Download,
   title: "Download Optimized Files",
-  desc: "Download your compressed files individually or as a ZIP file.",
+  desc: "Download your compressed files individually or as a ZIP.",
   color: "from-violet-500 to-purple-600",
   step: "03"
 }];
