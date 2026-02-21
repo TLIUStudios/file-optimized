@@ -711,6 +711,9 @@ export default function Home() {
         </motion.div>
       }
 
+      {/* Homepage Content - How It Works, Formats, Why Us, FAQ */}
+      {images.length === 0 && <HomepageContent />}
+
       {/* Comparison Modal */}
       {comparisonData &&
       <Suspense fallback={null}>
