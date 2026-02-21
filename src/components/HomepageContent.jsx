@@ -145,7 +145,7 @@ export default function HomepageContent() {
               <div className={cn("w-14 h-14 bg-gradient-to-br rounded-xl flex items-center justify-center mb-4 mx-auto shadow-md", step.color)}>
                 <step.icon className="w-7 h-7 text-white" />
               </div>
-              <h3 className="font-semibold text-slate-900 dark:text-white mb-2">{step.title}</h3>
+              <h3 className="font-semibold text-slate-900 dark:text-white mb-2 whitespace-nowrap">{step.title}</h3>
               <p className="text-sm text-slate-500 dark:text-slate-400 leading-relaxed">{step.desc}</p>
             </motion.div>
           )}
