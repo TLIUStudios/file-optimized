@@ -220,7 +220,7 @@ You can see size breakdowns for every format available before you download.
           viewport={{ once: true }}
           className="text-center text-xs text-slate-400 dark:text-slate-600 mt-4">
 
-          Convert between any supported format — e.g. PNG → WebP, WAV → MP3, and more.
+          Convert between any supported format - e.g. JPEG → WEBP, MP3 → WAV, and more.
         </motion.p>
       </section>
 
