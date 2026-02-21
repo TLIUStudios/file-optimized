@@ -233,8 +233,8 @@ You can see size breakdowns for every format available before you download.
           className="text-center mb-10">
 
           <h2 className="text-2xl sm:text-3xl font-bold text-slate-900 dark:text-white mb-3">Why File Optimized?</h2>
-          <p className="text-slate-500 dark:text-slate-400 max-w-xl mx-auto text-sm sm:text-base">
-            We built the tool we always wanted — fast, private, and powerful.
+          <p className="text-slate-500 dark:text-slate-400 max-w-xl mx-auto text-sm sm:text-base">We built the tool we always wanted - fast, private, and powerful.
+
           </p>
         </motion.div>
 
