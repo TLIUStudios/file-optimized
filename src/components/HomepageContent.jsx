@@ -18,7 +18,7 @@ const faqs = [
 },
 {
   q: "How much compression can I expect?",
-  a: "Results vary by file type and content, but images typically see 50–90% size reduction. WebP and AVIF formats offer the best compression for web use. Videos can be compressed significantly depending on the resolution and bitrate settings."
+  a: "Results vary by file type and content, but images typically see 25-90% file size reduction. WEBP formats offer the best compression for web use. Videos and Audio files can be compressed significantly depending on the resolution and bitrate settings."
 },
 {
   q: "Can I compress multiple files at once?",
