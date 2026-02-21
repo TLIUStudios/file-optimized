@@ -146,7 +146,6 @@ export default function HomepageContent() {
           viewport={{ once: true }}
           className="text-center mb-10"
         >
-          <h2 className="text-2xl sm:text-3xl font-bold text-slate-900 dark:text-white mb-3">How It Works</h2>
           <p className="text-slate-500 dark:text-slate-400 max-w-xl mx-auto text-sm sm:text-base">
             Optimize your files in three simple steps — no account required.
           </p>
