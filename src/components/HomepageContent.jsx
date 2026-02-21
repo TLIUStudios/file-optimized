@@ -42,7 +42,7 @@ const steps = [
 {
   icon: Upload,
   title: "Upload Your Files",
-  desc: "Drag & drop or click to select images, videos, or audio files. Batch upload up to 9 files at once (30 with Pro).",
+  desc: "Drag & drop or click to select images, videos, or audio files.",
   color: "from-emerald-500 to-teal-600",
   step: "01"
 },
