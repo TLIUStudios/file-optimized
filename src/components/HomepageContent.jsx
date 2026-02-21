@@ -65,7 +65,7 @@ const steps = [
 const formats = [
 { name: "JPEG", ext: "jpg", type: "image", desc: "Best for photos" },
 { name: "PNG", ext: "png", type: "image", desc: "Lossless quality" },
-{ name: "WebP", ext: "webp", type: "image", desc: "Modern web format" },
+{ name: "WEBP", ext: "webp", type: "image", desc: "Modern web format" },
 { name: "AVIF", ext: "avif", type: "image", desc: "Next-gen compression" },
 { name: "GIF", ext: "gif", type: "image", desc: "Animated images" },
 { name: "MP4", ext: "mp4", type: "video", desc: "Universal video" },
