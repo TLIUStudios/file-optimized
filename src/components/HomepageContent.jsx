@@ -49,7 +49,7 @@ const steps = [
 {
   icon: Settings2,
   title: "Choose Format & Quality",
-  desc: "Pick your output format (WebP, AVIF, MP4, MP3, etc.) and adjust quality settings to balance size vs. quality.",
+  desc: "Pick your file output format and adjust quality settings to balance size vs. quality.",
   color: "from-blue-500 to-indigo-600",
   step: "02"
 },
