@@ -109,7 +109,9 @@ export default function HomepageContent() {
     <div className="mt-16 space-y-20">
 
       {/* Divider */}
-      <div className="-mx-3 sm:-mx-4 h-px bg-slate-200 dark:bg-slate-800" />
+      <div className="relative">
+        <div className="absolute left-1/2 -translate-x-1/2 w-screen h-px bg-slate-200 dark:bg-slate-800" />
+      </div>
 
       {/* How It Works */}
       <section>
