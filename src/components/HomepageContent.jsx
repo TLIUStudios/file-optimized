@@ -108,6 +108,36 @@ export default function HomepageContent() {
   return (
     <div className="mt-16 space-y-20">
 
+      {/* App Preview Screenshot */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true }}
+        className="max-w-5xl mx-auto"
+      >
+        <div className="text-center mb-6">
+          <h2 className="text-2xl sm:text-3xl font-bold text-slate-900 dark:text-white mb-3">See It In Action</h2>
+          <p className="text-slate-500 dark:text-slate-400 text-sm sm:text-base max-w-xl mx-auto">
+            Compare original vs. compressed side-by-side with our interactive slider. See size breakdowns for every format before you download.
+          </p>
+        </div>
+        <div className="rounded-2xl overflow-hidden shadow-2xl border border-slate-200 dark:border-slate-700">
+          <img
+            src="https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/69100dedd17537e37249237a/f27d51948_FileOptimized-Example1.png"
+            alt="File Optimized - side-by-side image comparison with format size breakdown"
+            className="w-full object-cover"
+            loading="lazy"
+          />
+        </div>
+      </motion.div>
+
+      {/* Divider */}
+      <div className="flex items-center gap-4 max-w-5xl mx-auto">
+        <div className="flex-1 h-px bg-slate-200 dark:bg-slate-800" />
+        <span className="text-xs text-slate-400 dark:text-slate-600 font-medium uppercase tracking-widest whitespace-nowrap">How It Works</span>
+        <div className="flex-1 h-px bg-slate-200 dark:bg-slate-800" />
+      </div>
+
       {/* How It Works */}
       <section>
         <motion.div
