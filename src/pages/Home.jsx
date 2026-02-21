@@ -9,6 +9,7 @@ import SEOHead from "../components/SEOHead";
 import { useQuery } from "@tanstack/react-query";
 import { motion } from "framer-motion";
 import AchievementNotification from "../components/AchievementNotification";
+import HomepageContent from "../components/HomepageContent";
 
 // Lazy load heavy components for better performance
 const UploadZone = lazy(() => import("../components/upload/UploadZone"));
