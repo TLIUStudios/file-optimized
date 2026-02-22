@@ -69,6 +69,7 @@ import ReportBug from './pages/ReportBug';
 import Security from './pages/Security';
 import TermsOfService from './pages/TermsOfService';
 import Tutorials from './pages/Tutorials';
+import ContactUs from './pages/ContactUs';
 import __Layout from './Layout.jsx';
 
 
@@ -95,6 +96,7 @@ export const PAGES = {
     "Security": Security,
     "TermsOfService": TermsOfService,
     "Tutorials": Tutorials,
+    "ContactUs": ContactUs,
 }
 
 export const pagesConfig = {
