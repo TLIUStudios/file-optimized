@@ -154,7 +154,7 @@ export default function DiscoverModal() {
                 Discord
               </a>
               <span className="hidden sm:inline text-slate-300 dark:text-slate-600">•</span>
-              <a href="https://support.tliu.co/" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-xs sm:text-sm text-slate-600 dark:text-slate-400 hover:text-amber-600 dark:hover:text-amber-400 transition-colors">
+              <a href="https://support.tliu.co/" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-xs sm:text-sm text-slate-600 dark:text-slate-400 hover:text-orange-600 dark:hover:text-orange-400 transition-colors">
                 <ExternalLink className="w-4 h-4 flex-shrink-0" />
                 Support Portal
               </a>
