@@ -118,6 +118,10 @@ export default function DiscoverModal() {
                   <Box className="w-4 h-4 text-slate-400 group-hover:text-orange-600 dark:group-hover:text-orange-500 transition-colors flex-shrink-0" />
                   <span className="text-sm font-medium text-slate-700 dark:text-slate-300 group-hover:text-orange-700 dark:group-hover:text-orange-400">File Generated</span>
                 </a>
+                <a href="https://linkorbs.com/" target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 p-2.5 rounded-lg bg-white/50 dark:bg-slate-800/30 hover:bg-orange-100 dark:hover:bg-orange-950/20 border border-transparent hover:border-orange-300 dark:hover:border-orange-700/50 transition-all group">
+                  <Box className="w-4 h-4 text-slate-400 group-hover:text-orange-600 dark:group-hover:text-orange-500 transition-colors flex-shrink-0" />
+                  <span className="text-sm font-medium text-slate-700 dark:text-slate-300 group-hover:text-orange-700 dark:group-hover:text-orange-400">Link Orbs</span>
+                </a>
                 <a href="https://shop.tliu.co/" target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 p-2.5 rounded-lg bg-white/50 dark:bg-slate-800/30 hover:bg-orange-100 dark:hover:bg-orange-950/20 border border-transparent hover:border-orange-300 dark:hover:border-orange-700/50 transition-all group">
                   <ShoppingBag className="w-4 h-4 text-slate-400 group-hover:text-orange-600 dark:group-hover:text-orange-500 transition-colors flex-shrink-0" />
                   <span className="text-sm font-medium text-slate-700 dark:text-slate-300 group-hover:text-orange-700 dark:group-hover:text-orange-400">TLIU Store</span>
