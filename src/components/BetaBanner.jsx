@@ -27,12 +27,12 @@ export default function BetaBanner() {
           <AlertCircle className="w-5 h-5 flex-shrink-0" />
           <div className="text-center text-sm sm:text-base">
             <p className="hidden sm:inline">
-              File Optimized is being developed. Found a bug or have feedback? <a href="https://support.tliu.co/" target="_blank" rel="noopener noreferrer" className="underline hover:text-amber-100 transition-colors">Let us know!</a>
+              File Optimized is being developed. Found a bug or have feedback? <Link to={createPageUrl('ContactUs')} className="underline hover:text-amber-100 transition-colors">Let us know!</Link>
             </p>
             <div className="sm:hidden space-y-0.5">
               <p>File Optimized is being developed.</p>
               <p>Found a bug or have feedback?</p>
-              <p><a href="https://support.tliu.co/" target="_blank" rel="noopener noreferrer" className="underline hover:text-amber-100 transition-colors">Let us know!</a></p>
+              <p><Link to={createPageUrl('ContactUs')} className="underline hover:text-amber-100 transition-colors">Let us know!</Link></p>
             </div>
           </div>
           <button
