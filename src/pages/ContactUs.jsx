@@ -3,12 +3,12 @@ import { motion } from "framer-motion";
 
 const contacts = [
   {
-    icon: HeadphonesIcon,
-    title: "Support Portal",
-    desc: "Browse help articles, guides, and submit a support ticket.",
-    link: "https://support.tliu.co/",
-    linkLabel: "Visit Support Portal",
-    color: "from-emerald-500 to-teal-600",
+    icon: Mail,
+    title: "Email Us",
+    desc: "Send us an email and we'll get back to you as soon as possible.",
+    link: "mailto:Office@TLIU.co",
+    linkLabel: "Office@TLIU.co",
+    color: "from-orange-500 to-amber-600",
   },
   {
     icon: MessageCircle,
@@ -19,12 +19,12 @@ const contacts = [
     color: "from-indigo-500 to-violet-600",
   },
   {
-    icon: Mail,
-    title: "Email Us",
-    desc: "Send us an email and we'll get back to you as soon as possible.",
-    link: "mailto:Office@TLIU.co",
-    linkLabel: "Office@TLIU.co",
-    color: "from-orange-500 to-amber-600",
+    icon: HeadphonesIcon,
+    title: "Support Portal",
+    desc: "Browse help articles, guides, and submit a support ticket.",
+    link: "https://support.tliu.co/",
+    linkLabel: "Visit Support Portal",
+    color: "from-emerald-500 to-teal-600",
   },
 ];
 
