@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { X, AlertCircle } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Link } from "react-router-dom";
+import { createPageUrl } from "@/utils";
 
 export default function BetaBanner() {
   const [isVisible, setIsVisible] = useState(false);
