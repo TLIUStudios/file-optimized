@@ -161,8 +161,9 @@ export default function HomepageContent() {
 
         <div className="text-center mb-6">
           <h2 className="text-2xl sm:text-3xl font-bold text-slate-900 dark:text-white mb-3">See It In Action</h2>
-          <p className="text-slate-500 dark:text-slate-400 text-sm sm:text-base max-w-xl mx-auto">Compare original vs. compressed side-by-side with our interactive slider.
-You can see size breakdowns for every format available before you download.
+          <p className="text-slate-500 dark:text-slate-400 text-sm sm:text-base max-w-xl mx-auto">
+            Compare original vs. compressed side-by-side with our interactive slider.<br />
+            You can see size breakdowns for every format available before you download.
           </p>
         </div>
         <div className="rounded-2xl overflow-hidden shadow-2xl border border-slate-200 dark:border-slate-700">
