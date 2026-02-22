@@ -16,7 +16,7 @@ const contacts = [
     desc: "Join our Discord server to chat with the team and community.",
     link: "https://discord.gg/gRJesCUYz9",
     linkLabel: "Join our Discord",
-    color: "from-indigo-500 to-violet-600",
+    color: "from-yellow-400 to-amber-500",
   },
   {
     icon: HeadphonesIcon,
