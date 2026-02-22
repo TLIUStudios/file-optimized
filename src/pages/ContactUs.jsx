@@ -22,8 +22,8 @@ const contacts = [
     icon: Mail,
     title: "Email Us",
     desc: "Send us an email and we'll get back to you as soon as possible.",
-    link: "mailto:support@tliu.co",
-    linkLabel: "support@tliu.co",
+    link: "mailto:Office@TLIU.co",
+    linkLabel: "Office@TLIU.co",
     color: "from-orange-500 to-amber-600",
   },
 ];
