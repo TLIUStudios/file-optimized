@@ -351,6 +351,7 @@ export default function Layout({ children }) {
             <div>
               <h4 className="font-semibold text-slate-900 dark:text-white mb-4 text-sm">Support</h4>
               <ul className="space-y-2">
+                <li><Link to={createPageUrl('ContactUs')} className="text-sm text-slate-500 dark:text-slate-400 hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors">Contact Us</Link></li>
                 <li><a href="https://support.tliu.co/" target="_blank" rel="noopener noreferrer" className="text-sm text-slate-500 dark:text-slate-400 hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors">Support Portal</a></li>
                 <li><Link to={createPageUrl('ReportBug')} className="text-sm text-slate-500 dark:text-slate-400 hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors">Report a Bug</Link></li>
                 <li><Link to={createPageUrl('Contact')} className="text-sm text-slate-500 dark:text-slate-400 hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors">Main Hub</Link></li>
