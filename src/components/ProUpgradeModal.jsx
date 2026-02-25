@@ -107,7 +107,7 @@ export default function ProUpgradeModal({ isOpen, onClose, onUpgrade, processing
                 </div>
                 <div className="flex items-center gap-2 text-xs text-slate-900 dark:text-white font-medium">
                   <Check className="w-3.5 h-3.5 text-slate-500 flex-shrink-0" />
-                  <span>9 files batch</span>
+                  <span>3 files batch</span>
                 </div>
                 <div className="flex items-center gap-2 text-xs text-slate-900 dark:text-white font-medium">
                   <Check className="w-3.5 h-3.5 text-slate-500 flex-shrink-0" />
