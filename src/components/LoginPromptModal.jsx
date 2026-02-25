@@ -9,7 +9,7 @@ export default function LoginPromptModal({ isOpen, onClose, onLogin, context = "
   const [billingFrequency, setBillingFrequency] = useState('monthly');
   
   const isAnnual = billingFrequency === 'annual';
-  const proPrice = isAnnual ? '$100 USD' : '$10 USD';
+  const proPrice = isAnnual ? '$150 USD' : '$15 USD';
   const proPeriod = isAnnual ? '/yr' : '/mo';
   
   return (
