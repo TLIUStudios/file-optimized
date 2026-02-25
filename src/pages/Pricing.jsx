@@ -27,6 +27,11 @@ const features = [
 export default function Pricing() {
   const [isAnnual, setIsAnnual] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [user, setUser] = useState(null);
+
+  useState(() => {
+    base44.auth.me().then(setUser).catch(() => {});
+  });
 
   const monthlyPrice = 15;
   const annualPrice = 150;
