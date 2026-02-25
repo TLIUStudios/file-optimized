@@ -23,7 +23,7 @@ const ALLOWED_TYPES = {
   'audio/x-wav': ['.wav'],
 };
 
-const MAX_FILES_PER_BATCH_FREE = 9;
+const MAX_FILES_PER_BATCH_FREE = 3;
 const MAX_FILES_PER_BATCH_PRO = 30;
 const MAX_FILE_SIZE_FREE = 50 * 1024 * 1024; // 50MB in bytes
 const MAX_FILE_SIZE_PRO = 500 * 1024 * 1024; // 500MB in bytes
