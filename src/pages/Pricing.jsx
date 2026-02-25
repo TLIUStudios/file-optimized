@@ -88,11 +88,9 @@ export default function Pricing() {
           <span className={cn("text-sm font-medium", isAnnual ? "text-slate-900 dark:text-white" : "text-slate-500 dark:text-slate-400")}>
             Annual
           </span>
-          {isAnnual && (
-            <span className="ml-2 px-3 py-1 bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-400 text-xs font-bold rounded-full">
-              Save ${savings}
-            </span>
-          )}
+          <span className="ml-2 px-3 py-1 bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-400 text-xs font-bold rounded-full">
+            Save {savingsPercent}% annually
+          </span>
         </div>
 
         {/* Pricing Cards */}
