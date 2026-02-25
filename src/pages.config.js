@@ -55,6 +55,7 @@ import Blog from './pages/Blog';
 import BlogArticle from './pages/BlogArticle';
 import Comparisons from './pages/Comparisons';
 import Contact from './pages/Contact';
+import ContactUs from './pages/ContactUs';
 import FAQ from './pages/FAQ';
 import Features from './pages/Features';
 import Formats from './pages/Formats';
@@ -69,7 +70,6 @@ import ReportBug from './pages/ReportBug';
 import Security from './pages/Security';
 import TermsOfService from './pages/TermsOfService';
 import Tutorials from './pages/Tutorials';
-import ContactUs from './pages/ContactUs';
 import __Layout from './Layout.jsx';
 
 
@@ -82,6 +82,7 @@ export const PAGES = {
     "BlogArticle": BlogArticle,
     "Comparisons": Comparisons,
     "Contact": Contact,
+    "ContactUs": ContactUs,
     "FAQ": FAQ,
     "Features": Features,
     "Formats": Formats,
@@ -96,7 +97,6 @@ export const PAGES = {
     "Security": Security,
     "TermsOfService": TermsOfService,
     "Tutorials": Tutorials,
-    "ContactUs": ContactUs,
 }
 
 export const pagesConfig = {

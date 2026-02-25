@@ -28,8 +28,8 @@ export default function Pricing() {
   const [isAnnual, setIsAnnual] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  const monthlyPrice = 10;
-  const annualPrice = 100;
+  const monthlyPrice = 15;
+  const annualPrice = 150;
   const annualMonthly = (annualPrice / 12).toFixed(2);
   const savings = monthlyPrice * 12 - annualPrice;
 
