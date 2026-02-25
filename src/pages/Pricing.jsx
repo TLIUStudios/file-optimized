@@ -17,7 +17,7 @@ const features = [
   { name: "Video editor with captions", free: true, pro: true },
   { name: "Visual themes", free: true, pro: true },
   { name: "Maximum file size", free: "50 MB", pro: "500 MB" },
-  { name: "Batch processing", free: "9 files", pro: "30 files" },
+  { name: "Batch processing", free: "3 files", pro: "30 files" },
   { name: "Processing speed", free: "Standard", pro: "Priority" },
   { name: "No watermark", free: true, pro: true },
   { name: "Ad-free experience", free: false, pro: true },
