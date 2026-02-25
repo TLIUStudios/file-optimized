@@ -163,14 +163,9 @@ export default function Pricing() {
             
             <div className="mb-6">
               <span className="text-5xl font-bold text-slate-900 dark:text-white">
-                ${isAnnual ? annualMonthly : monthlyPrice}
+                ${isAnnual ? annualPrice : monthlyPrice}
               </span>
-              <span className="text-slate-500 dark:text-slate-400">/month</span>
-              {isAnnual && (
-                <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
-                  Billed annually (${annualPrice}/year)
-                </p>
-              )}
+              <span className="text-slate-500 dark:text-slate-400">{isAnnual ? '/year' : '/month'}</span>
             </div>
 
             <Button 
