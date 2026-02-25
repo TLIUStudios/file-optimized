@@ -170,7 +170,7 @@ export default function Pricing() {
               <span className="text-5xl font-bold text-slate-900 dark:text-white">
                 ${isAnnual ? annualPrice : monthlyPrice}
               </span>
-              <span className="text-slate-500 dark:text-slate-400">{isAnnual ? '/year' : '/month'}</span>
+              <span className="text-slate-500 dark:text-slate-400"> USD{isAnnual ? '/year' : '/month'}</span>
             </div>
 
             {user?.plan === 'pro' ? (
