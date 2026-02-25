@@ -30,8 +30,7 @@ export default function Pricing() {
 
   const monthlyPrice = 15;
   const annualPrice = 150;
-  const annualMonthly = (annualPrice / 12).toFixed(2);
-  const savings = monthlyPrice * 12 - annualPrice;
+  const savingsPercent = Math.round((1 - annualPrice / (monthlyPrice * 12)) * 100);
 
   const handleUpgrade = async () => {
     setLoading(true);
