@@ -135,7 +135,7 @@ export default function LoginPromptModal({ isOpen, onClose, onLogin, context = "
                   <div className="min-h-[14px] sm:min-h-[16px]">
                     {isAnnual && (
                       <p className="text-[9px] sm:text-[10px] text-emerald-600 dark:text-emerald-400 font-medium">
-                        Save $20/year vs monthly
+                        Save 17% vs monthly
                       </p>
                     )}
                   </div>
