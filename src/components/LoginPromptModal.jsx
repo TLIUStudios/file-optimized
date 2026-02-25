@@ -93,7 +93,7 @@ export default function LoginPromptModal({ isOpen, onClose, onLogin, context = "
                   </div>
                   <div className="flex items-center gap-1 text-[10px] sm:text-[11px] text-slate-700 dark:text-slate-300">
                     <Check className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-slate-500 flex-shrink-0" />
-                    <span>9 files batch</span>
+                    <span>3 files batch</span>
                   </div>
                   <div className="flex items-center gap-1 text-[10px] sm:text-[11px] text-slate-700 dark:text-slate-300">
                     <Check className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-slate-500 flex-shrink-0" />
