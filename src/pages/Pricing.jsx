@@ -29,9 +29,9 @@ export default function Pricing() {
   const [loading, setLoading] = useState(false);
   const [user, setUser] = useState(null);
 
-  useState(() => {
+  useEffect(() => {
     base44.auth.me().then(setUser).catch(() => {});
-  });
+  }, []);
 
   const monthlyPrice = 15;
   const annualPrice = 150;
