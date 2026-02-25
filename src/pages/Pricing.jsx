@@ -173,18 +173,28 @@ export default function Pricing() {
               <span className="text-slate-500 dark:text-slate-400">{isAnnual ? '/year' : '/month'}</span>
             </div>
 
-            <Button 
-              className="w-full mb-8 h-12 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-semibold"
-              onClick={handleUpgrade}
-              disabled={loading}
-            >
-              {loading ? "Processing..." : (
-                <>
-                  <Zap className="w-4 h-4 mr-2" />
-                  Upgrade to Pro
-                </>
-              )}
-            </Button>
+            {user?.plan === 'pro' ? (
+              <Button
+                variant="outline"
+                className="w-full mb-8 h-12 border-emerald-500 text-emerald-600 dark:text-emerald-400 font-semibold cursor-default"
+                disabled
+              >
+                ✓ Current Plan
+              </Button>
+            ) : (
+              <Button
+                className="w-full mb-8 h-12 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-semibold"
+                onClick={handleUpgrade}
+                disabled={loading}
+              >
+                {loading ? "Processing..." : (
+                  <>
+                    <Zap className="w-4 h-4 mr-2" />
+                    Upgrade to Pro
+                  </>
+                )}
+              </Button>
+            )}
 
             <ul className="space-y-3">
               {features.map((feature, i) => (
