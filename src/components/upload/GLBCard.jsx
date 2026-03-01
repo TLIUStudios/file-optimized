@@ -21,6 +21,7 @@ export default function GLBCard({ file, onRemove, onProcessed }) {
   const [showComparison, setShowComparison] = useState(false);
   const [isRenaming, setIsRenaming] = useState(false);
   const [fileName, setFileName] = useState(file.name);
+  const [showCloudSave, setShowCloudSave] = useState(false);
 
   const formatFileSize = (bytes) => {
     if (bytes < 1024) return bytes + ' B';
