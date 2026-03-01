@@ -215,36 +215,47 @@ export default function GLBCard({ file, onRemove, onProcessed }) {
                     </>
                   ) : (
                     <>
-                      <Box className="w-4 h-4 mr-2" />
+                      <Zap className="w-4 h-4 mr-2" />
                       Optimize Asset
                     </>
                   )}
                 </span>
               </Button>
             ) : (
-              <div className="flex gap-2">
-                <Button 
-                  onClick={() => setShowComparison(true)} 
-                  className="flex-1 bg-slate-700 hover:bg-slate-600 text-white"
-                >
-                  <Eye className="w-4 h-4 mr-2" />
-                  Preview
+              <>
+                <div className="flex gap-2">
+                  <Button 
+                    onClick={processGLB} 
+                    variant="outline"
+                    className="flex-1"
+                    disabled={processing}
+                  >
+                    <RefreshCcw className="w-4 h-4 mr-2" />
+                    Reprocess
+                  </Button>
+                  <Button 
+                    onClick={downloadGLB} 
+                    className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white"
+                    disabled={processing}
+                  >
+                    <Download className="w-4 h-4 mr-2" />
+                    Download
+                  </Button>
+                </div>
+
+                <Button variant="outline" className="w-full bg-blue-600 hover:bg-blue-700 text-white border-0">
+                  <Cloud className="w-4 h-4 mr-2" />
+                  Save to...
+                  <ChevronDown className="w-4 h-4 ml-auto" />
                 </Button>
-                <Button 
-                  onClick={downloadGLB} 
-                  className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white"
-                >
-                  <Download className="w-4 h-4 mr-2" />
-                  Download
-                </Button>
-              </div>
+              </>
             )}
           </div>
 
           {processed && (
             <div className="flex items-center gap-2 text-sm p-3 rounded-lg text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/30">
               <CheckCircle2 className="w-4 h-4" />
-              <span>GLB ready for download</span>
+              <span>Saved {formatFileSize(originalSize - compressedSize)}</span>
             </div>
           )}
         </div>
