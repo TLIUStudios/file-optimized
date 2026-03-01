@@ -199,7 +199,31 @@ export default function GLBComparisonModal({ isOpen, onClose, originalFile, comp
         {/* Top Toolbar */}
         <div className="absolute top-0 left-0 right-0 z-[100] flex items-center justify-between px-4 py-3 bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm border-b border-slate-200 dark:border-slate-800">
           <div className="flex items-center gap-3">
-            <h2 className="text-sm font-semibold text-slate-900 dark:text-white truncate">{fileName}</h2>
+            {isRenaming ? (
+              <input
+                autoFocus
+                type="text"
+                value={editFileName}
+                onChange={(e) => setEditFileName(e.target.value)}
+                onBlur={() => setIsRenaming(false)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') setIsRenaming(false);
+                  if (e.key === 'Escape') {
+                    setEditFileName(fileName);
+                    setIsRenaming(false);
+                  }
+                }}
+                className="text-sm font-semibold bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-600 rounded px-2 py-1 text-slate-900 dark:text-white"
+              />
+            ) : (
+              <button
+                onClick={() => setIsRenaming(true)}
+                className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-slate-300 dark:border-slate-600 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+              >
+                <h2 className="text-sm font-semibold text-slate-900 dark:text-white truncate">{editFileName}</h2>
+                <Edit2 className="w-3.5 h-3.5 text-slate-500 dark:text-slate-400 flex-shrink-0" />
+              </button>
+            )}
             <Badge variant="secondary" className="text-xs flex items-center gap-1.5">
               <Box className="w-3 h-3" />
               3D Model
