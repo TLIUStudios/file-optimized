@@ -9,15 +9,21 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const formData = await req.formData();
-    const file = formData.get('file');
+    const body = await req.json();
+    const { file: base64Data } = body;
 
-    if (!file) {
+    if (!base64Data) {
       return Response.json({ error: 'No file provided' }, { status: 400 });
     }
 
-    const arrayBuffer = await file.arrayBuffer();
-    const originalBytes = new Uint8Array(arrayBuffer);
+    // Decode base64
+    const binaryString = atob(base64Data);
+    const bytes = new Uint8Array(binaryString.length);
+    for (let i = 0; i < binaryString.length; i++) {
+      bytes[i] = binaryString.charCodeAt(i);
+    }
+
+    const originalBytes = bytes;
     
     // Validate GLB format
     const view = new DataView(originalBytes.buffer, originalBytes.byteOffset, originalBytes.byteLength);
@@ -35,12 +41,14 @@ Deno.serve(async (req) => {
 
     const optimizedBytes = optimizeGLB(originalBytes);
 
-    return new Response(optimizedBytes, {
-      headers: {
-        'Content-Type': 'model/gltf-binary',
-        'Content-Length': optimizedBytes.length,
-      },
-    });
+    // Encode back to base64
+    let resultBase64 = '';
+    for (let i = 0; i < optimizedBytes.length; i++) {
+      resultBase64 += String.fromCharCode(optimizedBytes[i]);
+    }
+    resultBase64 = btoa(resultBase64);
+
+    return Response.json({ file: resultBase64 });
   } catch (error) {
     console.error('GLB optimization error:', error);
     return Response.json({ error: error.message }, { status: 500 });
