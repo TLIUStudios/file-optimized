@@ -83,7 +83,7 @@ export default function GLBComparisonModal({ isOpen, onClose, originalFile, comp
           <div className="relative w-full h-96 bg-slate-950 rounded-lg overflow-hidden group">
             {/* Original on left */}
             <div className="absolute inset-0">
-              <GLBViewer file={originalFile} label="Original" />
+              <GLBViewer file={originalUrl} label="Original" />
             </div>
 
             {/* Compressed on right - masked */}
@@ -95,7 +95,7 @@ export default function GLBComparisonModal({ isOpen, onClose, originalFile, comp
                 overflow: 'hidden',
               }}
             >
-              <GLBViewer file={compressedFile} label="Compressed" />
+              <GLBViewer file={compressedUrl} label="Compressed" />
             </div>
 
             {/* Slider handle */}
