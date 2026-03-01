@@ -283,7 +283,7 @@ export default function GLBViewer({ file, label }) {
   };
 
   return (
-    <div className="relative w-full h-full rounded-lg overflow-hidden border border-slate-200/40 dark:border-slate-800/40">
+    <div className="relative w-full h-full rounded-lg overflow-hidden border border-slate-300/50 dark:border-slate-600/50">
       <div ref={containerRef} className="w-full h-full" />
       
       {/* Loading skeleton overlay */}
