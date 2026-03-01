@@ -62,7 +62,7 @@ export default function GLBCard({ file, onRemove, onProcessed }) {
         originalFileFormat: 'glb'
       });
       
-      toast.success(`GLB compressed! ${Math.abs(parseFloat(savings))}% size reduction`);
+      toast.success(`GLB optimized! ${Math.abs(parseFloat(savings))}% size reduction`);
     } catch (error) {
       console.error('GLB compression error:', error);
       toast.error('Failed to optimize GLB');
