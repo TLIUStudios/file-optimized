@@ -256,76 +256,87 @@ export default function GLBViewer({ file, label }) {
   const brightnessPercent = Math.round(brightness * 100);
 
   return (
-    <div className="relative w-full h-full bg-slate-950 rounded-lg overflow-hidden">
+    <div className="relative w-full h-full rounded-lg overflow-hidden border border-slate-200/40 dark:border-slate-800/40">
       <div ref={containerRef} className="w-full h-full" />
       
-      {/* Top Left - Tabs and Stats */}
-      <div className="absolute top-3 left-4 flex flex-col gap-3">
-        <div className="flex gap-2">
-          <button className="px-4 py-1.5 rounded-full bg-white text-slate-900 text-xs font-medium">Textured</button>
-          <button className="px-4 py-1.5 rounded-full bg-slate-700/50 text-white text-xs font-medium">Mesh</button>
+      {/* Loading skeleton overlay */}
+      {loading && (
+        <div className="absolute inset-0 rounded-lg z-20 overflow-hidden pointer-events-none">
+          <div className="absolute inset-0 bg-gradient-to-b from-slate-200 via-slate-100 to-slate-200 dark:from-slate-700 dark:via-slate-800 dark:to-slate-700" />
+          <div className="absolute inset-0 -left-full animate-shimmer bg-gradient-to-r from-transparent via-white/20 dark:via-white/5 to-transparent" />
+        </div>
+      )}
+
+      {/* Top Left - Stats Pills */}
+      <div className="absolute top-3 left-4 z-30 flex flex-col gap-3">
+        <div className="space-y-2">
+          <div className="px-3 py-1.5 rounded-full bg-black/55 backdrop-blur-md border border-white/12 text-white text-xs font-medium">
+            Zoom: <span className="font-bold">{zoomPercent}%</span>
+          </div>
+          <div className="px-3 py-1.5 rounded-full bg-black/55 backdrop-blur-md border border-white/12 text-white text-xs font-medium">
+            Brightness: <span className="font-bold">{brightnessPercent}%</span>
+          </div>
         </div>
         
-        <div className="space-y-1 text-xs text-slate-300">
-          <div>Zoom: {zoomPercent}%</div>
-          <div>Brightness: {brightnessPercent}%</div>
-        </div>
-        
-        <div className="w-32">
-          <Slider
-            value={[brightness]}
-            onValueChange={(value) => setBrightness(value[0])}
-            min={0.1}
-            max={2}
-            step={0.05}
-            className="w-full"
+        <div className="w-40">
+          <input
+            type="range"
+            min={10}
+            max={200}
+            value={brightnessPercent}
+            onChange={(e) => setBrightness(Number(e.target.value) / 100)}
+            className="w-full accent-slate-900 dark:accent-white"
+            style={{
+              WebkitAppearance: 'slider-horizontal',
+              appearance: 'slider-horizontal'
+            }}
           />
         </div>
       </div>
 
       {/* Top Right - Controls */}
-      <div className="absolute top-3 right-4 flex flex-col gap-2">
-        <Button
-          size="icon"
-          variant="ghost"
+      <div className="absolute top-3 right-4 z-30 flex flex-col gap-2">
+        <button
           onClick={() => setShowSettings(true)}
-          className="bg-white/10 hover:bg-white/20 text-white h-8 w-8"
+          className="h-10 w-10 rounded-lg bg-black/55 backdrop-blur-md border border-white/12 hover:bg-white/14 transition-colors flex items-center justify-center text-white"
+          title="Settings"
         >
-          <Settings className="w-4 h-4" />
-        </Button>
-        <Button
-          size="icon"
-          variant="ghost"
+          <Settings className="w-5 h-5" />
+        </button>
+        <button
           onClick={handleFullscreen}
-          className="bg-white/10 hover:bg-white/20 text-white h-8 w-8"
+          className="h-10 w-10 rounded-lg bg-black/55 backdrop-blur-md border border-white/12 hover:bg-white/14 transition-colors flex items-center justify-center text-white"
+          title="Fullscreen"
         >
-          <Maximize2 className="w-4 h-4" />
-        </Button>
-        <Button
-          size="icon"
-          variant="ghost"
+          <Maximize2 className="w-5 h-5" />
+        </button>
+        <button
           onClick={handleReset}
-          className="bg-white/10 hover:bg-white/20 text-white h-8 w-8"
+          className="h-10 w-10 rounded-lg bg-black/55 backdrop-blur-md border border-white/12 hover:bg-white/14 transition-colors flex items-center justify-center text-white"
+          title="Reset View"
         >
-          <RotateCcw className="w-4 h-4" />
-        </Button>
+          <RotateCcw className="w-5 h-5" />
+        </button>
       </div>
 
       {/* Bottom - Help Text */}
-      <div className="absolute bottom-3 left-1/2 transform -translate-x-1/2 bg-slate-700/80 backdrop-blur-sm px-4 py-2 rounded-full text-white text-xs flex gap-4">
-        <span className="flex items-center gap-1">🖱️ Left: Rotate</span>
-        <span className="flex items-center gap-1">🖱️ Right: Pan</span>
-        <span className="flex items-center gap-1">🔄 Scroll: Zoom</span>
+      <div className="absolute bottom-3 left-1/2 transform -translate-x-1/2 z-30 bg-black/55 backdrop-blur-md border border-white/12 px-4 py-2 rounded-full text-white text-xs flex gap-3">
+        <span className="flex items-center gap-2 opacity-95">
+          <span>🖱️</span> <span>Left: Rotate</span>
+        </span>
+        <span className="opacity-35">|</span>
+        <span className="flex items-center gap-2 opacity-95">
+          <span>🖱️</span> <span>Right: Pan</span>
+        </span>
+        <span className="opacity-35">|</span>
+        <span className="flex items-center gap-2 opacity-95">
+          <span>🔄</span> <span>Scroll: Zoom</span>
+        </span>
       </div>
 
-      {loading && (
-        <div className="absolute inset-0 flex items-center justify-center bg-black/50">
-          <Loader2 className="w-6 h-6 text-white animate-spin" />
-        </div>
-      )}
       {error && (
-        <div className="absolute inset-0 flex items-center justify-center bg-black/50">
-          <p className="text-white text-sm">{error}</p>
+        <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/50 rounded-lg">
+          <p className="text-white text-sm text-center px-4">{error}</p>
         </div>
       )}
 
@@ -335,6 +346,53 @@ export default function GLBViewer({ file, label }) {
         settings={settings}
         onSettingsChange={handleSettingChange}
       />
+
+      <style>{`
+        @keyframes shimmer {
+          0% { left: -100%; }
+          100% { left: 100%; }
+        }
+        .animate-shimmer {
+          animation: shimmer 1.05s linear infinite;
+        }
+        input[type="range"] {
+          cursor: pointer;
+          height: 6px;
+          -webkit-appearance: none;
+          appearance: none;
+          background: transparent;
+        }
+        input[type="range"]::-webkit-slider-thumb {
+          -webkit-appearance: none;
+          appearance: none;
+          width: 14px;
+          height: 14px;
+          border-radius: 50%;
+          background: white;
+          cursor: pointer;
+          box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+        }
+        input[type="range"]::-moz-range-thumb {
+          width: 14px;
+          height: 14px;
+          border-radius: 50%;
+          background: white;
+          cursor: pointer;
+          border: none;
+          box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+        }
+        input[type="range"]::-webkit-slider-runnable-track {
+          height: 4px;
+          background: rgba(255,255,255,0.2);
+          border-radius: 2px;
+        }
+        input[type="range"]::-moz-range-track {
+          height: 4px;
+          background: rgba(255,255,255,0.2);
+          border-radius: 2px;
+          border: none;
+        }
+      `}</style>
     </div>
   );
 }
