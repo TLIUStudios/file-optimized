@@ -1,11 +1,12 @@
 import { useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Download, X, Loader2, CheckCircle2, ArrowRight, Film } from "lucide-react";
+import { Download, X, Loader2, CheckCircle2, ArrowRight, Film, Eye } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { base44 } from "@/api/base44Client";
+import GLBComparisonModal from "./GLBComparisonModal";
 
 export default function GLBCard({ file, onRemove, onProcessed }) {
   const [processing, setProcessing] = useState(false);
