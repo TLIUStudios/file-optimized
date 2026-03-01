@@ -294,103 +294,11 @@ export default function GLBViewer({ file, label, isBlob = false }) {
         </div>
       )}
 
-      {/* Top Left - Stats Pills */}
-      <div className="absolute top-3 left-4 z-30 flex flex-col gap-3">
-        <div className="space-y-2">
-          <div className="px-3 py-1.5 rounded-full bg-black/55 backdrop-blur-md border border-white/12 text-white text-xs font-medium">
-            Zoom: <span className="font-bold">{zoomPercent}%</span>
-          </div>
-          <div className="px-3 py-1.5 rounded-full bg-black/55 backdrop-blur-md border border-white/12 text-white text-xs font-medium">
-            Brightness: <span className="font-bold">{brightnessPercent}%</span>
-          </div>
-        </div>
-        
-        <div className="w-40">
-          <input
-            type="range"
-            min={10}
-            max={200}
-            value={brightnessPercent}
-            onChange={(e) => setBrightness(Number(e.target.value) / 100)}
-            className="w-full accent-slate-900 dark:accent-white"
-            style={{
-              WebkitAppearance: 'slider-horizontal',
-              appearance: 'slider-horizontal'
-            }}
-          />
-        </div>
-      </div>
-
-      {/* Top Right - Controls */}
-      <div className="absolute top-3 right-4 z-30 flex flex-col gap-2">
-        <button
-          onClick={() => setShowSettings(true)}
-          className="h-10 w-10 rounded-lg bg-black/55 backdrop-blur-md border border-white/12 hover:bg-white/14 transition-colors flex items-center justify-center text-white"
-          title="Settings"
-        >
-          <Settings className="w-5 h-5" />
-        </button>
-        <button
-          onClick={handleFullscreen}
-          className="h-10 w-10 rounded-lg bg-black/55 backdrop-blur-md border border-white/12 hover:bg-white/14 transition-colors flex items-center justify-center text-white"
-          title="Fullscreen"
-        >
-          <Maximize2 className="w-5 h-5" />
-        </button>
-        <button
-          onClick={handleReset}
-          className="h-10 w-10 rounded-lg bg-black/55 backdrop-blur-md border border-white/12 hover:bg-white/14 transition-colors flex items-center justify-center text-white"
-          title="Reset View"
-        >
-          <RotateCcw className="w-5 h-5" />
-        </button>
-      </div>
-
-      {/* Bottom - Help Text */}
-      <div className="absolute bottom-3 left-1/2 transform -translate-x-1/2 z-30 bg-black/55 backdrop-blur-md border border-white/12 px-3 py-2 rounded-full text-white text-xs flex gap-2 whitespace-nowrap">
-        <div className="flex items-center gap-2 opacity-95">
-          <svg width="14" height="14" viewBox="0 0 24 24" style={{display:'inline-block'}}>
-            <rect x="7" y="2.5" width="10" height="19" rx="5" ry="5" fill="none" stroke="rgba(255,255,255,.75)" strokeWidth="1.5"/>
-            <path d="M12 3.5v5.8" stroke="rgba(255,255,255,.9)" strokeWidth="2" strokeLinecap="round"/>
-            <path d="M7.6 7.4h4.4v4.6H7.6z" fill="rgba(255,255,255,.9)"/>
-            <path d="M12 7.4h4.4v4.6H12z" fill="rgba(255,255,255,.25)"/>
-          </svg>
-          <span>Left: Rotate</span>
-        </div>
-        <span className="opacity-35">|</span>
-        <div className="flex items-center gap-2 opacity-95">
-          <svg width="14" height="14" viewBox="0 0 24 24" style={{display:'inline-block'}}>
-            <rect x="7" y="2.5" width="10" height="19" rx="5" ry="5" fill="none" stroke="rgba(255,255,255,.75)" strokeWidth="1.5"/>
-            <path d="M12 3.5v5.8" stroke="rgba(255,255,255,.35)" strokeWidth="2" strokeLinecap="round"/>
-            <path d="M7.6 7.4h4.4v4.6H7.6z" fill="rgba(255,255,255,.25)"/>
-            <path d="M12 7.4h4.4v4.6H12z" fill="rgba(255,255,255,.9)"/>
-          </svg>
-          <span>Right: Pan</span>
-        </div>
-        <span className="opacity-35">|</span>
-        <div className="flex items-center gap-2 opacity-95">
-          <svg width="14" height="14" viewBox="0 0 24 24" style={{display:'inline-block'}}>
-            <rect x="7" y="2.5" width="10" height="19" rx="5" ry="5" fill="none" stroke="rgba(255,255,255,.75)" strokeWidth="1.5"/>
-            <path d="M12 3.5v5.8" stroke="rgba(255,255,255,.9)" strokeWidth="2" strokeLinecap="round"/>
-            <path d="M7.6 7.4h4.4v4.6H7.6z" fill="rgba(255,255,255,.25)"/>
-            <path d="M12 7.4h4.4v4.6H12z" fill="rgba(255,255,255,.25)"/>
-          </svg>
-          <span>Scroll: Zoom</span>
-        </div>
-      </div>
-
       {error && (
         <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/50 rounded-lg">
           <p className="text-white text-sm text-center px-4">{error}</p>
         </div>
       )}
-
-      <GLBViewerSettings
-        isOpen={showSettings}
-        onClose={() => setShowSettings(false)}
-        settings={settings}
-        onSettingsChange={handleSettingChange}
-      />
 
       <style>{`
         @keyframes shimmer {
