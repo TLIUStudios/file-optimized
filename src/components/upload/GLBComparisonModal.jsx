@@ -74,7 +74,7 @@ export default function GLBComparisonModal({ isOpen, onClose, originalFile, comp
                   <Badge className="bg-slate-700 dark:bg-slate-800 text-white text-xs">GLB</Badge>
                 </div>
                 <div className="flex-1 bg-slate-950 rounded-lg overflow-hidden border border-slate-600/50">
-                  <GLBViewer file={originalFile} />
+                  <GLBViewer file={originalFile} disableInteraction={false} />
                 </div>
               </div>
 
