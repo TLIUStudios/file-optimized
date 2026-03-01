@@ -187,6 +187,38 @@ export default function GLBComparisonModal({ isOpen, onClose, originalFile, comp
     toast.success(`${label} copied!`);
   };
 
+  const handleSaveToGoogleDrive = async () => {
+    setUploadingToDrive(true);
+    try {
+      // Convert compressedFile blob to base64
+      const reader = new FileReader();
+      
+      const base64Data = await new Promise((resolve, reject) => {
+        reader.onloadend = () => resolve(reader.result.split(',')[1]);
+        reader.onerror = reject;
+        reader.readAsDataURL(compressedFile);
+      });
+
+      // Upload to Google Drive
+      const result = await base44.functions.invoke('uploadToGoogleDrive', {
+        fileName: editFileName,
+        fileData: base64Data,
+        mimeType: 'model/gltf-binary'
+      });
+
+      if (result.data.success) {
+        toast.success(`Saved to Google Drive: ${result.data.file.name}`);
+      } else {
+        toast.error(result.data.error || 'Failed to save to Google Drive');
+      }
+    } catch (error) {
+      console.error('Error saving to Google Drive:', error);
+      toast.error('Failed to save to Google Drive: ' + error.message);
+    } finally {
+      setUploadingToDrive(false);
+    }
+  };
+
   const downloadCompressed = () => {
     if (!compressedFile) return;
     const url = URL.createObjectURL(compressedFile);
