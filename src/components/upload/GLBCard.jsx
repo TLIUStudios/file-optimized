@@ -48,6 +48,18 @@ export default function GLBCard({ file, onRemove, onProcessed }) {
       
       setProcessingProgress(100);
       
+      // Track compression stat
+      try {
+        await base44.entities.CompressionStat.create({
+          original_size: file.size,
+          compressed_size: compressedBlobData.size,
+          media_type: '3d',
+          output_format: 'glb'
+        });
+      } catch (error) {
+        console.log('Stat tracking error:', error);
+      }
+
       onProcessed({
         id: file.name,
         originalFile: file,
