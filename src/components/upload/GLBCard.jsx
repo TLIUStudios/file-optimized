@@ -164,14 +164,24 @@ export default function GLBCard({ file, onRemove, onProcessed }) {
               </span>
             </Button>
           ) : (
-            <Button 
-              onClick={downloadGLB} 
-              className="w-full bg-emerald-600 hover:bg-emerald-700 text-white text-sm"
-            >
-              <Download className="w-4 h-4 mr-2" />
-              <span className="hidden sm:inline">Download</span>
-              <span className="sm:hidden">Download</span>
-            </Button>
+            <div className="flex gap-2">
+              <Button 
+                onClick={() => setShowComparison(true)} 
+                className="flex-1 bg-slate-700 hover:bg-slate-600 text-white text-sm"
+              >
+                <Eye className="w-4 h-4 mr-2" />
+                <span className="hidden sm:inline">Preview</span>
+                <span className="sm:hidden">View</span>
+              </Button>
+              <Button 
+                onClick={downloadGLB} 
+                className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white text-sm"
+              >
+                <Download className="w-4 h-4 mr-2" />
+                <span className="hidden sm:inline">Download</span>
+                <span className="sm:hidden">DL</span>
+              </Button>
+            </div>
           )}
         </div>
 
