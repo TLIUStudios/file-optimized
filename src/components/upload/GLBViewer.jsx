@@ -30,8 +30,10 @@ export default function GLBViewer({ file, label }) {
     previousMousePosition: { x: 0, y: 0 },
     rotation: { x: 0, y: 0 },
     zoom: 1,
-    autoRotateAngle: 0
+    autoRotateAngle: 0,
+    autoRotateTimeout: null
   });
+  const [autoRotateActive, setAutoRotateActive] = useState(true);
 
   useEffect(() => {
     if (!file || !containerRef.current) return;
