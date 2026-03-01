@@ -70,7 +70,7 @@ export default function GLBComparisonModal({ isOpen, onClose, originalFile, comp
                   <h3 className="text-sm font-semibold text-slate-900 dark:text-white">Original</h3>
                   <Badge className="bg-slate-700 dark:bg-slate-800 text-white text-xs">GLB</Badge>
                 </div>
-                <div className="flex-1 bg-slate-950 rounded-lg overflow-hidden">
+                <div className="flex-1 bg-slate-950 rounded-lg overflow-hidden border border-slate-600/50">
                   <GLBViewer file={originalFile} />
                 </div>
               </div>
@@ -81,7 +81,7 @@ export default function GLBComparisonModal({ isOpen, onClose, originalFile, comp
                   <h3 className="text-sm font-semibold text-slate-900 dark:text-white">Compressed</h3>
                   <Badge className="bg-emerald-600 text-white text-xs">GLB</Badge>
                 </div>
-                <div className="flex-1 bg-slate-950 rounded-lg overflow-hidden">
+                <div className="flex-1 bg-slate-950 rounded-lg overflow-hidden border border-slate-600/50">
                   <GLBViewer file={compressedFile} />
                 </div>
               </div>
