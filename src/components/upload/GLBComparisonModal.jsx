@@ -8,8 +8,11 @@ export default function GLBComparisonModal({ isOpen, onClose, originalFile, comp
   const [sliderPosition, setSliderPosition] = useState(50);
 
   const handleMouseDown = (e) => {
+    const container = e.currentTarget?.parentElement;
+    if (!container) return;
+
     const handleMouseMove = (moveEvent) => {
-      const rect = e.currentTarget.parentElement.getBoundingClientRect();
+      const rect = container.getBoundingClientRect();
       const newPosition = Math.max(0, Math.min(100, ((moveEvent.clientX - rect.left) / rect.width) * 100));
       setSliderPosition(newPosition);
     };
