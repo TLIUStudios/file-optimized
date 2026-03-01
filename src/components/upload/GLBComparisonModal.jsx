@@ -30,6 +30,152 @@ export default function GLBComparisonModal({ isOpen, onClose, originalFile, comp
     return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
   };
 
+  const generateMetadata = async () => {
+    console.log('🚀 Starting AI metadata generation for 3D model...');
+    setIsGenerating(true);
+    setAiTitle("");
+    setAiDescription("");
+    setAiCategory("");
+    setAiMood("");
+    setAiAltText("");
+    setAiTags("");
+
+    try {
+      // Use a simple filename/metadata generation since we can't analyze the 3D model visually
+      const aiResult = await base44.integrations.Core.InvokeLLM({
+        prompt: `Based on the filename "${fileName}", generate SEO metadata for this 3D model: a short title (under 60 chars), brief description (under 160 chars), category (1-2 words), mood (1-2 words), alt text for accessibility (under 125 chars), 10 tags (comma-separated), 10 SEO keywords (comma-separated), and 10 hashtags (#word format).`,
+        response_json_schema: {
+          type: "object",
+          properties: {
+            title: { type: "string" },
+            description: { type: "string" },
+            category: { type: "string" },
+            mood: { type: "string" },
+            alt_text: { type: "string" },
+            tags: { type: "string" },
+            keywords: { type: "string" },
+            hashtags: { type: "string" }
+          }
+        }
+      });
+
+      console.log('🤖 AI Response:', aiResult);
+
+      setAiTitle(aiResult.title || "3D Model");
+      setAiDescription(aiResult.description || "High-quality 3D model");
+      setAiCategory(aiResult.category || "3D Model");
+      setAiMood(aiResult.mood || "Professional");
+      setAiAltText(aiResult.alt_text || "3D model");
+      setAiTags(aiResult.tags || "3d, model");
+      setAiKeywords(aiResult.keywords || "3d model, 3d asset");
+      setAiHashtags(aiResult.hashtags || "#3dmodel #3d");
+      
+      toast.success('Metadata generated!');
+
+    } catch (error) {
+      console.error('❌ Error:', error);
+      toast.error('Could not generate metadata: ' + error.message);
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
+  const regenerateField = async (fieldName) => {
+    console.log(`🔄 Regenerating ${fieldName}...`);
+    setRegeneratingField(fieldName);
+
+    try {
+      let prompt = "";
+      let schemaProperty = "";
+
+      switch (fieldName) {
+        case "title":
+          prompt = `Based on the filename "${fileName}", provide ONLY a short, catchy title (under 60 chars) for this 3D model.`;
+          schemaProperty = "title";
+          break;
+        case "description":
+          prompt = `Based on the filename "${fileName}", provide ONLY a brief description (under 160 chars) for this 3D model.`;
+          schemaProperty = "description";
+          break;
+        case "category":
+          prompt = `Based on the filename "${fileName}", provide ONLY a category (1-2 words) for this 3D model.`;
+          schemaProperty = "category";
+          break;
+        case "mood":
+          prompt = `Based on the filename "${fileName}", provide ONLY the mood or tone (1-2 words) for this 3D model.`;
+          schemaProperty = "mood";
+          break;
+        case "alt_text":
+          prompt = `Based on the filename "${fileName}", provide ONLY alt text (under 125 chars) for accessibility.`;
+          schemaProperty = "alt_text";
+          break;
+        case "tags":
+          prompt = `Based on the filename "${fileName}", provide ONLY 10 social media tags (comma-separated) for this 3D model.`;
+          schemaProperty = "tags";
+          break;
+        case "keywords":
+          prompt = `Based on the filename "${fileName}", provide ONLY 10 SEO keywords (comma-separated) for this 3D model.`;
+          schemaProperty = "keywords";
+          break;
+        case "hashtags":
+          prompt = `Based on the filename "${fileName}", provide ONLY 10 hashtags (#word format) for this 3D model.`;
+          schemaProperty = "hashtags";
+          break;
+        default:
+          throw new Error("Invalid field name for regeneration.");
+      }
+
+      const aiResult = await base44.integrations.Core.InvokeLLM({
+        prompt,
+        response_json_schema: {
+          type: "object",
+          properties: {
+            [schemaProperty]: { type: "string" }
+          }
+        }
+      });
+
+      switch (fieldName) {
+        case "title":
+          setAiTitle(aiResult.title || "3D Model");
+          break;
+        case "description":
+          setAiDescription(aiResult.description || "3D model");
+          break;
+        case "category":
+          setAiCategory(aiResult.category || "3D Model");
+          break;
+        case "mood":
+          setAiMood(aiResult.mood || "Professional");
+          break;
+        case "alt_text":
+          setAiAltText(aiResult.alt_text || "3D model");
+          break;
+        case "tags":
+          setAiTags(aiResult.tags || "3d, model");
+          break;
+        case "keywords":
+          setAiKeywords(aiResult.keywords || "3d model, 3d asset");
+          break;
+        case "hashtags":
+          setAiHashtags(aiResult.hashtags || "#3dmodel");
+          break;
+      }
+
+      toast.success(`${fieldName.charAt(0).toUpperCase() + fieldName.slice(1)} regenerated!`);
+    } catch (error) {
+      console.error(`❌ Error regenerating ${fieldName}:`, error);
+      toast.error(`Failed to regenerate ${fieldName}: ${error.message}`);
+    } finally {
+      setRegeneratingField(null);
+    }
+  };
+
+  const copyToClipboard = (text, label) => {
+    navigator.clipboard.writeText(text);
+    toast.success(`${label} copied!`);
+  };
+
   const downloadCompressed = () => {
     if (!compressedFile) return;
     const url = URL.createObjectURL(compressedFile);
