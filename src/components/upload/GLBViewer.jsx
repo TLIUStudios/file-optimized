@@ -320,18 +320,12 @@ export default function GLBViewer({ file, label }) {
       </div>
 
       {/* Bottom - Help Text */}
-      <div className="absolute bottom-3 left-1/2 transform -translate-x-1/2 z-30 bg-black/55 backdrop-blur-md border border-white/12 px-4 py-2 rounded-full text-white text-xs flex gap-3">
-        <span className="flex items-center gap-2 opacity-95">
-          <span>🖱️</span> <span>Left: Rotate</span>
-        </span>
+      <div className="absolute bottom-3 left-1/2 transform -translate-x-1/2 z-30 bg-black/55 backdrop-blur-md border border-white/12 px-4 py-2 rounded-full text-white text-xs flex gap-3 whitespace-nowrap">
+        <span className="flex items-center gap-2 opacity-95" dangerouslySetInnerHTML={{__html: mouseIcon('left')}} />
         <span className="opacity-35">|</span>
-        <span className="flex items-center gap-2 opacity-95">
-          <span>🖱️</span> <span>Right: Pan</span>
-        </span>
+        <span className="flex items-center gap-2 opacity-95" dangerouslySetInnerHTML={{__html: mouseIcon('right')}} />
         <span className="opacity-35">|</span>
-        <span className="flex items-center gap-2 opacity-95">
-          <span>🔄</span> <span>Scroll: Zoom</span>
-        </span>
+        <span className="flex items-center gap-2 opacity-95" dangerouslySetInnerHTML={{__html: mouseIcon('wheel')}} />
       </div>
 
       {error && (
