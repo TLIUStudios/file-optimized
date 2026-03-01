@@ -36,8 +36,13 @@ export default function GLBCard({ file, onRemove, onProcessed }) {
       setProcessingProgress(40);
       
       // Optimize GLB structure
-      const compressedArrayBuffer = parseAndOptimizeGLB(view);
-      const compressedBlobData = new Blob([compressedArrayBuffer], { type: 'model/gltf-binary' });
+      const optimizedBuffer = parseAndOptimizeGLB(view);
+      
+      setProcessingProgress(60);
+      
+      // Compress with gzip
+      const compressedBuffer = await compressWithGzip(optimizedBuffer);
+      const compressedBlobData = new Blob([compressedBuffer], { type: 'model/gltf-binary' });
       
       setProcessingProgress(80);
       
