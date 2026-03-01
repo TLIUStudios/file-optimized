@@ -29,6 +29,7 @@ export default function GLBComparisonModal({ isOpen, onClose, originalFile, comp
   const [regeneratingField, setRegeneratingField] = useState(null);
   const [isRenaming, setIsRenaming] = useState(false);
   const [editFileName, setEditFileName] = useState(fileName);
+  const [uploadingToDrive, setUploadingToDrive] = useState(false);
 
   const savings = ((1 - compressedSize / originalSize) * 100).toFixed(1);
   const savingsAmount = originalSize - compressedSize;
