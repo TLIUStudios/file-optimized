@@ -9,8 +9,20 @@ import { cn } from "@/lib/utils";
 import GLBViewer from './GLBViewer';
 
 export default function GLBComparisonModal({ isOpen, onClose, originalFile, compressedFile, originalSize, compressedSize, fileName }) {
+  const [aiTitle, setAiTitle] = useState("");
+  const [aiDescription, setAiDescription] = useState("");
+  const [aiCategory, setAiCategory] = useState("");
+  const [aiMood, setAiMood] = useState("");
+  const [aiAltText, setAiAltText] = useState("");
+  const [aiTags, setAiTags] = useState("");
+  const [aiKeywords, setAiKeywords] = useState("");
+  const [aiHashtags, setAiHashtags] = useState("");
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [regeneratingField, setRegeneratingField] = useState(null);
+
   const savings = ((1 - compressedSize / originalSize) * 100).toFixed(1);
   const savingsAmount = originalSize - compressedSize;
+  const hasAnyMetadata = aiTitle || aiDescription || aiCategory || aiMood || aiAltText || aiTags || aiKeywords || aiHashtags;
 
   const formatFileSize = (bytes) => {
     if (bytes < 1024) return bytes + ' B';
