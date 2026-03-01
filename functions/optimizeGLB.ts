@@ -21,6 +21,11 @@ Deno.serve(async (req) => {
     
     // Validate GLB format
     const view = new DataView(originalBytes.buffer, originalBytes.byteOffset, originalBytes.byteLength);
+    
+    if (originalBytes.length < 12) {
+      return Response.json({ error: 'File too small' }, { status: 400 });
+    }
+
     const magic = view.getUint32(0, true);
     const version = view.getUint32(4, true);
     
@@ -44,6 +49,9 @@ Deno.serve(async (req) => {
 
 function optimizeGLB(data) {
   const view = new DataView(data.buffer, data.byteOffset, data.byteLength);
+  
+  if (data.length < 12) return data;
+  
   const fileLength = view.getUint32(8, true);
 
   let jsonChunk = null;
@@ -53,13 +61,15 @@ function optimizeGLB(data) {
   let offset = 12;
 
   // Parse chunks
-  while (offset < fileLength) {
-    if (offset + 8 > fileLength) break;
+  while (offset < fileLength && offset < data.length) {
+    if (offset + 8 > fileLength || offset + 8 > data.length) break;
 
     const chunkLength = view.getUint32(offset, true);
     const chunkType = view.getUint32(offset + 4, true);
     const chunkStart = offset + 8;
     const chunkEnd = chunkStart + chunkLength;
+
+    if (chunkEnd > data.length) break;
 
     if (chunkType === 0x4e4f534a) { // JSON
       jsonChunk = data.slice(chunkStart, chunkEnd);
@@ -83,17 +93,13 @@ function optimizeGLB(data) {
   
   try {
     json = JSON.parse(jsonText);
-  } catch {
+  } catch (e) {
     return data;
   }
 
-  // Optimize JSON by removing unnecessary metadata
-  // Keep: asset.version, scene, nodes, meshes, materials, textures, images, buffers, bufferViews, accessors
-  // Remove: generator, copyright, extras, and optional extensions
-
+  // Optimize JSON - remove unnecessary metadata
   if (json.asset) {
-    const version = json.asset.version;
-    json.asset = { version };
+    json.asset = { version: json.asset.version };
   }
 
   delete json.extras;
@@ -126,11 +132,10 @@ function optimizeGLB(data) {
     if (Object.keys(json.extensions).length === 0) delete json.extensions;
   }
 
-  // Clean up material metadata
+  // Clean up materials
   if (json.materials) {
     json.materials.forEach(mat => {
       delete mat.extras;
-      delete mat.name;
     });
   }
 
