@@ -11,9 +11,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
-import { toast } from 'sonner';
 import { base44 } from '@/api/base44Client';
-import { cn } from "@/lib/utils";
 import GLBViewer from './GLBViewer';
 
 export default function GLBComparisonModal({ isOpen, onClose, originalFile, compressedFile, originalSize, compressedSize, fileName }) {
