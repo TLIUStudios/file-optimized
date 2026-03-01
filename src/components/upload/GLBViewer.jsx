@@ -218,9 +218,106 @@ export default function GLBViewer({ file, label }) {
     };
   }, [file, settings, brightness]);
 
+  const handleSettingChange = (key, value) => {
+    setSettings(prev => ({ ...prev, [key]: value }));
+  };
+
+  const handleReset = () => {
+    setZoom(1);
+    setBrightness(1);
+    controlsRef.current = {
+      isDragging: false,
+      isPanning: false,
+      previousMousePosition: { x: 0, y: 0 },
+      rotation: { x: 0, y: 0 },
+      zoom: 1,
+      autoRotateAngle: 0
+    };
+    if (modelRef.current) {
+      modelRef.current.position.set(0, 0, 0);
+      modelRef.current.rotation.set(0, 0, 0);
+    }
+    if (cameraRef.current) {
+      cameraRef.current.position.z = 3;
+    }
+  };
+
+  const handleFullscreen = () => {
+    if (containerRef.current) {
+      if (containerRef.current.requestFullscreen) {
+        containerRef.current.requestFullscreen();
+      } else if (containerRef.current.webkitRequestFullscreen) {
+        containerRef.current.webkitRequestFullscreen();
+      }
+    }
+  };
+
+  const zoomPercent = Math.round(100 / (zoom * 0.5));
+  const brightnessPercent = Math.round(brightness * 100);
+
   return (
     <div className="relative w-full h-full bg-slate-950 rounded-lg overflow-hidden">
       <div ref={containerRef} className="w-full h-full" />
+      
+      {/* Top Left - Tabs and Stats */}
+      <div className="absolute top-3 left-4 flex flex-col gap-3">
+        <div className="flex gap-2">
+          <button className="px-4 py-1.5 rounded-full bg-white text-slate-900 text-xs font-medium">Textured</button>
+          <button className="px-4 py-1.5 rounded-full bg-slate-700/50 text-white text-xs font-medium">Mesh</button>
+        </div>
+        
+        <div className="space-y-1 text-xs text-slate-300">
+          <div>Zoom: {zoomPercent}%</div>
+          <div>Brightness: {brightnessPercent}%</div>
+        </div>
+        
+        <div className="w-32">
+          <Slider
+            value={[brightness]}
+            onValueChange={(value) => setBrightness(value[0])}
+            min={0.1}
+            max={2}
+            step={0.05}
+            className="w-full"
+          />
+        </div>
+      </div>
+
+      {/* Top Right - Controls */}
+      <div className="absolute top-3 right-4 flex flex-col gap-2">
+        <Button
+          size="icon"
+          variant="ghost"
+          onClick={() => setShowSettings(true)}
+          className="bg-white/10 hover:bg-white/20 text-white h-8 w-8"
+        >
+          <Settings className="w-4 h-4" />
+        </Button>
+        <Button
+          size="icon"
+          variant="ghost"
+          onClick={handleFullscreen}
+          className="bg-white/10 hover:bg-white/20 text-white h-8 w-8"
+        >
+          <Maximize2 className="w-4 h-4" />
+        </Button>
+        <Button
+          size="icon"
+          variant="ghost"
+          onClick={handleReset}
+          className="bg-white/10 hover:bg-white/20 text-white h-8 w-8"
+        >
+          <RotateCcw className="w-4 h-4" />
+        </Button>
+      </div>
+
+      {/* Bottom - Help Text */}
+      <div className="absolute bottom-3 left-1/2 transform -translate-x-1/2 bg-slate-700/80 backdrop-blur-sm px-4 py-2 rounded-full text-white text-xs flex gap-4">
+        <span className="flex items-center gap-1">🖱️ Left: Rotate</span>
+        <span className="flex items-center gap-1">🖱️ Right: Pan</span>
+        <span className="flex items-center gap-1">🔄 Scroll: Zoom</span>
+      </div>
+
       {loading && (
         <div className="absolute inset-0 flex items-center justify-center bg-black/50">
           <Loader2 className="w-6 h-6 text-white animate-spin" />
@@ -231,11 +328,13 @@ export default function GLBViewer({ file, label }) {
           <p className="text-white text-sm">{error}</p>
         </div>
       )}
-      {label && (
-        <div className="absolute top-2 left-2 px-2 py-1 bg-black/60 rounded text-white text-xs font-medium">
-          {label}
-        </div>
-      )}
+
+      <GLBViewerSettings
+        isOpen={showSettings}
+        onClose={() => setShowSettings(false)}
+        settings={settings}
+        onSettingsChange={handleSettingChange}
+      />
     </div>
   );
 }
