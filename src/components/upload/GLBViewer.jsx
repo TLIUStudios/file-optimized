@@ -198,7 +198,7 @@ export default function GLBViewer({ file, label }) {
       requestAnimationFrame(animate);
       
       // Auto-rotate when enabled and not interacting
-      if (settings.autoRotate && !controlsRef.current.isDragging && !controlsRef.current.isPanning && modelRef.current) {
+      if (settings.autoRotate && autoRotateActive && !controlsRef.current.isDragging && !controlsRef.current.isPanning && modelRef.current) {
         controlsRef.current.autoRotateAngle += 0.003;
         modelRef.current.rotation.y = controlsRef.current.rotation.y + controlsRef.current.autoRotateAngle;
       }
