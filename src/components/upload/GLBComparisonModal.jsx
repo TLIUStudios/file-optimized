@@ -335,14 +335,307 @@ export default function GLBComparisonModal({ isOpen, onClose, originalFile, comp
               <div className="h-px bg-slate-200 dark:bg-slate-800" />
 
               {/* AI SEO Generation Section */}
-              <div>
-                <h3 className="text-slate-900 dark:text-white font-semibold text-xs uppercase tracking-wider mb-3">
-                  AI SEO Generation
-                </h3>
-                <p className="text-[10px] text-slate-500 dark:text-slate-400 mb-3">Generate AI-powered metadata for this 3D model</p>
-                <Badge variant="outline" className="border-blue-300 text-blue-700 dark:border-blue-700 dark:text-blue-400">
-                  Coming Soon
-                </Badge>
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-slate-900 dark:text-white font-semibold text-xs uppercase tracking-wider">
+                    AI SEO Generation
+                  </h3>
+                  {hasAnyMetadata && !isGenerating && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={generateMetadata}
+                      className="h-7 px-2 text-xs"
+                    >
+                      <RefreshCw className="w-3 h-3 mr-1" />
+                      Regenerate All
+                    </Button>
+                  )}
+                </div>
+
+                {isGenerating ? (
+                  <div className="bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg p-4 text-center">
+                    <RefreshCw className="w-5 h-5 animate-spin mx-auto mb-2 text-emerald-500" />
+                    <p className="text-xs text-slate-500 dark:text-slate-400 mb-2">Generating metadata with AI...</p>
+                    <Badge variant="outline" className="border-blue-300 text-blue-700 dark:border-blue-700 dark:text-blue-400">
+                      ~3-5s estimated
+                    </Badge>
+                  </div>
+                ) : hasAnyMetadata ? (
+                  <div className="space-y-2">
+                    {/* Title */}
+                    <div className="bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg p-3">
+                      <div className="flex items-center justify-between mb-2">
+                        <label className="text-[10px] font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider">Title</label>
+                        <div className="flex gap-1">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => regenerateField('title')}
+                            disabled={regeneratingField === 'title'}
+                            className="h-5 w-5 p-0 hover:bg-slate-200 dark:hover:bg-slate-800"
+                          >
+                            <RefreshCw className={cn("w-3 h-3", regeneratingField === 'title' && "animate-spin")} />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => copyToClipboard(aiTitle, 'Title')}
+                            className="h-5 w-5 p-0 hover:bg-slate-200 dark:hover:bg-slate-800"
+                          >
+                            <Copy className="w-3 h-3" />
+                          </Button>
+                        </div>
+                      </div>
+                      <input
+                        type="text"
+                        value={aiTitle}
+                        readOnly
+                        className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded px-3 py-2 text-sm text-slate-900 dark:text-white"
+                      />
+                    </div>
+
+                    {/* Description */}
+                    <div className="bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg p-3">
+                      <div className="flex items-center justify-between mb-2">
+                        <label className="text-[10px] font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider">Description</label>
+                        <div className="flex gap-1">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => regenerateField('description')}
+                            disabled={regeneratingField === 'description'}
+                            className="h-5 w-5 p-0 hover:bg-slate-200 dark:hover:bg-slate-800"
+                          >
+                            <RefreshCw className={cn("w-3 h-3", regeneratingField === 'description' && "animate-spin")} />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => copyToClipboard(aiDescription, 'Description')}
+                            className="h-5 w-5 p-0 hover:bg-slate-200 dark:hover:bg-slate-800"
+                          >
+                            <Copy className="w-3 h-3" />
+                          </Button>
+                        </div>
+                      </div>
+                      <textarea
+                        value={aiDescription}
+                        readOnly
+                        rows={3}
+                        className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded px-3 py-2 text-xs text-slate-900 dark:text-white resize-none"
+                      />
+                    </div>
+
+                    {/* Category & Mood */}
+                    <div className="grid grid-cols-2 gap-2">
+                      <div className="bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg p-3">
+                        <div className="flex items-center justify-between mb-2">
+                          <label className="text-[10px] font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider">Category</label>
+                          <div className="flex gap-1">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => regenerateField('category')}
+                              disabled={regeneratingField === 'category'}
+                              className="h-5 w-5 p-0 hover:bg-slate-200 dark:hover:bg-slate-800"
+                            >
+                              <RefreshCw className={cn("w-3 h-3", regeneratingField === 'category' && "animate-spin")} />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => copyToClipboard(aiCategory, 'Category')}
+                              className="h-5 w-5 p-0 hover:bg-slate-200 dark:hover:bg-slate-800"
+                            >
+                              <Copy className="w-3 h-3" />
+                            </Button>
+                          </div>
+                        </div>
+                        <input
+                          type="text"
+                          value={aiCategory}
+                          readOnly
+                          className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded px-3 py-2 text-xs text-slate-900 dark:text-white"
+                        />
+                      </div>
+
+                      <div className="bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg p-3">
+                        <div className="flex items-center justify-between mb-2">
+                          <label className="text-[10px] font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider">Mood</label>
+                          <div className="flex gap-1">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => regenerateField('mood')}
+                              disabled={regeneratingField === 'mood'}
+                              className="h-5 w-5 p-0 hover:bg-slate-200 dark:hover:bg-slate-800"
+                            >
+                              <RefreshCw className={cn("w-3 h-3", regeneratingField === 'mood' && "animate-spin")} />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => copyToClipboard(aiMood, 'Mood')}
+                              className="h-5 w-5 p-0 hover:bg-slate-200 dark:hover:bg-slate-800"
+                            >
+                              <Copy className="w-3 h-3" />
+                            </Button>
+                          </div>
+                        </div>
+                        <input
+                          type="text"
+                          value={aiMood}
+                          readOnly
+                          className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded px-3 py-2 text-xs text-slate-900 dark:text-white"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Alt Text */}
+                    <div className="bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg p-3">
+                      <div className="flex items-center justify-between mb-2">
+                        <label className="text-[10px] font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider">Alt Text</label>
+                        <div className="flex gap-1">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => regenerateField('alt_text')}
+                            disabled={regeneratingField === 'alt_text'}
+                            className="h-5 w-5 p-0 hover:bg-slate-200 dark:hover:bg-slate-800"
+                          >
+                            <RefreshCw className={cn("w-3 h-3", regeneratingField === 'alt_text' && "animate-spin")} />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => copyToClipboard(aiAltText, 'Alt Text')}
+                            className="h-5 w-5 p-0 hover:bg-slate-200 dark:hover:bg-slate-800"
+                          >
+                            <Copy className="w-3 h-3" />
+                          </Button>
+                        </div>
+                      </div>
+                      <textarea
+                        value={aiAltText}
+                        readOnly
+                        rows={2}
+                        className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded px-3 py-2 text-xs text-slate-900 dark:text-white resize-none"
+                      />
+                    </div>
+
+                    {/* Tags */}
+                    <div className="bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg p-3">
+                      <div className="flex items-center justify-between mb-2">
+                        <label className="text-[10px] font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider">Tags</label>
+                        <div className="flex gap-1">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => regenerateField('tags')}
+                            disabled={regeneratingField === 'tags'}
+                            className="h-5 w-5 p-0 hover:bg-slate-200 dark:hover:bg-slate-800"
+                          >
+                            <RefreshCw className={cn("w-3 h-3", regeneratingField === 'tags' && "animate-spin")} />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => copyToClipboard(aiTags, 'Tags')}
+                            className="h-5 w-5 p-0 hover:bg-slate-200 dark:hover:bg-slate-800"
+                          >
+                            <Copy className="w-3 h-3" />
+                          </Button>
+                        </div>
+                      </div>
+                      <input
+                        type="text"
+                        value={aiTags}
+                        readOnly
+                        className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded px-3 py-2 text-xs text-slate-900 dark:text-white"
+                      />
+                    </div>
+
+                    {/* Keywords */}
+                    <div className="bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg p-3">
+                      <div className="flex items-center justify-between mb-2">
+                        <label className="text-[10px] font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider">Keywords</label>
+                        <div className="flex gap-1">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => regenerateField('keywords')}
+                            disabled={regeneratingField === 'keywords'}
+                            className="h-5 w-5 p-0 hover:bg-slate-200 dark:hover:bg-slate-800"
+                          >
+                            <RefreshCw className={cn("w-3 h-3", regeneratingField === 'keywords' && "animate-spin")} />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => copyToClipboard(aiKeywords, 'Keywords')}
+                            className="h-5 w-5 p-0 hover:bg-slate-200 dark:hover:bg-slate-800"
+                          >
+                            <Copy className="w-3 h-3" />
+                          </Button>
+                        </div>
+                      </div>
+                      <input
+                        type="text"
+                        value={aiKeywords}
+                        readOnly
+                        className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded px-3 py-2 text-xs text-slate-900 dark:text-white"
+                      />
+                    </div>
+
+                    {/* Hashtags */}
+                    <div className="bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg p-3">
+                      <div className="flex items-center justify-between mb-2">
+                        <label className="text-[10px] font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider">Hashtags</label>
+                        <div className="flex gap-1">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => regenerateField('hashtags')}
+                            disabled={regeneratingField === 'hashtags'}
+                            className="h-5 w-5 p-0 hover:bg-slate-200 dark:hover:bg-slate-800"
+                          >
+                            <RefreshCw className={cn("w-3 h-3", regeneratingField === 'hashtags' && "animate-spin")} />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => copyToClipboard(aiHashtags, 'Hashtags')}
+                            className="h-5 w-5 p-0 hover:bg-slate-200 dark:hover:bg-slate-800"
+                          >
+                            <Copy className="w-3 h-3" />
+                          </Button>
+                        </div>
+                      </div>
+                      <input
+                        type="text"
+                        value={aiHashtags}
+                        readOnly
+                        className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded px-3 py-2 text-xs text-slate-900 dark:text-white"
+                      />
+                    </div>
+                  </div>
+                ) : (
+                  <div className="bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg p-4 text-center">
+                    <p className="text-xs text-slate-500 dark:text-slate-400 mb-2">Generate AI-powered metadata for this 3D model</p>
+                    <Badge variant="outline" className="border-blue-300 text-blue-700 dark:border-blue-700 dark:text-blue-400 mb-3">
+                      ~3-5s estimated
+                    </Badge>
+                    <Button
+                      size="sm"
+                      onClick={generateMetadata}
+                      className="bg-slate-700 hover:bg-slate-800 text-white text-xs h-8 w-full"
+                    >
+                      <RefreshCw className="w-3 h-3 mr-1" />
+                      Generate Metadata
+                    </Button>
+                  </div>
+                )}
               </div>
 
               {/* Privacy Notice */}
