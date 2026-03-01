@@ -1,7 +1,10 @@
 import { useEffect, useRef, useState } from 'react';
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Settings, Maximize2, RotateCcw } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Slider } from '@/components/ui/slider';
+import GLBViewerSettings from './GLBViewerSettings';
 
 export default function GLBViewer({ file, label }) {
   const containerRef = useRef(null);
@@ -9,15 +12,25 @@ export default function GLBViewer({ file, label }) {
   const rendererRef = useRef(null);
   const cameraRef = useRef(null);
   const modelRef = useRef(null);
+  const lightRef = useRef(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [showSettings, setShowSettings] = useState(false);
+  const [zoom, setZoom] = useState(1);
+  const [brightness, setBrightness] = useState(1);
+  const [settings, setSettings] = useState({
+    backgroundColor: 'dark',
+    autoRotate: true
+  });
 
   // Mouse controls state
   const controlsRef = useRef({
     isDragging: false,
+    isPanning: false,
     previousMousePosition: { x: 0, y: 0 },
     rotation: { x: 0, y: 0 },
-    zoom: 1
+    zoom: 1,
+    autoRotateAngle: 0
   });
 
   useEffect(() => {
