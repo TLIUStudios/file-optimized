@@ -21,6 +21,7 @@ const Draggable = lazy(() => import("@hello-pangea/dnd").then(m => ({ default: m
 const LoginPromptModal = lazy(() => import("../components/LoginPromptModal"));
 const ProUpgradeModal = lazy(() => import("../components/ProUpgradeModal"));
 const MediaCard = lazy(() => import("../components/upload/MediaCard"));
+const GLBCard = lazy(() => import("../components/upload/GLBCard"));
 const ImageComparisonModal = lazy(() => import("../components/comparison/ImageComparisonModal"));
 
 // Loading fallback for image cards
@@ -688,15 +689,23 @@ export default function Home() {
                     }}>
 
                             <Suspense fallback={<ImageCardSkeleton />}>
-                              <MediaCard
-                        image={image.file}
-                        onRemove={() => removeImage(image.id)}
-                        onProcessed={(data) => handleImageProcessed(image.id, data)}
-                        onCompare={handleCompare}
-                        autoProcess={!processedImages[image.id] && autoProcessTrigger}
-                        isPro={isPro}
-                        onFilenameUpdate={(newFilename) => handleFilenameUpdate(image.id, newFilename)} />
-
+                              {image.file.type === 'model/gltf-binary' || image.file.name.toLowerCase().endsWith('.glb') ? (
+                                <GLBCard
+                                  file={image.file}
+                                  onRemove={() => removeImage(image.id)}
+                                  onProcessed={(data) => handleImageProcessed(image.id, data)}
+                                />
+                              ) : (
+                                <MediaCard
+                                  image={image.file}
+                                  onRemove={() => removeImage(image.id)}
+                                  onProcessed={(data) => handleImageProcessed(image.id, data)}
+                                  onCompare={handleCompare}
+                                  autoProcess={!processedImages[image.id] && autoProcessTrigger}
+                                  isPro={isPro}
+                                  onFilenameUpdate={(newFilename) => handleFilenameUpdate(image.id, newFilename)}
+                                />
+                              )}
                             </Suspense>
                           </div>
                   }
