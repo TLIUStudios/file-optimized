@@ -90,21 +90,10 @@ export default function GLBComparisonModal({ isOpen, onClose, originalFile, comp
               </div>
             </div>
 
-            {/* Bottom Bar - Stats & SEO */}
-            <div className="h-auto px-6 py-3 bg-slate-100 dark:bg-slate-900 backdrop-blur-sm border-t border-slate-200 dark:border-slate-800 flex flex-col gap-3">
+            {/* Bottom Bar - Stats */}
+            <div className="h-auto px-6 py-3 bg-slate-100 dark:bg-slate-900 backdrop-blur-sm border-t border-slate-200 dark:border-slate-800">
               <div className="text-xs text-slate-600 dark:text-slate-400">
                 <span className="font-semibold">{savings}%</span> smaller • Optimized with Draco compression
-              </div>
-              
-              {/* SEO Generation Section */}
-              <div className="h-px bg-slate-200 dark:bg-slate-800" />
-              
-              <div className="text-center py-2">
-                <h3 className="text-xs font-semibold text-slate-900 dark:text-white uppercase tracking-wider mb-2">AI SEO Generation</h3>
-                <p className="text-[10px] text-slate-500 dark:text-slate-400 mb-2">Generate AI-powered metadata for this 3D model</p>
-                <Badge variant="outline" className="border-blue-300 text-blue-700 dark:border-blue-700 dark:text-blue-400">
-                  Coming Soon
-                </Badge>
               </div>
             </div>
           </div>
