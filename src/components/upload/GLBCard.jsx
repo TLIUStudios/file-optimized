@@ -275,19 +275,19 @@ export default function GLBCard({ file, onRemove, onProcessed }) {
           </div>
         )}
       </div>
-    </Card>
+      </Card>
 
-    {showComparison && (
-      <GLBComparisonModal
-        isOpen={showComparison}
-        onClose={() => setShowComparison(false)}
-        originalFile={file}
-        compressedFile={compressedBlob}
-        originalSize={originalSize}
-        compressedSize={compressedSize}
-        fileName={file.name}
-      />
-    )}
+      {showComparison && (
+        <GLBComparisonModal
+          isOpen={showComparison}
+          onClose={() => setShowComparison(false)}
+          originalFile={file}
+          compressedFile={compressedBlob}
+          originalSize={originalSize}
+          compressedSize={compressedSize}
+          fileName={file.name}
+        />
+      )}
     </>
   );
 }
