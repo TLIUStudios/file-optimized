@@ -276,6 +276,16 @@ export default function GLBCard({ file, onRemove, onProcessed }) {
           fileName={file.name}
         />
       )}
+
+      {compressedBlob && (
+        <CloudSaveModal
+          isOpen={showCloudSave}
+          onClose={() => setShowCloudSave(false)}
+          blob={compressedBlob}
+          filename={file.name}
+          mimeType="model/gltf-binary"
+        />
+      )}
     </>
   );
 }
