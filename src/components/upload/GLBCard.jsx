@@ -107,40 +107,46 @@ export default function GLBCard({ file, onRemove, onProcessed }) {
   return (
     <>
       <Card className="overflow-hidden bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 shadow-lg hover:shadow-xl transition-shadow">
-        <div className="relative pt-10">
-          <div className="grid grid-cols-2 gap-2 p-4 bg-slate-50 dark:bg-slate-950">
-            {/* Original GLB */}
-            {file && (
-              <div className="relative aspect-square rounded-lg overflow-hidden bg-slate-200 dark:bg-slate-800">
-                <GLBViewer file={file} />
-                <Badge className="absolute top-2 left-2 bg-slate-900/80 text-white">
-                  Original
-                </Badge>
-              </div>
-            )}
-            {/* Compressed GLB */}
-            {compressedBlob ? (
-              <div className="relative aspect-square rounded-lg overflow-hidden bg-slate-200 dark:bg-slate-800">
-                <GLBViewer file={compressedBlob} />
-                <Badge className="absolute top-2 left-2 bg-emerald-600 text-white">
-                  Optimized
-                </Badge>
-              </div>
-            ) : (
-              <div className="aspect-square rounded-lg bg-slate-200 dark:bg-slate-800 flex items-center justify-center">
-                <p className="text-sm text-slate-400 text-center px-2">Preview after Optimizing Asset</p>
-              </div>
-            )}
+        {/* Header */}
+        <div className="flex items-center justify-between px-4 py-3 border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900">
+          <div className="flex items-center gap-2">
+            <Box className="w-4 h-4 text-slate-500" />
+            <span className="text-xs font-semibold text-slate-600 dark:text-slate-300">3D Model</span>
           </div>
-
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={onRemove}
-            className="absolute top-0 right-2 bg-slate-900/90 dark:bg-slate-900/90 hover:bg-red-600 dark:hover:bg-red-600 text-white rounded-lg transition-colors z-20 shadow-lg"
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            onClick={onRemove} 
+            className="bg-slate-900/90 dark:bg-slate-900/90 hover:bg-red-600 dark:hover:bg-red-600 text-white rounded-lg transition-colors h-8 w-8"
           >
             <X className="w-4 h-4" />
           </Button>
+        </div>
+
+        {/* Preview */}
+        <div className="grid grid-cols-2 gap-2 p-4 bg-slate-50 dark:bg-slate-950">
+          {/* Original GLB */}
+          {file && (
+            <div className="relative aspect-square rounded-lg overflow-hidden bg-slate-200 dark:bg-slate-800">
+              <GLBViewer file={file} />
+              <Badge className="absolute top-2 left-2 bg-slate-900/80 text-white">
+                Original
+              </Badge>
+            </div>
+          )}
+          {/* Compressed GLB */}
+          {compressedBlob ? (
+            <div className="relative aspect-square rounded-lg overflow-hidden bg-slate-200 dark:bg-slate-800">
+              <GLBViewer file={compressedBlob} />
+              <Badge className="absolute top-2 left-2 bg-emerald-600 text-white">
+                Optimized
+              </Badge>
+            </div>
+          ) : (
+            <div className="aspect-square rounded-lg bg-slate-200 dark:bg-slate-800 flex items-center justify-center">
+              <p className="text-sm text-slate-400 text-center px-2">Preview after Optimizing Asset</p>
+            </div>
+          )}
         </div>
 
         <div className="p-4 space-y-4">
@@ -153,7 +159,7 @@ export default function GLBCard({ file, onRemove, onProcessed }) {
                 onBlur={handleSaveFileName}
                 onKeyDown={(e) => e.key === 'Enter' && handleSaveFileName()}
                 autoFocus
-                className="flex-1 px-2 py-1 text-sm border border-slate-300 dark:border-slate-700 rounded bg-white dark:bg-slate-950 text-slate-900 dark:text-white"
+                className="flex-1 px-3 py-2 text-sm border border-slate-300 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-950 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
               />
             ) : (
               <p className="text-sm font-medium text-slate-900 dark:text-white flex-1 truncate" title={fileName}>
