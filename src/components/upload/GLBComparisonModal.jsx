@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { X } from 'lucide-react';
@@ -6,25 +6,10 @@ import GLBViewer from './GLBViewer';
 
 export default function GLBComparisonModal({ isOpen, onClose, originalFile, compressedFile, originalSize, compressedSize, fileName }) {
    const [sliderPosition, setSliderPosition] = useState(50);
-   const [originalUrl, setOriginalUrl] = useState(null);
-   const [compressedUrl, setCompressedUrl] = useState(null);
 
-   // Create object URLs for both files
-   useState(() => {
-     if (originalFile) {
-       const url = URL.createObjectURL(originalFile);
-       setOriginalUrl(url);
-       return () => URL.revokeObjectURL(url);
-     }
-   }, [originalFile]);
-
-   useState(() => {
-     if (compressedFile) {
-       const url = URL.createObjectURL(compressedFile);
-       setCompressedUrl(url);
-       return () => URL.revokeObjectURL(url);
-     }
-   }, [compressedFile]);
+   useEffect(() => {
+     if (!isOpen) return;
+   }, [isOpen]);
 
   const handleMouseDown = (e) => {
     const container = e.currentTarget?.parentElement;
