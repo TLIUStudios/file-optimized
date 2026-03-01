@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Download, X, Loader2, CheckCircle2, ArrowRight, Eye, Edit2, Box } from "lucide-react";
+import { Download, X, Loader2, CheckCircle2, ArrowRight, Eye, Edit2, Box, RefreshCcw, Cloud, ChevronDown, Zap } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
