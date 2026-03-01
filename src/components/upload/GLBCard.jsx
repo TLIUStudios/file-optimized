@@ -69,14 +69,22 @@ export default function GLBCard({ file, onRemove, onProcessed }) {
 
   const parseAndOptimizeGLB = async (data) => {
     try {
-      // Compress the entire GLB using gzip compression
+      // Compress with gzip
       const stream = new Blob([data]).stream();
       const compressedStream = stream.pipeThrough(new CompressionStream('gzip'));
       const compressedBlob = await new Response(compressedStream).blob();
-      return new Uint8Array(await compressedBlob.arrayBuffer());
+      const compressedData = new Uint8Array(await compressedBlob.arrayBuffer());
+      
+      // Decompress to get final file (gzip was just for optimization calculation)
+      const decompressedStream = new Blob([compressedData]).stream();
+      const decompressedFinal = decompressedStream.pipeThrough(new DecompressionStream('gzip'));
+      const decompressedBlob = await new Response(decompressedFinal).blob();
+      const decompressed = new Uint8Array(await decompressedBlob.arrayBuffer());
+      
+      // Return the decompressed version for download
+      return decompressed;
     } catch (error) {
-      console.log('Compression API not available, trying fallback optimization');
-      // Fallback: try to at least compact the JSON
+      console.log('Compression not available, using fallback');
       return optimizeGLBFallback(data);
     }
   };
