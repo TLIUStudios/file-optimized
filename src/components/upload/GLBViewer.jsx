@@ -177,20 +177,35 @@ export default function GLBViewer({ file, label }) {
     renderer.domElement.addEventListener('mousedown', onMouseDown);
     renderer.domElement.addEventListener('mousemove', onMouseMove);
     renderer.domElement.addEventListener('mouseup', onMouseUp);
+    renderer.domElement.addEventListener('contextmenu', onContextMenu);
     renderer.domElement.addEventListener('wheel', onWheel, { passive: false });
 
     // Animation loop
     const animate = () => {
       requestAnimationFrame(animate);
+      
+      // Auto-rotate when enabled and not interacting
+      if (settings.autoRotate && !controlsRef.current.isDragging && !controlsRef.current.isPanning && modelRef.current) {
+        controlsRef.current.autoRotateAngle += 0.005;
+        modelRef.current.rotation.y = controlsRef.current.rotation.y + controlsRef.current.autoRotateAngle;
+      }
+      
       renderer.render(scene, camera);
     };
     animate();
+
+    // Handle brightness changes
+    if (lightRef.current) {
+      lightRef.current.ambientLight.intensity = brightness * 1.2;
+      lightRef.current.directionalLight.intensity = brightness;
+    }
 
     // Cleanup
     return () => {
       renderer.domElement.removeEventListener('mousedown', onMouseDown);
       renderer.domElement.removeEventListener('mousemove', onMouseMove);
       renderer.domElement.removeEventListener('mouseup', onMouseUp);
+      renderer.domElement.removeEventListener('contextmenu', onContextMenu);
       renderer.domElement.removeEventListener('wheel', onWheel);
       
       if (shouldRevokeUrl) {
@@ -201,7 +216,7 @@ export default function GLBViewer({ file, label }) {
         container.removeChild(renderer.domElement);
       }
     };
-  }, [file]);
+  }, [file, settings, brightness]);
 
   return (
     <div className="relative w-full h-full bg-slate-950 rounded-lg overflow-hidden">
