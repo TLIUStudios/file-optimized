@@ -1,7 +1,7 @@
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { X, Download as DownloadIcon } from 'lucide-react';
+import { X, Download as DownloadIcon, Box } from 'lucide-react';
 import { toast } from 'sonner';
 import GLBViewer from './GLBViewer';
 
@@ -37,7 +37,10 @@ export default function GLBComparisonModal({ isOpen, onClose, originalFile, comp
         <div className="absolute top-0 left-0 right-0 z-[100] flex items-center justify-between px-4 py-3 bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm border-b border-slate-200 dark:border-slate-800">
           <div className="flex items-center gap-3">
             <h2 className="text-sm font-semibold text-slate-900 dark:text-white truncate">{fileName}</h2>
-            <Badge variant="secondary" className="text-xs">3D Model</Badge>
+            <Badge variant="secondary" className="text-xs flex items-center gap-1.5">
+              <Box className="w-3 h-3" />
+              3D Model
+            </Badge>
           </div>
 
           <div className="flex items-center gap-2">
