@@ -158,30 +158,10 @@ export default function GLBCard({ file, onRemove, onProcessed }) {
         </div>
 
         <div className="p-4 space-y-4">
-          <div className="flex items-center justify-between gap-2 group">
-            {isRenaming ? (
-              <input
-                type="text"
-                value={fileName}
-                onChange={(e) => setFileName(e.target.value)}
-                onBlur={handleSaveFileName}
-                onKeyDown={(e) => e.key === 'Enter' && handleSaveFileName()}
-                autoFocus
-                className="flex-1 px-3 py-2 text-sm border border-slate-300 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-950 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
-              />
-            ) : (
-              <p className="text-sm font-medium text-slate-200 dark:text-slate-300 flex-1 truncate" title={fileName}>
-                {fileName}
-              </p>
-            )}
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => setIsRenaming(!isRenaming)}
-              className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity"
-            >
-              <Edit2 className="w-4 h-4 text-slate-400" />
-            </Button>
+          <div>
+            <p className="font-medium text-sm text-slate-900 dark:text-white truncate" title={fileName}>
+              {fileName}
+            </p>
           </div>
 
           <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
