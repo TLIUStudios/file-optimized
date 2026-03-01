@@ -35,7 +35,7 @@ export default function GLBCard({ file, onRemove, onProcessed }) {
       
       // Compress using gzip
       const compressedArrayBuffer = await parseAndOptimizeGLB(view);
-      const compressedBlob = new Blob([compressedArrayBuffer], { type: 'application/gzip' });
+      const compressedBlobData = new Blob([compressedArrayBuffer], { type: 'application/gzip' });
       
       setProcessingProgress(80);
       
