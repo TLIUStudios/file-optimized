@@ -235,7 +235,7 @@ export default function GLBCard({ file, onRemove, onProcessed }) {
                   </Button>
                 </div>
 
-                <Button variant="outline" className="w-full bg-blue-600 hover:bg-blue-700 text-white border-0">
+                <Button className="w-full bg-blue-600 hover:bg-blue-700 text-white">
                   <Cloud className="w-4 h-4 mr-2" />
                   Save to...
                   <ChevronDown className="w-4 h-4 ml-auto" />
