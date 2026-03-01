@@ -203,7 +203,7 @@ export default function GLBViewer({ file, label, isBlob = false, disableInteract
       
       // Auto-rotate when enabled and not interacting
       if (settings.autoRotate && autoRotateActive && !controlsRef.current.isDragging && !controlsRef.current.isPanning && modelRef.current) {
-        controlsRef.current.autoRotateAngle += 0.003;
+        controlsRef.current.autoRotateAngle += 0.002;
         modelRef.current.rotation.y = controlsRef.current.rotation.y + controlsRef.current.autoRotateAngle;
       }
       
