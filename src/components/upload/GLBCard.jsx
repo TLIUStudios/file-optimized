@@ -35,21 +35,8 @@ export default function GLBCard({ file, onRemove, onProcessed }) {
       
       setProcessingProgress(40);
       
-      // Call backend function with FormData
-      const endpoint = `${window.location.origin}/.base44/functions/optimizeGLB`;
-      const response = await fetch(endpoint, {
-        method: 'POST',
-        body: formData,
-        headers: {
-          'Authorization': `Bearer ${await getAuthToken()}`
-        }
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to optimize GLB');
-      }
-
-      const arrayBuffer = await response.arrayBuffer();
+      const response = await base44.functions.invoke('optimizeGLB', formData);
+      const arrayBuffer = response.data;
       const compressedBlobData = new Blob([arrayBuffer], { type: 'model/gltf-binary' });
       
       setProcessingProgress(80);
@@ -94,20 +81,6 @@ export default function GLBCard({ file, onRemove, onProcessed }) {
     } finally {
       setProcessing(false);
     }
-  };
-
-  const getAuthToken = async () => {
-    // Get auth token from base44 if available
-    try {
-      const response = await fetch('/.base44/auth/token', { credentials: 'include' });
-      if (response.ok) {
-        const data = await response.json();
-        return data.token;
-      }
-    } catch (e) {
-      console.log('No auth token available');
-    }
-    return '';
   };
 
 
