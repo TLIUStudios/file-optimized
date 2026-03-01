@@ -108,27 +108,41 @@ export default function GLBCard({ file, onRemove, onProcessed }) {
     const jsonStr = decoder.decode(jsonChunk).trim();
     const json = JSON.parse(jsonStr);
 
-    // Remove metadata and unnecessary extensions to reduce size
+    // Aggressive metadata removal
     delete json.asset?.generator;
+    delete json.asset?.copyright;
     delete json.extras;
     
+    // Remove empty properties
+    if (json.asset && Object.keys(json.asset).length === 0) delete json.asset;
+    
+    // Remove unnecessary extensions
     if (json.extensionsUsed) {
       json.extensionsUsed = json.extensionsUsed.filter(e => 
-        !['KHR_materials_unlit', 'KHR_lights_punctual'].includes(e)
+        !['KHR_materials_unlit', 'KHR_lights_punctual', 'KHR_draco_mesh_compression'].includes(e)
       );
       if (json.extensionsUsed.length === 0) delete json.extensionsUsed;
     }
 
     if (json.extensions) {
-      Object.keys(json.extensions).forEach(key => {
-        if (['KHR_materials_unlit', 'KHR_lights_punctual'].includes(key)) {
-          delete json.extensions[key];
-        }
+      ['KHR_materials_unlit', 'KHR_lights_punctual', 'KHR_draco_mesh_compression'].forEach(ext => {
+        delete json.extensions[ext];
       });
       if (Object.keys(json.extensions).length === 0) delete json.extensions;
     }
 
-    // Minify JSON
+    // Remove unused materials/textures if we can identify them safely
+    if (json.materials) {
+      json.materials.forEach(mat => {
+        delete mat.extras;
+        if (mat.pbrMetallicRoughness) {
+          delete mat.pbrMetallicRoughness.baseColorTexture?.extras;
+          delete mat.pbrMetallicRoughness.metallicRoughnessTexture?.extras;
+        }
+      });
+    }
+
+    // Minify JSON - stringify without whitespace
     const optimizedJsonStr = JSON.stringify(json);
     const encoder = new TextEncoder();
     const optimizedJsonData = encoder.encode(optimizedJsonStr);
