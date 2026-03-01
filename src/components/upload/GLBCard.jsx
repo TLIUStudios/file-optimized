@@ -39,8 +39,9 @@ export default function GLBCard({ file, onRemove, onProcessed }) {
       
       setProcessingProgress(80);
       
-      const savings = ((1 - compressedBlob.size / file.size) * 100).toFixed(1);
-      setCompressedSize(compressedBlob.size);
+      const savings = ((1 - compressedBlobData.size / file.size) * 100).toFixed(1);
+      setCompressedSize(compressedBlobData.size);
+      setCompressedBlob(compressedBlobData);
       setProcessed(true);
       
       setProcessingProgress(100);
@@ -48,10 +49,10 @@ export default function GLBCard({ file, onRemove, onProcessed }) {
       onProcessed({
         id: file.name,
         originalFile: file,
-        compressedBlob: compressedBlob,
-        compressedUrl: URL.createObjectURL(compressedBlob),
+        compressedBlob: compressedBlobData,
+        compressedUrl: URL.createObjectURL(compressedBlobData),
         originalSize: file.size,
-        compressedSize: compressedBlob.size,
+        compressedSize: compressedBlobData.size,
         format: 'glb',
         filename: file.name.replace('.glb', '.glb.gz'),
         mediaType: '3d',
