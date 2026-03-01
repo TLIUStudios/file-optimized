@@ -646,7 +646,7 @@ export default function Home() {
             <input
             type="file"
             multiple
-            accept="image/*,video/mp4,audio/mp3,audio/wav,audio/mpeg"
+            accept="image/*,video/mp4,audio/mp3,audio/wav,audio/mpeg,.glb,model/gltf-binary"
             onChange={(e) => handleFilesSelected(e.target.files)}
             className="absolute inset-0 w-full h-16 opacity-0 cursor-pointer z-10"
             id="add-more"
