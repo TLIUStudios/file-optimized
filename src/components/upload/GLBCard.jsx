@@ -244,7 +244,10 @@ export default function GLBCard({ file, onRemove, onProcessed }) {
                   </Button>
                 </div>
 
-                <Button className="w-full bg-blue-600 hover:bg-blue-700 text-white flex items-center justify-center">
+                <Button 
+                  onClick={() => setShowCloudSave(true)}
+                  className="w-full bg-blue-600 hover:bg-blue-700 text-white flex items-center justify-center"
+                >
                   <Cloud className="w-4 h-4 mr-2" />
                   Save to...
                   <ChevronDown className="w-4 h-4 ml-2" />
