@@ -17,12 +17,23 @@ Deno.serve(async (req) => {
     }
 
     const arrayBuffer = await file.arrayBuffer();
-    const optimized = optimizeGLB(new Uint8Array(arrayBuffer));
+    const originalBytes = new Uint8Array(arrayBuffer);
+    
+    // Validate GLB format
+    const view = new DataView(originalBytes.buffer, originalBytes.byteOffset, originalBytes.byteLength);
+    const magic = view.getUint32(0, true);
+    const version = view.getUint32(4, true);
+    
+    if (magic !== 0x46546C67 || version !== 2) {
+      return Response.json({ error: 'Invalid GLB file' }, { status: 400 });
+    }
 
-    return new Response(optimized, {
+    const optimizedBytes = optimizeGLB(originalBytes);
+
+    return new Response(optimizedBytes, {
       headers: {
         'Content-Type': 'model/gltf-binary',
-        'Content-Length': optimized.length,
+        'Content-Length': optimizedBytes.length,
       },
     });
   } catch (error) {
@@ -33,85 +44,132 @@ Deno.serve(async (req) => {
 
 function optimizeGLB(data) {
   const view = new DataView(data.buffer, data.byteOffset, data.byteLength);
-  const magic = view.getUint32(0, true);
+  const fileLength = view.getUint32(8, true);
 
-  if (magic !== 0x46546C67) return data;
-
-  const version = view.getUint32(4, true);
-  const totalLength = view.getUint32(8, true);
-
-  if (version !== 2) return data;
-
-  let offset = 12;
   let jsonChunk = null;
+  let jsonChunkLength = 0;
   let binChunk = null;
+  let binChunkLength = 0;
+  let offset = 12;
 
-  while (offset < totalLength) {
-    if (offset + 8 > totalLength) break;
+  // Parse chunks
+  while (offset < fileLength) {
+    if (offset + 8 > fileLength) break;
+
     const chunkLength = view.getUint32(offset, true);
     const chunkType = view.getUint32(offset + 4, true);
     const chunkStart = offset + 8;
+    const chunkEnd = chunkStart + chunkLength;
 
-    if (chunkType === 0x4e4f534a) {
-      jsonChunk = data.slice(chunkStart, chunkStart + chunkLength);
-    } else if (chunkType === 0x004e4942) {
-      binChunk = data.slice(chunkStart, chunkStart + chunkLength);
+    if (chunkType === 0x4e4f534a) { // JSON
+      jsonChunk = data.slice(chunkStart, chunkEnd);
+      jsonChunkLength = chunkLength;
+    } else if (chunkType === 0x004e4942) { // BIN
+      binChunk = data.slice(chunkStart, chunkEnd);
+      binChunkLength = chunkLength;
     }
 
     offset += 8 + chunkLength;
   }
 
-  if (!jsonChunk || !binChunk) return data;
+  if (!jsonChunk || !binChunk) {
+    return data; // Return original if parsing fails
+  }
 
+  // Parse JSON
   const decoder = new TextDecoder();
-  const jsonStr = decoder.decode(jsonChunk).trim();
-  let json = JSON.parse(jsonStr);
+  const jsonText = decoder.decode(jsonChunk).trim();
+  let json;
+  
+  try {
+    json = JSON.parse(jsonText);
+  } catch {
+    return data;
+  }
 
-  json.asset = json.asset || {};
-  delete json.asset.generator;
-  delete json.asset.copyright;
+  // Optimize JSON by removing unnecessary metadata
+  // Keep: asset.version, scene, nodes, meshes, materials, textures, images, buffers, bufferViews, accessors
+  // Remove: generator, copyright, extras, and optional extensions
+
+  if (json.asset) {
+    const version = json.asset.version;
+    json.asset = { version };
+  }
+
   delete json.extras;
 
+  // Remove non-essential extensions
   if (json.extensionsUsed) {
-    json.extensionsUsed = json.extensionsUsed.filter(
-      (e) => !['KHR_materials_unlit', 'KHR_lights_punctual'].includes(e)
-    );
+    const keepExtensions = [
+      'KHR_draco_mesh_compression',
+      'KHR_texture_basisu',
+      'EXT_texture_webp'
+    ];
+    json.extensionsUsed = json.extensionsUsed.filter(ext => keepExtensions.includes(ext));
     if (json.extensionsUsed.length === 0) delete json.extensionsUsed;
   }
 
   if (json.extensions) {
-    ['KHR_materials_unlit', 'KHR_lights_punctual'].forEach((ext) => {
-      delete json.extensions[ext];
-    });
+    const removeExtensions = [
+      'KHR_materials_unlit',
+      'KHR_lights_punctual',
+      'KHR_materials_transmission',
+      'KHR_materials_variants',
+      'KHR_materials_ior',
+      'KHR_materials_sheen',
+      'KHR_materials_specular',
+      'KHR_materials_emissive_strength',
+      'KHR_materials_volume',
+      'KHR_materials_clearcoat'
+    ];
+    removeExtensions.forEach(ext => delete json.extensions[ext]);
     if (Object.keys(json.extensions).length === 0) delete json.extensions;
   }
 
-  const optimizedJson = JSON.stringify(json);
+  // Clean up material metadata
+  if (json.materials) {
+    json.materials.forEach(mat => {
+      delete mat.extras;
+      delete mat.name;
+    });
+  }
+
+  // Minimize JSON string
+  const optimizedJsonText = JSON.stringify(json);
   const encoder = new TextEncoder();
-  const jsonData = encoder.encode(optimizedJson);
-  const padding = (4 - (jsonData.length % 4)) % 4;
+  const optimizedJsonData = encoder.encode(optimizedJsonText);
 
-  const newLength = 12 + 8 + jsonData.length + padding + 8 + binChunk.length;
-  const newGlb = new Uint8Array(newLength);
-  const newView = new DataView(newGlb.buffer);
+  // Align JSON to 4-byte boundary
+  const jsonPadding = (4 - (optimizedJsonData.length % 4)) % 4;
+  const alignedJsonLength = optimizedJsonData.length + jsonPadding;
 
-  newView.setUint32(0, 0x46546c67, true);
-  newView.setUint32(4, 2, true);
-  newView.setUint32(8, newLength, true);
+  // Calculate new file size
+  const newFileLength = 12 + (8 + alignedJsonLength) + (8 + binChunkLength);
 
+  // Build new GLB
+  const newGLB = new Uint8Array(newFileLength);
+  const newView = new DataView(newGLB.buffer);
+
+  // Write header
+  newView.setUint32(0, 0x46546c67, true); // magic
+  newView.setUint32(4, 2, true); // version
+  newView.setUint32(8, newFileLength, true); // total length
+
+  // Write JSON chunk
   let pos = 12;
-  newView.setUint32(pos, jsonData.length + padding, true);
+  newView.setUint32(pos, alignedJsonLength, true); // chunk length
   pos += 4;
-  newView.setUint32(pos, 0x4e4f534a, true);
+  newView.setUint32(pos, 0x4e4f534a, true); // chunk type (JSON)
   pos += 4;
-  newGlb.set(jsonData, pos);
-  pos += jsonData.length + padding;
+  newGLB.set(optimizedJsonData, pos);
+  pos += optimizedJsonData.length + jsonPadding;
 
-  newView.setUint32(pos, binChunk.length, true);
+  // Write BIN chunk
+  newView.setUint32(pos, binChunkLength, true); // chunk length
   pos += 4;
-  newView.setUint32(pos, 0x004e4942, true);
+  newView.setUint32(pos, 0x004e4942, true); // chunk type (BIN)
   pos += 4;
-  newGlb.set(binChunk, pos);
+  newGLB.set(binChunk, pos);
 
-  return newGlb;
+  return newGLB;
 }
