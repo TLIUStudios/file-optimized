@@ -151,7 +151,7 @@ export default function UploadZone({ onFilesSelected, isDragActive, onDragStateC
       <input
         type="file"
         multiple
-        accept=".jpg,.jpeg,.png,.webp,.avif,.gif,.mp4,.mp3,.wav,.glb"
+        accept=".jpg,.jpeg,.png,.webp,.avif,.gif,.mp4,.mp3,.wav,.glb,model/gltf-binary,application/octet-stream"
         onChange={handleFileInput}
         className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
         id="file-upload"
