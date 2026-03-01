@@ -7,8 +7,18 @@ export default function GLBViewer({ file, label }) {
   const containerRef = useRef(null);
   const sceneRef = useRef(null);
   const rendererRef = useRef(null);
+  const cameraRef = useRef(null);
+  const modelRef = useRef(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+
+  // Mouse controls state
+  const controlsRef = useRef({
+    isDragging: false,
+    previousMousePosition: { x: 0, y: 0 },
+    rotation: { x: 0, y: 0 },
+    zoom: 1
+  });
 
   useEffect(() => {
     if (!file || !containerRef.current) return;
@@ -19,25 +29,28 @@ export default function GLBViewer({ file, label }) {
 
     // Scene setup
     const scene = new THREE.Scene();
-    scene.background = new THREE.Color(0x1a1a1a);
+    scene.background = new THREE.Color(0x0f172a);
     sceneRef.current = scene;
 
     // Camera
     const camera = new THREE.PerspectiveCamera(75, width / height, 0.1, 1000);
-    camera.position.z = 2;
+    camera.position.z = 3;
+    cameraRef.current = camera;
 
     // Renderer
     const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
     renderer.setSize(width, height);
     renderer.setPixelRatio(window.devicePixelRatio);
+    renderer.shadowMap.enabled = true;
     container.appendChild(renderer.domElement);
     rendererRef.current = renderer;
 
     // Lighting
-    const ambientLight = new THREE.AmbientLight(0xffffff, 1);
+    const ambientLight = new THREE.AmbientLight(0xffffff, 1.2);
     scene.add(ambientLight);
-    const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
+    const directionalLight = new THREE.DirectionalLight(0xffffff, 1);
     directionalLight.position.set(5, 10, 7);
+    directionalLight.castShadow = true;
     scene.add(directionalLight);
 
     // Load model
@@ -62,22 +75,25 @@ export default function GLBViewer({ file, label }) {
       url,
       (gltf) => {
         const model = gltf.scene;
+        modelRef.current = model;
         
         // Clear previous models if any
-        const previousModels = scene.children.filter(child => child.isGroup || child.isMesh);
-        previousModels.forEach(model => scene.remove(model));
+        const previousModels = scene.children.filter(child => (child.isGroup || child.isMesh) && child !== ambientLight && child !== directionalLight);
+        previousModels.forEach(m => scene.remove(m));
         
         scene.add(model);
 
         // Auto-fit camera to model
         const box = new THREE.Box3().setFromObject(model);
         const size = box.getSize(new THREE.Vector3());
+        const center = box.getCenter(new THREE.Vector3());
         const maxDim = Math.max(size.x, size.y, size.z);
         const fov = camera.fov * (Math.PI / 180);
         let cameraZ = Math.abs(maxDim / 2 / Math.tan(fov / 2));
         cameraZ *= 1.5;
-        camera.position.z = cameraZ;
-        camera.lookAt(box.getCenter(new THREE.Vector3()));
+        
+        camera.position.set(center.x, center.y, center.z + cameraZ);
+        camera.lookAt(center);
 
         setError(null);
         setLoading(false);
@@ -90,18 +106,58 @@ export default function GLBViewer({ file, label }) {
       }
     );
 
+    // Mouse controls
+    const onMouseDown = (e) => {
+      controlsRef.current.isDragging = true;
+      controlsRef.current.previousMousePosition = { x: e.clientX, y: e.clientY };
+    };
+
+    const onMouseMove = (e) => {
+      if (!controlsRef.current.isDragging || !modelRef.current) return;
+
+      const deltaX = e.clientX - controlsRef.current.previousMousePosition.x;
+      const deltaY = e.clientY - controlsRef.current.previousMousePosition.y;
+
+      controlsRef.current.rotation.y += deltaX * 0.01;
+      controlsRef.current.rotation.x += deltaY * 0.01;
+
+      modelRef.current.rotation.y = controlsRef.current.rotation.y;
+      modelRef.current.rotation.x = controlsRef.current.rotation.x;
+
+      controlsRef.current.previousMousePosition = { x: e.clientX, y: e.clientY };
+    };
+
+    const onMouseUp = () => {
+      controlsRef.current.isDragging = false;
+    };
+
+    const onWheel = (e) => {
+      e.preventDefault();
+      const zoomSpeed = 0.1;
+      controlsRef.current.zoom += e.deltaY > 0 ? zoomSpeed : -zoomSpeed;
+      controlsRef.current.zoom = Math.max(0.5, Math.min(3, controlsRef.current.zoom));
+      cameraRef.current.position.z = 3 * controlsRef.current.zoom;
+    };
+
+    renderer.domElement.addEventListener('mousedown', onMouseDown);
+    renderer.domElement.addEventListener('mousemove', onMouseMove);
+    renderer.domElement.addEventListener('mouseup', onMouseUp);
+    renderer.domElement.addEventListener('wheel', onWheel, { passive: false });
+
     // Animation loop
     const animate = () => {
       requestAnimationFrame(animate);
-      if (sceneRef.current?.children[2]) {
-        sceneRef.current.children[2].rotation.y += 0.005;
-      }
       renderer.render(scene, camera);
     };
     animate();
 
     // Cleanup
     return () => {
+      renderer.domElement.removeEventListener('mousedown', onMouseDown);
+      renderer.domElement.removeEventListener('mousemove', onMouseMove);
+      renderer.domElement.removeEventListener('mouseup', onMouseUp);
+      renderer.domElement.removeEventListener('wheel', onWheel);
+      
       if (shouldRevokeUrl) {
         URL.revokeObjectURL(url);
       }
