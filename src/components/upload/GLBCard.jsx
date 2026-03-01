@@ -110,16 +110,18 @@ export default function GLBCard({ file, onRemove, onProcessed }) {
         <div className="relative pt-10">
           <div className="grid grid-cols-2 gap-2 p-4 bg-slate-50 dark:bg-slate-950">
             {/* Original GLB */}
-            <div className="relative aspect-square rounded-lg overflow-hidden bg-slate-200 dark:bg-slate-800">
-              <GLBViewer file={file} />
-              <Badge className="absolute top-2 left-2 bg-slate-900/80 text-white">
-                Original
-              </Badge>
-            </div>
+            {file && (
+              <div className="relative aspect-square rounded-lg overflow-hidden bg-slate-200 dark:bg-slate-800">
+                <GLBViewer file={file} />
+                <Badge className="absolute top-2 left-2 bg-slate-900/80 text-white">
+                  Original
+                </Badge>
+              </div>
+            )}
             {/* Compressed GLB */}
             {compressedBlob ? (
               <div className="relative aspect-square rounded-lg overflow-hidden bg-slate-200 dark:bg-slate-800">
-                <GLBViewer file={compressedBlob} isBlob={true} />
+                <GLBViewer file={compressedBlob} />
                 <Badge className="absolute top-2 left-2 bg-emerald-600 text-white">
                   Optimized
                 </Badge>
