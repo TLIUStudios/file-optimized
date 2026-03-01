@@ -42,7 +42,20 @@ export default function GLBViewer({ file, label }) {
 
     // Load model
     const loader = new GLTFLoader();
-    const url = typeof file === 'string' ? file : URL.createObjectURL(file);
+    let url;
+    let shouldRevokeUrl = false;
+    
+    if (!file) {
+      setLoading(false);
+      return;
+    }
+
+    if (file instanceof Blob) {
+      url = URL.createObjectURL(file);
+      shouldRevokeUrl = true;
+    } else {
+      url = file;
+    }
 
     loader.load(
       url,
@@ -82,11 +95,13 @@ export default function GLBViewer({ file, label }) {
 
     // Cleanup
     return () => {
-      if (typeof file !== 'string') {
+      if (shouldRevokeUrl) {
         URL.revokeObjectURL(url);
       }
       renderer.dispose();
-      container.removeChild(renderer.domElement);
+      if (container.contains(renderer.domElement)) {
+        container.removeChild(renderer.domElement);
+      }
     };
   }, [file]);
 
