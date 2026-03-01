@@ -50,7 +50,8 @@ export default function GLBViewer({ file, label }) {
       return;
     }
 
-    if (file instanceof Blob) {
+    // Handle both Blob and File objects
+    if (file instanceof Blob || file instanceof File) {
       url = URL.createObjectURL(file);
       shouldRevokeUrl = true;
     } else {
@@ -61,6 +62,11 @@ export default function GLBViewer({ file, label }) {
       url,
       (gltf) => {
         const model = gltf.scene;
+        
+        // Clear previous models if any
+        const previousModels = scene.children.filter(child => child.isGroup || child.isMesh);
+        previousModels.forEach(model => scene.remove(model));
+        
         scene.add(model);
 
         // Auto-fit camera to model
@@ -73,6 +79,7 @@ export default function GLBViewer({ file, label }) {
         camera.position.z = cameraZ;
         camera.lookAt(box.getCenter(new THREE.Vector3()));
 
+        setError(null);
         setLoading(false);
       },
       undefined,
