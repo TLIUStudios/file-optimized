@@ -1,8 +1,11 @@
+import { useState } from 'react';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { X, Download as DownloadIcon, Box } from 'lucide-react';
+import { X, Download as DownloadIcon, Box, RefreshCw, Copy, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
+import { base44 } from '@/api/base44Client';
+import { cn } from "@/lib/utils";
 import GLBViewer from './GLBViewer';
 
 export default function GLBComparisonModal({ isOpen, onClose, originalFile, compressedFile, originalSize, compressedSize, fileName }) {
