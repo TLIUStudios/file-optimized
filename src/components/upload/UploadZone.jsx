@@ -21,6 +21,9 @@ const ALLOWED_TYPES = {
   'audio/wav': ['.wav'],
   'audio/wave': ['.wav'],
   'audio/x-wav': ['.wav'],
+  // 3D Models
+  'model/gltf-binary': ['.glb'],
+  'application/octet-stream': ['.glb'],
 };
 
 const MAX_FILES_PER_BATCH_FREE = 3;
@@ -148,7 +151,7 @@ export default function UploadZone({ onFilesSelected, isDragActive, onDragStateC
       <input
         type="file"
         multiple
-        accept=".jpg,.jpeg,.png,.webp,.avif,.gif,.mp4,.mp3,.wav"
+        accept=".jpg,.jpeg,.png,.webp,.avif,.gif,.mp4,.mp3,.wav,.glb"
         onChange={handleFileInput}
         className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
         id="file-upload"
@@ -182,6 +185,9 @@ export default function UploadZone({ onFilesSelected, isDragActive, onDragStateC
             </p>
             <p className="text-sm text-slate-600 dark:text-slate-400">
               <strong>Audio:</strong> MP3, WAV
+            </p>
+            <p className="text-sm text-slate-600 dark:text-slate-400">
+              <strong>3D Models:</strong> GLB
             </p>
           </div>
           <div className="mt-3 text-xs text-slate-500 dark:text-slate-400 space-y-1">
