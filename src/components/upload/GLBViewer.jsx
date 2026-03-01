@@ -165,6 +165,13 @@ export default function GLBViewer({ file, label }) {
     const onMouseUp = () => {
       controlsRef.current.isDragging = false;
       controlsRef.current.isPanning = false;
+      // Resume auto-rotate after 800ms of inactivity
+      if (controlsRef.current.autoRotateTimeout) {
+        clearTimeout(controlsRef.current.autoRotateTimeout);
+      }
+      controlsRef.current.autoRotateTimeout = setTimeout(() => {
+        setAutoRotateActive(true);
+      }, 800);
     };
 
     const onContextMenu = (e) => {
