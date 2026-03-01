@@ -1036,8 +1036,8 @@ export default function MediaCard({ image, onRemove, onProcessed, onCompare, aut
       const response = await fetch(preview);
       const arrayBuffer = await response.arrayBuffer();
       const { parseGIF, decompressFrames } = await import('https://cdn.jsdelivr.net/npm/gifuct-js@2.1.2/+esm');
-      const gif = parseGIF(arrayBuffer);
-      const frames = decompressFrames(gif, true);
+      const parsedGif = parseGIF(arrayBuffer);
+      const frames = decompressFrames(parsedGif, true);
       
       if (!frames || frames.length === 0) {
         throw new Error('Failed to parse GIF frames');
