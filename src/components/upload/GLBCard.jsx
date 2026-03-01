@@ -8,6 +8,7 @@ import { toast } from "sonner";
 import { base44 } from "@/api/base44Client";
 import GLBComparisonModal from "./GLBComparisonModal";
 import GLBViewer from "./GLBViewer";
+import CloudSaveModal from "./CloudSaveModal";
 import { compressGLB } from "./glbCompressor";
 
 export default function GLBCard({ file, onRemove, onProcessed }) {
