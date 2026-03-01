@@ -261,8 +261,8 @@ export default function GLBViewer({ file, label }) {
     const wheel = active === 'wheel' ? 'rgba(255,255,255,.9)' : 'rgba(255,255,255,.35)';
     return `
       <svg width="16" height="16" viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;">
-        <rect x="7" y="2.5" width="10" height="19" rx="5" ry="5" fill="none" stroke="rgba(255,255,255,.75)" stroke-width="1.5"/>
-        <path d="M12 3.5v5.8" stroke="${wheel}" stroke-width="2" stroke-linecap="round"/>
+        <rect x="7" y="2.5" width="10" height="19" rx="5" ry="5" fill="none" stroke="rgba(255,255,255,.75)" strokeWidth="1.5"/>
+        <path d="M12 3.5v5.8" stroke="${wheel}" strokeWidth="2" strokeLinecap="round"/>
         <path d="M7.6 7.4h4.4v4.6H7.6z" fill="${left}"/>
         <path d="M12 7.4h4.4v4.6H12z" fill="${right}"/>
       </svg> <span>${active === 'left' ? 'Left: Rotate' : active === 'right' ? 'Right: Pan' : 'Scroll: Zoom'}</span>
