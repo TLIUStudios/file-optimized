@@ -272,6 +272,55 @@ export default function GLBComparisonModal({ isOpen, onClose, originalFile, comp
           </div>
 
           <div className="flex items-center gap-2">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button 
+                  className="bg-blue-600 hover:bg-blue-700 text-white h-8 px-3 text-xs font-semibold"
+                  disabled={uploadingToDrive}
+                >
+                  {uploadingToDrive ? (
+                    <>
+                      <Loader2 className="w-3 h-3 mr-1.5 animate-spin" />
+                      Saving...
+                    </>
+                  ) : (
+                    <>
+                      <Cloud className="w-3 h-3 mr-1.5" />
+                      Save to...
+                    </>
+                  )}
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent className="w-56">
+                <DropdownMenuItem onClick={handleSaveToGoogleDrive} className="flex items-center cursor-pointer">
+                  <svg className="w-4 h-4 mr-2 flex-shrink-0" viewBox="0 0 87.3 78">
+                    <path fill="#0066da" d="m6.6 66.85 3.85 6.65c.8 1.4 1.95 2.5 3.3 3.3l13.75-23.8h-27.5c0 1.55.4 3.1 1.2 4.5z"/>
+                    <path fill="#00ac47" d="m43.65 25-13.75-23.8c-1.35.8-2.5 1.9-3.3 3.3l-25.4 44a9.06 9.06 0 0 0 -1.2 4.5h27.5z"/>
+                    <path fill="#ea4335" d="m73.55 76.8c1.35-.8 2.5-1.9 3.3-3.3l1.6-2.75 7.65-13.25c.8-1.4 1.2-2.95 1.2-4.5h-27.502l5.852 11.5z"/>
+                    <path fill="#00832d" d="m43.65 25 13.75-23.8c-1.35-.8-2.9-1.2-4.5-1.2h-18.5c-1.6 0-3.15.45-4.5 1.2z"/>
+                    <path fill="#2684fc" d="m59.8 53h-32.3l-13.75 23.8c1.35.8 2.9 1.2 4.5 1.2h50.8c1.6 0 3.15-.45 4.5-1.2z"/>
+                    <path fill="#ffba00" d="m73.4 26.5-12.7-22c-.8-1.4-1.95-2.5-3.3-3.3l-13.75 23.8 16.15 28h27.45c0-1.55-.4-3.1-1.2-4.5z"/>
+                  </svg>
+                  <span className="text-slate-900 dark:text-white whitespace-nowrap flex-1 min-w-0">Google Drive</span>
+                  <Badge className="bg-emerald-600 text-white text-[10px] ml-2">Active</Badge>
+                </DropdownMenuItem>
+                <DropdownMenuItem disabled className="flex items-center opacity-50 cursor-not-allowed">
+                  <svg className="w-4 h-4 mr-2 opacity-40 flex-shrink-0" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                      <path fill="#0061FF" d="M6 1.807L0 5.629l6 3.822 6.001-3.822L6 1.807zM18 1.807l-6 3.822 6 3.822 6-3.822-6-3.822zM0 13.274l6 3.822 6.001-3.822L6 9.452 0 13.274zM18 9.452l-6 3.822 6 3.822 6-3.822-6-3.822zM6 18.371l6.001 3.822 6-3.822-6-3.822L6 18.371z"/>
+                    </svg>
+                  <span className="text-slate-400 whitespace-nowrap flex-1 min-w-0">Dropbox</span>
+                  <Badge variant="outline" className="text-[10px] whitespace-nowrap ml-2 text-slate-400">Coming Soon</Badge>
+                </DropdownMenuItem>
+                <DropdownMenuItem disabled className="flex items-center opacity-50 cursor-not-allowed">
+                  <svg className="w-4 h-4 mr-2 opacity-40 flex-shrink-0" viewBox="0 0 24 24">
+                    <path fill="#0078D4" d="M13.977 5.998c2.382 0 4.438 1.382 5.414 3.386a4.746 4.746 0 013.608 4.599c0 2.626-2.131 4.756-4.757 4.756H5.758C2.579 18.739 0 16.16 0 12.98c0-2.812 2.018-5.157 4.688-5.659a6.99 6.99 0 016.289-1.323z"/>
+                  </svg>
+                  <span className="text-slate-400 whitespace-nowrap flex-1 min-w-0">OneDrive</span>
+                  <Badge variant="outline" className="text-[10px] whitespace-nowrap ml-2 text-slate-400">Coming Soon</Badge>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+
             <Button
               onClick={downloadCompressed}
               className="bg-emerald-600 hover:bg-emerald-700 text-white h-8 px-3 text-xs font-semibold"
