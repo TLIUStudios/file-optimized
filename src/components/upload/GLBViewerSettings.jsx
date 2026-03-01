@@ -5,7 +5,7 @@ export default function GLBViewerSettings({ isOpen, onClose, settings, onSetting
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-start justify-end pointer-events-none" onClick={onClose}>
+    <div className="fixed inset-0 z-50 flex items-end justify-end pointer-events-none" onClick={onClose}>
       <div 
         className="absolute inset-0 pointer-events-auto" 
         onClick={onClose} 
