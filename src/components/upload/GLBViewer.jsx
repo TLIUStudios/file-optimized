@@ -233,7 +233,7 @@ export default function GLBViewer({ file, label, isBlob = false, disableInteract
         container.removeChild(renderer.domElement);
       }
     };
-  }, [file, settings, brightness]);
+  }, [file, settings, brightness, disableInteraction]);
 
   const handleSettingChange = (key, value) => {
     setSettings(prev => ({ ...prev, [key]: value }));
