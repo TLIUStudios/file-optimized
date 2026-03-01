@@ -73,13 +73,16 @@ export default function GLBCard({ file, onRemove, onProcessed }) {
 
   const parseAndOptimizeGLB = async (data) => {
     try {
-      // Use native gzip compression for actual file size reduction
-      const blob = new Blob([data]);
-      const stream = blob.stream().pipeThrough(new CompressionStream('gzip'));
-      const compressedBlob = await new Response(stream).blob();
-      return new Uint8Array(await compressedBlob.arrayBuffer());
+      const formData = new FormData();
+      formData.append('file', new Blob([data], { type: 'model/gltf-binary' }));
+      
+      const response = await base44.functions.invoke('compressGLB', {
+        file: new Blob([data], { type: 'model/gltf-binary' })
+      });
+      
+      return new Uint8Array(response.data);
     } catch (error) {
-      console.error('Gzip compression failed:', error);
+      console.error('Compression failed:', error);
       return data;
     }
   };
