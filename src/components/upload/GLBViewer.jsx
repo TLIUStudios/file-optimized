@@ -125,6 +125,10 @@ export default function GLBViewer({ file, label }) {
 
     // Mouse controls
     const onMouseDown = (e) => {
+      setAutoRotateActive(false);
+      if (controlsRef.current.autoRotateTimeout) {
+        clearTimeout(controlsRef.current.autoRotateTimeout);
+      }
       if (e.button === 0) {
         // Left click - rotate
         controlsRef.current.isDragging = true;
