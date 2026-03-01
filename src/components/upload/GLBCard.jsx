@@ -54,7 +54,7 @@ export default function GLBCard({ file, onRemove, onProcessed }) {
         originalSize: file.size,
         compressedSize: compressedBlobData.size,
         format: 'glb',
-        filename: file.name.replace('.glb', '.glb.gz'),
+        filename: file.name,
         mediaType: '3d',
         fileFormat: 'glb',
         originalFileFormat: 'glb'
