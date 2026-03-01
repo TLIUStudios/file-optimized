@@ -30,14 +30,14 @@ export default function GLBCard({ file, onRemove, onProcessed }) {
     try {
       setProcessingProgress(20);
       
-      const arrayBuffer = await file.arrayBuffer();
-      const view = new Uint8Array(arrayBuffer);
+      const formData = new FormData();
+      formData.append('file', file);
       
       setProcessingProgress(40);
       
-      // Optimize GLB structure
-      const optimizedBuffer = parseAndOptimizeGLB(view);
-      const compressedBlobData = new Blob([optimizedBuffer], { type: 'model/gltf-binary' });
+      const response = await base44.functions.invoke('optimizeGLB', { file });
+      const arrayBuffer = response.data;
+      const compressedBlobData = new Blob([arrayBuffer], { type: 'model/gltf-binary' });
       
       setProcessingProgress(80);
       
