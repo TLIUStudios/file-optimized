@@ -1,13 +1,13 @@
 import { useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Download, X, Loader2, CheckCircle2, ArrowRight, Film, Eye, Share2, Info } from "lucide-react";
+import { Download, X, Loader2, CheckCircle2, ArrowRight, Eye, Edit2, Box } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { base44 } from "@/api/base44Client";
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import GLBComparisonModal from "./GLBComparisonModal";
+import GLBViewer from "./GLBViewer";
 import { compressGLB } from "./glbCompressor";
 
 export default function GLBCard({ file, onRemove, onProcessed }) {
