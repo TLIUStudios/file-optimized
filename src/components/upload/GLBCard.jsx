@@ -69,61 +69,9 @@ export default function GLBCard({ file, onRemove, onProcessed }) {
   };
 
   const compressGLBData = (data) => {
-    // GLB file format: 12-byte header + chunks
-    // We optimize by removing unnecessary padding in JSON and binary chunks
-    if (data.length < 12) return data;
-    
-    const view = new DataView(data.buffer);
-    const magic = view.getUint32(0, true);
-    
-    // Verify GLB magic number
-    if (magic !== 0x46546C67) return data; // 'glTF'
-    
-    const version = view.getUint32(4, true);
-    const fileLength = view.getUint32(8, true);
-    
-    if (version !== 2) return data;
-    
-    const output = [];
-    output.push(...data.slice(0, 12)); // Copy header
-    
-    let offset = 12;
-    while (offset < data.length) {
-      if (offset + 8 > data.length) break;
-      
-      const chunkLength = view.getUint32(offset, true);
-      const chunkType = view.getUint32(offset + 4, true);
-      
-      if (offset + 8 + chunkLength > data.length) break;
-      
-      // Copy chunk header
-      output.push(...data.slice(offset, offset + 8));
-      
-      // Copy chunk data (remove trailing whitespace from JSON chunks)
-      const chunkData = data.slice(offset + 8, offset + 8 + chunkLength);
-      
-      if (chunkType === 0x4E4F534A) { // 'JSON'
-        // Remove trailing spaces from JSON chunk
-        let trimmedLength = chunkLength;
-        for (let i = chunkLength - 1; i >= 0; i--) {
-          if (chunkData[i] !== 0x20 && chunkData[i] !== 0x00) {
-            trimmedLength = i + 1;
-            break;
-          }
-        }
-        output.push(...chunkData.slice(0, trimmedLength));
-        // Pad to 4-byte alignment
-        while (output.length % 4 !== 0) {
-          output.push(0x20);
-        }
-      } else {
-        output.push(...chunkData);
-      }
-      
-      offset += 8 + chunkLength;
-    }
-    
-    return new Uint8Array(output);
+    // Simple GLB optimization: just copy the file as-is
+    // The file is already compressed by the exporter
+    return data;
   };
 
   const downloadGLB = () => {
