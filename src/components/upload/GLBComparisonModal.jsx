@@ -13,6 +13,7 @@ import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { toast } from 'sonner';
 import { base44 } from '@/api/base44Client';
+import { toast } from 'sonner';
 import { cn } from "@/lib/utils";
 import GLBViewer from './GLBViewer';
 
