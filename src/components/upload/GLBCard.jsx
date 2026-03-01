@@ -42,7 +42,7 @@ export default function GLBCard({ file, onRemove, onProcessed }) {
       setProcessingProgress(40);
       
       const response = await base44.functions.invoke('optimizeGLB', { file: base64 });
-      const resultBase64 = response.data;
+      const resultBase64 = response.data.file;
       const binaryString = atob(resultBase64);
       const binaryArray = new Uint8Array(binaryString.length);
       for (let i = 0; i < binaryString.length; i++) {
