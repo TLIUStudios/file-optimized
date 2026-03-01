@@ -30,14 +30,25 @@ export default function GLBCard({ file, onRemove, onProcessed }) {
     try {
       setProcessingProgress(20);
       
-      const formData = new FormData();
-      formData.append('file', file);
+      // Convert file to base64
+      const arrayBuffer = await file.arrayBuffer();
+      const bytes = new Uint8Array(arrayBuffer);
+      let binary = '';
+      for (let i = 0; i < bytes.byteLength; i++) {
+        binary += String.fromCharCode(bytes[i]);
+      }
+      const base64 = btoa(binary);
       
       setProcessingProgress(40);
       
-      const response = await base44.functions.invoke('optimizeGLB', formData);
-      const arrayBuffer = response.data;
-      const compressedBlobData = new Blob([arrayBuffer], { type: 'model/gltf-binary' });
+      const response = await base44.functions.invoke('optimizeGLB', { file: base64 });
+      const resultBase64 = response.data;
+      const binaryString = atob(resultBase64);
+      const binaryArray = new Uint8Array(binaryString.length);
+      for (let i = 0; i < binaryString.length; i++) {
+        binaryArray[i] = binaryString.charCodeAt(i);
+      }
+      const compressedBlobData = new Blob([binaryArray], { type: 'model/gltf-binary' });
       
       setProcessingProgress(80);
       
