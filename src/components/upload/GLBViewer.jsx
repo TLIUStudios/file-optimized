@@ -42,7 +42,8 @@ export default function GLBViewer({ file, label }) {
 
     // Scene setup
     const scene = new THREE.Scene();
-    scene.background = new THREE.Color(0x0f172a);
+    const bgColor = settings.backgroundColor === 'dark' ? 0x0f172a : 0xf5f5f5;
+    scene.background = new THREE.Color(bgColor);
     sceneRef.current = scene;
 
     // Camera
@@ -59,12 +60,13 @@ export default function GLBViewer({ file, label }) {
     rendererRef.current = renderer;
 
     // Lighting
-    const ambientLight = new THREE.AmbientLight(0xffffff, 1.2);
+    const ambientLight = new THREE.AmbientLight(0xffffff, brightness * 1.2);
     scene.add(ambientLight);
-    const directionalLight = new THREE.DirectionalLight(0xffffff, 1);
+    const directionalLight = new THREE.DirectionalLight(0xffffff, brightness);
     directionalLight.position.set(5, 10, 7);
     directionalLight.castShadow = true;
     scene.add(directionalLight);
+    lightRef.current = { ambientLight, directionalLight };
 
     // Load model
     const loader = new GLTFLoader();
