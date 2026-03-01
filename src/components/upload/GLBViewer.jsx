@@ -347,12 +347,36 @@ export default function GLBViewer({ file, label }) {
       </div>
 
       {/* Bottom - Help Text */}
-      <div className="absolute bottom-3 left-1/2 transform -translate-x-1/2 z-30 bg-black/55 backdrop-blur-md border border-white/12 px-4 py-2 rounded-full text-white text-xs flex gap-3 whitespace-nowrap">
-        <span className="flex items-center gap-2 opacity-95" dangerouslySetInnerHTML={{__html: mouseIcon('left')}} />
+      <div className="absolute bottom-3 left-1/2 transform -translate-x-1/2 z-30 bg-black/55 backdrop-blur-md border border-white/12 px-3 py-2 rounded-full text-white text-xs flex gap-2 whitespace-nowrap">
+        <div className="flex items-center gap-2 opacity-95">
+          <svg width="14" height="14" viewBox="0 0 24 24" style={{display:'inline-block'}}>
+            <rect x="7" y="2.5" width="10" height="19" rx="5" ry="5" fill="none" stroke="rgba(255,255,255,.75)" strokeWidth="1.5"/>
+            <path d="M12 3.5v5.8" stroke="rgba(255,255,255,.9)" strokeWidth="2" strokeLinecap="round"/>
+            <path d="M7.6 7.4h4.4v4.6H7.6z" fill="rgba(255,255,255,.9)"/>
+            <path d="M12 7.4h4.4v4.6H12z" fill="rgba(255,255,255,.25)"/>
+          </svg>
+          <span>Left: Rotate</span>
+        </div>
         <span className="opacity-35">|</span>
-        <span className="flex items-center gap-2 opacity-95" dangerouslySetInnerHTML={{__html: mouseIcon('right')}} />
+        <div className="flex items-center gap-2 opacity-95">
+          <svg width="14" height="14" viewBox="0 0 24 24" style={{display:'inline-block'}}>
+            <rect x="7" y="2.5" width="10" height="19" rx="5" ry="5" fill="none" stroke="rgba(255,255,255,.75)" strokeWidth="1.5"/>
+            <path d="M12 3.5v5.8" stroke="rgba(255,255,255,.35)" strokeWidth="2" strokeLinecap="round"/>
+            <path d="M7.6 7.4h4.4v4.6H7.6z" fill="rgba(255,255,255,.25)"/>
+            <path d="M12 7.4h4.4v4.6H12z" fill="rgba(255,255,255,.9)"/>
+          </svg>
+          <span>Right: Pan</span>
+        </div>
         <span className="opacity-35">|</span>
-        <span className="flex items-center gap-2 opacity-95" dangerouslySetInnerHTML={{__html: mouseIcon('wheel')}} />
+        <div className="flex items-center gap-2 opacity-95">
+          <svg width="14" height="14" viewBox="0 0 24 24" style={{display:'inline-block'}}>
+            <rect x="7" y="2.5" width="10" height="19" rx="5" ry="5" fill="none" stroke="rgba(255,255,255,.75)" strokeWidth="1.5"/>
+            <path d="M12 3.5v5.8" stroke="rgba(255,255,255,.9)" strokeWidth="2" strokeLinecap="round"/>
+            <path d="M7.6 7.4h4.4v4.6H7.6z" fill="rgba(255,255,255,.25)"/>
+            <path d="M12 7.4h4.4v4.6H12z" fill="rgba(255,255,255,.25)"/>
+          </svg>
+          <span>Scroll: Zoom</span>
+        </div>
       </div>
 
       {error && (
