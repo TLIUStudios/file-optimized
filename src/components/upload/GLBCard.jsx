@@ -199,7 +199,7 @@ export default function GLBCard({ file, onRemove, onProcessed }) {
         >
           <X className="w-4 h-4" />
         </Button>
-      </div>
+        </div>
 
       <div className="p-3 sm:p-4 space-y-3 sm:space-y-4">
         <div>
