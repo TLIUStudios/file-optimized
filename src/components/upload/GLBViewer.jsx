@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
 import GLBViewerSettings from './GLBViewerSettings';
 
-export default function GLBViewer({ file, label, isBlob = false }) {
+export default function GLBViewer({ file, label, isBlob = false, disableInteraction = false }) {
   const containerRef = useRef(null);
   const sceneRef = useRef(null);
   const rendererRef = useRef(null);
