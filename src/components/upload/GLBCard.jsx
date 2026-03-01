@@ -207,11 +207,23 @@ export default function GLBCard({ file, onRemove, onProcessed }) {
                   <Button 
                     onClick={processGLB} 
                     variant="outline"
-                    className="flex-1"
+                    className="flex-1 relative overflow-hidden"
                     disabled={processing}
                   >
-                    <RefreshCcw className="w-4 h-4 mr-2" />
-                    Reprocess
+                    {processing && <div className="absolute inset-0 bg-emerald-500 transition-all duration-300 ease-linear" style={{ width: `${processingProgress}%`, left: 0 }} />}
+                    <span className="relative z-10 flex items-center justify-center">
+                      {processing ? (
+                        <>
+                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                          Processing...
+                        </>
+                      ) : (
+                        <>
+                          <RefreshCcw className="w-4 h-4 mr-2" />
+                          Reprocess
+                        </>
+                      )}
+                    </span>
                   </Button>
                   <Button 
                     onClick={downloadGLB} 
