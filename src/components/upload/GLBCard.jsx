@@ -32,9 +32,9 @@ export default function GLBCard({ file, onRemove, onProcessed }) {
       
       setProcessingProgress(40);
       
-      // Parse GLB and optimize it
-      const compressedArrayBuffer = parseAndOptimizeGLB(view);
-      const compressedBlob = new Blob([compressedArrayBuffer], { type: 'model/gltf-binary' });
+      // Compress using gzip
+      const compressedArrayBuffer = await parseAndOptimizeGLB(view);
+      const compressedBlob = new Blob([compressedArrayBuffer], { type: 'application/gzip' });
       
       setProcessingProgress(80);
       
@@ -52,13 +52,13 @@ export default function GLBCard({ file, onRemove, onProcessed }) {
         originalSize: file.size,
         compressedSize: compressedBlob.size,
         format: 'glb',
-        filename: file.name,
+        filename: file.name.replace('.glb', '.glb.gz'),
         mediaType: '3d',
         fileFormat: 'glb',
         originalFileFormat: 'glb'
       });
       
-      toast.success(`GLB optimized! ${Math.abs(parseFloat(savings))}% size reduction`);
+      toast.success(`GLB compressed! ${Math.abs(parseFloat(savings))}% size reduction`);
     } catch (error) {
       console.error('GLB compression error:', error);
       toast.error('Failed to optimize GLB');
