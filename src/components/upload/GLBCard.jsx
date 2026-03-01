@@ -87,12 +87,12 @@ export default function GLBCard({ file, onRemove, onProcessed }) {
     const url = URL.createObjectURL(compressedBlob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = file.name.replace('.glb', '.glb.gz');
+    a.download = file.name;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
-    toast.success(`${a.download} downloaded!`);
+    toast.success(`${file.name} downloaded!`);
   };
 
   const savingsPercent = processed ? ((1 - compressedSize / originalSize) * 100).toFixed(1) : 0;
