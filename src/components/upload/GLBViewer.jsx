@@ -125,6 +125,7 @@ export default function GLBViewer({ file, label, isBlob = false, disableInteract
 
     // Mouse controls
     const onMouseDown = (e) => {
+      if (disableInteraction) return;
       setAutoRotateActive(false);
       if (controlsRef.current.autoRotateTimeout) {
         clearTimeout(controlsRef.current.autoRotateTimeout);
@@ -141,7 +142,7 @@ export default function GLBViewer({ file, label, isBlob = false, disableInteract
     };
 
     const onMouseMove = (e) => {
-      if (!modelRef.current) return;
+      if (!modelRef.current || disableInteraction) return;
 
       const deltaX = e.clientX - controlsRef.current.previousMousePosition.x;
       const deltaY = e.clientY - controlsRef.current.previousMousePosition.y;
@@ -169,16 +170,19 @@ export default function GLBViewer({ file, label, isBlob = false, disableInteract
       if (controlsRef.current.autoRotateTimeout) {
         clearTimeout(controlsRef.current.autoRotateTimeout);
       }
-      controlsRef.current.autoRotateTimeout = setTimeout(() => {
-        setAutoRotateActive(true);
-      }, 800);
+      if (!disableInteraction) {
+        controlsRef.current.autoRotateTimeout = setTimeout(() => {
+          setAutoRotateActive(true);
+        }, 800);
+      }
     };
 
     const onContextMenu = (e) => {
-      e.preventDefault();
+      if (!disableInteraction) e.preventDefault();
     };
 
     const onWheel = (e) => {
+      if (disableInteraction) return;
       e.preventDefault();
       const zoomSpeed = 0.15;
       controlsRef.current.zoom += e.deltaY > 0 ? zoomSpeed : -zoomSpeed;
