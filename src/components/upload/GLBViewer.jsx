@@ -123,34 +123,54 @@ export default function GLBViewer({ file, label }) {
 
     // Mouse controls
     const onMouseDown = (e) => {
-      controlsRef.current.isDragging = true;
-      controlsRef.current.previousMousePosition = { x: e.clientX, y: e.clientY };
+      if (e.button === 0) {
+        // Left click - rotate
+        controlsRef.current.isDragging = true;
+        controlsRef.current.previousMousePosition = { x: e.clientX, y: e.clientY };
+      } else if (e.button === 2) {
+        // Right click - pan
+        controlsRef.current.isPanning = true;
+        controlsRef.current.previousMousePosition = { x: e.clientX, y: e.clientY };
+      }
     };
 
     const onMouseMove = (e) => {
-      if (!controlsRef.current.isDragging || !modelRef.current) return;
+      if (!modelRef.current) return;
 
       const deltaX = e.clientX - controlsRef.current.previousMousePosition.x;
       const deltaY = e.clientY - controlsRef.current.previousMousePosition.y;
 
-      controlsRef.current.rotation.y += deltaX * 0.01;
-      controlsRef.current.rotation.x += deltaY * 0.01;
+      if (controlsRef.current.isDragging) {
+        controlsRef.current.rotation.y += deltaX * 0.01;
+        controlsRef.current.rotation.x += deltaY * 0.01;
+        modelRef.current.rotation.y = controlsRef.current.rotation.y;
+        modelRef.current.rotation.x = controlsRef.current.rotation.x;
+      }
 
-      modelRef.current.rotation.y = controlsRef.current.rotation.y;
-      modelRef.current.rotation.x = controlsRef.current.rotation.x;
+      if (controlsRef.current.isPanning) {
+        const panSpeed = 0.01;
+        modelRef.current.position.x -= deltaX * panSpeed;
+        modelRef.current.position.y += deltaY * panSpeed;
+      }
 
       controlsRef.current.previousMousePosition = { x: e.clientX, y: e.clientY };
     };
 
     const onMouseUp = () => {
       controlsRef.current.isDragging = false;
+      controlsRef.current.isPanning = false;
+    };
+
+    const onContextMenu = (e) => {
+      e.preventDefault();
     };
 
     const onWheel = (e) => {
       e.preventDefault();
-      const zoomSpeed = 0.1;
+      const zoomSpeed = 0.15;
       controlsRef.current.zoom += e.deltaY > 0 ? zoomSpeed : -zoomSpeed;
       controlsRef.current.zoom = Math.max(0.5, Math.min(3, controlsRef.current.zoom));
+      setZoom(controlsRef.current.zoom);
       cameraRef.current.position.z = 3 * controlsRef.current.zoom;
     };
 
