@@ -13,6 +13,7 @@ export default function GLBCard({ file, onRemove, onProcessed }) {
   const [originalSize, setOriginalSize] = useState(file.size);
   const [compressedSize, setCompressedSize] = useState(0);
   const [processingProgress, setProcessingProgress] = useState(0);
+  const [compressedBlob, setCompressedBlob] = useState(null);
 
   const formatFileSize = (bytes) => {
     if (bytes < 1024) return bytes + ' B';
