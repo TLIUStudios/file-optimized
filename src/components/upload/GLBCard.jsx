@@ -110,8 +110,8 @@ export default function GLBCard({ file, onRemove, onProcessed }) {
         {/* Header */}
         <div className="flex items-center justify-between px-4 py-3 border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900">
           <div className="flex items-center gap-2">
-            <Box className="w-4 h-4 text-slate-400 dark:text-slate-500" />
-            <span className="text-xs font-semibold text-slate-400 dark:text-slate-500">3D Model</span>
+            <Box className="w-4 h-4 text-slate-500 dark:text-slate-400" />
+            <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">3D Model</span>
           </div>
           <Button 
             variant="ghost" 
