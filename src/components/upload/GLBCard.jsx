@@ -67,158 +67,17 @@ export default function GLBCard({ file, onRemove, onProcessed }) {
     }
   };
 
-  const parseAndOptimizeGLB = (data) => {
-    const view = new DataView(data.buffer, data.byteOffset, data.byteLength);
-    const magic = view.getUint32(0, true);
-    if (magic !== 0x46546C67) return data;
-    
-    const version = view.getUint32(4, true);
-    const totalLength = view.getUint32(8, true);
-    if (version !== 2) return data;
-    
-    let offset = 12;
-    let jsonChunk = null;
-    let binChunk = null;
-    
-    // Parse chunks
-    while (offset < totalLength) {
-      if (offset + 8 > totalLength) break;
-      const chunkLength = view.getUint32(offset, true);
-      const chunkType = view.getUint32(offset + 4, true);
-      const chunkStart = offset + 8;
-      
-      if (chunkType === 0x4E4F534A) {
-        jsonChunk = data.slice(chunkStart, chunkStart + chunkLength);
-      } else if (chunkType === 0x004E4942) {
-        binChunk = data.slice(chunkStart, chunkStart + chunkLength);
-      }
-      
-      offset += 8 + chunkLength;
+  const parseAndOptimizeGLB = async (data) => {
+    try {
+      // Use native gzip compression for actual file size reduction
+      const blob = new Blob([data]);
+      const stream = blob.stream().pipeThrough(new CompressionStream('gzip'));
+      const compressedBlob = await new Response(stream).blob();
+      return new Uint8Array(await compressedBlob.arrayBuffer());
+    } catch (error) {
+      console.error('Gzip compression failed:', error);
+      return data;
     }
-    
-    if (!jsonChunk) return data;
-    
-    const decoder = new TextDecoder();
-    const jsonStr = decoder.decode(jsonChunk).trim();
-    const json = JSON.parse(jsonStr);
-    
-    // Optimize JSON by removing unnecessary data
-    json.extensionsUsed = json.extensionsUsed?.filter(e => !['KHR_draco_mesh_compression', 'KHR_mesh_quantization'].includes(e));
-    if (json.extensionsUsed?.length === 0) delete json.extensionsUsed;
-    
-    // Remove empty extension objects
-    if (json.extensions && Object.keys(json.extensions).length === 0) delete json.extensions;
-    
-    // Quantize position data if available to reduce precision
-    if (json.accessors) {
-      json.accessors.forEach(accessor => {
-        if (accessor.componentType === 5126 && accessor.type === 'VEC3') {
-          // Only quantize positions slightly to maintain visual quality
-          accessor.componentType = 5123; // Change to unsigned short
-        }
-      });
-    }
-    
-    const optimizedJsonStr = JSON.stringify(json);
-    const encoder = new TextEncoder();
-    const optimizedJsonData = encoder.encode(optimizedJsonStr);
-    
-    const jsonPadding = (4 - (optimizedJsonData.length % 4)) % 4;
-    const paddedJsonLength = optimizedJsonData.length + jsonPadding;
-    
-    const newFileLength = 12 + 8 + paddedJsonLength + (binChunk ? 8 + binChunk.length : 0);
-    const newGLB = new Uint8Array(newFileLength);
-    const newView = new DataView(newGLB.buffer);
-    
-    newView.setUint32(0, 0x46546C67, true);
-    newView.setUint32(4, 2, true);
-    newView.setUint32(8, newFileLength, true);
-    
-    let pos = 12;
-    newView.setUint32(pos, paddedJsonLength, true);
-    pos += 4;
-    newView.setUint32(pos, 0x4E4F534A, true);
-    pos += 4;
-    newGLB.set(optimizedJsonData, pos);
-    pos += optimizedJsonData.length + jsonPadding;
-    
-    if (binChunk && binChunk.length > 0) {
-      newView.setUint32(pos, binChunk.length, true);
-      pos += 4;
-      newView.setUint32(pos, 0x004E4942, true);
-      pos += 4;
-      newGLB.set(binChunk, pos);
-    }
-    
-    return newGLB;
-  };
-
-  const optimizeGLBFallback = (data) => {
-    const view = new DataView(data.buffer, data.byteOffset, data.byteLength);
-    const magic = view.getUint32(0, true);
-    if (magic !== 0x46546C67) return data;
-    
-    const version = view.getUint32(4, true);
-    const totalLength = view.getUint32(8, true);
-    if (version !== 2) return data;
-    
-    let offset = 12;
-    let jsonChunk = null;
-    let binChunk = null;
-    
-    // Parse chunks
-    while (offset < totalLength) {
-      if (offset + 8 > totalLength) break;
-      const chunkLength = view.getUint32(offset, true);
-      const chunkType = view.getUint32(offset + 4, true);
-      const chunkStart = offset + 8;
-      
-      if (chunkType === 0x4E4F534A) {
-        jsonChunk = data.slice(chunkStart, chunkStart + chunkLength);
-      } else if (chunkType === 0x004E4942) {
-        binChunk = data.slice(chunkStart, chunkStart + chunkLength);
-      }
-      
-      offset += 8 + chunkLength;
-    }
-    
-    if (!jsonChunk) return data;
-    
-    const decoder = new TextDecoder();
-    const jsonStr = decoder.decode(jsonChunk).trim();
-    const json = JSON.parse(jsonStr);
-    const optimizedJsonStr = JSON.stringify(json);
-    const encoder = new TextEncoder();
-    const optimizedJsonData = encoder.encode(optimizedJsonStr);
-    
-    const jsonPadding = (4 - (optimizedJsonData.length % 4)) % 4;
-    const paddedJsonLength = optimizedJsonData.length + jsonPadding;
-    
-    const newFileLength = 12 + 8 + paddedJsonLength + (binChunk ? 8 + binChunk.length : 0);
-    const newGLB = new Uint8Array(newFileLength);
-    const newView = new DataView(newGLB.buffer);
-    
-    newView.setUint32(0, 0x46546C67, true);
-    newView.setUint32(4, 2, true);
-    newView.setUint32(8, newFileLength, true);
-    
-    let pos = 12;
-    newView.setUint32(pos, paddedJsonLength, true);
-    pos += 4;
-    newView.setUint32(pos, 0x4E4F534A, true);
-    pos += 4;
-    newGLB.set(optimizedJsonData, pos);
-    pos += optimizedJsonData.length + jsonPadding;
-    
-    if (binChunk && binChunk.length > 0) {
-      newView.setUint32(pos, binChunk.length, true);
-      pos += 4;
-      newView.setUint32(pos, 0x004E4942, true);
-      pos += 4;
-      newGLB.set(binChunk, pos);
-    }
-    
-    return newGLB;
   };
 
   const downloadGLB = () => {
