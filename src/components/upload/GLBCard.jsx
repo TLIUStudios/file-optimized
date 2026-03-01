@@ -1,36 +1,4 @@
 import { useState } from "react";
-
-const compressWithGzip = async (buffer) => {
-  const stream = new ReadableStream({
-    start(controller) {
-      controller.enqueue(buffer);
-      controller.close();
-    }
-  });
-  
-  const compressedStream = stream.pipeThrough(
-    new CompressionStream('gzip')
-  );
-  
-  const reader = compressedStream.getReader();
-  const chunks = [];
-  
-  while (true) {
-    const { done, value } = await reader.read();
-    if (done) break;
-    chunks.push(value);
-  }
-  
-  const totalLength = chunks.reduce((sum, chunk) => sum + chunk.length, 0);
-  const compressedBuffer = new Uint8Array(totalLength);
-  let offset = 0;
-  for (const chunk of chunks) {
-    compressedBuffer.set(chunk, offset);
-    offset += chunk.length;
-  }
-  
-  return compressedBuffer;
-};
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Download, X, Loader2, CheckCircle2, ArrowRight, Film, Eye } from "lucide-react";
