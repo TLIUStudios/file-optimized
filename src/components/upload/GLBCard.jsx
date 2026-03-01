@@ -127,26 +127,33 @@ export default function GLBCard({ file, onRemove, onProcessed }) {
         <div className="grid grid-cols-2 gap-2 p-4 bg-slate-50 dark:bg-slate-950">
           {/* Original GLB */}
           {file && (
-            <div className="relative aspect-square rounded-lg overflow-hidden bg-slate-200 dark:bg-slate-800 border-2 border-slate-400 dark:border-slate-600">
+            <div 
+              className="relative aspect-square rounded-lg overflow-hidden bg-slate-200 dark:bg-slate-800 cursor-pointer group"
+              onClick={processed ? () => setShowComparison(true) : undefined}
+            >
               <GLBViewer file={file} disableInteraction={true} />
               <div className="absolute inset-0 pointer-events-none" />
-              <Badge className="absolute top-2 left-2 bg-slate-700 dark:bg-slate-800 text-white border border-slate-600 dark:border-slate-700">
+              <Badge className="absolute top-2 left-2 bg-slate-900/80 text-white">
                 Original
               </Badge>
-              <Badge className="absolute bottom-2 right-2 bg-slate-900 dark:bg-slate-950 text-white border border-slate-700 dark:border-slate-800">
+              <Badge className="absolute bottom-2 right-2 bg-slate-900/95 backdrop-blur-sm text-white border border-slate-700 text-xs px-2 py-1 font-bold shadow-lg">
                 GLB
               </Badge>
+              {processed && <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors pointer-events-none" />}
             </div>
           )}
           {/* Compressed GLB */}
           {compressedBlob ? (
-            <div className="relative aspect-square rounded-lg overflow-hidden bg-slate-200 dark:bg-slate-800 border-2 border-emerald-500 dark:border-emerald-600">
+            <div 
+              className="relative aspect-square rounded-lg overflow-hidden bg-slate-200 dark:bg-slate-800 cursor-pointer group"
+              onClick={() => setShowComparison(true)}
+            >
               <GLBViewer file={compressedBlob} disableInteraction={true} />
-              <div className="absolute inset-0 pointer-events-none" />
-              <Badge className="absolute top-2 left-2 bg-emerald-600 dark:bg-emerald-700 text-white border border-emerald-500 dark:border-emerald-600">
+              <div className="absolute inset-0 pointer-events-none transition-transform group-hover:scale-105" />
+              <Badge className="absolute top-2 left-2 bg-emerald-600 text-white">
                 Optimized
               </Badge>
-              <Badge className="absolute bottom-2 right-2 bg-slate-900 dark:bg-slate-950 text-white border border-slate-700 dark:border-slate-800">
+              <Badge className="absolute bottom-2 right-2 bg-emerald-600/95 backdrop-blur-sm text-white border border-emerald-500 text-xs px-2 py-1 font-bold shadow-lg">
                 GLB
               </Badge>
             </div>
