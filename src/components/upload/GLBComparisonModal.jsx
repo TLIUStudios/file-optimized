@@ -343,24 +343,24 @@ export default function GLBComparisonModal({ isOpen, onClose, originalFile, comp
           <div className="flex-1 relative overflow-hidden flex flex-col min-h-0">
             <div className="flex-1 grid grid-cols-2 gap-4 p-4 bg-slate-100 dark:bg-slate-900">
               {/* Original Model */}
-              <div className="flex flex-col gap-2">
-                <div className="flex items-center justify-between px-3">
-                  <h3 className="text-sm font-semibold text-slate-900 dark:text-white">Original</h3>
-                  <Badge className="bg-slate-700 dark:bg-slate-800 text-white text-xs">GLB</Badge>
-                </div>
-                <div className="flex-1 bg-slate-950 rounded-lg overflow-hidden border border-slate-600/50">
+              <div className="flex flex-col gap-2 relative">
+                <div className="flex-1 bg-slate-950 rounded-lg overflow-hidden border border-slate-600/50 shadow-lg">
                   <GLBViewer file={originalFile} disableInteraction={false} />
+                  <Badge className="absolute top-3 left-3 bg-slate-900/80 text-white text-xs font-semibold px-2.5 py-1">
+                    Original
+                  </Badge>
+                  <Badge className="absolute bottom-3 right-3 bg-slate-800/80 text-white text-xs font-semibold px-2 py-1">GLB</Badge>
                 </div>
               </div>
 
               {/* Compressed Model */}
-              <div className="flex flex-col gap-2">
-                <div className="flex items-center justify-between px-3">
-                  <h3 className="text-sm font-semibold text-slate-900 dark:text-white">Compressed</h3>
-                  <Badge className="bg-emerald-600 text-white text-xs">GLB</Badge>
-                </div>
-                <div className="flex-1 bg-slate-950 rounded-lg overflow-hidden border border-slate-600/50">
+              <div className="flex flex-col gap-2 relative">
+                <div className="flex-1 bg-slate-950 rounded-lg overflow-hidden border border-slate-600/50 shadow-lg">
                   <GLBViewer file={compressedFile} disableInteraction={false} />
+                  <Badge className="absolute top-3 left-3 bg-emerald-600/80 text-white text-xs font-semibold px-2.5 py-1">
+                    Optimized
+                  </Badge>
+                  <Badge className="absolute bottom-3 right-3 bg-emerald-600/80 text-white text-xs font-semibold px-2 py-1">GLB</Badge>
                 </div>
               </div>
             </div>
