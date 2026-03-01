@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { base44 } from "@/api/base44Client";
 import GLBComparisonModal from "./GLBComparisonModal";
+import { compressGLB } from "./glbCompressor";
 
 export default function GLBCard({ file, onRemove, onProcessed }) {
   const [processing, setProcessing] = useState(false);
