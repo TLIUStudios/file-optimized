@@ -10,13 +10,11 @@ import { useQuery } from "@tanstack/react-query";
 import { motion } from "framer-motion";
 import AchievementNotification from "../components/AchievementNotification";
 import HomepageContent from "../components/HomepageContent";
+import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
 
 // Lazy load heavy components for better performance
 const UploadZone = lazy(() => import("../components/upload/UploadZone"));
 const AnimatedMediaIcon = lazy(() => import("../components/AnimatedMediaIcon"));
-const DragDropContext = lazy(() => import("@hello-pangea/dnd").then(m => ({ default: m.DragDropContext })));
-const Droppable = lazy(() => import("@hello-pangea/dnd").then(m => ({ default: m.Droppable })));
-const Draggable = lazy(() => import("@hello-pangea/dnd").then(m => ({ default: m.Draggable })));
 
 const LoginPromptModal = lazy(() => import("../components/LoginPromptModal"));
 const ProUpgradeModal = lazy(() => import("../components/ProUpgradeModal"));
